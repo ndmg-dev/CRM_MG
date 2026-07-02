@@ -1,0 +1,43 @@
+# === IDE ===
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+.project
+.classpath
+.settings/
+
+# === OS ===
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# === Environment ===
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# === Java / Maven ===
+backend/target/
+*.class
+*.jar
+*.war
+*.ear
+*.log
+hs_err_pid*
+
+# === Node / Frontend ===
+frontend/node_modules/
+frontend/dist/
+frontend/.cache/
+frontend/*.tsbuildinfo
+
+# === Docker ===
+postgres_data/
+
+# === Misc ===
+*.swp
+*.swo
+*~

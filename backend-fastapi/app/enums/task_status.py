@@ -1,0 +1,7 @@
+from enum import Enum
+
+class StatusTarefa(str, Enum):
+    PENDENTE = "PENDENTE"
+    EM_PROCESSAMENTO = "EM_PROCESSAMENTO"
+    AGUARDANDO_CLIENTE = "AGUARDANDO_CLIENTE"
+    CONCLUIDO = "CONCLUIDO"
