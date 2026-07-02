@@ -30,6 +30,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
     restart: unless-stopped
 
   backend:
@@ -74,5 +76,7 @@ volumes:
   postgres_data:
     driver: local
   crm_storage:
+    driver: local
+  pgadmin_data:
     driver: local
 
