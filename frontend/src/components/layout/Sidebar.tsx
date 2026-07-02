@@ -233,9 +233,13 @@ export default function Sidebar() {
         {/* User */}
         {user && (
           <div className="mb-2 flex items-center gap-3 rounded-lg px-3 py-2">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#252525] text-xs font-bold text-[#d4a843]">
-              {getInitials(user.nome)}
-            </div>
+            {user.fotoPerfil ? (
+              <img src={user.fotoPerfil} alt={user.nome} className="h-8 w-8 shrink-0 rounded-full object-cover border border-[#2a2a2a]" referrerPolicy="no-referrer" />
+            ) : (
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#252525] text-xs font-bold text-[#d4a843]">
+                {getInitials(user.nome)}
+              </div>
+            )}
             <AnimatePresence>
               {sidebarOpen && (
                 <motion.div

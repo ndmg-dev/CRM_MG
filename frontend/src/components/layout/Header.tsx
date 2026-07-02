@@ -139,9 +139,13 @@ export default function Header() {
 
         {/* User avatar */}
         {user && (
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#252525] text-xs font-bold text-[#d4a843]">
-            {getInitials(user.nome)}
-          </div>
+          user.fotoPerfil ? (
+            <img src={user.fotoPerfil} alt={user.nome} className="h-9 w-9 rounded-full object-cover border border-[#2a2a2a]" referrerPolicy="no-referrer" />
+          ) : (
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#252525] text-xs font-bold text-[#d4a843]">
+              {getInitials(user.nome)}
+            </div>
+          )
         )}
       </div>
     </header>
