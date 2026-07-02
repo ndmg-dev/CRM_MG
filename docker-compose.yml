@@ -9,7 +9,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-crm_admin}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-crm_dev_password_2024}
     ports:
-      - "${HOST_POSTGRES_PORT:-5432}:5432"
+      - "${HOST_POSTGRES_PORT:-5439}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -26,7 +26,7 @@ services:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@mendoncagalvao.com.br}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
     ports:
-      - "${HOST_PGADMIN_PORT:-5050}:80"
+      - "${HOST_PGADMIN_PORT:-5059}:80"
     depends_on:
       postgres:
         condition: service_healthy
@@ -48,7 +48,7 @@ services:
     env_file:
       - .env
     ports:
-      - "${HOST_BACKEND_PORT:-8080}:8080"
+      - "${HOST_BACKEND_PORT:-8089}:8080"
     depends_on:
       postgres:
         condition: service_healthy
@@ -65,7 +65,7 @@ services:
         - VITE_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
     container_name: crm-mg-frontend
     ports:
-      - "${HOST_FRONTEND_PORT:-3000}:80"
+      - "${HOST_FRONTEND_PORT:-3009}:80"
     depends_on:
       - backend
     restart: unless-stopped
