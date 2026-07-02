@@ -57,6 +57,8 @@ export default function TaskModal({ task, onClose }: TaskModalProps) {
   const createMutation = useMutation({
     mutationFn: () => api.tarefas.create({
       ...form,
+      clienteId: form.clienteId || undefined,
+      responsavelId: form.responsavelId || undefined,
       dataVencimento: form.dataVencimento ? `${form.dataVencimento}T23:59:00` : undefined,
     }),
     onSuccess: () => {
@@ -70,6 +72,8 @@ export default function TaskModal({ task, onClose }: TaskModalProps) {
   const updateMutation = useMutation({
     mutationFn: () => api.tarefas.update(task!.id, {
       ...form,
+      clienteId: form.clienteId || undefined,
+      responsavelId: form.responsavelId || undefined,
       dataVencimento: form.dataVencimento ? `${form.dataVencimento}T23:59:00` : undefined,
     }),
     onSuccess: () => {
