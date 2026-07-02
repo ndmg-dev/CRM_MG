@@ -1,6 +1,11 @@
 # Build stage
-FROM node:18-alpine as build
+FROM node:22-alpine as build
 WORKDIR /app
+
+ARG VITE_API_BASE_URL
+ARG VITE_GOOGLE_CLIENT_ID
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
 COPY package*.json ./
 RUN npm install
 COPY . .

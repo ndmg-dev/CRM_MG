@@ -44,6 +44,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-crm_dev_password_2024}
       POSTGRES_PORT: ${POSTGRES_PORT:-5432}
       POSTGRES_HOST: postgres
+      BACKEND_CORS_ORIGINS: '["${SERVICE_URL_FRONTEND:-http://localhost:3000}"]'
     env_file:
       - .env
     ports:
@@ -59,6 +60,9 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        - VITE_API_BASE_URL=${SERVICE_URL_BACKEND:-http://localhost:8080}/api/v1
+        - VITE_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
     container_name: crm-mg-frontend
     ports:
       - "3000:80"
