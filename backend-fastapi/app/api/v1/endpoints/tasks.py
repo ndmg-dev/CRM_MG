@@ -18,8 +18,8 @@ router = APIRouter()
 async def get_tarefas(
     status: Optional[str] = None,
     setor: Optional[str] = None,
-    responsavelId: Optional[UUID] = None,
-    clienteId: Optional[UUID] = None,
+    responsavel_id: Optional[UUID] = None,
+    cliente_id: Optional[UUID] = None,
     prioridade: Optional[str] = None,
     page: int = 0,
     size: int = 50,
@@ -44,10 +44,10 @@ async def get_tarefas(
         query = query.where(Tarefa.status == status)
     if setor:
         query = query.where(Tarefa.setor_origem == setor)
-    if responsavelId:
-        query = query.where(Tarefa.responsavel_id == responsavelId)
-    if clienteId:
-        query = query.where(Tarefa.cliente_id == clienteId)
+    if responsavel_id:
+        query = query.where(Tarefa.responsavel_id == responsavel_id)
+    if cliente_id:
+        query = query.where(Tarefa.cliente_id == cliente_id)
     if prioridade:
         query = query.where(Tarefa.prioridade == prioridade)
         
@@ -141,7 +141,7 @@ async def update_tarefa_status(
     if not tarefa:
         raise HTTPException(status_code=404, detail="Tarefa not found")
         
-    tarefa.status = status_update.novoStatus
+    tarefa.status = status_update.novo_status
     await db.commit()
     await db.refresh(tarefa)
     return tarefa
