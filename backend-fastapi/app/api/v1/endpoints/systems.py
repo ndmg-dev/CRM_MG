@@ -25,15 +25,18 @@ async def get_sistemas(
     result = await db.execute(query)
     sistemas = result.scalars().all()
     
-    # Simulate RBAC filter from Java backend:
-    # If user is not ADMIN, filter based on UsuarioSistemaAcesso
-    if current_user.perfil != "ADMIN":
+    # Managers see all. Others see based on Setor (GERAL + seu próprio) ou acessos extras explícitos
+    if current_user.perfil not in ["ADMIN", "COORDENADOR"]:
         from app.models.user_system_access import UsuarioSistemaAcesso
         access_query = select(UsuarioSistemaAcesso.sistema_id).where(
             UsuarioSistemaAcesso.usuario_id == current_user.id
         )
         access_result = await db.execute(access_query)
         allowed_ids = {row for row in access_result.scalars()}
-        sistemas = [s for s in sistemas if s.id in allowed_ids]
+        
+        sistemas = [
+            s for s in sistemas 
+            if s.setor == "GERAL" or s.setor == current_user.setor or s.id in allowed_ids
+        ]
         
     return sistemas
