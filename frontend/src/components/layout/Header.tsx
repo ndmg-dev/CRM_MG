@@ -8,16 +8,18 @@ import { getInitials, formatDateTime } from '@/lib/utils'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Link, useNavigate } from 'react-router-dom'
 import { useDebounce } from '@/hooks/useDebounce'
+import { Building2, Calculator, BarChart3, Headphones, Bot, Sparkles, Cpu, ClipboardList } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 
-const ICON_MAP: Record<string, any> = {
-  'building-2': require('lucide-react').Building2,
-  'calculator': require('lucide-react').Calculator,
-  'bar-chart-3': require('lucide-react').BarChart3,
-  'headphones': require('lucide-react').Headphones,
-  'bot': require('lucide-react').Bot,
-  'sparkles': require('lucide-react').Sparkles,
-  'cpu': require('lucide-react').Cpu,
-  'clipboard-list': require('lucide-react').ClipboardList,
+const ICON_MAP: Record<string, LucideIcon> = {
+  'building-2': Building2,
+  'calculator': Calculator,
+  'bar-chart-3': BarChart3,
+  'headphones': Headphones,
+  'bot': Bot,
+  'sparkles': Sparkles,
+  'cpu': Cpu,
+  'clipboard-list': ClipboardList,
 }
 
 export default function Header() {

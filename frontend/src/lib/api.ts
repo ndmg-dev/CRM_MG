@@ -245,10 +245,7 @@ const realApi = {
     marcarComoLida: (id: string) => request<Notificacao>(`/notificacoes/${id}/ler`, { method: 'PUT' }),
   },
   search: {
-    query: async (q: string): Promise<SearchResponse> => {
-      const { data } = await apiInstance.get('/search', { params: { q } })
-      return data
-    }
+    query: (q: string) => request<SearchResponse>(`/search?q=${encodeURIComponent(q)}`)
   }
 }
 
