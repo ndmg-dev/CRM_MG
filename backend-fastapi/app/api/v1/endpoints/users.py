@@ -7,6 +7,7 @@ from sqlalchemy import select
 from app.db.session import get_db
 from app.core.security import get_current_user, require_roles
 from app.models.user import Usuario
+from app.models.audit_log import LogAuditoria
 from app.schemas.user import UsuarioResponse, UsuarioUpdate
 
 router = APIRouter()
@@ -44,6 +45,14 @@ async def update_usuario(
     update_data = user_in.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(user, field, value)
+    
+    audit = LogAuditoria(
+        usuario_id=current_user.id,
+        acao="UPDATE_USER",
+        alvo=f"Usuário {user.nome}",
+        detalhes={"mudancas": update_data}
+    )
+    db.add(audit)
     
     await db.commit()
     await db.refresh(user)

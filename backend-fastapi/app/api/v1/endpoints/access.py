@@ -9,6 +9,7 @@ from app.core.security import get_current_user, require_roles
 from app.models.user import Usuario
 from app.models.system import Sistema
 from app.models.user_system_access import UsuarioSistemaAcesso
+from app.models.audit_log import LogAuditoria
 from app.schemas.system import SistemaResponse
 from app.schemas.access import AccessGrantRequest
 
@@ -35,6 +36,15 @@ async def grant_access(
             granted_by=current_user.id
         )
         db.add(access)
+        
+        audit = LogAuditoria(
+            usuario_id=current_user.id,
+            acao="GRANT_ACCESS",
+            alvo=f"Sistema ID {req.sistemaId}",
+            detalhes={"usuario_alvo": str(req.usuarioId)}
+        )
+        db.add(audit)
+        
         await db.commit()
 
 @router.post("/revoke", status_code=status.HTTP_204_NO_CONTENT)
@@ -53,6 +63,15 @@ async def revoke_access(
     )
     if access:
         await db.delete(access)
+        
+        audit = LogAuditoria(
+            usuario_id=current_user.id,
+            acao="REVOKE_ACCESS",
+            alvo=f"Sistema ID {req.sistemaId}",
+            detalhes={"usuario_alvo": str(req.usuarioId)}
+        )
+        db.add(audit)
+        
         await db.commit()
 
 @router.get("/usuario/{user_id}", response_model=List[SistemaResponse])
