@@ -20,6 +20,8 @@ import type {
   StatusTarefa,
   Documento,
   Notificacao,
+  SearchResultItem,
+  SearchResponse,
 } from '@/types'
 import { mockApi } from './mockData'
 
@@ -241,6 +243,12 @@ const realApi = {
   notificacoes: {
     getAll: () => request<Notificacao[]>('/notificacoes'),
     marcarComoLida: (id: string) => request<Notificacao>(`/notificacoes/${id}/ler`, { method: 'PUT' }),
+  },
+  search: {
+    query: async (q: string): Promise<SearchResponse> => {
+      const { data } = await apiInstance.get('/search', { params: { q } })
+      return data
+    }
   }
 }
 

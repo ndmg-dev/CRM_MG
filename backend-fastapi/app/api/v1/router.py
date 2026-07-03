@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import auth, users, clients, systems, tasks, access, dashboard, audit_logs, portal, documents, notifications
+from app.api.v1.endpoints import auth, users, clients, systems, tasks, access, dashboard, audit_logs, portal, documents, notifications, search
 
 api_router = APIRouter()
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
@@ -13,3 +13,4 @@ api_router.include_router(notifications.router, prefix="/notificacoes", tags=["n
 api_router.include_router(audit_logs.router, prefix="/auditoria", tags=["auditoria"])
 api_router.include_router(portal.router, prefix="/portal", tags=["portal"])
 api_router.include_router(documents.router, tags=["documentos"])
+api_router.include_router(search.router, prefix="/search", tags=["search"])

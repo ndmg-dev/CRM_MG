@@ -126,5 +126,18 @@ export interface AuditFilters {
   usuarioId?: string
   acao?: string
   dataInicio?: string
-  dataFim?: string
+  updated_at?: string
+}
+
+export interface SearchResultItem {
+  id: string
+  type: string
+  title: string
+  subtitle?: string
+  url: string
+  icon?: string
+}
+
+export interface SearchResponse {
+  results: SearchResultItem[]
 }
