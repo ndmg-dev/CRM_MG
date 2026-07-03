@@ -42,6 +42,7 @@ const SETOR_TABS: { key: SetorSistema | 'ALL'; label: string; color: string }[] 
   { key: 'SOCIETARIO', label: 'Societário', color: 'text-purple-400' },
   { key: 'TI', label: 'Tecnologia (TI)', color: 'text-cyan-400' },
   { key: 'GERAL', label: 'Geral', color: 'text-[#a0a0a0]' },
+  { key: 'RESTRITO', label: 'Restrito', color: 'text-red-500' },
 ]
 
 function SystemCard({ sistema }: { sistema: Sistema }) {
@@ -89,10 +90,16 @@ export default function SystemsHub() {
   const user = useAuthStore((s) => s.user)
   const isManager = user?.perfil === 'ADMIN' || user?.perfil === 'COORDENADOR'
 
-  // Visibility filter: managers see all, others see only their setor + GERAL
+  // Visibility filter:
+  // - RESTRITO is ONLY visible to ADMIN
+  // - Managers (ADMIN/COORDENADOR) see all other sectors
+  // - Others see only their own setor + GERAL
   const visibleSistemas = sistemas.filter((s) => {
-    if (isManager) return true
     const setorSistema = s.setor ?? 'GERAL'
+    if (setorSistema === 'RESTRITO') {
+      return user?.perfil === 'ADMIN'
+    }
+    if (isManager) return true
     return setorSistema === 'GERAL' || setorSistema === user?.setor
   })
 
@@ -114,19 +121,23 @@ export default function SystemsHub() {
       {/* Tabs + Search */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap gap-1 rounded-lg bg-[#1a1a1a] p-1">
-          {SETOR_TABS.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                activeTab === tab.key
-                  ? 'bg-[#d4a843] text-black'
-                  : `text-[#a0a0a0] hover:text-[#f5f5f5] ${tab.color}`
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+          {SETOR_TABS.map((tab) => {
+            // Hide RESTRITO tab for non-admins
+            if (tab.key === 'RESTRITO' && user?.perfil !== 'ADMIN') return null;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                  activeTab === tab.key
+                    ? 'bg-[#d4a843] text-black'
+                    : `text-[#a0a0a0] hover:text-[#f5f5f5] ${tab.color}`
+                }`}
+              >
+                {tab.label}
+              </button>
+            )
+          })}
         </div>
 
         <div className="flex items-center gap-3">

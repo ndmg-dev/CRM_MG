@@ -1,6 +1,6 @@
 export type Perfil = 'ADMIN' | 'COORDENADOR' | 'ANALISTA' | 'ASSISTENTE' | 'VISUALIZADOR'
 export type Setor = 'FISCAL' | 'CONTABIL' | 'DP' | 'SOCIETARIO' | 'DIRETORIA' | 'TI' | 'GERAL'
-export type SetorSistema = 'DP' | 'CONTABIL' | 'FISCAL' | 'SOCIETARIO' | 'TI' | 'GERAL'
+export type SetorSistema = 'DP' | 'CONTABIL' | 'FISCAL' | 'SOCIETARIO' | 'TI' | 'GERAL' | 'RESTRITO'
 export type StatusTarefa = 'PENDENTE' | 'EM_PROCESSAMENTO' | 'AGUARDANDO_CLIENTE' | 'CONCLUIDO'
 export type Prioridade = 'BAIXA' | 'MEDIA' | 'ALTA' | 'CRITICA'
 export type RegimeTributario = 'SIMPLES_NACIONAL' | 'LUCRO_PRESUMIDO' | 'LUCRO_REAL'

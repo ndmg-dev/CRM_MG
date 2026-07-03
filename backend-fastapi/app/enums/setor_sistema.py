@@ -7,4 +7,5 @@ class SetorSistema(str, Enum):
     SOCIETARIO = "SOCIETARIO"
     TI = "TI"
     GERAL = "GERAL"
+    RESTRITO = "RESTRITO"
 
