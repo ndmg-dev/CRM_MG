@@ -94,8 +94,11 @@ export default function Sidebar() {
   const isManager = user?.perfil === 'ADMIN' || user?.perfil === 'COORDENADOR'
 
   const visibleSistemas = sistemas.filter((s) => {
-    if (isManager) return true
     const setorSistema = s.setor ?? 'GERAL'
+    if (setorSistema === 'RESTRITO') {
+      return user?.perfil === 'ADMIN'
+    }
+    if (isManager) return true
     return setorSistema === 'GERAL' || setorSistema === user?.setor
   })
 
@@ -106,9 +109,10 @@ export default function Sidebar() {
     SOCIETARIO: { label: 'Societário', color: 'text-purple-400', activeClass: 'bg-purple-500/10 text-purple-400 font-semibold' },
     TI: { label: 'Tecnologia (TI)', color: 'text-cyan-400', activeClass: 'bg-cyan-500/10 text-cyan-400 font-semibold' },
     GERAL: { label: 'Geral', color: 'text-[#6b6b6b]', activeClass: 'bg-[#d4a843]/10 text-[#d4a843] font-semibold' },
+    RESTRITO: { label: 'Restrito', color: 'text-red-500', activeClass: 'bg-red-500/10 text-red-500 font-semibold' },
   }
 
-  const setorOrder = ['DP', 'CONTABIL', 'FISCAL', 'SOCIETARIO', 'TI', 'GERAL']
+  const setorOrder = ['DP', 'CONTABIL', 'FISCAL', 'SOCIETARIO', 'TI', 'GERAL', 'RESTRITO']
   const sistemasBySetor = setorOrder.reduce((acc, setor) => {
     const found = visibleSistemas.filter(s => (s.setor ?? 'GERAL') === setor)
     if (found.length > 0) acc[setor] = found
