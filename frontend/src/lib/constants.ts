@@ -79,6 +79,7 @@ export const SETOR_LABELS: Record<Setor, string> = {
   SOCIETARIO: 'Societário',
   TI: 'Tecnologia (TI)',
   DIRETORIA: 'Diretoria',
+  GERAL: 'Geral',
 }
 
 // ---------------------------------------------------------------------------

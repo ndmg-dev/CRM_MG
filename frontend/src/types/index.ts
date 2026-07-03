@@ -1,5 +1,5 @@
 export type Perfil = 'ADMIN' | 'COORDENADOR' | 'ANALISTA' | 'ASSISTENTE' | 'VISUALIZADOR'
-export type Setor = 'FISCAL' | 'CONTABIL' | 'DP' | 'SOCIETARIO' | 'DIRETORIA' | 'TI'
+export type Setor = 'FISCAL' | 'CONTABIL' | 'DP' | 'SOCIETARIO' | 'DIRETORIA' | 'TI' | 'GERAL'
 export type SetorSistema = 'DP' | 'CONTABIL' | 'FISCAL' | 'SOCIETARIO' | 'TI' | 'GERAL'
 export type StatusTarefa = 'PENDENTE' | 'EM_PROCESSAMENTO' | 'AGUARDANDO_CLIENTE' | 'CONCLUIDO'
 export type Prioridade = 'BAIXA' | 'MEDIA' | 'ALTA' | 'CRITICA'
@@ -61,7 +61,7 @@ export interface Tarefa {
   clienteNome?: string
   responsavelId: string
   responsavelNome?: string
-  setorOrigem: Setor
+  setorOrigem: Setor | string
   status: StatusTarefa
   prioridade: Prioridade
   dataVencimento: string
