@@ -7,3 +7,4 @@ class Setor(str, Enum):
     SOCIETARIO = "SOCIETARIO"
     DIRETORIA = "DIRETORIA"
     TI = "TI"
+    GERAL = "GERAL"
