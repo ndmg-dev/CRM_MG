@@ -226,7 +226,20 @@ export default function ClientDetail() {
   const handleCopyLink = async () => {
     try {
       const res = await api.clientes.getPortalLink(id!)
-      await navigator.clipboard.writeText(res.portalUrl)
+      
+      // Garante que o link será o domínio real onde o usuário está acessando,
+      // mesmo que o backend devolva localhost.
+      let finalUrl = res.portalUrl
+      if (finalUrl.includes('localhost') || finalUrl.startsWith('/')) {
+        try {
+          const urlObj = new URL(res.portalUrl, window.location.origin)
+          finalUrl = `${window.location.origin}${urlObj.pathname}`
+        } catch {
+          finalUrl = `${window.location.origin}/portal/${res.portalUrl.split('/portal/')[1] || ''}`
+        }
+      }
+
+      await navigator.clipboard.writeText(finalUrl)
       toast.success('Link copiado para a área de transferência!')
     } catch (error) {
       toast.error('Erro ao gerar link de upload')

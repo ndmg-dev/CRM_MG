@@ -47,6 +47,7 @@ services:
       POSTGRES_PORT: 5432
       POSTGRES_HOST: postgres
       BACKEND_CORS_ORIGINS: '["${SERVICE_URL_FRONTEND:-http://localhost:3000}"]'
+      FRONTEND_URL: '${SERVICE_URL_FRONTEND:-http://localhost:3000}'
     env_file:
       - .env
     ports:
