@@ -121,7 +121,7 @@ export default function SystemViewer() {
               src={sistema.url}
               title={sistema.nome}
               className="h-full w-full border-0"
-              sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-downloads"
               onLoad={() => setIframeLoaded(true)}
               onError={() => setIframeError(true)}
             />
