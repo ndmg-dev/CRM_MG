@@ -11,28 +11,7 @@ import type { Sistema, SetorSistema } from '@/types'
 import LoadingSpinner from '@/components/common/LoadingSpinner'
 import EmptyState from '@/components/common/EmptyState'
 import PageHeader from '@/components/common/PageHeader'
-
-const ICON_MAP: Record<string, LucideIcon> = {
-  'building-2': Building2,
-  'calculator': Calculator,
-  'bar-chart-3': BarChart3,
-  'headphones': Headphones,
-  'bot': Bot,
-  'sparkles': Sparkles,
-  'cpu': Cpu,
-  'clock': Clock,
-  'user-circle': UserCircle,
-  'percent': Percent,
-  'store': Store,
-  'megaphone': Megaphone,
-  'target': Target,
-  'palmtree': Palmtree,
-  'file-check': FileCheck,
-  'fingerprint': Fingerprint,
-  'hand-coins': HandCoins,
-  'mail': Mail,
-  'user-minus': UserMinus,
-}
+import { ICON_MAP } from '@/lib/icons'
 
 const SETOR_TABS: { key: SetorSistema | 'ALL'; label: string; color: string }[] = [
   { key: 'ALL', label: 'Todos', color: '' },

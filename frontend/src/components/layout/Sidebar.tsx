@@ -40,31 +40,10 @@ import {
   UserMinus,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import { ICON_MAP } from '@/lib/icons'
 import { useAuthStore } from '@/stores/authStore'
 import { useUIStore } from '@/stores/uiStore'
 import { getInitials } from '@/lib/utils'
-
-const ICON_MAP: Record<string, LucideIcon> = {
-  'building-2': Building2,
-  'calculator': Calculator,
-  'bar-chart-3': BarChart3,
-  'headphones': Headphones,
-  'bot': Bot,
-  'sparkles': Sparkles,
-  'cpu': Cpu,
-  'clock': Clock,
-  'user-circle': UserCircle,
-  'percent': Percent,
-  'store': Store,
-  'megaphone': Megaphone,
-  'target': Target,
-  'palmtree': Palmtree,
-  'file-check': FileCheck,
-  'fingerprint': Fingerprint,
-  'hand-coins': HandCoins,
-  'mail': Mail,
-  'user-minus': UserMinus,
-}
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },

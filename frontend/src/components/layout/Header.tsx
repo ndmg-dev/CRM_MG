@@ -8,19 +8,7 @@ import { getInitials, formatDateTime } from '@/lib/utils'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Link, useNavigate } from 'react-router-dom'
 import { useDebounce } from '@/hooks/useDebounce'
-import { Building2, Calculator, BarChart3, Headphones, Bot, Sparkles, Cpu, ClipboardList } from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
-
-const ICON_MAP: Record<string, LucideIcon> = {
-  'building-2': Building2,
-  'calculator': Calculator,
-  'bar-chart-3': BarChart3,
-  'headphones': Headphones,
-  'bot': Bot,
-  'sparkles': Sparkles,
-  'cpu': Cpu,
-  'clipboard-list': ClipboardList,
-}
+import { ICON_MAP } from '@/lib/icons'
 
 export default function Header() {
   const currentPage = useUIStore((s) => s.currentPage)
