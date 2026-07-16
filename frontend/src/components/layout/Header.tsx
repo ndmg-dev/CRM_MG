@@ -18,7 +18,7 @@ export default function Header() {
   const [showNotif, setShowNotif] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [isSearchFocused, setIsSearchFocused] = useState(false)
-  
+
   const notifRef = useRef<HTMLDivElement>(null)
   const searchRef = useRef<HTMLDivElement>(null)
 
@@ -68,9 +68,8 @@ export default function Header() {
       <div className="flex items-center gap-3">
         {/* Search */}
         <div className="relative hidden sm:block" ref={searchRef}>
-          <div className={`flex items-center gap-2 rounded-lg border bg-[#1a1a1a] px-3 py-1.5 transition-colors ${
-            isSearchFocused ? 'border-[#d4a843]' : 'border-[#2a2a2a]'
-          }`}>
+          <div className={`flex items-center gap-2 rounded-lg border bg-[#1a1a1a] px-3 py-1.5 transition-colors ${isSearchFocused ? 'border-[#d4a843]' : 'border-[#2a2a2a]'
+            }`}>
             <Search className="h-4 w-4 text-[#6b6b6b]" />
             <input
               type="text"
@@ -133,7 +132,7 @@ export default function Header() {
 
         {/* Notifications */}
         <div className="relative" ref={notifRef}>
-          <button 
+          <button
             onClick={() => setShowNotif(!showNotif)}
             className="relative flex h-9 w-9 items-center justify-center rounded-lg text-[#a0a0a0] transition-colors hover:bg-[#1e1e1e] hover:text-[#f5f5f5]"
           >
@@ -162,7 +161,7 @@ export default function Header() {
                     </span>
                   )}
                 </div>
-                
+
                 <div className="max-h-[400px] overflow-y-auto">
                   {notificacoes.length === 0 ? (
                     <div className="flex flex-col items-center justify-center px-4 py-8 text-center">
@@ -172,11 +171,10 @@ export default function Header() {
                   ) : (
                     <div className="divide-y divide-[#2a2a2a]">
                       {notificacoes.map((notif) => (
-                        <div 
+                        <div
                           key={notif.id}
-                          className={`relative flex items-start gap-3 p-4 transition-colors hover:bg-[#252525] ${
-                            !notif.lida ? 'bg-[#222222]/50' : ''
-                          }`}
+                          className={`relative flex items-start gap-3 p-4 transition-colors hover:bg-[#252525] ${!notif.lida ? 'bg-[#222222]/50' : ''
+                            }`}
                         >
                           {!notif.lida && (
                             <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#d4a843]" />
@@ -193,7 +191,7 @@ export default function Header() {
                             </p>
                           </div>
                           {!notif.lida && (
-                            <button 
+                            <button
                               onClick={() => readMutation.mutate(notif.id)}
                               className="text-[#6b6b6b] hover:text-[#d4a843]"
                               title="Marcar como lida"

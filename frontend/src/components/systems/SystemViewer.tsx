@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Loader2, AlertTriangle, ExternalLink, Info } from 'lucide-react'
 import { useUIStore } from '@/stores/uiStore'
@@ -40,6 +40,20 @@ export default function SystemViewer() {
     window.addEventListener('message', handler)
     return () => window.removeEventListener('message', handler)
   }, [sistema?.allowedOrigin])
+
+  // System usage tracking
+  const trackingRef = useRef(false)
+  useEffect(() => {
+    if (!sistema?.id || trackingRef.current) return
+    trackingRef.current = true
+    api.tracking.entrar(sistema.id).catch(() => {})
+
+    return () => {
+      if (sistema?.id) {
+        api.tracking.sair(sistema.id).catch(() => {})
+      }
+    }
+  }, [sistema?.id])
 
   if (!sistema) {
     return (

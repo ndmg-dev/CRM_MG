@@ -125,8 +125,9 @@ export interface TaskFilters {
 export interface AuditFilters {
   usuarioId?: string
   acao?: string
+  alvo?: string
   dataInicio?: string
-  updated_at?: string
+  dataFim?: string
 }
 
 export interface SearchResultItem {
@@ -140,4 +141,47 @@ export interface SearchResultItem {
 
 export interface SearchResponse {
   results: SearchResultItem[]
+}
+
+// Audit Module Types
+export interface UserSession {
+  id: string
+  usuarioId: string
+  usuarioNome?: string
+  usuarioEmail?: string
+  usuarioPerfil?: string
+  usuarioSetor?: string
+  usuarioFotoPerfil?: string
+  inicio: string
+  ultimaAtividade: string
+  fim?: string
+  ipAddress?: string
+  userAgent?: string
+  ativa: boolean
+}
+
+export interface SystemAccessLog {
+  id: number
+  usuarioId: string
+  usuarioNome?: string
+  sistemaId: string
+  sistemaNome?: string
+  inicio: string
+  fim?: string
+  duracaoSegundos?: number
+}
+
+export interface SystemUsageSummary {
+  sistemaId: string
+  sistemaNome: string
+  totalAcessos: number
+  tempoTotalMinutos: number
+}
+
+export interface AuditDashboard {
+  usuariosOnline: number
+  sessoesHoje: number
+  acoesHoje: number
+  sistemaMaisUsado?: string
+  sessoesAtivas: UserSession[]
 }

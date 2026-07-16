@@ -8,6 +8,7 @@ import {
   Users,
   ClipboardList,
   Shield,
+  Eye,
   ChevronLeft,
   ChevronRight,
   LogOut,
@@ -54,6 +55,7 @@ const navItems = [
 
 const adminItems = [
   { to: '/admin', icon: Shield, label: 'Administração' },
+  { to: '/auditoria', icon: Eye, label: 'Auditoria' },
 ]
 
 export default function Sidebar() {

@@ -22,6 +22,10 @@ import type {
   Notificacao,
   SearchResultItem,
   SearchResponse,
+  UserSession,
+  SystemAccessLog,
+  SystemUsageSummary,
+  AuditDashboard,
 } from '@/types'
 import { mockApi } from './mockData'
 
@@ -195,6 +199,38 @@ const realApi = {
       }
       return request<PaginatedResponse<AuditLog>>(`/auditoria?${params}`)
     },
+    getDashboard: () => request<AuditDashboard>('/auditoria/dashboard'),
+  },
+
+  sessoes: {
+    heartbeat: () =>
+      request<void>('/sessoes/heartbeat', { method: 'POST' }),
+    getAtivas: () =>
+      request<UserSession[]>('/sessoes/ativas'),
+    getHistorico: (filters?: { usuarioId?: string; dataInicio?: string; dataFim?: string }, page = 0, size = 20) => {
+      const params = new URLSearchParams({ page: String(page), size: String(size) })
+      if (filters) {
+        Object.entries(filters).forEach(([k, v]) => {
+          if (v) params.set(k, v)
+        })
+      }
+      return request<PaginatedResponse<UserSession>>(`/sessoes/historico?${params}`)
+    },
+  },
+
+  tracking: {
+    entrar: (sistemaId: string) =>
+      request<void>('/tracking/entrar', {
+        method: 'POST',
+        body: JSON.stringify({ sistemaId }),
+      }),
+    sair: (sistemaId: string) =>
+      request<void>('/tracking/sair', {
+        method: 'POST',
+        body: JSON.stringify({ sistemaId }),
+      }),
+    getResumo: () =>
+      request<{ ranking: SystemUsageSummary[]; recentes: SystemAccessLog[] }>('/tracking/resumo'),
   },
 
   dashboard: {

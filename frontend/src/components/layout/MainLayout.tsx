@@ -3,9 +3,11 @@ import { motion } from 'framer-motion'
 import Sidebar from './Sidebar'
 import Header from './Header'
 import { useUIStore } from '@/stores/uiStore'
+import { useHeartbeat } from '@/hooks/useHeartbeat'
 
 export default function MainLayout() {
   const sidebarOpen = useUIStore((s) => s.sidebarOpen)
+  useHeartbeat()
 
   return (
     <div className="flex min-h-screen bg-[#0a0a0a]">

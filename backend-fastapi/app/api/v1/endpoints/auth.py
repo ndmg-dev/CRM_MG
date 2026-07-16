@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
 from app.core.security import create_access_token, get_current_user
 from app.models.user import Usuario
+from app.models.user_session import UserSession
 from app.schemas.auth import GoogleLoginRequest, AuthResponse
 from app.schemas.user import UsuarioResponse
 from app.services.auth_service import authenticate_google_user
@@ -10,10 +11,26 @@ from app.services.auth_service import authenticate_google_user
 router = APIRouter()
 
 @router.post("/google", response_model=AuthResponse)
-async def login_with_google(request: GoogleLoginRequest, db: AsyncSession = Depends(get_db)):
-    # request.id_token actually contains the Google access_token due to frontend implicit grant
-    user = await authenticate_google_user(db, request.id_token)
+async def login_with_google(
+    body: GoogleLoginRequest,
+    http_request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    # body.id_token actually contains the Google access_token due to frontend implicit grant
+    user = await authenticate_google_user(db, body.id_token)
     token = create_access_token(subject=user.id)
+
+    # Create a session record for audit tracking
+    ip_address = http_request.client.host if http_request.client else None
+    user_agent = http_request.headers.get("user-agent", "")[:512]
+    session = UserSession(
+        usuario_id=user.id,
+        ip_address=ip_address,
+        user_agent=user_agent,
+    )
+    db.add(session)
+    await db.commit()
+
     return AuthResponse(token=token, usuario=user)
 
 @router.get("/me", response_model=UsuarioResponse)

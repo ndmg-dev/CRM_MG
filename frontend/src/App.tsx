@@ -18,6 +18,7 @@ const ClientDetail = lazy(() => import('@/components/clients/ClientDetail'))
 const ClientForm = lazy(() => import('@/components/clients/ClientForm'))
 const KanbanBoard = lazy(() => import('@/components/tasks/KanbanBoard'))
 const AdminPage = lazy(() => import('@/components/admin/AdminPage'))
+const AuditPage = lazy(() => import('@/components/audit/AuditPage'))
 const PortalCliente = lazy(() => import('@/pages/PortalCliente'))
 
 const queryClient = new QueryClient({
@@ -121,6 +122,14 @@ export default function App() {
                   element={
                     <Suspense fallback={<LoadingSpinner label="Carregando..." />}>
                       <AdminPage />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="/auditoria"
+                  element={
+                    <Suspense fallback={<LoadingSpinner label="Carregando..." />}>
+                      <AuditPage />
                     </Suspense>
                   }
                 />

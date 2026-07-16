@@ -8,6 +8,8 @@ from app.models.notification import Notificacao
 from app.models.audit_log import LogAuditoria
 from app.models.document import Documento
 from app.models.client_token import ClientToken
+from app.models.user_session import UserSession
+from app.models.system_access_log import SystemAccessLog
 
 # Expose models to Alembic and other parts of the application
 __all__ = [
@@ -19,5 +21,7 @@ __all__ = [
     "UsuarioSistemaAcesso",
     "LogAuditoria",
     "Documento",
-    "ClientToken"
+    "ClientToken",
+    "UserSession",
+    "SystemAccessLog",
 ]
