@@ -76,7 +76,7 @@ function OverviewTab() {
   })
 
   const acoesHoje = auditLogs?.totalElements ?? 0
-  const sistemaMaisUsado = trackingResumo?.ranking?.[0]?.sistemaNome ?? '—'
+  const sistemaMaisUsado = trackingResumo?.topSistemas?.[0]?.sistemaNome ?? '—'
 
   const stats = [
     { label: 'Usuários Online', value: activeSessions.length, icon: Users, color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
@@ -283,8 +283,8 @@ function SystemsUsageTab() {
     queryFn: () => api.tracking.getResumo(),
   })
 
-  const ranking = resumo?.ranking ?? []
-  const recentes = resumo?.recentes ?? []
+  const ranking = resumo?.topSistemas ?? []
+  const recentes = resumo?.acessosRecentes ?? []
   const maxAcessos = Math.max(...ranking.map((r) => r.totalAcessos), 1)
 
   return (

@@ -230,7 +230,7 @@ const realApi = {
         body: JSON.stringify({ sistemaId }),
       }),
     getResumo: () =>
-      request<{ ranking: SystemUsageSummary[]; recentes: SystemAccessLog[] }>('/tracking/resumo'),
+      request<{ topSistemas: SystemUsageSummary[]; acessosRecentes: SystemAccessLog[] }>('/tracking/resumo'),
   },
 
   dashboard: {
