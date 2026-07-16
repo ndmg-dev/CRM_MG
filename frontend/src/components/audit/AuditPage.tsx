@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 import { useQuery } from '@tanstack/react-query'
 import {
   Activity, Users, Clock, Monitor, Eye, ChevronDown,
-  LogIn, LogOut, Globe, Smartphone, Shield
+  LogIn, LogOut, Globe, Smartphone, Shield, Trophy
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { useUIStore } from '@/stores/uiStore'
@@ -294,7 +294,10 @@ function SystemsUsageTab() {
         animate={{ opacity: 1, y: 0 }}
         className="rounded-xl border border-[#2a2a2a] bg-[#1a1a1a] p-6"
       >
-        <h3 className="mb-4 text-sm font-medium text-[#f5f5f5]">🏆 Ranking de Sistemas Mais Acessados</h3>
+        <h3 className="mb-4 text-sm font-medium text-[#f5f5f5] flex items-center gap-2">
+          <Trophy className="h-4 w-4 text-[#d4a843]" />
+          Ranking de Sistemas Mais Acessados
+        </h3>
         {isLoading ? (
           <LoadingSpinner label="Carregando..." />
         ) : ranking.length === 0 ? (
