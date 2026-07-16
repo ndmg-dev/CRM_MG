@@ -9,7 +9,8 @@ export function cn(...inputs: ClassValue[]) {
 
 export function formatDate(dateString: string): string {
   try {
-    return format(parseISO(dateString), "dd/MM/yyyy", { locale: ptBR })
+    const tzString = dateString.endsWith('Z') || dateString.includes('+') || dateString.includes('-') && dateString.split('T')[1]?.includes('-') ? dateString : `${dateString}Z`
+    return format(parseISO(tzString), "dd/MM/yyyy", { locale: ptBR })
   } catch {
     return dateString
   }
@@ -17,7 +18,8 @@ export function formatDate(dateString: string): string {
 
 export function formatDateTime(dateString: string): string {
   try {
-    return format(parseISO(dateString), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
+    const tzString = dateString.endsWith('Z') || dateString.includes('+') || dateString.includes('-') && dateString.split('T')[1]?.includes('-') ? dateString : `${dateString}Z`
+    return format(parseISO(tzString), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
   } catch {
     return dateString
   }
@@ -35,7 +37,8 @@ export function formatCurrency(value: number): string {
 
 export function isOverdue(dateString: string): boolean {
   try {
-    const date = parseISO(dateString)
+    const tzString = dateString.endsWith('Z') || dateString.includes('+') || dateString.includes('-') && dateString.split('T')[1]?.includes('-') ? dateString : `${dateString}Z`
+    const date = parseISO(tzString)
     return isPast(date) && !isToday(date)
   } catch {
     return false

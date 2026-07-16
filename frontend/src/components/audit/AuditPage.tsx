@@ -29,8 +29,9 @@ function formatDuration(seconds: number | undefined | null): string {
 }
 
 function timeAgo(dateStr: string): string {
+  const tzString = dateStr.endsWith('Z') || dateStr.includes('+') || dateStr.includes('-') && dateStr.split('T')[1]?.includes('-') ? dateStr : `${dateStr}Z`
   const now = new Date()
-  const date = new Date(dateStr)
+  const date = new Date(tzString)
   const diffMs = now.getTime() - date.getTime()
   const diffMin = Math.floor(diffMs / 60000)
   if (diffMin < 1) return 'agora mesmo'
