@@ -28,9 +28,21 @@ function SystemCard({ sistema }: { sistema: Sistema }) {
   const Icon = ICON_MAP[sistema.icone] || Building2
 
   const isAutomation = sistema.categoria === 'AUTOMATION'
-  const colorClass = isAutomation ? 'text-purple-400' : 'text-[#d4a843]'
-  const bgClass = isAutomation ? 'bg-purple-500/10 group-hover:bg-purple-500/20' : 'bg-[#d4a843]/10 group-hover:bg-[#d4a843]/20'
-  const borderHoverClass = isAutomation ? 'hover:border-purple-500/50' : 'hover:border-[#d4a843]/50'
+  const isStatic = sistema.categoria === 'STATIC'
+  
+  let colorClass = 'text-[#d4a843]'
+  let bgClass = 'bg-[#d4a843]/10 group-hover:bg-[#d4a843]/20'
+  let borderHoverClass = 'hover:border-[#d4a843]/50'
+
+  if (isAutomation) {
+    colorClass = 'text-purple-400'
+    bgClass = 'bg-purple-500/10 group-hover:bg-purple-500/20'
+    borderHoverClass = 'hover:border-purple-500/50'
+  } else if (isStatic) {
+    colorClass = 'text-[#6b6b6b]'
+    bgClass = 'bg-[#2a2a2a]/50 group-hover:bg-[#2a2a2a]'
+    borderHoverClass = 'hover:border-[#6b6b6b]/50'
+  }
 
   return (
     <Link to={`/sistemas/${sistema.id}`}>

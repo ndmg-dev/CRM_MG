@@ -4,7 +4,7 @@ export type SetorSistema = 'DP' | 'CONTABIL' | 'FISCAL' | 'SOCIETARIO' | 'TI' | 
 export type StatusTarefa = 'PENDENTE' | 'EM_PROCESSAMENTO' | 'AGUARDANDO_CLIENTE' | 'CONCLUIDO'
 export type Prioridade = 'BAIXA' | 'MEDIA' | 'ALTA' | 'CRITICA'
 export type RegimeTributario = 'SIMPLES_NACIONAL' | 'LUCRO_PRESUMIDO' | 'LUCRO_REAL'
-export type CategoriaSistema = 'MAIN' | 'AUTOMATION'
+export type CategoriaSistema = 'MAIN' | 'AUTOMATION' | 'STATIC'
 
 export interface Usuario {
   id: string
