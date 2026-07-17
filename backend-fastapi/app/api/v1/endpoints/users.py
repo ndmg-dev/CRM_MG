@@ -8,7 +8,7 @@ from app.db.session import get_db
 from app.core.security import get_current_user, require_roles
 from app.models.user import Usuario
 from app.models.audit_log import LogAuditoria
-from app.schemas.user import UsuarioResponse, UsuarioUpdate
+from app.schemas.user import UsuarioResponse, UsuarioUpdate, UsuarioCreate
 
 router = APIRouter()
 
@@ -57,3 +57,60 @@ async def update_usuario(
     await db.commit()
     await db.refresh(user)
     return user
+
+@router.post("", response_model=UsuarioResponse, status_code=status.HTTP_201_CREATED)
+async def create_usuario(
+    user_in: UsuarioCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(require_roles(["ADMIN"]))
+):
+    # Check if email already exists
+    existing = await db.scalar(select(Usuario).where(Usuario.email == user_in.email))
+    if existing:
+        raise HTTPException(status_code=400, detail="E-mail já cadastrado")
+        
+    user = Usuario(
+        nome=user_in.nome,
+        email=user_in.email,
+        perfil=user_in.perfil,
+        setor=user_in.setor,
+        ativo=user_in.ativo
+    )
+    db.add(user)
+    
+    audit = LogAuditoria(
+        usuario_id=current_user.id,
+        acao="CREATE_USER",
+        alvo=f"Usuário {user.nome}",
+        detalhes={"user_email": user.email}
+    )
+    db.add(audit)
+    
+    await db.commit()
+    await db.refresh(user)
+    return user
+
+@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_usuario(
+    id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(require_roles(["ADMIN"]))
+):
+    user = await db.scalar(select(Usuario).where(Usuario.id == id))
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario not found")
+        
+    if user.id == current_user.id:
+        raise HTTPException(status_code=400, detail="Não é possível excluir o próprio usuário")
+        
+    audit = LogAuditoria(
+        usuario_id=current_user.id,
+        acao="DELETE_USER",
+        alvo=f"Usuário {user.nome}",
+        detalhes={"user_email": user.email}
+    )
+    db.add(audit)
+    
+    await db.delete(user)
+    await db.commit()
+    return None

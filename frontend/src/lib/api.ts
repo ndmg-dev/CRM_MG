@@ -111,10 +111,19 @@ const realApi = {
   usuarios: {
     getAll: () => request<Usuario[]>('/usuarios'),
     getById: (id: string) => request<Usuario>(`/usuarios/${id}`),
+    create: (data: Partial<Usuario>) =>
+      request<Usuario>('/usuarios', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
     update: (id: string, data: Partial<Usuario>) =>
       request<Usuario>(`/usuarios/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
+      }),
+    delete: (id: string) =>
+      request<void>(`/usuarios/${id}`, {
+        method: 'DELETE',
       }),
   },
 

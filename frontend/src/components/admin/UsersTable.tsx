@@ -4,7 +4,7 @@ import { api } from '@/lib/api'
 import LoadingSpinner from '@/components/common/LoadingSpinner'
 import { getInitials } from '@/lib/utils'
 import { PERFIL_LABELS, SETOR_LABELS } from '@/lib/constants'
-import { Check, X } from 'lucide-react'
+import { Check, X, Plus } from 'lucide-react'
 import toast from 'react-hot-toast'
 import type { Perfil, Setor, Usuario } from '@/types'
 
@@ -37,8 +37,35 @@ export default function UsersTable() {
     },
   })
 
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.usuarios.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['usuarios'] })
+      toast.success('Usuário excluído com sucesso!')
+    },
+    onError: (err: any) => {
+      toast.error(err.message || 'Erro ao excluir usuário.')
+    },
+  })
+
+  const createMutation = useMutation({
+    mutationFn: (data: Partial<Usuario>) => api.usuarios.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['usuarios'] })
+      toast.success('Usuário criado com sucesso!')
+      setIsCreating(false)
+      setCreateForm({ nome: '', email: '', perfil: 'VISUALIZADOR' as Perfil, setor: 'GERAL' as Setor, ativo: true })
+    },
+    onError: (err: any) => {
+      toast.error(err.message || 'Erro ao criar usuário.')
+    },
+  })
+
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<{ perfil: Perfil; setor: Setor; ativo: boolean } | null>(null)
+
+  const [isCreating, setIsCreating] = useState(false)
+  const [createForm, setCreateForm] = useState({ nome: '', email: '', perfil: 'VISUALIZADOR' as Perfil, setor: 'GERAL' as Setor, ativo: true })
 
   const handleEdit = (user: Usuario) => {
     setEditingId(user.id)
@@ -58,11 +85,79 @@ export default function UsersTable() {
     setEditForm(null)
   }
 
+  const handleDelete = (id: string) => {
+    if (window.confirm('Tem certeza que deseja excluir este usuário definitivamente?')) {
+      deleteMutation.mutate(id)
+    }
+  }
+
   if (isLoading) return <LoadingSpinner label="Carregando usuários..." />
 
   return (
-    <div className="overflow-hidden rounded-xl border border-[#2a2a2a] bg-[#141414] p-4">
-      <table className="w-full border-separate border-spacing-y-2">
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <button
+          onClick={() => setIsCreating(!isCreating)}
+          className="flex items-center gap-2 rounded-lg bg-[#d4a843] px-4 py-2 text-sm font-semibold text-black transition-colors hover:bg-[#c9952b]"
+        >
+          <Plus className="h-4 w-4" />
+          Novo Usuário
+        </button>
+      </div>
+
+      {isCreating && (
+        <div className="rounded-xl border border-[#2a2a2a] bg-[#141414] p-4">
+          <h3 className="mb-4 text-sm font-semibold text-[#f5f5f5]">Cadastrar Novo Usuário</h3>
+          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-5">
+            <input
+              type="text"
+              placeholder="Nome completo"
+              value={createForm.nome}
+              onChange={e => setCreateForm(f => ({ ...f, nome: e.target.value }))}
+              className="rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] px-3 py-2 text-sm text-[#f5f5f5] outline-none"
+            />
+            <input
+              type="email"
+              placeholder="E-mail"
+              value={createForm.email}
+              onChange={e => setCreateForm(f => ({ ...f, email: e.target.value }))}
+              className="rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] px-3 py-2 text-sm text-[#f5f5f5] outline-none"
+            />
+            <select
+              value={createForm.perfil}
+              onChange={e => setCreateForm(f => ({ ...f, perfil: e.target.value as Perfil }))}
+              className="rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] px-3 py-2 text-sm text-[#f5f5f5] outline-none"
+            >
+              {Object.entries(PERFIL_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            </select>
+            <select
+              value={createForm.setor}
+              onChange={e => setCreateForm(f => ({ ...f, setor: e.target.value as Setor }))}
+              className="rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] px-3 py-2 text-sm text-[#f5f5f5] outline-none"
+            >
+              {Object.entries(SETOR_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            </select>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => createMutation.mutate(createForm)}
+                disabled={createMutation.isPending || !createForm.nome || !createForm.email}
+                className="flex-1 rounded-lg bg-[#22c55e] py-2 text-sm font-bold text-white transition-colors hover:bg-[#16a34a] disabled:opacity-50"
+              >
+                Salvar
+              </button>
+              <button
+                onClick={() => setIsCreating(false)}
+                className="rounded-lg bg-[#252525] p-2 text-[#a0a0a0] transition-colors hover:bg-[#1a1a1a] hover:text-[#f5f5f5]"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="overflow-hidden rounded-xl border border-[#2a2a2a] bg-[#141414] p-4">
+        <table className="w-full border-separate border-spacing-y-2">
         <thead>
           <tr>
             <th className="px-4 py-2 text-left text-xs font-medium uppercase text-[#6b6b6b]">Nome ↑</th>
@@ -156,8 +251,9 @@ export default function UsersTable() {
                       Editar
                     </button>
                     <button
-                      onClick={() => toast.error('Ação de exclusão não implementada.')}
-                      className="rounded-md border border-[#ef4444]/30 bg-[#111111] px-3 py-1.5 text-xs font-medium text-[#ef4444] transition-colors hover:bg-[#ef4444]/10"
+                      onClick={() => handleDelete(u.id)}
+                      disabled={deleteMutation.isPending}
+                      className="rounded-md border border-[#ef4444]/30 bg-[#111111] px-3 py-1.5 text-xs font-medium text-[#ef4444] transition-colors hover:bg-[#ef4444]/10 disabled:opacity-50"
                     >
                       Excluir
                     </button>
@@ -167,7 +263,8 @@ export default function UsersTable() {
             </tr>
           ))}
         </tbody>
-      </table>
+        </table>
+      </div>
     </div>
   )
 }
