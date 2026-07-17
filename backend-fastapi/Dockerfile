@@ -6,10 +6,10 @@ WORKDIR /app
 RUN pip install uv
 
 COPY pyproject.toml .
-RUN uv pip install --system -e .
-
 COPY alembic.ini .
 COPY alembic alembic
 COPY app app
+
+RUN uv pip install --system -e .
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
