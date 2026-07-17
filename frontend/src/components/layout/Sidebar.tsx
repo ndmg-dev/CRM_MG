@@ -36,9 +36,10 @@ import {
   Palmtree,
   FileCheck,
   Fingerprint,
-  HandCoins,
   Mail,
   UserMinus,
+  Key,
+  Moon,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { ICON_MAP } from '@/lib/icons'
@@ -213,48 +214,66 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* Footer: User info + collapse toggle */}
+    {/* Footer: User info + collapse toggle */}
       <div className="border-t border-[#1e1e1e] p-3">
-        {/* User */}
+        {/* User Email */}
         {user && (
-          <div className="mb-2 flex items-center gap-3 rounded-lg px-3 py-2">
-            {user.fotoPerfil ? (
-              <img src={user.fotoPerfil} alt={user.nome} className="h-8 w-8 shrink-0 rounded-full object-cover border border-[#2a2a2a]" referrerPolicy="no-referrer" />
-            ) : (
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#252525] text-xs font-bold text-[#d4a843]">
-                {getInitials(user.nome)}
-              </div>
-            )}
+          <div className="mb-3 px-1">
             <AnimatePresence>
               {sidebarOpen && (
-                <motion.div
+                <motion.p
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="flex-1 overflow-hidden"
+                  className="truncate text-sm font-medium text-[#d4a843]"
                 >
-                  <p className="truncate text-sm font-medium text-[#f5f5f5]">{user.nome}</p>
-                  <p className="truncate text-xs text-[#6b6b6b]">{user.perfil}</p>
-                </motion.div>
+                  {user.email || 'admin@pontomg.local'}
+                </motion.p>
               )}
             </AnimatePresence>
           </div>
         )}
 
-        {/* Logout */}
-        <button
-          onClick={() => { logout(); window.location.href = '/login' }}
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-[#6b6b6b] transition-colors hover:bg-[#1e1e1e] hover:text-[#ef4444]"
-        >
-          <LogOut className="h-4 w-4 shrink-0" />
-          <AnimatePresence>
-            {sidebarOpen && (
-              <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                Sair
-              </motion.span>
-            )}
-          </AnimatePresence>
-        </button>
+        <div className="flex flex-col gap-2">
+          {/* Change Password (Visual only) */}
+          <button className="flex w-full items-center gap-3 rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] px-3 py-2.5 text-sm text-[#f5f5f5] transition-colors hover:bg-[#252525]">
+            <Key className="h-4 w-4 shrink-0 text-[#f5f5f5]" />
+            <AnimatePresence>
+              {sidebarOpen && (
+                <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  Alterar senha
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </button>
+
+          {/* Logout */}
+          <button
+            onClick={() => { logout(); window.location.href = '/login' }}
+            className="flex w-full items-center gap-3 rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] px-3 py-2.5 text-sm text-[#f5f5f5] transition-colors hover:bg-[#252525]"
+          >
+            <LogOut className="h-4 w-4 shrink-0 text-[#f5f5f5]" />
+            <AnimatePresence>
+              {sidebarOpen && (
+                <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  Sair
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </button>
+
+          {/* Theme (Visual only) */}
+          <button className="flex w-full items-center gap-3 rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] px-3 py-2.5 text-sm text-[#f5f5f5] transition-colors hover:bg-[#252525]">
+            <Moon className="h-4 w-4 shrink-0 text-[#f5f5f5]" />
+            <AnimatePresence>
+              {sidebarOpen && (
+                <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  Tema escuro
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </button>
+        </div>
 
         {/* Collapse toggle */}
         <button
