@@ -4,9 +4,19 @@ import { api } from '@/lib/api'
 import LoadingSpinner from '@/components/common/LoadingSpinner'
 import { getInitials } from '@/lib/utils'
 import { PERFIL_LABELS, SETOR_LABELS } from '@/lib/constants'
-import { Check, X, ShieldAlert } from 'lucide-react'
+import { Check, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 import type { Perfil, Setor, Usuario } from '@/types'
+
+const SETOR_COLORS: Record<string, string> = {
+  DP: 'bg-[#ec4899]',
+  FISCAL: 'bg-[#06b6d4]',
+  CONTABIL: 'bg-[#ef4444]',
+  SOCIETARIO: 'bg-[#8b5cf6]',
+  TI: 'bg-[#f59e0b]',
+  GERAL: 'bg-[#6b7280]',
+  RESTRITO: 'bg-[#ef4444]',
+}
 
 export default function UsersTable() {
   const queryClient = useQueryClient()
@@ -51,37 +61,32 @@ export default function UsersTable() {
   if (isLoading) return <LoadingSpinner label="Carregando usuários..." />
 
   return (
-    <div className="overflow-hidden rounded-lg border border-[#2a2a2a] bg-[#1a1a1a]">
-      <table className="w-full">
+    <div className="overflow-hidden rounded-xl border border-[#2a2a2a] bg-[#141414] p-4">
+      <table className="w-full border-separate border-spacing-y-2">
         <thead>
-          <tr className="border-b border-[#2a2a2a] bg-[#111111]/50">
-            <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-[#6b6b6b]">Usuário</th>
-            <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-[#6b6b6b]">Perfil</th>
-            <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-[#6b6b6b]">Setor</th>
-            <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-[#6b6b6b]">Status</th>
-            <th className="px-5 py-3 text-right text-xs font-medium uppercase tracking-wider text-[#6b6b6b]">Ações</th>
+          <tr>
+            <th className="px-4 py-2 text-left text-xs font-medium uppercase text-[#6b6b6b]">Nome ↑</th>
+            <th className="px-4 py-2 text-left text-xs font-medium uppercase text-[#6b6b6b]">Cargo</th>
+            <th className="px-4 py-2 text-left text-xs font-medium uppercase text-[#6b6b6b]">Setor ↑↓</th>
+            <th className="px-4 py-2 text-left text-xs font-medium uppercase text-[#6b6b6b]">Status</th>
+            <th className="px-4 py-2 text-left text-xs font-medium uppercase text-[#6b6b6b]">Ações</th>
           </tr>
         </thead>
         <tbody>
-          {users.map((u, i) => (
-            <tr
-              key={u.id}
-              className={`transition-colors hover:bg-[#1e1e1e] ${
-                i < users.length - 1 ? 'border-b border-[#1e1e1e]' : ''
-              }`}
-            >
-              <td className="px-5 py-3.5">
+          {users.map((u) => (
+            <tr key={u.id} className="group">
+              <td className="rounded-l-lg border border-r-0 border-[#2a2a2a] bg-[#1a1a1a] px-4 py-3 transition-colors group-hover:bg-[#1e1e1e]">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#252525] text-xs font-bold text-[#d4a843]">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full border border-[#d4a843] bg-[#252525] text-xs font-bold text-[#d4a843]">
                     {getInitials(u.nome)}
                   </div>
                   <div>
                     <p className="text-sm font-medium text-[#f5f5f5]">{u.nome}</p>
-                    <p className="text-xs text-[#a0a0a0]">{u.email}</p>
+                    <p className="text-xs text-[#6b6b6b]">{u.email}</p>
                   </div>
                 </div>
               </td>
-              <td className="px-5 py-3.5">
+              <td className="border-b border-t border-[#2a2a2a] bg-[#1a1a1a] px-4 py-3 transition-colors group-hover:bg-[#1e1e1e]">
                 {editingId === u.id && editForm ? (
                   <select
                     className="rounded border border-[#2a2a2a] bg-[#111111] px-2 py-1 text-sm text-[#f5f5f5] outline-none"
@@ -93,13 +98,12 @@ export default function UsersTable() {
                     ))}
                   </select>
                 ) : (
-                  <span className="inline-flex items-center gap-1.5 rounded-md bg-[#252525] px-2 py-1 text-xs font-medium text-[#a0a0a0]">
-                    {u.perfil === 'ADMIN' && <ShieldAlert className="h-3 w-3 text-[#d4a843]" />}
-                    {PERFIL_LABELS[u.perfil]}
+                  <span className="text-sm text-[#a0a0a0]">
+                    {u.perfil === 'ADMIN' ? 'Desenvolvedor' : '—'}
                   </span>
                 )}
               </td>
-              <td className="px-5 py-3.5">
+              <td className="border-b border-t border-[#2a2a2a] bg-[#1a1a1a] px-4 py-3 transition-colors group-hover:bg-[#1e1e1e]">
                 {editingId === u.id && editForm ? (
                   <select
                     className="rounded border border-[#2a2a2a] bg-[#111111] px-2 py-1 text-sm text-[#f5f5f5] outline-none"
@@ -111,10 +115,13 @@ export default function UsersTable() {
                     ))}
                   </select>
                 ) : (
-                  <span className="text-sm text-[#a0a0a0]">{SETOR_LABELS[u.setor]}</span>
+                  <div className="flex items-center gap-2">
+                    <div className={`h-2 w-2 rounded-full ${SETOR_COLORS[u.setor] || 'bg-[#6b6b6b]'}`} />
+                    <span className="text-sm font-medium text-[#a0a0a0]">{SETOR_LABELS[u.setor]}</span>
+                  </div>
                 )}
               </td>
-              <td className="px-5 py-3.5">
+              <td className="border-b border-t border-[#2a2a2a] bg-[#1a1a1a] px-4 py-3 transition-colors group-hover:bg-[#1e1e1e]">
                 {editingId === u.id && editForm ? (
                   <select
                     className="rounded border border-[#2a2a2a] bg-[#111111] px-2 py-1 text-sm text-[#f5f5f5] outline-none"
@@ -125,16 +132,14 @@ export default function UsersTable() {
                     <option value="false">Inativo</option>
                   </select>
                 ) : (
-                  <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-                    u.ativo ? 'bg-[#22c55e]/10 text-[#22c55e]' : 'bg-[#ef4444]/10 text-[#ef4444]'
-                  }`}>
-                    {u.ativo ? 'Ativo' : 'Inativo'}
+                  <span className={`text-sm font-medium ${u.ativo ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}>
+                    {u.ativo ? 'OK (Ativo)' : 'Inativo'}
                   </span>
                 )}
               </td>
-              <td className="px-5 py-3.5 text-right">
+              <td className="rounded-r-lg border border-l-0 border-[#2a2a2a] bg-[#1a1a1a] px-4 py-3 transition-colors group-hover:bg-[#1e1e1e]">
                 {editingId === u.id ? (
-                  <div className="flex items-center justify-end gap-2">
+                  <div className="flex items-center gap-2">
                     <button onClick={handleCancel} className="rounded p-1 text-[#ef4444] hover:bg-[#ef4444]/10">
                       <X className="h-4 w-4" />
                     </button>
@@ -143,12 +148,20 @@ export default function UsersTable() {
                     </button>
                   </div>
                 ) : (
-                  <button
-                    onClick={() => handleEdit(u)}
-                    className="text-sm text-[#d4a843] hover:text-[#c9952b] hover:underline"
-                  >
-                    Editar
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleEdit(u)}
+                      className="rounded-md border border-[#2a2a2a] bg-[#111111] px-3 py-1.5 text-xs font-medium text-[#a0a0a0] transition-colors hover:bg-[#252525] hover:text-[#f5f5f5]"
+                    >
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => toast.error('Ação de exclusão não implementada.')}
+                      className="rounded-md border border-[#ef4444]/30 bg-[#111111] px-3 py-1.5 text-xs font-medium text-[#ef4444] transition-colors hover:bg-[#ef4444]/10"
+                    >
+                      Excluir
+                    </button>
+                  </div>
                 )}
               </td>
             </tr>
