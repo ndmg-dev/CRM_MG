@@ -21,7 +21,14 @@ async def heartbeat(
     db: AsyncSession = Depends(get_db),
     current_user: Usuario = Depends(get_current_user),
 ):
-    ip_address = request.client.host if request.client else None
+    forwarded_for = request.headers.get("x-forwarded-for")
+    real_ip = request.headers.get("x-real-ip")
+    if forwarded_for:
+        ip_address = forwarded_for.split(",")[0].strip()
+    elif real_ip:
+        ip_address = real_ip
+    else:
+        ip_address = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent", "")[:512]
 
     # Find an active session for this user

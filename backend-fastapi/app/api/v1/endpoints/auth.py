@@ -21,7 +21,14 @@ async def login_with_google(
     token = create_access_token(subject=user.id)
 
     # Create a session record for audit tracking
-    ip_address = http_request.client.host if http_request.client else None
+    forwarded_for = http_request.headers.get("x-forwarded-for")
+    real_ip = http_request.headers.get("x-real-ip")
+    if forwarded_for:
+        ip_address = forwarded_for.split(",")[0].strip()
+    elif real_ip:
+        ip_address = real_ip
+    else:
+        ip_address = http_request.client.host if http_request.client else None
     user_agent = http_request.headers.get("user-agent", "")[:512]
     session = UserSession(
         usuario_id=user.id,
