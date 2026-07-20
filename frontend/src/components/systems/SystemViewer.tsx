@@ -59,7 +59,7 @@ export default function SystemViewer() {
     return (
       <div className="flex flex-col items-center justify-center py-20">
         <AlertTriangle className="mb-4 h-12 w-12 text-[#ef4444]" />
-        <p className="text-lg text-[#a0a0a0]">Sistema não encontrado</p>
+        <p className="text-lg text-text-secondary">Sistema não encontrado</p>
         <Button variant="secondary" className="mt-4" onClick={() => navigate('/sistemas')}>
           Voltar aos Sistemas
         </Button>
@@ -74,17 +74,17 @@ export default function SystemViewer() {
       {/* Toolbar */}
       <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/sistemas')} className="text-[#a0a0a0] hover:text-[#f5f5f5]">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/sistemas')} className="text-text-secondary hover:text-text-primary">
             <ArrowLeft className="mr-1 h-4 w-4" />
             Voltar
           </Button>
           <div className="h-5 w-px bg-[#2a2a2a]" />
-          <span className="text-sm font-medium text-[#f5f5f5]">{sistema.nome}</span>
+          <span className="text-sm font-medium text-text-primary">{sistema.nome}</span>
         </div>
 
         {hasValidUrl && (
           <div className="flex items-center gap-3">
-            <div className="hidden items-center gap-2 text-xs text-[#6b6b6b] sm:flex">
+            <div className="hidden items-center gap-2 text-xs text-text-muted sm:flex">
               <Info className="h-4 w-4" />
               <span>O sistema não carregou?</span>
             </div>
@@ -92,7 +92,7 @@ export default function SystemViewer() {
               variant="outline" 
               size="sm" 
               onClick={() => window.open(sistema.url, '_blank')}
-              className="border-[#2a2a2a] bg-[#1a1a1a] text-[#f5f5f5] hover:bg-[#252525] hover:text-white"
+              className="border-border bg-card text-text-primary hover:bg-surface-hover hover:text-white"
             >
               <ExternalLink className="mr-2 h-4 w-4" />
               Abrir em nova aba
@@ -102,12 +102,12 @@ export default function SystemViewer() {
       </div>
 
       {/* Iframe container */}
-      <div className="relative flex-1 overflow-hidden rounded-lg border border-[#2a2a2a] bg-[#111111]">
+      <div className="relative flex-1 overflow-hidden rounded-lg border border-border bg-sidebar">
         {!hasValidUrl ? (
           <div className="flex h-full flex-col items-center justify-center gap-3">
             <AlertTriangle className="h-10 w-10 text-[#f59e0b]" />
-            <p className="text-[#a0a0a0]">URL do sistema não configurada</p>
-            <p className="text-sm text-[#6b6b6b]">
+            <p className="text-text-secondary">URL do sistema não configurada</p>
+            <p className="text-sm text-text-muted">
               A URL deste sistema precisa ser definida pelo administrador.
             </p>
           </div>
@@ -115,16 +115,16 @@ export default function SystemViewer() {
           <>
             {/* Loading overlay */}
             {!iframeLoaded && !iframeError && (
-              <div className="absolute inset-0 z-10 flex items-center justify-center bg-[#111111]">
-                <Loader2 className="h-8 w-8 animate-spin text-[#d4a843]" />
+              <div className="absolute inset-0 z-10 flex items-center justify-center bg-sidebar">
+                <Loader2 className="h-8 w-8 animate-spin text-gold" />
               </div>
             )}
 
             {/* Error fallback */}
             {iframeError && (
-              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-[#111111]">
+              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-sidebar">
                 <AlertTriangle className="h-10 w-10 text-[#ef4444]" />
-                <p className="text-[#a0a0a0]">Erro ao carregar o sistema</p>
+                <p className="text-text-secondary">Erro ao carregar o sistema</p>
                 <Button variant="secondary" size="sm" onClick={() => { setIframeError(false); setIframeLoaded(false) }}>
                   Tentar novamente
                 </Button>

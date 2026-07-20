@@ -91,7 +91,7 @@ export default function Sidebar() {
     FISCAL: { label: 'Fiscal', color: 'text-orange-400', activeClass: 'bg-orange-500/10 text-orange-400 font-semibold' },
     SOCIETARIO: { label: 'Societário', color: 'text-purple-400', activeClass: 'bg-purple-500/10 text-purple-400 font-semibold' },
     TI: { label: 'Tecnologia (TI)', color: 'text-cyan-400', activeClass: 'bg-cyan-500/10 text-cyan-400 font-semibold' },
-    GERAL: { label: 'Geral', color: 'text-[#6b6b6b]', activeClass: 'bg-[#d4a843]/10 text-[#d4a843] font-semibold' },
+    GERAL: { label: 'Geral', color: 'text-text-muted', activeClass: 'bg-gold/10 text-gold font-semibold' },
     RESTRITO: { label: 'Restrito', color: 'text-red-500', activeClass: 'bg-red-500/10 text-red-500 font-semibold' },
   }
 
@@ -107,10 +107,10 @@ export default function Sidebar() {
       initial={false}
       animate={{ width: sidebarOpen ? 256 : 72 }}
       transition={{ duration: 0.2, ease: 'easeInOut' }}
-      className="fixed left-0 top-0 z-30 flex h-screen flex-col border-r border-[#1e1e1e] bg-[#111111]"
+      className="fixed left-0 top-0 z-30 flex h-screen flex-col border-r border-border bg-sidebar"
     >
       {/* Brand */}
-      <div className="flex h-16 items-center gap-3 border-b border-[#1e1e1e] px-4">
+      <div className="flex h-16 items-center gap-3 border-b border-border px-4">
         <div className="flex h-9 w-9 shrink-0 items-center justify-center">
           <img src="/logo-icon.png" alt="MG Logo" className="h-full w-full object-contain" />
         </div>
@@ -123,8 +123,8 @@ export default function Sidebar() {
               transition={{ duration: 0.15 }}
               className="overflow-hidden"
             >
-              <p className="text-sm font-semibold text-[#f5f5f5] whitespace-nowrap">Mendonça Galvão</p>
-              <p className="text-xs text-[#6b6b6b] whitespace-nowrap">CRM Contábil</p>
+              <p className="text-sm font-semibold text-text-primary whitespace-nowrap">Mendonça Galvão</p>
+              <p className="text-xs text-text-muted whitespace-nowrap">CRM Contábil</p>
             </motion.div>
           )}
         </AnimatePresence>
@@ -143,8 +143,8 @@ export default function Sidebar() {
                 to={item.to}
                 className={`group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                   isActive
-                    ? 'bg-[#d4a843]/10 text-[#d4a843]'
-                    : 'text-[#a0a0a0] hover:bg-[#1e1e1e] hover:text-[#f5f5f5]'
+                    ? 'bg-gold/10 text-gold'
+                    : 'text-text-secondary hover:bg-surface hover:text-text-primary'
                 }`}
               >
                 <div className="relative shrink-0">
@@ -152,7 +152,7 @@ export default function Sidebar() {
                   {isActive && (
                     <motion.div
                       layoutId="sidebar-indicator"
-                      className="absolute -left-[21px] top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-[#d4a843]"
+                      className="absolute -left-[21px] top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-gold"
                       transition={{ duration: 0.2 }}
                     />
                   )}
@@ -180,7 +180,7 @@ export default function Sidebar() {
                     className="ml-11 mt-1 flex flex-col gap-1 overflow-hidden max-h-[50vh] overflow-y-auto"
                   >
                     {Object.entries(sistemasBySetor).map(([setor, items]) => {
-                      const meta = SETOR_LABELS[setor] || { label: setor, color: 'text-[#6b6b6b]', activeClass: 'bg-[#d4a843]/10 text-[#d4a843] font-semibold' }
+                      const meta = SETOR_LABELS[setor] || { label: setor, color: 'text-text-muted', activeClass: 'bg-gold/10 text-gold font-semibold' }
                       return (
                         <div key={setor} className="mb-2">
                           <div className={`py-1 text-[10px] font-bold tracking-wider uppercase ${meta.color}`}>
@@ -195,7 +195,7 @@ export default function Sidebar() {
                                 end
                                 className={({ isActive: isSubActive }) =>
                                   `flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs transition-colors ${
-                                    isSubActive ? meta.activeClass : 'text-[#a0a0a0] hover:bg-[#1e1e1e] hover:text-[#f5f5f5]'
+                                    isSubActive ? meta.activeClass : 'text-text-secondary hover:bg-surface hover:text-text-primary'
                                   }`
                                 }
                               >
@@ -216,7 +216,7 @@ export default function Sidebar() {
       </nav>
 
     {/* Footer: User info + collapse toggle */}
-      <div className="border-t border-[#1e1e1e] p-3">
+      <div className="border-t border-border p-3">
         {/* User Email */}
         {user && (
           <div className="mb-3 px-1">
@@ -226,7 +226,7 @@ export default function Sidebar() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="truncate text-sm font-medium text-[#d4a843]"
+                  className="truncate text-sm font-medium text-gold"
                 >
                   {user.email || 'admin@pontomg.local'}
                 </motion.p>
@@ -237,7 +237,7 @@ export default function Sidebar() {
 
         <div className="flex flex-col gap-1">
           {/* Change Password (Visual only) */}
-          <button className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-[#a0a0a0] transition-colors hover:bg-[#1e1e1e] hover:text-[#f5f5f5]">
+          <button className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-text-secondary transition-colors hover:bg-surface hover:text-text-primary">
             <Key className="h-4 w-4 shrink-0" />
             <AnimatePresence>
               {sidebarOpen && (
@@ -251,7 +251,7 @@ export default function Sidebar() {
           {/* Logout */}
           <button
             onClick={() => { logout(); window.location.href = '/login' }}
-            className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-[#a0a0a0] transition-colors hover:bg-[#1e1e1e] hover:text-[#f5f5f5]"
+            className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-text-secondary transition-colors hover:bg-surface hover:text-text-primary"
           >
             <LogOut className="h-4 w-4 shrink-0" />
             <AnimatePresence>
@@ -264,7 +264,7 @@ export default function Sidebar() {
           </button>
 
           {/* Theme (Visual only) */}
-          <button className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-[#a0a0a0] transition-colors hover:bg-[#1e1e1e] hover:text-[#f5f5f5]">
+          <button className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-text-secondary transition-colors hover:bg-surface hover:text-text-primary">
             <Moon className="h-4 w-4 shrink-0" />
             <AnimatePresence>
               {sidebarOpen && (
@@ -279,7 +279,7 @@ export default function Sidebar() {
         {/* Collapse toggle */}
         <button
           onClick={toggleSidebar}
-          className="mt-2 flex w-full items-center justify-center rounded-lg py-1.5 text-[#6b6b6b] transition-colors hover:bg-[#1e1e1e] hover:text-[#a0a0a0]"
+          className="mt-2 flex w-full items-center justify-center rounded-lg py-1.5 text-text-muted transition-colors hover:bg-surface hover:text-text-secondary"
         >
           {sidebarOpen ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
         </button>

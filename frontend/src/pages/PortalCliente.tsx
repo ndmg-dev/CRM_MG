@@ -67,7 +67,7 @@ export default function PortalCliente() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a]">
+      <div className="flex min-h-screen items-center justify-center bg-background">
         <LoadingSpinner label="Validando acesso..." />
       </div>
     )
@@ -75,28 +75,28 @@ export default function PortalCliente() {
 
   if (isError || !info) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-[#0a0a0a] p-4 text-center">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4 text-center">
         <AlertTriangle className="mb-4 h-16 w-16 text-[#ef4444]" />
         <h1 className="mb-2 text-2xl font-bold text-white">Acesso Expirado ou Inválido</h1>
-        <p className="text-[#a0a0a0]">O link que você tentou acessar não é mais válido. Por favor, solicite um novo link à Mendonça Galvão.</p>
+        <p className="text-text-secondary">O link que você tentou acessar não é mais válido. Por favor, solicite um novo link à Mendonça Galvão.</p>
       </div>
     )
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-[#0a0a0a] p-4">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-xl rounded-2xl border border-[#2a2a2a] bg-[#111111] p-8 shadow-2xl"
+        className="w-full max-w-xl rounded-2xl border border-border bg-sidebar p-8 shadow-2xl"
       >
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#d4a843]/10">
-            <UploadCloud className="h-8 w-8 text-[#d4a843]" />
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gold/10">
+            <UploadCloud className="h-8 w-8 text-gold" />
           </div>
           <h1 className="text-2xl font-bold text-white">Portal do Cliente</h1>
-          <p className="mt-2 text-[#a0a0a0]">
-            Olá, <strong className="text-[#f5f5f5]">{info.nomeFantasia || info.razaoSocial}</strong>! <br />
+          <p className="mt-2 text-text-secondary">
+            Olá, <strong className="text-text-primary">{info.nomeFantasia || info.razaoSocial}</strong>! <br />
             Envie seus documentos pendentes de forma segura.
           </p>
         </div>
@@ -120,21 +120,21 @@ export default function PortalCliente() {
         )}
 
         <div className="mb-6">
-          <label className="mb-2 block text-sm font-medium text-[#a0a0a0]">Competência (Mês/Ano)</label>
+          <label className="mb-2 block text-sm font-medium text-text-secondary">Competência (Mês/Ano)</label>
           <input 
             type="month" 
             value={competencia}
             onChange={(e) => setCompetencia(e.target.value)}
-            className="w-full rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] px-4 py-3 text-[#f5f5f5] outline-none focus:border-[#d4a843] focus:ring-1 focus:ring-[#d4a843]/30"
+            className="w-full rounded-lg border border-border bg-card px-4 py-3 text-text-primary outline-none focus:border-[#d4a843] focus:ring-1 focus:ring-[#d4a843]/30"
           />
-          <p className="mt-1 text-xs text-[#6b6b6b]">Selecione o mês de referência destes arquivos.</p>
+          <p className="mt-1 text-xs text-text-muted">Selecione o mês de referência destes arquivos.</p>
         </div>
 
         <div 
           onDragOver={(e) => e.preventDefault()}
           onDrop={handleDrop}
           className={`relative mb-6 flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-10 text-center transition-colors ${
-            files.length > 0 ? 'border-[#d4a843] bg-[#d4a843]/5' : 'border-[#2a2a2a] hover:border-[#4a4a4a] hover:bg-[#1a1a1a]'
+            files.length > 0 ? 'border-[#d4a843] bg-gold/5' : 'border-border hover:border-[#4a4a4a] hover:bg-card'
           }`}
         >
           <input 
@@ -146,17 +146,17 @@ export default function PortalCliente() {
           
           {files.length > 0 ? (
             <div className="w-full relative z-50">
-              <UploadCloud className="mx-auto mb-3 h-8 w-8 text-[#d4a843]" />
-              <p className="font-medium text-[#f5f5f5] mb-4">{files.length} arquivo(s) selecionado(s)</p>
-              <div className="max-h-40 overflow-y-auto space-y-2 text-left bg-[#1a1a1a] p-3 rounded-lg border border-[#2a2a2a]">
+              <UploadCloud className="mx-auto mb-3 h-8 w-8 text-gold" />
+              <p className="font-medium text-text-primary mb-4">{files.length} arquivo(s) selecionado(s)</p>
+              <div className="max-h-40 overflow-y-auto space-y-2 text-left bg-card p-3 rounded-lg border border-border">
                 {files.map((f, i) => (
                   <div key={i} className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-2 overflow-hidden">
-                      <FileIcon className="h-4 w-4 shrink-0 text-[#a0a0a0]" />
+                      <FileIcon className="h-4 w-4 shrink-0 text-text-secondary" />
                       <span className="truncate text-[#d4d4d4]">{f.name}</span>
                     </div>
                     <div className="flex items-center gap-3 shrink-0 ml-4">
-                      <span className="text-[#6b6b6b]">{(f.size / 1024 / 1024).toFixed(2)} MB</span>
+                      <span className="text-text-muted">{(f.size / 1024 / 1024).toFixed(2)} MB</span>
                       <button 
                         type="button"
                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeFile(i); }}
@@ -168,19 +168,19 @@ export default function PortalCliente() {
                   </div>
                 ))}
               </div>
-              <p className="mt-4 text-xs text-[#a0a0a0]">Clique ou arraste mais arquivos para adicionar</p>
+              <p className="mt-4 text-xs text-text-secondary">Clique ou arraste mais arquivos para adicionar</p>
             </div>
           ) : (
             <>
-              <UploadCloud className="mb-3 h-12 w-12 text-[#6b6b6b]" />
-              <p className="font-medium text-[#f5f5f5]">Clique ou arraste os arquivos aqui</p>
-              <p className="mt-1 text-sm text-[#6b6b6b]">PDF, XML, ZIP, Imagens (Máx: 50MB)</p>
+              <UploadCloud className="mb-3 h-12 w-12 text-text-muted" />
+              <p className="font-medium text-text-primary">Clique ou arraste os arquivos aqui</p>
+              <p className="mt-1 text-sm text-text-muted">PDF, XML, ZIP, Imagens (Máx: 50MB)</p>
             </>
           )}
         </div>
 
         <Button 
-          className="w-full bg-[#d4a843] py-6 text-lg font-bold text-black hover:bg-[#e5bc55]"
+          className="w-full bg-gold py-6 text-lg font-bold text-black hover:bg-[#e5bc55]"
           disabled={files.length === 0 || uploading}
           onClick={handleUpload}
         >
@@ -191,7 +191,7 @@ export default function PortalCliente() {
           )}
         </Button>
         
-        <div className="mt-8 border-t border-[#2a2a2a] pt-6 text-center text-xs text-[#6b6b6b]">
+        <div className="mt-8 border-t border-border pt-6 text-center text-xs text-text-muted">
           <p>Plataforma Segura • Mendonça Galvão CRM Contábil</p>
         </div>
       </motion.div>

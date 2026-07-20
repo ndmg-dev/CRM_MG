@@ -73,7 +73,7 @@ function DialogContent({
   return (
     <div
       className={cn(
-        'w-full rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] p-6 shadow-2xl',
+        'w-full rounded-lg border border-border bg-card p-6 shadow-2xl',
         maxWidth,
         className
       )}
@@ -92,7 +92,7 @@ function DialogCloseButton({ onClose }: DialogCloseButtonProps) {
   return (
     <button
       onClick={onClose}
-      className="absolute right-4 top-4 rounded-md p-1 text-[#6b6b6b] transition-colors hover:bg-[#252525] hover:text-[#f5f5f5]"
+      className="absolute right-4 top-4 rounded-md p-1 text-text-muted transition-colors hover:bg-surface-hover hover:text-text-primary"
       aria-label="Fechar"
     >
       <X className="h-4 w-4" />
@@ -119,7 +119,7 @@ function DialogTitle({
   return (
     <h2
       className={cn(
-        'text-lg font-semibold leading-none tracking-tight text-[#f5f5f5]',
+        'text-lg font-semibold leading-none tracking-tight text-text-primary',
         className
       )}
       {...props}
@@ -132,7 +132,7 @@ function DialogDescription({
   ...props
 }: React.HTMLAttributes<HTMLParagraphElement>) {
   return (
-    <p className={cn('text-sm text-[#a0a0a0]', className)} {...props} />
+    <p className={cn('text-sm text-text-secondary', className)} {...props} />
   )
 }
 

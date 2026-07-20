@@ -42,17 +42,17 @@ function DocumentGroup({ clienteId, competencia, documentos, onNotify }: { clien
   }
 
   return (
-    <div className="mb-4 overflow-hidden rounded-lg border border-[#2a2a2a] bg-[#1a1a1a]">
+    <div className="mb-4 overflow-hidden rounded-lg border border-border bg-card">
       <div
         onClick={() => setIsOpen(!isOpen)}
         className="flex w-full cursor-pointer items-center justify-between bg-[#222222] px-6 py-4 transition-colors hover:bg-[#2a2a2a]"
       >
         <div className="flex items-center gap-3">
-          <Folder className="h-5 w-5 text-[#d4a843]" />
-          <span className="font-medium text-[#f5f5f5]">
+          <Folder className="h-5 w-5 text-gold" />
+          <span className="font-medium text-text-primary">
             {competencia}
           </span>
-          <span className="rounded-full bg-[#111111] px-2.5 py-0.5 text-xs font-medium text-[#a0a0a0]">
+          <span className="rounded-full bg-sidebar px-2.5 py-0.5 text-xs font-medium text-text-secondary">
             {documentos.length} arquivo{documentos.length !== 1 ? 's' : ''}
           </span>
         </div>
@@ -62,19 +62,19 @@ function DocumentGroup({ clienteId, competencia, documentos, onNotify }: { clien
               size="sm"
               variant="outline"
               onClick={handleValidate}
-              className="h-8 border-[#d4a843]/30 bg-[#d4a843]/10 text-[#d4a843] hover:bg-[#d4a843]/20 hover:text-[#e5bc55]"
+              className="h-8 border-[#d4a843]/30 bg-gold/10 text-gold hover:bg-gold/20 hover:text-[#e5bc55]"
             >
               <Sparkles className="mr-1.5 h-3.5 w-3.5" />
               Validar com IA
             </Button>
           )}
-          {isOpen ? <ChevronUp className="h-5 w-5 text-[#6b6b6b]" /> : <ChevronDown className="h-5 w-5 text-[#6b6b6b]" />}
+          {isOpen ? <ChevronUp className="h-5 w-5 text-text-muted" /> : <ChevronDown className="h-5 w-5 text-text-muted" />}
         </div>
       </div>
 
       {isOpen && (
-        <table className="w-full text-left text-sm text-[#a0a0a0]">
-          <thead className="border-b border-[#2a2a2a] bg-[#1a1a1a] text-xs uppercase">
+        <table className="w-full text-left text-sm text-text-secondary">
+          <thead className="border-b border-border bg-card text-xs uppercase">
             <tr>
               <th className="px-6 py-3 font-medium">Nome do Arquivo</th>
               <th className="px-6 py-3 font-medium">Tamanho</th>
@@ -84,9 +84,9 @@ function DocumentGroup({ clienteId, competencia, documentos, onNotify }: { clien
           </thead>
           <tbody className="divide-y divide-[#2a2a2a]">
             {documentos.map((doc) => (
-              <tr key={doc.id} className="hover:bg-[#252525]">
-                <td className="px-6 py-4 font-medium text-[#f5f5f5] flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-[#6b6b6b]" />
+              <tr key={doc.id} className="hover:bg-surface-hover">
+                <td className="px-6 py-4 font-medium text-text-primary flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-text-muted" />
                   {doc.nomeArquivo}
                 </td>
                 <td className="px-6 py-4">{(doc.tamanhoBytes / 1024).toFixed(1)} KB</td>
@@ -94,7 +94,7 @@ function DocumentGroup({ clienteId, competencia, documentos, onNotify }: { clien
                 <td className="px-6 py-4">
                   <button 
                     onClick={() => api.documentos.download(doc.id, doc.nomeArquivo)} 
-                    className="inline-flex items-center text-[#d4a843] hover:text-[#e5bc55]"
+                    className="inline-flex items-center text-gold hover:text-[#e5bc55]"
                   >
                     <Download className="mr-1 h-4 w-4" /> Baixar
                   </button>
@@ -111,14 +111,14 @@ function DocumentGroup({ clienteId, competencia, documentos, onNotify }: { clien
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="w-full max-w-lg rounded-xl border border-[#2a2a2a] bg-[#1a1a1a] shadow-xl overflow-hidden"
+            className="w-full max-w-lg rounded-xl border border-border bg-card shadow-xl overflow-hidden"
           >
-            <div className="flex items-center justify-between border-b border-[#2a2a2a] px-6 py-4">
-              <h3 className="flex items-center gap-2 text-lg font-medium text-[#f5f5f5]">
-                <Sparkles className="h-5 w-5 text-[#d4a843]" />
+            <div className="flex items-center justify-between border-b border-border px-6 py-4">
+              <h3 className="flex items-center gap-2 text-lg font-medium text-text-primary">
+                <Sparkles className="h-5 w-5 text-gold" />
                 Validação Inteligente - {competencia}
               </h3>
-              <button onClick={() => setShowModal(false)} className="text-[#a0a0a0] hover:text-white">
+              <button onClick={() => setShowModal(false)} className="text-text-secondary hover:text-white">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -127,7 +127,7 @@ function DocumentGroup({ clienteId, competencia, documentos, onNotify }: { clien
               {isValidating ? (
                 <div className="flex flex-col items-center justify-center py-8">
                   <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#d4a843] border-t-transparent mb-4"></div>
-                  <p className="text-[#a0a0a0]">A IA está analisando os arquivos...</p>
+                  <p className="text-text-secondary">A IA está analisando os arquivos...</p>
                 </div>
               ) : validationResult ? (
                 <div className="space-y-6">
@@ -140,12 +140,12 @@ function DocumentGroup({ clienteId, competencia, documentos, onNotify }: { clien
 
                   {validationResult.validados.length > 0 && (
                     <div>
-                      <h4 className="flex items-center gap-2 text-sm font-medium text-[#f5f5f5] mb-3">
+                      <h4 className="flex items-center gap-2 text-sm font-medium text-text-primary mb-3">
                         <CheckCircle className="h-4 w-4 text-green-500" /> Itens Encontrados
                       </h4>
                       <ul className="space-y-2">
                         {validationResult.validados.map((item, idx) => (
-                          <li key={idx} className="text-sm text-[#a0a0a0] flex items-center gap-2">
+                          <li key={idx} className="text-sm text-text-secondary flex items-center gap-2">
                             <span className="h-1.5 w-1.5 rounded-full bg-green-500"></span> {item}
                           </li>
                         ))}
@@ -155,7 +155,7 @@ function DocumentGroup({ clienteId, competencia, documentos, onNotify }: { clien
 
                   {validationResult.faltantes.length > 0 && (
                     <div>
-                      <h4 className="flex items-center gap-2 text-sm font-medium text-[#f5f5f5] mb-3">
+                      <h4 className="flex items-center gap-2 text-sm font-medium text-text-primary mb-3">
                         <AlertCircle className="h-4 w-4 text-red-500" /> Itens Faltantes
                       </h4>
                       <ul className="space-y-2">
@@ -171,8 +171,8 @@ function DocumentGroup({ clienteId, competencia, documentos, onNotify }: { clien
               ) : null}
             </div>
             
-            <div className="flex items-center justify-end gap-3 border-t border-[#2a2a2a] bg-[#111111] px-6 py-4">
-              <Button variant="outline" onClick={() => setShowModal(false)} className="border-[#2a2a2a] text-[#a0a0a0]">
+            <div className="flex items-center justify-end gap-3 border-t border-border bg-sidebar px-6 py-4">
+              <Button variant="outline" onClick={() => setShowModal(false)} className="border-border text-text-secondary">
                 Fechar
               </Button>
               {validationResult && validationResult.faltantes.length > 0 && (
@@ -298,15 +298,15 @@ export default function ClientDetail() {
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mb-6 rounded-xl border border-[#2a2a2a] bg-[#1a1a1a] p-6"
+        className="mb-6 rounded-xl border border-border bg-card p-6"
       >
         <div className="flex items-center gap-4">
-          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-[#d4a843]/10">
-            <Building2 className="h-7 w-7 text-[#d4a843]" />
+          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gold/10">
+            <Building2 className="h-7 w-7 text-gold" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-[#f5f5f5]">{cliente.nomeFantasia}</h1>
-            <p className="text-sm text-[#6b6b6b]">{cliente.razaoSocial}</p>
+            <h1 className="text-xl font-bold text-text-primary">{cliente.nomeFantasia}</h1>
+            <p className="text-sm text-text-muted">{cliente.razaoSocial}</p>
           </div>
           <div className="ml-auto">
             <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${
@@ -321,11 +321,11 @@ export default function ClientDetail() {
       </motion.div>
 
         {/* Tabs navigation */}
-        <div className="mb-6 flex gap-1 rounded-lg bg-[#1a1a1a] p-1 w-fit border border-[#2a2a2a]">
+        <div className="mb-6 flex gap-1 rounded-lg bg-card p-1 w-fit border border-border">
           <button
             onClick={() => setActiveTab('detalhes')}
             className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
-              activeTab === 'detalhes' ? 'bg-[#d4a843] text-black' : 'text-[#a0a0a0] hover:text-[#f5f5f5]'
+              activeTab === 'detalhes' ? 'bg-gold text-black' : 'text-text-secondary hover:text-text-primary'
             }`}
           >
             Detalhes
@@ -334,7 +334,7 @@ export default function ClientDetail() {
             <button
               onClick={() => setActiveTab('documentos')}
               className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
-                activeTab === 'documentos' ? 'bg-[#d4a843] text-black' : 'text-[#a0a0a0] hover:text-[#f5f5f5]'
+                activeTab === 'documentos' ? 'bg-gold text-black' : 'text-text-secondary hover:text-text-primary'
               }`}
             >
               Documentos
@@ -352,14 +352,14 @@ export default function ClientDetail() {
             {infoItems.map((item) => (
               <div
                 key={item.label}
-                className="flex items-start gap-3 rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] p-4"
+                className="flex items-start gap-3 rounded-lg border border-border bg-card p-4"
               >
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#252525]">
-                  <item.icon className="h-4 w-4 text-[#6b6b6b]" />
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-hover">
+                  <item.icon className="h-4 w-4 text-text-muted" />
                 </div>
                 <div>
-                  <p className="text-xs text-[#6b6b6b]">{item.label}</p>
-                  <p className="text-sm font-medium text-[#f5f5f5]">{item.value}</p>
+                  <p className="text-xs text-text-muted">{item.label}</p>
+                  <p className="text-sm font-medium text-text-primary">{item.value}</p>
                 </div>
               </div>
             ))}
@@ -375,8 +375,8 @@ export default function ClientDetail() {
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-medium text-white">Arquivos Recebidos</h2>
               <div className="flex gap-2">
-                <Button onClick={handleCopyLink} variant="outline" className="border-[#2a2a2a] text-[#f5f5f5] hover:bg-[#252525]">
-                  <Link2 className="mr-2 h-4 w-4 text-[#d4a843]" />
+                <Button onClick={handleCopyLink} variant="outline" className="border-border text-text-primary hover:bg-surface-hover">
+                  <Link2 className="mr-2 h-4 w-4 text-gold" />
                   Copiar Link
                 </Button>
                 <Button onClick={() => notifyPending()} disabled={notifying} className="bg-[#22c55e] text-white hover:bg-[#1ea34d]">
@@ -389,9 +389,9 @@ export default function ClientDetail() {
             {isLoadingDocs ? (
               <LoadingSpinner label="Carregando documentos..." />
             ) : documentos.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-[#2a2a2a] bg-[#111111] p-10 text-center">
-                <FileIcon className="mx-auto mb-4 h-10 w-10 text-[#6b6b6b]" />
-                <p className="text-[#a0a0a0]">Nenhum documento recebido deste cliente ainda.</p>
+              <div className="rounded-lg border border-dashed border-border bg-sidebar p-10 text-center">
+                <FileIcon className="mx-auto mb-4 h-10 w-10 text-text-muted" />
+                <p className="text-text-secondary">Nenhum documento recebido deste cliente ainda.</p>
               </div>
             ) : (
               <div>

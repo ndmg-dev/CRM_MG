@@ -24,12 +24,12 @@ export default function EmptyState({
       animate={{ opacity: 1, y: 0 }}
       className="flex flex-col items-center justify-center py-16 text-center"
     >
-      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#1e1e1e]">
-        <Icon className="h-8 w-8 text-[#6b6b6b]" />
+      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-surface">
+        <Icon className="h-8 w-8 text-text-muted" />
       </div>
-      <h3 className="mb-1 text-lg font-semibold text-[#a0a0a0]">{title}</h3>
+      <h3 className="mb-1 text-lg font-semibold text-text-secondary">{title}</h3>
       {description && (
-        <p className="mb-4 max-w-sm text-sm text-[#6b6b6b]">{description}</p>
+        <p className="mb-4 max-w-sm text-sm text-text-muted">{description}</p>
       )}
       {actionLabel && onAction && (
         <Button onClick={onAction} size="sm">

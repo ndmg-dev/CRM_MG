@@ -17,21 +17,21 @@ export default function TaskCard({ task, isDragging, onClick }: TaskCardProps) {
     <div
       onClick={onClick}
       className={cn(
-        'cursor-pointer rounded-lg border bg-[#1a1a1a] p-3.5 transition-all',
+        'cursor-pointer rounded-lg border bg-card p-3.5 transition-all',
         isDragging
           ? 'border-[#d4a843] shadow-lg shadow-[#d4a843]/10 rotate-1'
-          : 'border-[#2a2a2a] hover:border-[#333333]',
+          : 'border-border hover:border-border-light',
       )}
     >
       {/* Priority dot + title */}
       <div className="mb-2 flex items-start gap-2">
         <div className={cn('mt-1.5 h-2 w-2 shrink-0 rounded-full', priorityColor.dot)} />
-        <h4 className="text-sm font-medium text-[#f5f5f5] leading-snug">{task.titulo}</h4>
+        <h4 className="text-sm font-medium text-text-primary leading-snug">{task.titulo}</h4>
       </div>
 
       {/* Client */}
       {task.clienteNome && (
-        <span className="mb-2 inline-flex items-center rounded-md bg-[#252525] px-2 py-0.5 text-xs text-[#a0a0a0]">
+        <span className="mb-2 inline-flex items-center rounded-md bg-surface-hover px-2 py-0.5 text-xs text-text-secondary">
           {task.clienteNome}
         </span>
       )}
@@ -41,7 +41,7 @@ export default function TaskCard({ task, isDragging, onClick }: TaskCardProps) {
         {/* Due date */}
         <div className={cn(
           'flex items-center gap-1 text-xs',
-          overdue ? 'text-[#ef4444]' : 'text-[#6b6b6b]',
+          overdue ? 'text-[#ef4444]' : 'text-text-muted',
         )}>
           <CalendarDays className="h-3 w-3" />
           {formatDate(task.dataVencimento)}
@@ -53,8 +53,8 @@ export default function TaskCard({ task, isDragging, onClick }: TaskCardProps) {
             {PRIORITY_LABELS[task.prioridade]}
           </span>
           {task.responsavelNome && (
-            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#252525]" title={task.responsavelNome}>
-              <User className="h-3 w-3 text-[#6b6b6b]" />
+            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-surface-hover" title={task.responsavelNome}>
+              <User className="h-3 w-3 text-text-muted" />
             </div>
           )}
         </div>

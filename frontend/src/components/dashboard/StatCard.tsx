@@ -62,7 +62,7 @@ export default function StatCard({
     <motion.div
       whileHover={{ borderColor: color }}
       className={cn(
-        'group relative rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] p-6',
+        'group relative rounded-lg border border-border bg-card p-6',
         'transition-colors duration-300',
       )}
     >
@@ -75,13 +75,13 @@ export default function StatCard({
       </div>
 
       {/* Value */}
-      <p className="text-3xl font-bold text-[#f5f5f5]">
+      <p className="text-3xl font-bold text-text-primary">
         {isNumeric ? <AnimatedCounter target={value as number} /> : value}
       </p>
 
       {/* Label + trend */}
       <div className="mt-1 flex items-center gap-2">
-        <p className="text-sm text-[#a0a0a0]">{label}</p>
+        <p className="text-sm text-text-secondary">{label}</p>
 
         {trend && (
           <span
@@ -102,7 +102,7 @@ export default function StatCard({
 
       {/* Subtitle */}
       {subtitle && (
-        <p className="mt-1 text-xs text-[#6b6b6b]">{subtitle}</p>
+        <p className="mt-3 text-xs text-text-muted">{subtitle}</p>
       )}
     </motion.div>
   )

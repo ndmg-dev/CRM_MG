@@ -90,7 +90,7 @@ export default function KanbanBoard() {
                 <Filter className="mr-1 h-4 w-4" />
                 Filtros
                 {hasActiveFilters && (
-                  <span className="ml-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#d4a843] text-xs text-black">
+                  <span className="ml-1 flex h-5 w-5 items-center justify-center rounded-full bg-gold text-xs text-black">
                     !
                   </span>
                 )}
@@ -110,11 +110,11 @@ export default function KanbanBoard() {
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: 'auto' }}
           exit={{ opacity: 0, height: 0 }}
-          className="mb-6 flex flex-wrap items-center gap-3 rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] p-4"
+          className="mb-6 flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card p-4"
         >
           {isAdmin && (
             <select
-              className="rounded-md border border-[#2a2a2a] bg-[#252525] px-3 py-1.5 text-sm text-[#f5f5f5] outline-none"
+              className="rounded-md border border-border bg-surface-hover px-3 py-1.5 text-sm text-text-primary outline-none"
               value={filters.setor || ''}
               onChange={(e) => setFilters({ ...filters, setor: e.target.value as any || undefined })}
             >
@@ -125,7 +125,7 @@ export default function KanbanBoard() {
             </select>
           )}
           <select
-            className="rounded-md border border-[#2a2a2a] bg-[#252525] px-3 py-1.5 text-sm text-[#f5f5f5] outline-none"
+            className="rounded-md border border-border bg-surface-hover px-3 py-1.5 text-sm text-text-primary outline-none"
             value={filters.prioridade || ''}
             onChange={(e) => setFilters({ ...filters, prioridade: e.target.value as any || undefined })}
           >
@@ -171,8 +171,8 @@ export default function KanbanBoard() {
                       {...provided.droppableProps}
                       className={`min-h-[200px] flex-1 space-y-2 rounded-lg border border-dashed p-2 transition-colors ${
                         snapshot.isDraggingOver
-                          ? 'border-[#d4a843]/40 bg-[#d4a843]/5'
-                          : 'border-[#2a2a2a] bg-[#111111]/50'
+                          ? 'border-[#d4a843]/40 bg-gold/5'
+                          : 'border-border bg-sidebar/50'
                       }`}
                     >
                       {tasks.map((task, index) => (

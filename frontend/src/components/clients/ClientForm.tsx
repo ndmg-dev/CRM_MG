@@ -128,8 +128,8 @@ export default function ClientForm() {
 
   if (isEditing && isLoading) return <LoadingSpinner label="Carregando..." />
 
-  const inputClass = "w-full rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] px-4 py-2.5 text-sm text-[#f5f5f5] placeholder-[#6b6b6b] outline-none transition-colors focus:border-[#d4a843] focus:ring-1 focus:ring-[#d4a843]/30"
-  const labelClass = "mb-1.5 block text-sm font-medium text-[#a0a0a0]"
+  const inputClass = "w-full rounded-lg border border-border bg-card px-4 py-2.5 text-sm text-text-primary placeholder-[#6b6b6b] outline-none transition-colors focus:border-[#d4a843] focus:ring-1 focus:ring-[#d4a843]/30"
+  const labelClass = "mb-1.5 block text-sm font-medium text-text-secondary"
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -138,10 +138,10 @@ export default function ClientForm() {
           <ArrowLeft className="mr-1 h-4 w-4" />
           Voltar
         </Button>
-        <h1 className="text-xl font-bold text-[#f5f5f5]">{isEditing ? 'Editar Cliente' : 'Novo Cliente'}</h1>
+        <h1 className="text-xl font-bold text-text-primary">{isEditing ? 'Editar Cliente' : 'Novo Cliente'}</h1>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-5 rounded-xl border border-[#2a2a2a] bg-[#1a1a1a] p-6">
+      <form onSubmit={handleSubmit} className="space-y-5 rounded-xl border border-border bg-card p-6">
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <div>
             <label className={labelClass}>Razão Social *</label>
@@ -183,7 +183,7 @@ export default function ClientForm() {
 
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <label className="text-sm font-medium text-[#a0a0a0]">Documentos Exigidos Mensalmente</label>
+            <label className="text-sm font-medium text-text-secondary">Documentos Exigidos Mensalmente</label>
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -191,7 +191,7 @@ export default function ClientForm() {
                   const allItems = DOCUMENT_CATEGORIES.flatMap(c => c.itens);
                   setForm({ ...form, documentosExigidos: allItems.join('\n') });
                 }}
-                className="text-xs font-medium text-[#d4a843] hover:text-[#e5bc55] transition-colors"
+                className="text-xs font-medium text-gold hover:text-[#e5bc55] transition-colors"
               >
                 Selecionar Todos
               </button>
@@ -199,16 +199,16 @@ export default function ClientForm() {
               <button
                 type="button"
                 onClick={() => setForm({ ...form, documentosExigidos: '' })}
-                className="text-xs font-medium text-[#a0a0a0] hover:text-[#f5f5f5] transition-colors"
+                className="text-xs font-medium text-text-secondary hover:text-text-primary transition-colors"
               >
                 Desmarcar Todos
               </button>
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 rounded-lg border border-[#2a2a2a] bg-[#111111] p-5 mt-1.5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 rounded-lg border border-border bg-sidebar p-5 mt-1.5">
             {DOCUMENT_CATEGORIES.map(categoria => (
               <div key={categoria.nome}>
-                <h3 className="mb-3 text-sm font-medium text-[#d4a843]">{categoria.nome}</h3>
+                <h3 className="mb-3 text-sm font-medium text-gold">{categoria.nome}</h3>
                 <div className="space-y-3">
                   {categoria.itens.map(item => {
                     const isChecked = form.documentosExigidos.split('\n').map(i => i.trim()).includes(item);
@@ -217,7 +217,7 @@ export default function ClientForm() {
                         <div className="flex h-5 items-center">
                           <input
                             type="checkbox"
-                            className="h-4 w-4 rounded border-[#3a3a3a] bg-[#1a1a1a] text-[#d4a843] focus:ring-1 focus:ring-[#d4a843] focus:ring-offset-[#111111] transition-colors"
+                            className="h-4 w-4 rounded border-[#3a3a3a] bg-card text-gold focus:ring-1 focus:ring-[#d4a843] focus:ring-offset-[#111111] transition-colors"
                             checked={isChecked}
                             onChange={(e) => {
                               let current = form.documentosExigidos.split('\n').map(i => i.trim()).filter(Boolean);
@@ -230,7 +230,7 @@ export default function ClientForm() {
                             }}
                           />
                         </div>
-                        <span className="text-sm text-[#a0a0a0] group-hover:text-[#f5f5f5] leading-snug">{item}</span>
+                        <span className="text-sm text-text-secondary group-hover:text-text-primary leading-snug">{item}</span>
                       </label>
                     )
                   })}
@@ -238,10 +238,10 @@ export default function ClientForm() {
               </div>
             ))}
           </div>
-          <p className="mt-2 text-xs text-[#6b6b6b]">Selecione os documentos esperados. A IA usará essa lista de referência para validar os envios do cliente.</p>
+          <p className="mt-2 text-xs text-text-muted">Selecione os documentos esperados. A IA usará essa lista de referência para validar os envios do cliente.</p>
         </div>
 
-        <div className="flex justify-end gap-3 pt-4 border-t border-[#1e1e1e]">
+        <div className="flex justify-end gap-3 pt-4 border-t border-border">
           <Button variant="secondary" type="button" onClick={() => navigate('/clientes')}>Cancelar</Button>
           <Button type="submit" disabled={mutation.isPending}>
             <Save className="mr-1 h-4 w-4" />

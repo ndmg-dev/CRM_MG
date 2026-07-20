@@ -90,8 +90,8 @@ export default function TaskModal({ task, onClose }: TaskModalProps) {
     isEditing ? updateMutation.mutate() : createMutation.mutate()
   }
 
-  const inputClass = "w-full rounded-lg border border-[#2a2a2a] bg-[#111111] px-3 py-2 text-sm text-[#f5f5f5] outline-none focus:border-[#d4a843]"
-  const labelClass = "mb-1 block text-xs font-medium text-[#6b6b6b]"
+  const inputClass = "w-full rounded-lg border border-border bg-sidebar px-3 py-2 text-sm text-text-primary outline-none focus:border-[#d4a843]"
+  const labelClass = "mb-1 block text-xs font-medium text-text-muted"
   const isPending = createMutation.isPending || updateMutation.isPending
 
   return (
@@ -107,14 +107,14 @@ export default function TaskModal({ task, onClose }: TaskModalProps) {
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="w-full max-w-lg rounded-xl border border-[#2a2a2a] bg-[#1a1a1a] shadow-2xl"
+          className="w-full max-w-lg rounded-xl border border-border bg-card shadow-2xl"
         >
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-[#1e1e1e] px-6 py-4">
-            <h2 className="text-lg font-semibold text-[#f5f5f5]">
+          <div className="flex items-center justify-between border-b border-border px-6 py-4">
+            <h2 className="text-lg font-semibold text-text-primary">
               {isEditing ? 'Editar Tarefa' : 'Nova Tarefa'}
             </h2>
-            <button onClick={onClose} className="text-[#6b6b6b] hover:text-[#f5f5f5]">
+            <button onClick={onClose} className="text-text-muted hover:text-text-primary">
               <X className="h-5 w-5" />
             </button>
           </div>
@@ -194,7 +194,7 @@ export default function TaskModal({ task, onClose }: TaskModalProps) {
 
             {/* Metadata (edit mode) */}
             {isEditing && task && (
-              <div className="rounded-lg bg-[#111111] p-3 text-xs text-[#6b6b6b] space-y-1">
+              <div className="rounded-lg bg-sidebar p-3 text-xs text-text-muted space-y-1">
                 <p>Criada em: {formatDateTime(task.dataCriacao)}</p>
                 {task.dataConclusao && <p>Concluída em: {formatDateTime(task.dataConclusao)}</p>}
                 {task.responsavelNome && <p>Responsável: {task.responsavelNome}</p>}
@@ -204,7 +204,7 @@ export default function TaskModal({ task, onClose }: TaskModalProps) {
           </form>
 
           {/* Footer */}
-          <div className="flex justify-end gap-3 border-t border-[#1e1e1e] px-6 py-4">
+          <div className="flex justify-end gap-3 border-t border-border px-6 py-4">
             <Button variant="secondary" onClick={onClose}>Cancelar</Button>
             <Button onClick={handleSubmit} disabled={isPending}>
               <Save className="mr-1 h-4 w-4" />

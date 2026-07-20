@@ -60,7 +60,7 @@ function TabsList({
     <div
       role="tablist"
       className={cn(
-        'inline-flex gap-1 rounded-lg border border-[#2a2a2a] bg-[#111111] p-1',
+        'inline-flex gap-1 rounded-lg border border-border bg-sidebar p-1',
         className
       )}
       {...props}
@@ -91,8 +91,8 @@ function TabsTrigger({
       className={cn(
         'inline-flex items-center justify-center whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4a843] disabled:pointer-events-none disabled:opacity-50',
         isActive
-          ? 'bg-[#d4a843] text-black shadow-sm'
-          : 'text-[#a0a0a0] hover:bg-[#1e1e1e] hover:text-[#f5f5f5]',
+          ? 'bg-gold text-black shadow-sm'
+          : 'text-text-secondary hover:bg-surface hover:text-text-primary',
         className
       )}
       {...props}

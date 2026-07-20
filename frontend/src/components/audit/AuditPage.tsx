@@ -43,7 +43,7 @@ function timeAgo(dateStr: string): string {
 }
 
 function getDeviceIcon(userAgent?: string) {
-  if (!userAgent) return <Globe className="h-4 w-4 text-[#6b6b6b]" />
+  if (!userAgent) return <Globe className="h-4 w-4 text-text-muted" />
   if (/mobile|android|iphone/i.test(userAgent)) return <Smartphone className="h-4 w-4 text-blue-400" />
   return <Monitor className="h-4 w-4 text-emerald-400" />
 }
@@ -93,15 +93,15 @@ function OverviewTab() {
             key={stat.label}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="rounded-xl border border-[#2a2a2a] bg-[#1a1a1a] p-5"
+            className="rounded-xl border border-border bg-card p-5"
           >
             <div className="flex items-center gap-3">
               <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${stat.bg}`}>
                 <stat.icon className={`h-5 w-5 ${stat.color}`} />
               </div>
               <div>
-                <p className="text-xs text-[#6b6b6b]">{stat.label}</p>
-                <p className="text-xl font-bold text-[#f5f5f5]">{stat.value}</p>
+                <p className="text-xs text-text-muted">{stat.label}</p>
+                <p className="text-xl font-bold text-text-primary">{stat.value}</p>
               </div>
             </div>
           </motion.div>
@@ -113,10 +113,10 @@ function OverviewTab() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="rounded-xl border border-[#2a2a2a] bg-[#1a1a1a] overflow-hidden"
+        className="rounded-xl border border-border bg-card overflow-hidden"
       >
-        <div className="flex items-center justify-between border-b border-[#2a2a2a] px-6 py-4">
-          <h3 className="text-sm font-medium text-[#f5f5f5] flex items-center gap-2">
+        <div className="flex items-center justify-between border-b border-border px-6 py-4">
+          <h3 className="text-sm font-medium text-text-primary flex items-center gap-2">
             <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
             Quem está online agora
           </h3>
@@ -128,17 +128,17 @@ function OverviewTab() {
         {loadingSessions ? (
           <LoadingSpinner label="Carregando sessões..." />
         ) : activeSessions.length === 0 ? (
-          <div className="p-10 text-center text-[#6b6b6b]">Nenhum usuário online no momento</div>
+          <div className="p-10 text-center text-text-muted">Nenhum usuário online no momento</div>
         ) : (
           <div className="divide-y divide-[#2a2a2a]">
             {activeSessions.map((session) => (
-              <div key={session.id} className="flex items-center gap-4 px-6 py-4 hover:bg-[#252525] transition-colors">
+              <div key={session.id} className="flex items-center gap-4 px-6 py-4 hover:bg-surface-hover transition-colors">
                 {/* Avatar */}
                 <div className="relative">
                   {session.usuarioFotoPerfil ? (
-                    <img src={session.usuarioFotoPerfil} alt="" className="h-10 w-10 rounded-full object-cover border border-[#2a2a2a]" referrerPolicy="no-referrer" />
+                    <img src={session.usuarioFotoPerfil} alt="" className="h-10 w-10 rounded-full object-cover border border-border" referrerPolicy="no-referrer" />
                   ) : (
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#252525] text-sm font-bold text-[#d4a843]">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-hover text-sm font-bold text-gold">
                       {(session.usuarioNome || '?').charAt(0).toUpperCase()}
                     </div>
                   )}
@@ -147,20 +147,20 @@ function OverviewTab() {
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-[#f5f5f5] truncate">{session.usuarioNome}</p>
-                  <p className="text-xs text-[#6b6b6b]">{session.usuarioSetor} · {session.usuarioPerfil}</p>
+                  <p className="text-sm font-medium text-text-primary truncate">{session.usuarioNome}</p>
+                  <p className="text-xs text-text-muted">{session.usuarioSetor} · {session.usuarioPerfil}</p>
                 </div>
 
                 {/* Device */}
-                <div className="flex items-center gap-2 text-xs text-[#6b6b6b]">
+                <div className="flex items-center gap-2 text-xs text-text-muted">
                   {getDeviceIcon(session.userAgent)}
                   <span>{getBrowserName(session.userAgent)}</span>
                 </div>
 
                 {/* Last activity */}
                 <div className="text-right">
-                  <p className="text-xs text-[#a0a0a0]">{timeAgo(session.ultimaAtividade)}</p>
-                  <p className="text-[10px] text-[#6b6b6b]">desde {formatDateTime(session.inicio)}</p>
+                  <p className="text-xs text-text-secondary">{timeAgo(session.ultimaAtividade)}</p>
+                  <p className="text-[10px] text-text-muted">desde {formatDateTime(session.inicio)}</p>
                 </div>
               </div>
             ))}
@@ -194,14 +194,14 @@ function SessionsTab() {
           <select
             value={filterUser}
             onChange={(e) => setFilterUser(e.target.value)}
-            className="appearance-none rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] px-4 py-2 pr-8 text-sm text-[#f5f5f5] focus:border-[#d4a843] focus:outline-none"
+            className="appearance-none rounded-lg border border-border bg-card px-4 py-2 pr-8 text-sm text-text-primary focus:border-[#d4a843] focus:outline-none"
           >
             <option value="">Todos os usuários</option>
             {usuarios.map((u) => (
               <option key={u.id} value={u.id}>{u.nome}</option>
             ))}
           </select>
-          <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6b6b6b]" />
+          <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
         </div>
       </div>
 
@@ -209,7 +209,7 @@ function SessionsTab() {
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="overflow-hidden rounded-xl border border-[#2a2a2a] bg-[#1a1a1a]"
+        className="overflow-hidden rounded-xl border border-border bg-card"
       >
         {isLoading ? (
           <LoadingSpinner label="Carregando histórico..." />
@@ -217,7 +217,7 @@ function SessionsTab() {
           <EmptyState title="Nenhuma sessão encontrada" />
         ) : (
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-[#2a2a2a] bg-[#111111] text-xs uppercase text-[#6b6b6b]">
+            <thead className="border-b border-border bg-sidebar text-xs uppercase text-text-muted">
               <tr>
                 <th className="px-6 py-3 font-medium">Usuário</th>
                 <th className="px-6 py-3 font-medium">Login</th>
@@ -233,18 +233,18 @@ function SessionsTab() {
                   ? Math.floor((new Date(s.fim).getTime() - new Date(s.inicio).getTime()) / 1000)
                   : null
                 return (
-                  <tr key={s.id} className="hover:bg-[#252525] transition-colors">
-                    <td className="px-6 py-4 text-[#f5f5f5] font-medium flex items-center gap-2">
+                  <tr key={s.id} className="hover:bg-surface-hover transition-colors">
+                    <td className="px-6 py-4 text-text-primary font-medium flex items-center gap-2">
                       {s.ativa && <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />}
                       {s.usuarioNome || 'Desconhecido'}
                     </td>
-                    <td className="px-6 py-4 text-[#a0a0a0]">
+                    <td className="px-6 py-4 text-text-secondary">
                       <div className="flex items-center gap-1.5">
                         <LogIn className="h-3.5 w-3.5 text-emerald-400" />
                         {formatDateTime(s.inicio)}
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-[#a0a0a0]">
+                    <td className="px-6 py-4 text-text-secondary">
                       {s.fim ? (
                         <div className="flex items-center gap-1.5">
                           <LogOut className="h-3.5 w-3.5 text-red-400" />
@@ -257,14 +257,14 @@ function SessionsTab() {
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-[#a0a0a0]">{s.ativa ? '—' : formatDuration(duration)}</td>
+                    <td className="px-6 py-4 text-text-secondary">{s.ativa ? '—' : formatDuration(duration)}</td>
                     <td className="px-6 py-4">
-                      <div className="flex items-center gap-2 text-[#a0a0a0]">
+                      <div className="flex items-center gap-2 text-text-secondary">
                         {getDeviceIcon(s.userAgent)}
                         {getBrowserName(s.userAgent)}
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-[#6b6b6b] font-mono text-xs">{s.ipAddress || '—'}</td>
+                    <td className="px-6 py-4 text-text-muted font-mono text-xs">{s.ipAddress || '—'}</td>
                   </tr>
                 )
               })}
@@ -293,29 +293,29 @@ function SystemsUsageTab() {
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="rounded-xl border border-[#2a2a2a] bg-[#1a1a1a] p-6"
+        className="rounded-xl border border-border bg-card p-6"
       >
-        <h3 className="mb-4 text-sm font-medium text-[#f5f5f5] flex items-center gap-2">
-          <Trophy className="h-4 w-4 text-[#d4a843]" />
+        <h3 className="mb-4 text-sm font-medium text-text-primary flex items-center gap-2">
+          <Trophy className="h-4 w-4 text-gold" />
           Ranking de Sistemas Mais Acessados
         </h3>
         {isLoading ? (
           <LoadingSpinner label="Carregando..." />
         ) : ranking.length === 0 ? (
-          <p className="text-sm text-[#6b6b6b]">Nenhum dado de uso registrado ainda.</p>
+          <p className="text-sm text-text-muted">Nenhum dado de uso registrado ainda.</p>
         ) : (
           <div className="space-y-3">
             {ranking.map((item, idx) => (
               <div key={item.sistemaId} className="flex items-center gap-4">
-                <span className="w-6 text-right text-sm font-bold text-[#6b6b6b]">#{idx + 1}</span>
+                <span className="w-6 text-right text-sm font-bold text-text-muted">#{idx + 1}</span>
                 <div className="flex-1">
                   <div className="mb-1 flex items-center justify-between">
-                    <span className="text-sm font-medium text-[#f5f5f5]">{item.sistemaNome}</span>
-                    <span className="text-xs text-[#a0a0a0]">
+                    <span className="text-sm font-medium text-text-primary">{item.sistemaNome}</span>
+                    <span className="text-xs text-text-secondary">
                       {item.totalAcessos} acesso{item.totalAcessos !== 1 ? 's' : ''} · {item.tempoTotalMinutos}min
                     </span>
                   </div>
-                  <div className="h-2 rounded-full bg-[#252525] overflow-hidden">
+                  <div className="h-2 rounded-full bg-surface-hover overflow-hidden">
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${(item.totalAcessos / maxAcessos) * 100}%` }}
@@ -335,10 +335,10 @@ function SystemsUsageTab() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="overflow-hidden rounded-xl border border-[#2a2a2a] bg-[#1a1a1a]"
+        className="overflow-hidden rounded-xl border border-border bg-card"
       >
-        <div className="border-b border-[#2a2a2a] px-6 py-4">
-          <h3 className="text-sm font-medium text-[#f5f5f5]">Acessos Recentes</h3>
+        <div className="border-b border-border px-6 py-4">
+          <h3 className="text-sm font-medium text-text-primary">Acessos Recentes</h3>
         </div>
         {isLoading ? (
           <LoadingSpinner label="Carregando..." />
@@ -346,7 +346,7 @@ function SystemsUsageTab() {
           <EmptyState title="Nenhum acesso registrado" />
         ) : (
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-[#2a2a2a] bg-[#111111] text-xs uppercase text-[#6b6b6b]">
+            <thead className="border-b border-border bg-sidebar text-xs uppercase text-text-muted">
               <tr>
                 <th className="px-6 py-3 font-medium">Usuário</th>
                 <th className="px-6 py-3 font-medium">Sistema</th>
@@ -356,11 +356,11 @@ function SystemsUsageTab() {
             </thead>
             <tbody className="divide-y divide-[#2a2a2a]">
               {recentes.map((r) => (
-                <tr key={r.id} className="hover:bg-[#252525] transition-colors">
-                  <td className="px-6 py-4 text-[#f5f5f5] font-medium">{r.usuarioNome || '—'}</td>
-                  <td className="px-6 py-4 text-[#a0a0a0]">{r.sistemaNome || '—'}</td>
-                  <td className="px-6 py-4 text-[#a0a0a0]">{formatDateTime(r.inicio)}</td>
-                  <td className="px-6 py-4 text-[#a0a0a0]">{formatDuration(r.duracaoSegundos)}</td>
+                <tr key={r.id} className="hover:bg-surface-hover transition-colors">
+                  <td className="px-6 py-4 text-text-primary font-medium">{r.usuarioNome || '—'}</td>
+                  <td className="px-6 py-4 text-text-secondary">{r.sistemaNome || '—'}</td>
+                  <td className="px-6 py-4 text-text-secondary">{formatDateTime(r.inicio)}</td>
+                  <td className="px-6 py-4 text-text-secondary">{formatDuration(r.duracaoSegundos)}</td>
                 </tr>
               ))}
             </tbody>
@@ -395,7 +395,7 @@ function ActivityLogsTab() {
     REVOKE_ACCESS: 'bg-orange-400/10 text-orange-400',
     UPDATE_USER_ROLE: 'bg-purple-400/10 text-purple-400',
     CREATE_CLIENTE: 'bg-cyan-400/10 text-cyan-400',
-    CREATE_TAREFA: 'bg-[#d4a843]/10 text-[#d4a843]',
+    CREATE_TAREFA: 'bg-gold/10 text-gold',
     UPDATE_TAREFA_STATUS: 'bg-pink-400/10 text-pink-400',
   }
 
@@ -407,14 +407,14 @@ function ActivityLogsTab() {
           <select
             value={filterAcao}
             onChange={(e) => setFilterAcao(e.target.value)}
-            className="appearance-none rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] px-4 py-2 pr-8 text-sm text-[#f5f5f5] focus:border-[#d4a843] focus:outline-none"
+            className="appearance-none rounded-lg border border-border bg-card px-4 py-2 pr-8 text-sm text-text-primary focus:border-[#d4a843] focus:outline-none"
           >
             <option value="">Todas as ações</option>
             {acoes.map((a) => (
               <option key={a} value={a}>{a.replace(/_/g, ' ')}</option>
             ))}
           </select>
-          <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6b6b6b]" />
+          <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
         </div>
       </div>
 
@@ -422,7 +422,7 @@ function ActivityLogsTab() {
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="overflow-hidden rounded-xl border border-[#2a2a2a] bg-[#1a1a1a]"
+        className="overflow-hidden rounded-xl border border-border bg-card"
       >
         {isLoading ? (
           <LoadingSpinner label="Carregando logs..." />
@@ -430,7 +430,7 @@ function ActivityLogsTab() {
           <EmptyState title="Nenhum log encontrado" />
         ) : (
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-[#2a2a2a] bg-[#111111] text-xs uppercase text-[#6b6b6b]">
+            <thead className="border-b border-border bg-sidebar text-xs uppercase text-text-muted">
               <tr>
                 <th className="px-6 py-3 font-medium">Data/Hora</th>
                 <th className="px-6 py-3 font-medium">Usuário</th>
@@ -441,28 +441,28 @@ function ActivityLogsTab() {
             </thead>
             <tbody className="divide-y divide-[#2a2a2a]">
               {logs.map((log) => (
-                <tr key={log.id} className="hover:bg-[#252525] transition-colors">
-                  <td className="px-6 py-4 text-[#a0a0a0] whitespace-nowrap">{formatDateTime(log.dataHora)}</td>
-                  <td className="px-6 py-4 text-[#f5f5f5] font-medium">{log.usuarioNome || '—'}</td>
+                <tr key={log.id} className="hover:bg-surface-hover transition-colors">
+                  <td className="px-6 py-4 text-text-secondary whitespace-nowrap">{formatDateTime(log.dataHora)}</td>
+                  <td className="px-6 py-4 text-text-primary font-medium">{log.usuarioNome || '—'}</td>
                   <td className="px-6 py-4">
-                    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${ACAO_COLORS[log.acao] || 'bg-[#252525] text-[#a0a0a0]'}`}>
+                    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${ACAO_COLORS[log.acao] || 'bg-surface-hover text-text-secondary'}`}>
                       {log.acao.replace(/_/g, ' ')}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-[#a0a0a0]">{log.alvo || '—'}</td>
+                  <td className="px-6 py-4 text-text-secondary">{log.alvo || '—'}</td>
                   <td className="px-6 py-4">
                     {log.detalhes && Object.keys(log.detalhes).length > 0 ? (
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => setExpandedId(expandedId === log.id ? null : log.id)}
-                        className="text-xs text-[#d4a843] hover:text-[#e5bc55]"
+                        className="text-xs text-gold hover:text-[#e5bc55]"
                       >
                         <Eye className="mr-1 h-3 w-3" />
                         {expandedId === log.id ? 'Fechar' : 'Ver'}
                       </Button>
                     ) : (
-                      <span className="text-xs text-[#6b6b6b]">—</span>
+                      <span className="text-xs text-text-muted">—</span>
                     )}
                   </td>
                 </tr>
@@ -480,10 +480,10 @@ function ActivityLogsTab() {
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="rounded-xl border border-[#2a2a2a] bg-[#111111] p-4"
+            className="rounded-xl border border-border bg-sidebar p-4"
           >
-            <p className="mb-2 text-xs font-medium text-[#d4a843]">Detalhes do Log #{log.id}</p>
-            <pre className="max-h-48 overflow-auto rounded-lg bg-[#0a0a0a] p-3 text-xs text-[#a0a0a0]">
+            <p className="mb-2 text-xs font-medium text-gold">Detalhes do Log #{log.id}</p>
+            <pre className="max-h-48 overflow-auto rounded-lg bg-background p-3 text-xs text-text-secondary">
               {JSON.stringify(log.detalhes, null, 2)}
             </pre>
           </motion.div>
@@ -523,15 +523,15 @@ export default function AuditPage() {
       />
 
       {/* Tab Navigation */}
-      <div className="mb-6 flex gap-1 rounded-lg bg-[#1a1a1a] p-1 w-fit border border-[#2a2a2a]">
+      <div className="mb-6 flex gap-1 rounded-lg bg-card p-1 w-fit border border-border">
         {tabs.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
             className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
               activeTab === tab.key
-                ? 'bg-[#d4a843] text-black'
-                : 'text-[#a0a0a0] hover:text-[#f5f5f5]'
+                ? 'bg-gold text-black'
+                : 'text-text-secondary hover:text-text-primary'
             }`}
           >
             <tab.icon className="h-4 w-4" />

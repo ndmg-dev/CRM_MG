@@ -26,7 +26,7 @@ function FloatingParticle({ index }: { index: number }) {
 
   return (
     <motion.div
-      className="absolute rounded-full bg-[#d4a843]"
+      className="absolute rounded-full bg-gold"
       style={{
         width: seed.size,
         height: seed.size,
@@ -144,7 +144,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#0a0a0a]">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background">
       {/* ── Floating particles ── */}
       <div className="pointer-events-none absolute inset-0">
         {particles.map((i) => (
@@ -154,7 +154,7 @@ export default function LoginPage() {
 
       {/* ── Radial ambient glow ── */}
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute left-1/2 top-1/2 h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#d4a843]/5 blur-[120px]" />
+        <div className="absolute left-1/2 top-1/2 h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gold/5 blur-[120px]" />
       </div>
 
       {/* ── Login Card ── */}
@@ -162,7 +162,7 @@ export default function LoginPage() {
         variants={cardVariants}
         initial="hidden"
         animate="visible"
-        className="relative z-10 w-full max-w-md rounded-2xl border border-[#2a2a2a] bg-[#1a1a1a] p-10 shadow-[0_-4px_30px_-10px_rgba(212,168,67,0.2)] backdrop-blur-xl relative overflow-hidden"
+        className="relative z-10 w-full max-w-md rounded-2xl border border-border bg-card p-10 shadow-[0_-4px_30px_-10px_rgba(212,168,67,0.2)] backdrop-blur-xl relative overflow-hidden"
       >
         <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#d4a843]/60 to-transparent" />
         <motion.div
@@ -184,10 +184,10 @@ export default function LoginPage() {
           <motion.h2 variants={fadeUp} className="mt-4 text-xl font-bold text-white tracking-wide">
             CRM Contábil
           </motion.h2>
-          <motion.p variants={fadeUp} className="text-sm font-medium text-[#a0a0a0] mt-1">
+          <motion.p variants={fadeUp} className="text-sm font-medium text-text-secondary mt-1">
             Gestão Inteligente
           </motion.p>
-          <motion.p variants={fadeUp} className="mb-8 mt-1.5 text-xs text-[#6b6b6b]">
+          <motion.p variants={fadeUp} className="mb-8 mt-1.5 text-xs text-text-muted">
             Seu canal seguro de acesso aos sistemas internos
           </motion.p>
 
@@ -196,7 +196,7 @@ export default function LoginPage() {
             variants={fadeUp}
             onClick={handleGoogleLogin}
             disabled={isLoading}
-            className="flex w-full items-center justify-center rounded-lg bg-[#d4a843] px-6 py-3 text-sm font-semibold text-black shadow-md transition-all duration-200 hover:bg-[#e5bc55] hover:shadow-[0_0_15px_rgba(212,168,67,0.3)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex w-full items-center justify-center rounded-lg bg-gold px-6 py-3 text-sm font-semibold text-black shadow-md transition-all duration-200 hover:bg-[#e5bc55] hover:shadow-[0_0_15px_rgba(212,168,67,0.3)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isLoading ? (
               <Loader2 className="mr-3 h-5 w-5 animate-spin text-black/70" />
@@ -215,13 +215,13 @@ export default function LoginPage() {
           {/* Restriction notice */}
           <motion.div
             variants={fadeUp}
-            className="flex flex-col items-center justify-center text-xs text-[#6b6b6b]"
+            className="flex flex-col items-center justify-center text-xs text-text-muted"
           >
             <div className="flex items-center gap-1.5 mb-1">
               <ShieldCheck className="h-3.5 w-3.5 text-[#4ade80]" />
               <span>Acesso restrito a colaboradores</span>
             </div>
-            <p>Domínio <span className="text-[#a0a0a0]">@mendoncagalvao.com.br</span></p>
+            <p>Domínio <span className="text-text-secondary">@mendoncagalvao.com.br</span></p>
           </motion.div>
         </motion.div>
       </motion.div>
@@ -231,7 +231,7 @@ export default function LoginPage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1.2, duration: 0.8 }}
-        className="absolute bottom-6 left-0 right-0 text-center text-xs text-[#6b6b6b] space-y-1"
+        className="absolute bottom-6 left-0 right-0 text-center text-xs text-text-muted space-y-1"
       >
         <p>Mendonça Galvão Contadores Associados</p>
         <p>CRM Contábil © 2026</p>

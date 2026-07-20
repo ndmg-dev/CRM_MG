@@ -60,24 +60,24 @@ export default function Header() {
   const unreadCount = notificacoes.filter(n => !n.lida).length
 
   return (
-    <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-[#1e1e1e] bg-[#0a0a0a]/80 px-6 backdrop-blur-md">
+    <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-border bg-background/80 px-6 backdrop-blur-md">
       {/* Page Title */}
-      <h2 className="text-lg font-semibold text-[#f5f5f5]">{currentPage}</h2>
+      <h2 className="text-lg font-semibold text-text-primary">{currentPage}</h2>
 
       {/* Right side */}
       <div className="flex items-center gap-3">
         {/* Search */}
         <div className="relative hidden sm:block" ref={searchRef}>
-          <div className={`flex items-center gap-2 rounded-lg border bg-[#1a1a1a] px-3 py-1.5 transition-colors ${isSearchFocused ? 'border-[#d4a843]' : 'border-[#2a2a2a]'
+          <div className={`flex items-center gap-2 rounded-lg border bg-card px-3 py-1.5 transition-colors ${isSearchFocused ? 'border-[#d4a843]' : 'border-border'
             }`}>
-            <Search className="h-4 w-4 text-[#6b6b6b]" />
+            <Search className="h-4 w-4 text-text-muted" />
             <input
               type="text"
               placeholder="Buscar (sistemas, clientes...)"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => setIsSearchFocused(true)}
-              className="w-56 bg-transparent text-sm text-[#f5f5f5] placeholder-[#6b6b6b] outline-none"
+              className="w-56 bg-transparent text-sm text-text-primary placeholder-[#6b6b6b] outline-none"
             />
           </div>
 
@@ -89,13 +89,13 @@ export default function Header() {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 10, scale: 0.95 }}
                 transition={{ duration: 0.15 }}
-                className="absolute right-0 top-full mt-2 w-80 overflow-hidden rounded-xl border border-[#2a2a2a] bg-[#1a1a1a] shadow-2xl"
+                className="absolute right-0 top-full mt-2 w-80 overflow-hidden rounded-xl border border-border bg-card shadow-2xl"
               >
                 <div className="max-h-[400px] overflow-y-auto p-2">
                   {isSearching ? (
-                    <div className="py-8 text-center text-sm text-[#a0a0a0]">Buscando...</div>
+                    <div className="py-8 text-center text-sm text-text-secondary">Buscando...</div>
                   ) : searchResults?.results.length === 0 ? (
-                    <div className="py-8 text-center text-sm text-[#a0a0a0]">Nenhum resultado encontrado.</div>
+                    <div className="py-8 text-center text-sm text-text-secondary">Nenhum resultado encontrado.</div>
                   ) : (
                     <div className="flex flex-col gap-1">
                       {searchResults?.results.map((result) => {
@@ -108,15 +108,15 @@ export default function Header() {
                               setIsSearchFocused(false)
                               setSearchQuery('')
                             }}
-                            className="flex cursor-pointer items-center gap-3 rounded-lg p-2 transition-colors hover:bg-[#252525]"
+                            className="flex cursor-pointer items-center gap-3 rounded-lg p-2 transition-colors hover:bg-surface-hover"
                           >
-                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-[#222222] text-[#d4a843]">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-[#222222] text-gold">
                               <Icon className="h-4 w-4" />
                             </div>
                             <div className="flex flex-col overflow-hidden">
-                              <span className="truncate text-sm font-medium text-[#f5f5f5]">{result.title}</span>
+                              <span className="truncate text-sm font-medium text-text-primary">{result.title}</span>
                               {result.subtitle && (
-                                <span className="truncate text-[10px] text-[#a0a0a0]">{result.subtitle}</span>
+                                <span className="truncate text-[10px] text-text-secondary">{result.subtitle}</span>
                               )}
                             </div>
                           </div>
@@ -134,7 +134,7 @@ export default function Header() {
         <div className="relative" ref={notifRef}>
           <button
             onClick={() => setShowNotif(!showNotif)}
-            className="relative flex h-9 w-9 items-center justify-center rounded-lg text-[#a0a0a0] transition-colors hover:bg-[#1e1e1e] hover:text-[#f5f5f5]"
+            className="relative flex h-9 w-9 items-center justify-center rounded-lg text-text-secondary transition-colors hover:bg-surface hover:text-text-primary"
           >
             <Bell className="h-5 w-5" />
             {unreadCount > 0 && (
@@ -151,12 +151,12 @@ export default function Header() {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 10, scale: 0.95 }}
                 transition={{ duration: 0.15 }}
-                className="absolute right-0 mt-2 w-80 overflow-hidden rounded-xl border border-[#2a2a2a] bg-[#1a1a1a] shadow-2xl"
+                className="absolute right-0 mt-2 w-80 overflow-hidden rounded-xl border border-border bg-card shadow-2xl"
               >
-                <div className="flex items-center justify-between border-b border-[#2a2a2a] bg-[#222222] px-4 py-3">
-                  <h3 className="text-sm font-semibold text-[#f5f5f5]">Notificações</h3>
+                <div className="flex items-center justify-between border-b border-border bg-[#222222] px-4 py-3">
+                  <h3 className="text-sm font-semibold text-text-primary">Notificações</h3>
                   {unreadCount > 0 && (
-                    <span className="rounded-full bg-[#d4a843]/10 px-2 py-0.5 text-xs font-medium text-[#d4a843]">
+                    <span className="rounded-full bg-gold/10 px-2 py-0.5 text-xs font-medium text-gold">
                       {unreadCount} novas
                     </span>
                   )}
@@ -166,24 +166,24 @@ export default function Header() {
                   {notificacoes.length === 0 ? (
                     <div className="flex flex-col items-center justify-center px-4 py-8 text-center">
                       <Bell className="mb-2 h-8 w-8 text-[#333333]" />
-                      <p className="text-sm text-[#6b6b6b]">Nenhuma notificação por enquanto.</p>
+                      <p className="text-sm text-text-muted">Nenhuma notificação por enquanto.</p>
                     </div>
                   ) : (
                     <div className="divide-y divide-[#2a2a2a]">
                       {notificacoes.map((notif) => (
                         <div
                           key={notif.id}
-                          className={`relative flex items-start gap-3 p-4 transition-colors hover:bg-[#252525] ${!notif.lida ? 'bg-[#222222]/50' : ''
+                          className={`relative flex items-start gap-3 p-4 transition-colors hover:bg-surface-hover ${!notif.lida ? 'bg-[#222222]/50' : ''
                             }`}
                         >
                           {!notif.lida && (
-                            <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#d4a843]" />
+                            <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-gold" />
                           )}
                           <div className={`flex-1 space-y-1 ${!notif.lida ? 'ml-0' : 'ml-5'}`}>
-                            <p className={`text-sm ${!notif.lida ? 'font-medium text-[#f5f5f5]' : 'text-[#a0a0a0]'}`}>
+                            <p className={`text-sm ${!notif.lida ? 'font-medium text-text-primary' : 'text-text-secondary'}`}>
                               {notif.titulo}
                             </p>
-                            <p className="text-xs text-[#6b6b6b] line-clamp-2">
+                            <p className="text-xs text-text-muted line-clamp-2">
                               {notif.mensagem}
                             </p>
                             <p className="text-[10px] text-[#4a4a4a]">
@@ -193,7 +193,7 @@ export default function Header() {
                           {!notif.lida && (
                             <button
                               onClick={() => readMutation.mutate(notif.id)}
-                              className="text-[#6b6b6b] hover:text-[#d4a843]"
+                              className="text-text-muted hover:text-gold"
                               title="Marcar como lida"
                             >
                               <CheckCircle2 className="h-4 w-4" />
@@ -212,9 +212,9 @@ export default function Header() {
         {/* User avatar */}
         {user && (
           user.fotoPerfil ? (
-            <img src={user.fotoPerfil} alt={user.nome} className="h-9 w-9 rounded-full object-cover border border-[#2a2a2a]" referrerPolicy="no-referrer" />
+            <img src={user.fotoPerfil} alt={user.nome} className="h-9 w-9 rounded-full object-cover border border-border" referrerPolicy="no-referrer" />
           ) : (
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#252525] text-xs font-bold text-[#d4a843]">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-hover text-xs font-bold text-gold">
               {getInitials(user.nome)}
             </div>
           )

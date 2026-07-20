@@ -55,14 +55,14 @@ export default function ClientList() {
       />
 
       {/* Search */}
-      <div className="mb-6 flex items-center gap-2 rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] px-4 py-2.5">
-        <Search className="h-4 w-4 text-[#6b6b6b]" />
+      <div className="mb-6 flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2.5">
+        <Search className="h-4 w-4 text-text-muted" />
         <input
           type="text"
           placeholder="Buscar por razão social, nome fantasia ou CNPJ..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 bg-transparent text-sm text-[#f5f5f5] placeholder-[#6b6b6b] outline-none"
+          className="flex-1 bg-transparent text-sm text-text-primary placeholder-[#6b6b6b] outline-none"
         />
       </div>
 
@@ -81,18 +81,18 @@ export default function ClientList() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="overflow-hidden rounded-lg border border-[#2a2a2a]"
+          className="overflow-hidden rounded-lg border border-border"
         >
           <table className="w-full">
             <thead>
-              <tr className="border-b border-[#2a2a2a] bg-[#1a1a1a]">
-                <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-[#6b6b6b]">Razão Social</th>
-                <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-[#6b6b6b]">Nome Fantasia</th>
-                <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-[#6b6b6b]">CNPJ</th>
-                <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-[#6b6b6b]">Regime</th>
-                <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-[#6b6b6b]">Status</th>
-                <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-[#6b6b6b]">Criado em</th>
-                {canManageDocuments && <th className="px-5 py-3 text-right text-xs font-medium uppercase tracking-wider text-[#6b6b6b]">Ações</th>}
+              <tr className="border-b border-border bg-card">
+                <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-text-muted">Razão Social</th>
+                <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-text-muted">Nome Fantasia</th>
+                <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-text-muted">CNPJ</th>
+                <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-text-muted">Regime</th>
+                <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-text-muted">Status</th>
+                <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-text-muted">Criado em</th>
+                {canManageDocuments && <th className="px-5 py-3 text-right text-xs font-medium uppercase tracking-wider text-text-muted">Ações</th>}
               </tr>
             </thead>
             <tbody>
@@ -100,14 +100,14 @@ export default function ClientList() {
                 <tr
                   key={c.id}
                   onClick={() => navigate(`/clientes/${c.id}`)}
-                  className={`cursor-pointer transition-colors hover:bg-[#1e1e1e] ${
-                    i < clientes.length - 1 ? 'border-b border-[#1e1e1e]' : ''
+                  className={`cursor-pointer transition-colors hover:bg-surface ${
+                    i < clientes.length - 1 ? 'border-b border-border' : ''
                   }`}
                 >
-                  <td className="px-5 py-3.5 text-sm font-medium text-[#f5f5f5]">{c.razaoSocial}</td>
-                  <td className="px-5 py-3.5 text-sm text-[#a0a0a0]">{c.nomeFantasia}</td>
-                  <td className="px-5 py-3.5 font-mono text-sm text-[#a0a0a0]">{formatCNPJ(c.cnpj)}</td>
-                  <td className="px-5 py-3.5 text-sm text-[#a0a0a0]">{REGIME_LABELS[c.regimeTributario]}</td>
+                  <td className="px-5 py-3.5 text-sm font-medium text-text-primary">{c.razaoSocial}</td>
+                  <td className="px-5 py-3.5 text-sm text-text-secondary">{c.nomeFantasia}</td>
+                  <td className="px-5 py-3.5 font-mono text-sm text-text-secondary">{formatCNPJ(c.cnpj)}</td>
+                  <td className="px-5 py-3.5 text-sm text-text-secondary">{REGIME_LABELS[c.regimeTributario]}</td>
                   <td className="px-5 py-3.5">
                     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
                       c.statusCnpj === 'Ativa'
@@ -117,7 +117,7 @@ export default function ClientList() {
                       {c.statusCnpj}
                     </span>
                   </td>
-                  <td className="px-5 py-3.5 text-sm text-[#6b6b6b]">{formatDate(c.dataCriacao)}</td>
+                  <td className="px-5 py-3.5 text-sm text-text-muted">{formatDate(c.dataCriacao)}</td>
                   {canManageDocuments && (
                     <td className="px-5 py-3.5 text-right">
                       <Button 
@@ -125,7 +125,7 @@ export default function ClientList() {
                         size="sm" 
                         onClick={(e) => handleCopyLink(e, c.id)}
                         title="Copiar link de upload"
-                        className="text-[#d4a843] hover:text-[#e5bc55] hover:bg-[#d4a843]/10"
+                        className="text-gold hover:text-[#e5bc55] hover:bg-gold/10"
                       >
                         <Link2 className="h-4 w-4" />
                       </Button>

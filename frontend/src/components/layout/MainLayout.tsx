@@ -10,7 +10,7 @@ export default function MainLayout() {
   useHeartbeat()
 
   return (
-    <div className="flex min-h-screen bg-[#0a0a0a]">
+    <div className="flex min-h-screen bg-background">
       <Sidebar />
       <motion.main
         initial={false}

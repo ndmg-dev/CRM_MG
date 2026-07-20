@@ -98,7 +98,7 @@ export default function UsersTable() {
       <div className="flex justify-end">
         <button
           onClick={() => setIsCreating(!isCreating)}
-          className="flex items-center gap-2 rounded-lg bg-[#d4a843] px-4 py-2 text-sm font-semibold text-black transition-colors hover:bg-[#c9952b]"
+          className="flex items-center gap-2 rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-black transition-colors hover:bg-[#c9952b]"
         >
           <Plus className="h-4 w-4" />
           Novo Usuário
@@ -106,34 +106,34 @@ export default function UsersTable() {
       </div>
 
       {isCreating && (
-        <div className="rounded-xl border border-[#2a2a2a] bg-[#141414] p-4">
-          <h3 className="mb-4 text-sm font-semibold text-[#f5f5f5]">Cadastrar Novo Usuário</h3>
+        <div className="rounded-xl border border-border bg-[#141414] p-4">
+          <h3 className="mb-4 text-sm font-semibold text-text-primary">Cadastrar Novo Usuário</h3>
           <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-5">
             <input
               type="text"
               placeholder="Nome completo"
               value={createForm.nome}
               onChange={e => setCreateForm(f => ({ ...f, nome: e.target.value }))}
-              className="rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] px-3 py-2 text-sm text-[#f5f5f5] outline-none"
+              className="rounded-lg border border-border bg-card px-3 py-2 text-sm text-text-primary outline-none"
             />
             <input
               type="email"
               placeholder="E-mail"
               value={createForm.email}
               onChange={e => setCreateForm(f => ({ ...f, email: e.target.value }))}
-              className="rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] px-3 py-2 text-sm text-[#f5f5f5] outline-none"
+              className="rounded-lg border border-border bg-card px-3 py-2 text-sm text-text-primary outline-none"
             />
             <select
               value={createForm.perfil}
               onChange={e => setCreateForm(f => ({ ...f, perfil: e.target.value as Perfil }))}
-              className="rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] px-3 py-2 text-sm text-[#f5f5f5] outline-none"
+              className="rounded-lg border border-border bg-card px-3 py-2 text-sm text-text-primary outline-none"
             >
               {Object.entries(PERFIL_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
             <select
               value={createForm.setor}
               onChange={e => setCreateForm(f => ({ ...f, setor: e.target.value as Setor }))}
-              className="rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] px-3 py-2 text-sm text-[#f5f5f5] outline-none"
+              className="rounded-lg border border-border bg-card px-3 py-2 text-sm text-text-primary outline-none"
             >
               {Object.entries(SETOR_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
@@ -147,7 +147,7 @@ export default function UsersTable() {
               </button>
               <button
                 onClick={() => setIsCreating(false)}
-                className="rounded-lg bg-[#252525] p-2 text-[#a0a0a0] transition-colors hover:bg-[#1a1a1a] hover:text-[#f5f5f5]"
+                className="rounded-lg bg-surface-hover p-2 text-text-secondary transition-colors hover:bg-card hover:text-text-primary"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -156,35 +156,35 @@ export default function UsersTable() {
         </div>
       )}
 
-      <div className="overflow-hidden rounded-xl border border-[#2a2a2a] bg-[#141414] p-4">
+      <div className="overflow-hidden rounded-xl border border-border bg-[#141414] p-4">
         <table className="w-full border-separate border-spacing-y-2">
         <thead>
           <tr>
-            <th className="px-4 py-2 text-left text-xs font-medium uppercase text-[#6b6b6b]">Nome ↑</th>
-            <th className="px-4 py-2 text-left text-xs font-medium uppercase text-[#6b6b6b]">Cargo</th>
-            <th className="px-4 py-2 text-left text-xs font-medium uppercase text-[#6b6b6b]">Setor ↑↓</th>
-            <th className="px-4 py-2 text-left text-xs font-medium uppercase text-[#6b6b6b]">Status</th>
-            <th className="px-4 py-2 text-left text-xs font-medium uppercase text-[#6b6b6b]">Ações</th>
+            <th className="px-4 py-2 text-left text-xs font-medium uppercase text-text-muted">Nome ↑</th>
+            <th className="px-4 py-2 text-left text-xs font-medium uppercase text-text-muted">Cargo</th>
+            <th className="px-4 py-2 text-left text-xs font-medium uppercase text-text-muted">Setor ↑↓</th>
+            <th className="px-4 py-2 text-left text-xs font-medium uppercase text-text-muted">Status</th>
+            <th className="px-4 py-2 text-left text-xs font-medium uppercase text-text-muted">Ações</th>
           </tr>
         </thead>
         <tbody>
           {users.map((u) => (
             <tr key={u.id} className="group">
-              <td className="rounded-l-lg border border-r-0 border-[#2a2a2a] bg-[#1a1a1a] px-4 py-3 transition-colors group-hover:bg-[#1e1e1e]">
+              <td className="rounded-l-lg border border-r-0 border-border bg-card px-4 py-3 transition-colors group-hover:bg-surface">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full border border-[#d4a843] bg-[#252525] text-xs font-bold text-[#d4a843]">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full border border-[#d4a843] bg-surface-hover text-xs font-bold text-gold">
                     {getInitials(u.nome)}
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-[#f5f5f5]">{u.nome}</p>
-                    <p className="text-xs text-[#6b6b6b]">{u.email}</p>
+                    <p className="text-sm font-medium text-text-primary">{u.nome}</p>
+                    <p className="text-xs text-text-muted">{u.email}</p>
                   </div>
                 </div>
               </td>
-              <td className="border-b border-t border-[#2a2a2a] bg-[#1a1a1a] px-4 py-3 transition-colors group-hover:bg-[#1e1e1e]">
+              <td className="border-b border-t border-border bg-card px-4 py-3 transition-colors group-hover:bg-surface">
                 {editingId === u.id && editForm ? (
                   <select
-                    className="rounded border border-[#2a2a2a] bg-[#111111] px-2 py-1 text-sm text-[#f5f5f5] outline-none"
+                    className="rounded border border-border bg-sidebar px-2 py-1 text-sm text-text-primary outline-none"
                     value={editForm.perfil}
                     onChange={(e) => setEditForm({ ...editForm, perfil: e.target.value as Perfil })}
                   >
@@ -193,15 +193,15 @@ export default function UsersTable() {
                     ))}
                   </select>
                 ) : (
-                  <span className="text-sm text-[#a0a0a0]">
+                  <span className="text-sm text-text-secondary">
                     {u.perfil === 'ADMIN' ? 'Desenvolvedor' : '—'}
                   </span>
                 )}
               </td>
-              <td className="border-b border-t border-[#2a2a2a] bg-[#1a1a1a] px-4 py-3 transition-colors group-hover:bg-[#1e1e1e]">
+              <td className="border-b border-t border-border bg-card px-4 py-3 transition-colors group-hover:bg-surface">
                 {editingId === u.id && editForm ? (
                   <select
-                    className="rounded border border-[#2a2a2a] bg-[#111111] px-2 py-1 text-sm text-[#f5f5f5] outline-none"
+                    className="rounded border border-border bg-sidebar px-2 py-1 text-sm text-text-primary outline-none"
                     value={editForm.setor}
                     onChange={(e) => setEditForm({ ...editForm, setor: e.target.value as Setor })}
                   >
@@ -212,14 +212,14 @@ export default function UsersTable() {
                 ) : (
                   <div className="flex items-center gap-2">
                     <div className={`h-2 w-2 rounded-full ${SETOR_COLORS[u.setor] || 'bg-[#6b6b6b]'}`} />
-                    <span className="text-sm font-medium text-[#a0a0a0]">{SETOR_LABELS[u.setor]}</span>
+                    <span className="text-sm font-medium text-text-secondary">{SETOR_LABELS[u.setor]}</span>
                   </div>
                 )}
               </td>
-              <td className="border-b border-t border-[#2a2a2a] bg-[#1a1a1a] px-4 py-3 transition-colors group-hover:bg-[#1e1e1e]">
+              <td className="border-b border-t border-border bg-card px-4 py-3 transition-colors group-hover:bg-surface">
                 {editingId === u.id && editForm ? (
                   <select
-                    className="rounded border border-[#2a2a2a] bg-[#111111] px-2 py-1 text-sm text-[#f5f5f5] outline-none"
+                    className="rounded border border-border bg-sidebar px-2 py-1 text-sm text-text-primary outline-none"
                     value={editForm.ativo.toString()}
                     onChange={(e) => setEditForm({ ...editForm, ativo: e.target.value === 'true' })}
                   >
@@ -232,7 +232,7 @@ export default function UsersTable() {
                   </span>
                 )}
               </td>
-              <td className="rounded-r-lg border border-l-0 border-[#2a2a2a] bg-[#1a1a1a] px-4 py-3 transition-colors group-hover:bg-[#1e1e1e]">
+              <td className="rounded-r-lg border border-l-0 border-border bg-card px-4 py-3 transition-colors group-hover:bg-surface">
                 {editingId === u.id ? (
                   <div className="flex items-center gap-2">
                     <button onClick={handleCancel} className="rounded p-1 text-[#ef4444] hover:bg-[#ef4444]/10">
@@ -246,14 +246,14 @@ export default function UsersTable() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => handleEdit(u)}
-                      className="rounded-md border border-[#2a2a2a] bg-[#111111] px-3 py-1.5 text-xs font-medium text-[#a0a0a0] transition-colors hover:bg-[#252525] hover:text-[#f5f5f5]"
+                      className="rounded-md border border-border bg-sidebar px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-hover hover:text-text-primary"
                     >
                       Editar
                     </button>
                     <button
                       onClick={() => handleDelete(u.id)}
                       disabled={deleteMutation.isPending}
-                      className="rounded-md border border-[#ef4444]/30 bg-[#111111] px-3 py-1.5 text-xs font-medium text-[#ef4444] transition-colors hover:bg-[#ef4444]/10 disabled:opacity-50"
+                      className="rounded-md border border-[#ef4444]/30 bg-sidebar px-3 py-1.5 text-xs font-medium text-[#ef4444] transition-colors hover:bg-[#ef4444]/10 disabled:opacity-50"
                     >
                       Excluir
                     </button>

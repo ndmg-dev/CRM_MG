@@ -20,7 +20,7 @@ const SETOR_TABS: { key: SetorSistema | 'ALL'; label: string; color: string }[] 
   { key: 'FISCAL', label: 'Fiscal', color: 'text-orange-400' },
   { key: 'SOCIETARIO', label: 'Societário', color: 'text-purple-400' },
   { key: 'TI', label: 'Tecnologia (TI)', color: 'text-cyan-400' },
-  { key: 'GERAL', label: 'Geral', color: 'text-[#a0a0a0]' },
+  { key: 'GERAL', label: 'Geral', color: 'text-text-secondary' },
   { key: 'RESTRITO', label: 'Restrito', color: 'text-red-500' },
 ]
 
@@ -30,8 +30,8 @@ function SystemCard({ sistema }: { sistema: Sistema }) {
   const isAutomation = sistema.categoria === 'AUTOMATION'
   const isStatic = sistema.categoria === 'STATIC'
   
-  let colorClass = 'text-[#d4a843]'
-  let bgClass = 'bg-[#d4a843]/10 group-hover:bg-[#d4a843]/20'
+  let colorClass = 'text-gold'
+  let bgClass = 'bg-gold/10 group-hover:bg-gold/20'
   let borderHoverClass = 'hover:border-[#d4a843]/50'
 
   if (isAutomation) {
@@ -39,7 +39,7 @@ function SystemCard({ sistema }: { sistema: Sistema }) {
     bgClass = 'bg-purple-500/10 group-hover:bg-purple-500/20'
     borderHoverClass = 'hover:border-purple-500/50'
   } else if (isStatic) {
-    colorClass = 'text-[#6b6b6b]'
+    colorClass = 'text-text-muted'
     bgClass = 'bg-[#2a2a2a]/50 group-hover:bg-[#2a2a2a]'
     borderHoverClass = 'hover:border-[#6b6b6b]/50'
   }
@@ -52,12 +52,12 @@ function SystemCard({ sistema }: { sistema: Sistema }) {
         animate={{ opacity: 1, scale: 1 }}
         whileHover={{ scale: 1.02 }}
         transition={{ duration: 0.2 }}
-        className={`group flex h-full flex-col items-center justify-center rounded-2xl border border-[#2a2a2a] bg-[#1a1a1a] p-6 text-center transition-all ${borderHoverClass}`}
+        className={`group flex h-full flex-col items-center justify-center rounded-2xl border border-border bg-card p-6 text-center transition-all ${borderHoverClass}`}
       >
         <div className={`mb-4 flex h-16 w-16 items-center justify-center rounded-2xl transition-colors ${bgClass} ${colorClass}`}>
           <Icon className="h-8 w-8" />
         </div>
-        <h3 className="text-sm font-semibold text-[#f5f5f5] transition-colors group-hover:text-white">
+        <h3 className="text-sm font-semibold text-text-primary transition-colors group-hover:text-white">
           {sistema.nome}
         </h3>
       </motion.div>
@@ -111,7 +111,7 @@ export default function SystemsHub() {
 
       {/* Tabs + Search */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap gap-1 rounded-lg bg-[#1a1a1a] p-1">
+        <div className="flex flex-wrap gap-1 rounded-lg bg-card p-1">
           {SETOR_TABS.map((tab) => {
             // Hide RESTRITO tab for non-admins
             if (tab.key === 'RESTRITO' && user?.perfil !== 'ADMIN') return null;
@@ -121,8 +121,8 @@ export default function SystemsHub() {
                 onClick={() => setActiveTab(tab.key)}
                 className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
                   activeTab === tab.key
-                    ? 'bg-[#d4a843] text-black'
-                    : `text-[#a0a0a0] hover:text-[#f5f5f5] ${tab.color}`
+                    ? 'bg-gold text-black'
+                    : `text-text-secondary hover:text-text-primary ${tab.color}`
                 }`}
               >
                 {tab.label}
@@ -132,23 +132,23 @@ export default function SystemsHub() {
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] px-3 py-2">
-            <Search className="h-4 w-4 text-[#6b6b6b]" />
+          <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2">
+            <Search className="h-4 w-4 text-text-muted" />
             <input
               type="text"
               placeholder="Buscar sistema..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-48 bg-transparent text-sm text-[#f5f5f5] placeholder-[#6b6b6b] outline-none"
+              className="w-48 bg-transparent text-sm text-text-primary placeholder-[#6b6b6b] outline-none"
             />
           </div>
           
           {/* View Toggle */}
-          <div className="flex items-center gap-1 rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] p-1">
+          <div className="flex items-center gap-1 rounded-lg border border-border bg-card p-1">
             <button
               onClick={() => setViewMode('grid')}
               className={`rounded p-1.5 transition-colors ${
-                viewMode === 'grid' ? 'bg-[#d4a843] text-black' : 'text-[#6b6b6b] hover:text-[#f5f5f5]'
+                viewMode === 'grid' ? 'bg-gold text-black' : 'text-text-muted hover:text-text-primary'
               }`}
               title="Visualização em Grade"
             >
@@ -157,7 +157,7 @@ export default function SystemsHub() {
             <button
               onClick={() => setViewMode('list')}
               className={`rounded p-1.5 transition-colors ${
-                viewMode === 'list' ? 'bg-[#d4a843] text-black' : 'text-[#6b6b6b] hover:text-[#f5f5f5]'
+                viewMode === 'list' ? 'bg-gold text-black' : 'text-text-muted hover:text-text-primary'
               }`}
               title="Visualização em Lista"
             >
@@ -182,9 +182,9 @@ export default function SystemsHub() {
           ))}
         </motion.div>
       ) : (
-        <motion.div layout className="overflow-x-auto rounded-xl border border-[#2a2a2a] bg-[#1a1a1a]">
-          <table className="w-full text-left text-sm text-[#a0a0a0]">
-            <thead className="border-b border-[#2a2a2a] bg-[#111111] text-xs uppercase text-[#6b6b6b]">
+        <motion.div layout className="overflow-x-auto rounded-xl border border-border bg-card">
+          <table className="w-full text-left text-sm text-text-secondary">
+            <thead className="border-b border-border bg-sidebar text-xs uppercase text-text-muted">
               <tr>
                 <th scope="col" className="px-6 py-4 font-medium">Sistema</th>
                 <th scope="col" className="px-6 py-4 font-medium">Categoria</th>
@@ -195,26 +195,26 @@ export default function SystemsHub() {
               {filtered.map((s) => {
                 const Icon = ICON_MAP[s.icone] || Building2
                 return (
-                  <tr key={s.id} className="border-b border-[#2a2a2a] last:border-0 hover:bg-[#252525]/50 transition-colors">
+                  <tr key={s.id} className="border-b border-border last:border-0 hover:bg-surface-hover/50 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="group relative flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#252525] text-[#a0a0a0] transition-colors hover:bg-[#333333]">
+                        <div className="group relative flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-hover text-text-secondary transition-colors hover:bg-[#333333]">
                           <Icon className="h-5 w-5" />
                           
                           {/* Tooltip */}
-                          <div className="pointer-events-none absolute left-14 top-1/2 z-50 w-64 -translate-y-1/2 rounded-lg border border-[#3a3a3a] bg-[#1a1a1a] p-3 text-xs font-normal text-[#a0a0a0] opacity-0 shadow-xl transition-all group-hover:opacity-100 group-hover:translate-x-1">
+                          <div className="pointer-events-none absolute left-14 top-1/2 z-50 w-64 -translate-y-1/2 rounded-lg border border-[#3a3a3a] bg-card p-3 text-xs font-normal text-text-secondary opacity-0 shadow-xl transition-all group-hover:opacity-100 group-hover:translate-x-1">
                             {s.descricao}
-                            <div className="absolute -left-1.5 top-1/2 h-3 w-3 -translate-y-1/2 rotate-45 border-b border-l border-[#3a3a3a] bg-[#1a1a1a]" />
+                            <div className="absolute -left-1.5 top-1/2 h-3 w-3 -translate-y-1/2 rotate-45 border-b border-l border-[#3a3a3a] bg-card" />
                           </div>
                         </div>
-                        <span className="font-medium text-[#f5f5f5]">{s.nome}</span>
+                        <span className="font-medium text-text-primary">{s.nome}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                         s.categoria === 'AUTOMATION'
                           ? 'bg-purple-500/10 text-purple-400'
-                          : 'bg-[#d4a843]/10 text-[#d4a843]'
+                          : 'bg-gold/10 text-gold'
                       }`}>
                         {s.categoria === 'AUTOMATION' ? 'Automação' : 'Principal'}
                       </span>
@@ -222,7 +222,7 @@ export default function SystemsHub() {
                     <td className="px-6 py-4 text-right">
                       <Link 
                         to={`/sistemas/${s.id}`}
-                        className="inline-flex cursor-pointer items-center justify-center rounded-lg bg-[#d4a843] px-4 py-2 text-sm font-semibold text-black transition-colors hover:bg-[#c9952b] active:bg-[#b8941f]"
+                        className="inline-flex cursor-pointer items-center justify-center rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-black transition-colors hover:bg-[#c9952b] active:bg-[#b8941f]"
                       >
                         Acessar
                       </Link>

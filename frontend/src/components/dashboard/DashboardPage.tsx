@@ -36,10 +36,10 @@ export default function DashboardPage() {
     REVOKE_ACCESS: 'text-[#ef4444]',
     UPDATE_USER_ROLE: 'text-[#3b82f6]',
     UPDATE_USER_STATUS: 'text-[#f59e0b]',
-    CREATE_TAREFA: 'text-[#d4a843]',
+    CREATE_TAREFA: 'text-gold',
     UPDATE_TAREFA_STATUS: 'text-[#3b82f6]',
     CREATE_CLIENTE: 'text-[#22c55e]',
-    LOGIN_SUCCESS: 'text-[#6b6b6b]',
+    LOGIN_SUCCESS: 'text-text-muted',
     LOGIN_DENIED: 'text-[#ef4444]',
   }
 
@@ -47,8 +47,8 @@ export default function DashboardPage() {
     <motion.div variants={stagger} initial="hidden" animate="visible">
       {/* Welcome */}
       <motion.div variants={fadeUp} className="mb-6">
-        <h1 className="text-2xl font-bold text-[#f5f5f5]">Bem-vindo de volta 👋</h1>
-        <p className="mt-1 text-sm text-[#6b6b6b]">
+        <h1 className="text-2xl font-bold text-text-primary">Bem-vindo de volta 👋</h1>
+        <p className="mt-1 text-sm text-text-muted">
           Acompanhe os indicadores do escritório em tempo real.
         </p>
       </motion.div>
@@ -65,27 +65,27 @@ export default function DashboardPage() {
 
       {/* Recent Audit Logs */}
       <motion.div variants={fadeUp}>
-        <h2 className="mb-4 text-lg font-semibold text-[#f5f5f5]">Atividade Recente</h2>
-        <div className="rounded-lg border border-[#2a2a2a] bg-[#1a1a1a]">
+        <h2 className="mb-4 text-lg font-semibold text-text-primary">Atividade Recente</h2>
+        <div className="rounded-lg border border-border bg-card">
           {summary.recentAuditLogs.map((log, i) => (
             <div
               key={log.id}
               className={`flex items-center gap-4 px-5 py-3.5 ${
-                i < summary.recentAuditLogs.length - 1 ? 'border-b border-[#1e1e1e]' : ''
+                i < summary.recentAuditLogs.length - 1 ? 'border-b border-border' : ''
               }`}
             >
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#252525]">
-                <Activity className="h-4 w-4 text-[#6b6b6b]" />
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface">
+                <Activity className="h-4 w-4 text-text-muted" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm text-[#f5f5f5]">
+                <p className="text-sm text-text-primary">
                   <span className="font-medium">{log.usuarioNome}</span>
                   {' '}
-                  <span className={actionColors[log.acao] || 'text-[#a0a0a0]'}>{log.acao}</span>
+                  <span className={actionColors[log.acao] || 'text-text-secondary'}>{log.acao}</span>
                 </p>
-                <p className="truncate text-xs text-[#6b6b6b]">{log.alvo}</p>
+                <p className="truncate text-xs text-text-muted">{log.alvo}</p>
               </div>
-              <span className="shrink-0 text-xs text-[#6b6b6b]">{formatDateTime(log.dataHora)}</span>
+              <span className="shrink-0 text-xs text-text-muted">{formatDateTime(log.dataHora)}</span>
             </div>
           ))}
         </div>
