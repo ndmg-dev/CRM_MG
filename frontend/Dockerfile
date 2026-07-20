@@ -8,7 +8,8 @@ ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
 ENV NODE_OPTIONS="--max-old-space-size=1024"
 COPY package*.json ./
-RUN npm install --no-audit --no-fund
+COPY packages/ ./packages/
+RUN npm install --no-audit --no-fund --legacy-peer-deps
 COPY . .
 RUN npm run build
 
