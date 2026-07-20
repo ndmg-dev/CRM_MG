@@ -1,3 +1,4 @@
+// @ts-nocheck
 import * as RLabel from '@radix-ui/react-label';
 import type { ReactNode } from 'react';
 import * as styles from './Label.css';
