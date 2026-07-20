@@ -235,46 +235,45 @@ export default function Sidebar() {
           </div>
         )}
 
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-1">
           {/* Change Password (Visual only) */}
-          <Button variant="ghost" className="w-full justify-start !px-3">
-            <Key className="h-4 w-4 shrink-0 text-[#f5f5f5]" />
+          <button className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-[#a0a0a0] transition-colors hover:bg-[#1e1e1e] hover:text-[#f5f5f5]">
+            <Key className="h-4 w-4 shrink-0" />
             <AnimatePresence>
               {sidebarOpen && (
-                <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="whitespace-nowrap">
                   Alterar senha
                 </motion.span>
               )}
             </AnimatePresence>
-          </Button>
+          </button>
 
           {/* Logout */}
-          <Button
-            variant="ghost"
+          <button
             onClick={() => { logout(); window.location.href = '/login' }}
-            className="w-full justify-start !px-3"
+            className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-[#a0a0a0] transition-colors hover:bg-[#1e1e1e] hover:text-[#f5f5f5]"
           >
-            <LogOut className="h-4 w-4 shrink-0 text-[#f5f5f5]" />
+            <LogOut className="h-4 w-4 shrink-0" />
             <AnimatePresence>
               {sidebarOpen && (
-                <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="whitespace-nowrap">
                   Sair
                 </motion.span>
               )}
             </AnimatePresence>
-          </Button>
+          </button>
 
           {/* Theme (Visual only) */}
-          <Button variant="ghost" className="w-full justify-start !px-3">
-            <Moon className="h-4 w-4 shrink-0 text-[#f5f5f5]" />
+          <button className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-[#a0a0a0] transition-colors hover:bg-[#1e1e1e] hover:text-[#f5f5f5]">
+            <Moon className="h-4 w-4 shrink-0" />
             <AnimatePresence>
               {sidebarOpen && (
-                <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="whitespace-nowrap">
                   Tema escuro
                 </motion.span>
               )}
             </AnimatePresence>
-          </Button>
+          </button>
         </div>
 
         {/* Collapse toggle */}
