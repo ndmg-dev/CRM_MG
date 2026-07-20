@@ -7,6 +7,7 @@ import { PERFIL_LABELS, SETOR_LABELS } from '@/lib/constants'
 import { Check, X, Plus } from 'lucide-react'
 import toast from 'react-hot-toast'
 import type { Perfil, Setor, Usuario } from '@/types'
+import { Button, Badge } from '@mg/ui'
 
 const SETOR_COLORS: Record<string, string> = {
   DP: 'bg-[#ec4899]',
@@ -96,13 +97,13 @@ export default function UsersTable() {
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <button
+        <Button
+          variant="primary"
           onClick={() => setIsCreating(!isCreating)}
-          className="flex items-center gap-2 rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-black transition-colors hover:bg-[#c9952b]"
         >
           <Plus className="h-4 w-4" />
           Novo Usuário
-        </button>
+        </Button>
       </div>
 
       {isCreating && (
@@ -244,19 +245,20 @@ export default function UsersTable() {
                   </div>
                 ) : (
                   <div className="flex items-center gap-2">
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => handleEdit(u)}
-                      className="rounded-md border border-border bg-sidebar px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-hover hover:text-text-primary"
                     >
                       Editar
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="danger"
+                      size="sm"
                       onClick={() => handleDelete(u.id)}
-                      disabled={deleteMutation.isPending}
-                      className="rounded-md border border-[#ef4444]/30 bg-sidebar px-3 py-1.5 text-xs font-medium text-[#ef4444] transition-colors hover:bg-[#ef4444]/10 disabled:opacity-50"
                     >
                       Excluir
-                    </button>
+                    </Button>
                   </div>
                 )}
               </td>
