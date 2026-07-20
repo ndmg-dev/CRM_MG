@@ -46,6 +46,7 @@ import { ICON_MAP } from '@/lib/icons'
 import { useAuthStore } from '@/stores/authStore'
 import { useUIStore } from '@/stores/uiStore'
 import { getInitials } from '@/lib/utils'
+import { Button } from '@mg/ui'
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -236,7 +237,7 @@ export default function Sidebar() {
 
         <div className="flex flex-col gap-2">
           {/* Change Password (Visual only) */}
-          <button className="flex w-full items-center gap-3 rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] px-3 py-2.5 text-sm text-[#f5f5f5] transition-colors hover:bg-[#252525]">
+          <Button variant="ghost" className="w-full justify-start !px-3">
             <Key className="h-4 w-4 shrink-0 text-[#f5f5f5]" />
             <AnimatePresence>
               {sidebarOpen && (
@@ -245,12 +246,13 @@ export default function Sidebar() {
                 </motion.span>
               )}
             </AnimatePresence>
-          </button>
+          </Button>
 
           {/* Logout */}
-          <button
+          <Button
+            variant="ghost"
             onClick={() => { logout(); window.location.href = '/login' }}
-            className="flex w-full items-center gap-3 rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] px-3 py-2.5 text-sm text-[#f5f5f5] transition-colors hover:bg-[#252525]"
+            className="w-full justify-start !px-3"
           >
             <LogOut className="h-4 w-4 shrink-0 text-[#f5f5f5]" />
             <AnimatePresence>
@@ -260,10 +262,10 @@ export default function Sidebar() {
                 </motion.span>
               )}
             </AnimatePresence>
-          </button>
+          </Button>
 
           {/* Theme (Visual only) */}
-          <button className="flex w-full items-center gap-3 rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] px-3 py-2.5 text-sm text-[#f5f5f5] transition-colors hover:bg-[#252525]">
+          <Button variant="ghost" className="w-full justify-start !px-3">
             <Moon className="h-4 w-4 shrink-0 text-[#f5f5f5]" />
             <AnimatePresence>
               {sidebarOpen && (
@@ -272,7 +274,7 @@ export default function Sidebar() {
                 </motion.span>
               )}
             </AnimatePresence>
-          </button>
+          </Button>
         </div>
 
         {/* Collapse toggle */}

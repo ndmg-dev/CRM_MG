@@ -1,5 +1,5 @@
 import { style, styleVariants } from '@vanilla-extract/css';
-import { vars } from '../theme.css';
+import { vars } from './theme.css';
 
 // tudo aqui é checado em build: usar vars.color.gold.xpto que não existe = erro de tipo.
 const base = style({

@@ -1,5 +1,5 @@
 import { style, keyframes } from '@vanilla-extract/css';
-import { vars } from '../theme.css';
+import { vars } from './theme.css';
 
 /* Animações: o Radix expõe [data-state="open"|"closed"] no Overlay e no Content,
    então dá pra animar entrada/saída sem JS. */

@@ -1,5 +1,5 @@
 import { style, keyframes } from '@vanilla-extract/css';
-import { vars } from '../theme.css';
+import { vars } from './theme.css';
 
 const contentShow = keyframes({
   from: { opacity: 0, transform: 'translateY(-4px)' },

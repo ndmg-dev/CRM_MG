@@ -1,6 +1,6 @@
 import type { TextareaHTMLAttributes } from 'react';
 import * as styles from './Textarea.css';
-import { errorText } from '../Input/Input.css';
+import { errorText } from './Input.css';
 
 interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   error?: string;
