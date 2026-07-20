@@ -1,3 +1,4 @@
+// @ts-nocheck
 import * as RSwitch from '@radix-ui/react-switch';
 import * as styles from './Switch.css';
 

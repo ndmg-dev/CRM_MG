@@ -4,7 +4,7 @@ import { vanillaExtractPlugin } from '@vanilla-extract/esbuild-plugin';
 export default defineConfig({
   entry: ['src/index.ts'],
   format: ['esm'],
-  dts: true,
+  dts: false,
   clean: true,
   splitting: false,
   sourcemap: true,

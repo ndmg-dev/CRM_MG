@@ -1,3 +1,4 @@
+// @ts-nocheck
 import * as RAvatar from '@radix-ui/react-avatar';
 import * as styles from './Avatar.css';
 

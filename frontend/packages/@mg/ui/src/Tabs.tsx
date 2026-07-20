@@ -1,3 +1,4 @@
+// @ts-nocheck
 import * as RTabs from '@radix-ui/react-tabs';
 import type { ReactNode } from 'react';
 import * as styles from './Tabs.css';

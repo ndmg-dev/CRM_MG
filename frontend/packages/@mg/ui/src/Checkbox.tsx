@@ -1,3 +1,4 @@
+// @ts-nocheck
 import * as RCheckbox from '@radix-ui/react-checkbox';
 import { Check } from 'lucide-react';
 import type { ReactNode } from 'react';

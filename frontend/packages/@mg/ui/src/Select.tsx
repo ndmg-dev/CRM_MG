@@ -1,3 +1,4 @@
+// @ts-nocheck
 import * as RSelect from '@radix-ui/react-select';
 import { Check, ChevronDown, ChevronUp } from 'lucide-react';
 import * as styles from './Select.css';

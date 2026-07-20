@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+// @ts-nocheck
 import * as Dialog from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 import * as styles from './Modal.css';

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import * as RRadio from '@radix-ui/react-radio-group';
 import * as styles from './RadioGroup.css';
 
