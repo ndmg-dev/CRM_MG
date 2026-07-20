@@ -1,0 +1,6 @@
+{
+  "name": "@mg/tokens",
+  "version": "1.0.0",
+  "main": "build/tokens.js",
+  "types": "build/tokens.d.ts"
+}
