@@ -5,7 +5,7 @@
     "type":  "module",
     "scripts":  {
                     "dev":  "vite",
-                    "build":  "tsc -b \u0026\u0026 vite build",
+                    "build":  "npm run build --workspaces --if-present && tsc -b && vite build",
                     "lint":  "eslint .",
                     "preview":  "vite preview"
                 },
@@ -46,6 +46,6 @@
                             "vite":  "^8.0.12"
                         },
     "workspaces":  [
-                       "packages/*"
+                       "packages/@mg/*"
                    ]
 }
