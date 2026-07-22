@@ -68,7 +68,7 @@ export default function Header() {
       <div className="flex items-center gap-3">
         {/* Search */}
         <div className="relative hidden sm:block" ref={searchRef}>
-          <div className={`flex items-center gap-2 rounded-lg border bg-card px-3 py-1.5 transition-colors ${isSearchFocused ? 'border-[#d4a843]' : 'border-border'
+          <div className={`flex items-center gap-2 rounded-lg border bg-card px-3 py-1.5 transition-colors ${isSearchFocused ? 'border-gold' : 'border-border'
             }`}>
             <Search className="h-4 w-4 text-text-muted" />
             <input
@@ -77,7 +77,7 @@ export default function Header() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => setIsSearchFocused(true)}
-              className="w-56 bg-transparent text-sm text-text-primary placeholder-[#6b6b6b] outline-none"
+              className="w-56 bg-transparent text-sm text-text-primary placeholder-text-muted outline-none"
             />
           </div>
 
@@ -110,7 +110,7 @@ export default function Header() {
                             }}
                             className="flex cursor-pointer items-center gap-3 rounded-lg p-2 transition-colors hover:bg-surface-hover"
                           >
-                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-[#222222] text-gold">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-surface-raised text-gold">
                               <Icon className="h-4 w-4" />
                             </div>
                             <div className="flex flex-col overflow-hidden">
@@ -153,7 +153,7 @@ export default function Header() {
                 transition={{ duration: 0.15 }}
                 className="absolute right-0 mt-2 w-80 overflow-hidden rounded-xl border border-border bg-card shadow-2xl"
               >
-                <div className="flex items-center justify-between border-b border-border bg-[#222222] px-4 py-3">
+                <div className="flex items-center justify-between border-b border-border bg-surface-raised px-4 py-3">
                   <h3 className="text-sm font-semibold text-text-primary">Notificações</h3>
                   {unreadCount > 0 && (
                     <span className="rounded-full bg-gold/10 px-2 py-0.5 text-xs font-medium text-gold">
@@ -165,15 +165,15 @@ export default function Header() {
                 <div className="max-h-[400px] overflow-y-auto">
                   {notificacoes.length === 0 ? (
                     <div className="flex flex-col items-center justify-center px-4 py-8 text-center">
-                      <Bell className="mb-2 h-8 w-8 text-[#333333]" />
+                      <Bell className="mb-2 h-8 w-8 text-border-light" />
                       <p className="text-sm text-text-muted">Nenhuma notificação por enquanto.</p>
                     </div>
                   ) : (
-                    <div className="divide-y divide-[#2a2a2a]">
+                    <div className="divide-y divide-divider">
                       {notificacoes.map((notif) => (
                         <div
                           key={notif.id}
-                          className={`relative flex items-start gap-3 p-4 transition-colors hover:bg-surface-hover ${!notif.lida ? 'bg-[#222222]/50' : ''
+                          className={`relative flex items-start gap-3 p-4 transition-colors hover:bg-surface-hover ${!notif.lida ? 'bg-surface-raised/50' : ''
                             }`}
                         >
                           {!notif.lida && (
@@ -186,7 +186,7 @@ export default function Header() {
                             <p className="text-xs text-text-muted line-clamp-2">
                               {notif.mensagem}
                             </p>
-                            <p className="text-[10px] text-[#4a4a4a]">
+                            <p className="text-[10px] text-border-emphasis">
                               {formatDateTime(notif.data_criacao)}
                             </p>
                           </div>

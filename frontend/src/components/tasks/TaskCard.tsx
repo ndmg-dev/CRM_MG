@@ -19,7 +19,7 @@ export default function TaskCard({ task, isDragging, onClick }: TaskCardProps) {
       className={cn(
         'cursor-pointer rounded-lg border bg-card p-3.5 transition-all',
         isDragging
-          ? 'border-[#d4a843] shadow-lg shadow-[#d4a843]/10 rotate-1'
+          ? 'border-gold shadow-lg shadow-gold/10 rotate-1'
           : 'border-border hover:border-border-light',
       )}
     >
@@ -41,7 +41,7 @@ export default function TaskCard({ task, isDragging, onClick }: TaskCardProps) {
         {/* Due date */}
         <div className={cn(
           'flex items-center gap-1 text-xs',
-          overdue ? 'text-[#ef4444]' : 'text-text-muted',
+          overdue ? 'text-error' : 'text-text-muted',
         )}>
           <CalendarDays className="h-3 w-3" />
           {formatDate(task.dataVencimento)}

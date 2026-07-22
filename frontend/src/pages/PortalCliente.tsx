@@ -76,7 +76,7 @@ export default function PortalCliente() {
   if (isError || !info) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4 text-center">
-        <AlertTriangle className="mb-4 h-16 w-16 text-[#ef4444]" />
+        <AlertTriangle className="mb-4 h-16 w-16 text-error" />
         <h1 className="mb-2 text-2xl font-bold text-white">Acesso Expirado ou Inválido</h1>
         <p className="text-text-secondary">O link que você tentou acessar não é mais válido. Por favor, solicite um novo link à Mendonça Galvão.</p>
       </div>
@@ -105,7 +105,7 @@ export default function PortalCliente() {
           <motion.div 
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="mb-6 flex flex-col items-center justify-center rounded-lg border border-[#22c55e]/50 bg-[#22c55e]/10 p-6 text-center text-[#22c55e]"
+            className="mb-6 flex flex-col items-center justify-center rounded-lg border border-success/50 bg-success/10 p-6 text-center text-success"
           >
             <CheckCircle2 className="mb-2 h-10 w-10" />
             <p className="font-medium">Arquivo enviado com sucesso!</p>
@@ -114,7 +114,7 @@ export default function PortalCliente() {
         )}
 
         {error && (
-          <div className="mb-6 rounded-lg bg-[#ef4444]/10 p-4 text-center text-sm text-[#ef4444]">
+          <div className="mb-6 rounded-lg bg-error/10 p-4 text-center text-sm text-error">
             {error}
           </div>
         )}
@@ -125,7 +125,7 @@ export default function PortalCliente() {
             type="month" 
             value={competencia}
             onChange={(e) => setCompetencia(e.target.value)}
-            className="w-full rounded-lg border border-border bg-card px-4 py-3 text-text-primary outline-none focus:border-[#d4a843] focus:ring-1 focus:ring-[#d4a843]/30"
+            className="w-full rounded-lg border border-border bg-card px-4 py-3 text-text-primary outline-none focus:border-gold focus:ring-1 focus:ring-gold/30"
           />
           <p className="mt-1 text-xs text-text-muted">Selecione o mês de referência destes arquivos.</p>
         </div>
@@ -134,7 +134,7 @@ export default function PortalCliente() {
           onDragOver={(e) => e.preventDefault()}
           onDrop={handleDrop}
           className={`relative mb-6 flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-10 text-center transition-colors ${
-            files.length > 0 ? 'border-[#d4a843] bg-gold/5' : 'border-border hover:border-[#4a4a4a] hover:bg-card'
+            files.length > 0 ? 'border-gold bg-gold/5' : 'border-border hover:border-border-emphasis hover:bg-card'
           }`}
         >
           <input 
@@ -153,14 +153,14 @@ export default function PortalCliente() {
                   <div key={i} className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-2 overflow-hidden">
                       <FileIcon className="h-4 w-4 shrink-0 text-text-secondary" />
-                      <span className="truncate text-[#d4d4d4]">{f.name}</span>
+                      <span className="truncate text-text-secondary">{f.name}</span>
                     </div>
                     <div className="flex items-center gap-3 shrink-0 ml-4">
                       <span className="text-text-muted">{(f.size / 1024 / 1024).toFixed(2)} MB</span>
                       <button 
                         type="button"
                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeFile(i); }}
-                        className="text-[#ef4444] hover:text-[#ff6b6b] px-1"
+                        className="text-error hover:text-error px-1"
                       >
                         ✕
                       </button>
@@ -180,7 +180,7 @@ export default function PortalCliente() {
         </div>
 
         <Button 
-          className="w-full bg-gold py-6 text-lg font-bold text-black hover:bg-[#e5bc55]"
+          className="w-full bg-gold py-6 text-lg font-bold text-black hover:bg-gold-light"
           disabled={files.length === 0 || uploading}
           onClick={handleUpload}
         >

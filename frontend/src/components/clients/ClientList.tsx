@@ -62,7 +62,7 @@ export default function ClientList() {
           placeholder="Buscar por razão social, nome fantasia ou CNPJ..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 bg-transparent text-sm text-text-primary placeholder-[#6b6b6b] outline-none"
+          className="flex-1 bg-transparent text-sm text-text-primary placeholder-text-muted outline-none"
         />
       </div>
 
@@ -111,8 +111,8 @@ export default function ClientList() {
                   <td className="px-5 py-3.5">
                     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
                       c.statusCnpj === 'Ativa'
-                        ? 'bg-[#22c55e]/10 text-[#22c55e]'
-                        : 'bg-[#ef4444]/10 text-[#ef4444]'
+                        ? 'bg-success/10 text-success'
+                        : 'bg-error/10 text-error'
                     }`}>
                       {c.statusCnpj}
                     </span>
@@ -125,7 +125,7 @@ export default function ClientList() {
                         size="sm" 
                         onClick={(e) => handleCopyLink(e, c.id)}
                         title="Copiar link de upload"
-                        className="text-gold hover:text-[#e5bc55] hover:bg-gold/10"
+                        className="text-gold hover:text-gold-light hover:bg-gold/10"
                       >
                         <Link2 className="h-4 w-4" />
                       </Button>

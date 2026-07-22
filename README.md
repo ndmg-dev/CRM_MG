@@ -39,17 +39,24 @@ O projeto usa Docker Compose, o que significa que todas as dependências (Banco,
 
 1. Clone este repositório.
 2. Certifique-se de ter o [Docker Desktop](https://www.docker.com/) instalado e rodando.
-3. No terminal (dentro da raiz do projeto), execute:
+3. Crie o arquivo de variáveis de ambiente a partir do modelo e preencha os valores:
+```bash
+cp .env.example .env
+```
+4. No terminal (dentro da raiz do projeto), execute:
 ```bash
 docker-compose up -d --build
 ```
-4. A mágica acontecerá! O Docker vai subir três containers:
-   - **PostgreSQL**: Rodando na porta `5432`.
-   - **Backend**: Rodando na porta `8080`.
-   - **Frontend**: Rodando na porta `3000`.
-5. Abra o navegador e acesse: [http://localhost:3000](http://localhost:3000).
+5. O Docker vai subir quatro containers. As portas **publicadas no seu host** (configuráveis via `HOST_*_PORT` no `.env`) são:
+   | Serviço | Porta interna | Porta no host (padrão) | Acesso |
+   | --- | --- | --- | --- |
+   | Frontend | `80` | `3009` | [http://localhost:3009](http://localhost:3009) |
+   | Backend (API) | `8080` | `8089` | [http://localhost:8089/docs](http://localhost:8089/docs) |
+   | PostgreSQL | `5432` | `5439` | `localhost:5439` |
+   | pgAdmin | `80` | `5059` | [http://localhost:5059](http://localhost:5059) |
+6. Abra o navegador e acesse o Frontend em [http://localhost:3009](http://localhost:3009).
 
-*(A senha padrão para desenvolvimento no painel de administração é `crm_dev_password_2024`, conforme o arquivo `docker-compose.yml`)*
+*(A senha padrão do banco em desenvolvimento é `crm_dev_password_2024`, conforme o `docker-compose.yml`.)*
 
 ---
 

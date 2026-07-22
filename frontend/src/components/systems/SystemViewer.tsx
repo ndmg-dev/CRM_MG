@@ -58,7 +58,7 @@ export default function SystemViewer() {
   if (!sistema) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
-        <AlertTriangle className="mb-4 h-12 w-12 text-[#ef4444]" />
+        <AlertTriangle className="mb-4 h-12 w-12 text-error" />
         <p className="text-lg text-text-secondary">Sistema não encontrado</p>
         <Button variant="secondary" className="mt-4" onClick={() => navigate('/sistemas')}>
           Voltar aos Sistemas
@@ -78,7 +78,7 @@ export default function SystemViewer() {
             <ArrowLeft className="mr-1 h-4 w-4" />
             Voltar
           </Button>
-          <div className="h-5 w-px bg-[#2a2a2a]" />
+          <div className="h-5 w-px bg-divider" />
           <span className="text-sm font-medium text-text-primary">{sistema.nome}</span>
         </div>
 
@@ -105,7 +105,7 @@ export default function SystemViewer() {
       <div className="relative flex-1 overflow-hidden rounded-lg border border-border bg-sidebar">
         {!hasValidUrl ? (
           <div className="flex h-full flex-col items-center justify-center gap-3">
-            <AlertTriangle className="h-10 w-10 text-[#f59e0b]" />
+            <AlertTriangle className="h-10 w-10 text-warning" />
             <p className="text-text-secondary">URL do sistema não configurada</p>
             <p className="text-sm text-text-muted">
               A URL deste sistema precisa ser definida pelo administrador.
@@ -123,7 +123,7 @@ export default function SystemViewer() {
             {/* Error fallback */}
             {iframeError && (
               <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-sidebar">
-                <AlertTriangle className="h-10 w-10 text-[#ef4444]" />
+                <AlertTriangle className="h-10 w-10 text-error" />
                 <p className="text-text-secondary">Erro ao carregar o sistema</p>
                 <Button variant="secondary" size="sm" onClick={() => { setIframeError(false); setIframeLoaded(false) }}>
                   Tentar novamente

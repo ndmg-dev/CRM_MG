@@ -32,15 +32,15 @@ export default function DashboardPage() {
   }
 
   const actionColors: Record<string, string> = {
-    GRANT_ACCESS: 'text-[#22c55e]',
-    REVOKE_ACCESS: 'text-[#ef4444]',
-    UPDATE_USER_ROLE: 'text-[#3b82f6]',
-    UPDATE_USER_STATUS: 'text-[#f59e0b]',
+    GRANT_ACCESS: 'text-success',
+    REVOKE_ACCESS: 'text-error',
+    UPDATE_USER_ROLE: 'text-info',
+    UPDATE_USER_STATUS: 'text-warning',
     CREATE_TAREFA: 'text-gold',
-    UPDATE_TAREFA_STATUS: 'text-[#3b82f6]',
-    CREATE_CLIENTE: 'text-[#22c55e]',
+    UPDATE_TAREFA_STATUS: 'text-info',
+    CREATE_CLIENTE: 'text-success',
     LOGIN_SUCCESS: 'text-text-muted',
-    LOGIN_DENIED: 'text-[#ef4444]',
+    LOGIN_DENIED: 'text-error',
   }
 
   return (

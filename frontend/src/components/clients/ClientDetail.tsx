@@ -45,7 +45,7 @@ function DocumentGroup({ clienteId, competencia, documentos, onNotify }: { clien
     <div className="mb-4 overflow-hidden rounded-lg border border-border bg-card">
       <div
         onClick={() => setIsOpen(!isOpen)}
-        className="flex w-full cursor-pointer items-center justify-between bg-[#222222] px-6 py-4 transition-colors hover:bg-[#2a2a2a]"
+        className="flex w-full cursor-pointer items-center justify-between bg-surface-raised px-6 py-4 transition-colors hover:bg-divider"
       >
         <div className="flex items-center gap-3">
           <Folder className="h-5 w-5 text-gold" />
@@ -62,7 +62,7 @@ function DocumentGroup({ clienteId, competencia, documentos, onNotify }: { clien
               size="sm"
               variant="outline"
               onClick={handleValidate}
-              className="h-8 border-[#d4a843]/30 bg-gold/10 text-gold hover:bg-gold/20 hover:text-[#e5bc55]"
+              className="h-8 border-gold/30 bg-gold/10 text-gold hover:bg-gold/20 hover:text-gold-light"
             >
               <Sparkles className="mr-1.5 h-3.5 w-3.5" />
               Validar com IA
@@ -82,7 +82,7 @@ function DocumentGroup({ clienteId, competencia, documentos, onNotify }: { clien
               <th className="px-6 py-3 font-medium">Ações</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#2a2a2a]">
+          <tbody className="divide-y divide-divider">
             {documentos.map((doc) => (
               <tr key={doc.id} className="hover:bg-surface-hover">
                 <td className="px-6 py-4 font-medium text-text-primary flex items-center gap-2">
@@ -94,7 +94,7 @@ function DocumentGroup({ clienteId, competencia, documentos, onNotify }: { clien
                 <td className="px-6 py-4">
                   <button 
                     onClick={() => api.documentos.download(doc.id, doc.nomeArquivo)} 
-                    className="inline-flex items-center text-gold hover:text-[#e5bc55]"
+                    className="inline-flex items-center text-gold hover:text-gold-light"
                   >
                     <Download className="mr-1 h-4 w-4" /> Baixar
                   </button>
@@ -126,7 +126,7 @@ function DocumentGroup({ clienteId, competencia, documentos, onNotify }: { clien
             <div className="p-6">
               {isValidating ? (
                 <div className="flex flex-col items-center justify-center py-8">
-                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#d4a843] border-t-transparent mb-4"></div>
+                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-gold border-t-transparent mb-4"></div>
                   <p className="text-text-secondary">A IA está analisando os arquivos...</p>
                 </div>
               ) : validationResult ? (
@@ -176,7 +176,7 @@ function DocumentGroup({ clienteId, competencia, documentos, onNotify }: { clien
                 Fechar
               </Button>
               {validationResult && validationResult.faltantes.length > 0 && (
-                <Button onClick={handleCobrar} className="bg-[#22c55e] text-white hover:bg-[#1ea34d]">
+                <Button onClick={handleCobrar} className="bg-success text-white hover:bg-success-hover">
                   <MessageSquare className="mr-2 h-4 w-4" />
                   Cobrar Pendentes no WhatsApp
                 </Button>
@@ -311,8 +311,8 @@ export default function ClientDetail() {
           <div className="ml-auto">
             <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${
               cliente.statusCnpj === 'Ativa'
-                ? 'bg-[#22c55e]/10 text-[#22c55e]'
-                : 'bg-[#ef4444]/10 text-[#ef4444]'
+                ? 'bg-success/10 text-success'
+                : 'bg-error/10 text-error'
             }`}>
               {cliente.statusCnpj}
             </span>
@@ -379,7 +379,7 @@ export default function ClientDetail() {
                   <Link2 className="mr-2 h-4 w-4 text-gold" />
                   Copiar Link
                 </Button>
-                <Button onClick={() => notifyPending()} disabled={notifying} className="bg-[#22c55e] text-white hover:bg-[#1ea34d]">
+                <Button onClick={() => notifyPending()} disabled={notifying} className="bg-success text-white hover:bg-success-hover">
                   <MessageSquare className="mr-2 h-4 w-4" />
                   {notifying ? "Notificando..." : "Cobrar no WhatsApp"}
                 </Button>

@@ -164,7 +164,7 @@ export default function LoginPage() {
         animate="visible"
         className="relative z-10 w-full max-w-md rounded-2xl border border-border bg-card p-10 shadow-[0_-4px_30px_-10px_rgba(212,168,67,0.2)] backdrop-blur-xl relative overflow-hidden"
       >
-        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#d4a843]/60 to-transparent" />
+        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-gold/60 to-transparent" />
         <motion.div
           variants={staggerContainer}
           initial="hidden"
@@ -196,7 +196,7 @@ export default function LoginPage() {
             variants={fadeUp}
             onClick={handleGoogleLogin}
             disabled={isLoading}
-            className="flex w-full items-center justify-center rounded-lg bg-gold px-6 py-3 text-sm font-semibold text-black shadow-md transition-all duration-200 hover:bg-[#e5bc55] hover:shadow-[0_0_15px_rgba(212,168,67,0.3)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex w-full items-center justify-center rounded-lg bg-gold px-6 py-3 text-sm font-semibold text-black shadow-md transition-all duration-200 hover:bg-gold-light hover:shadow-[0_0_15px_rgba(212,168,67,0.3)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isLoading ? (
               <Loader2 className="mr-3 h-5 w-5 animate-spin text-black/70" />
@@ -209,7 +209,7 @@ export default function LoginPage() {
           {/* Divider */}
           <motion.div
             variants={fadeUp}
-            className="my-6 h-px w-full bg-gradient-to-r from-transparent via-[#2a2a2a] to-transparent"
+            className="my-6 h-px w-full bg-gradient-to-r from-transparent via-divider to-transparent"
           />
 
           {/* Restriction notice */}
@@ -218,7 +218,7 @@ export default function LoginPage() {
             className="flex flex-col items-center justify-center text-xs text-text-muted"
           >
             <div className="flex items-center gap-1.5 mb-1">
-              <ShieldCheck className="h-3.5 w-3.5 text-[#4ade80]" />
+              <ShieldCheck className="h-3.5 w-3.5 text-success" />
               <span>Acesso restrito a colaboradores</span>
             </div>
             <p>Domínio <span className="text-text-secondary">@mendoncagalvao.com.br</span></p>

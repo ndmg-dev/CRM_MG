@@ -128,7 +128,7 @@ export default function ClientForm() {
 
   if (isEditing && isLoading) return <LoadingSpinner label="Carregando..." />
 
-  const inputClass = "w-full rounded-lg border border-border bg-card px-4 py-2.5 text-sm text-text-primary placeholder-[#6b6b6b] outline-none transition-colors focus:border-[#d4a843] focus:ring-1 focus:ring-[#d4a843]/30"
+  const inputClass = "w-full rounded-lg border border-border bg-card px-4 py-2.5 text-sm text-text-primary placeholder-text-muted outline-none transition-colors focus:border-gold focus:ring-1 focus:ring-gold/30"
   const labelClass = "mb-1.5 block text-sm font-medium text-text-secondary"
 
   return (
@@ -191,11 +191,11 @@ export default function ClientForm() {
                   const allItems = DOCUMENT_CATEGORIES.flatMap(c => c.itens);
                   setForm({ ...form, documentosExigidos: allItems.join('\n') });
                 }}
-                className="text-xs font-medium text-gold hover:text-[#e5bc55] transition-colors"
+                className="text-xs font-medium text-gold hover:text-gold-light transition-colors"
               >
                 Selecionar Todos
               </button>
-              <span className="text-[#3a3a3a]">|</span>
+              <span className="text-border-emphasis">|</span>
               <button
                 type="button"
                 onClick={() => setForm({ ...form, documentosExigidos: '' })}
@@ -217,7 +217,7 @@ export default function ClientForm() {
                         <div className="flex h-5 items-center">
                           <input
                             type="checkbox"
-                            className="h-4 w-4 rounded border-[#3a3a3a] bg-card text-gold focus:ring-1 focus:ring-[#d4a843] focus:ring-offset-[#111111] transition-colors"
+                            className="h-4 w-4 rounded border-border-emphasis bg-card text-gold focus:ring-1 focus:ring-gold focus:ring-offset-background transition-colors"
                             checked={isChecked}
                             onChange={(e) => {
                               let current = form.documentosExigidos.split('\n').map(i => i.trim()).filter(Boolean);

@@ -90,7 +90,7 @@ export default function TaskModal({ task, onClose }: TaskModalProps) {
     isEditing ? updateMutation.mutate() : createMutation.mutate()
   }
 
-  const inputClass = "w-full rounded-lg border border-border bg-sidebar px-3 py-2 text-sm text-text-primary outline-none focus:border-[#d4a843]"
+  const inputClass = "w-full rounded-lg border border-border bg-sidebar px-3 py-2 text-sm text-text-primary outline-none focus:border-gold"
   const labelClass = "mb-1 block text-xs font-medium text-text-muted"
   const isPending = createMutation.isPending || updateMutation.isPending
 

@@ -10,13 +10,13 @@ import type { Perfil, Setor, Usuario } from '@/types'
 import { Button, Badge } from '@mg/ui'
 
 const SETOR_COLORS: Record<string, string> = {
-  DP: 'bg-[#ec4899]',
-  FISCAL: 'bg-[#06b6d4]',
-  CONTABIL: 'bg-[#ef4444]',
-  SOCIETARIO: 'bg-[#8b5cf6]',
-  TI: 'bg-[#f59e0b]',
-  GERAL: 'bg-[#6b7280]',
-  RESTRITO: 'bg-[#ef4444]',
+  DP: 'bg-accent-pink',
+  FISCAL: 'bg-accent-cyan',
+  CONTABIL: 'bg-error',
+  SOCIETARIO: 'bg-accent-purple',
+  TI: 'bg-warning',
+  GERAL: 'bg-text-muted',
+  RESTRITO: 'bg-error',
 }
 
 export default function UsersTable() {
@@ -107,7 +107,7 @@ export default function UsersTable() {
       </div>
 
       {isCreating && (
-        <div className="rounded-xl border border-border bg-[#141414] p-4">
+        <div className="rounded-xl border border-border bg-sidebar p-4">
           <h3 className="mb-4 text-sm font-semibold text-text-primary">Cadastrar Novo Usuário</h3>
           <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-5">
             <input
@@ -142,7 +142,7 @@ export default function UsersTable() {
               <button
                 onClick={() => createMutation.mutate(createForm)}
                 disabled={createMutation.isPending || !createForm.nome || !createForm.email}
-                className="flex-1 rounded-lg bg-[#22c55e] py-2 text-sm font-bold text-white transition-colors hover:bg-[#16a34a] disabled:opacity-50"
+                className="flex-1 rounded-lg bg-success py-2 text-sm font-bold text-white transition-colors hover:bg-success-hover disabled:opacity-50"
               >
                 Salvar
               </button>
@@ -157,7 +157,7 @@ export default function UsersTable() {
         </div>
       )}
 
-      <div className="overflow-hidden rounded-xl border border-border bg-[#141414] p-4">
+      <div className="overflow-hidden rounded-xl border border-border bg-sidebar p-4">
         <table className="w-full border-separate border-spacing-y-2">
         <thead>
           <tr>
@@ -173,7 +173,7 @@ export default function UsersTable() {
             <tr key={u.id} className="group">
               <td className="rounded-l-lg border border-r-0 border-border bg-card px-4 py-3 transition-colors group-hover:bg-surface">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full border border-[#d4a843] bg-surface-hover text-xs font-bold text-gold">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full border border-gold bg-surface-hover text-xs font-bold text-gold">
                     {getInitials(u.nome)}
                   </div>
                   <div>
@@ -212,7 +212,7 @@ export default function UsersTable() {
                   </select>
                 ) : (
                   <div className="flex items-center gap-2">
-                    <div className={`h-2 w-2 rounded-full ${SETOR_COLORS[u.setor] || 'bg-[#6b6b6b]'}`} />
+                    <div className={`h-2 w-2 rounded-full ${SETOR_COLORS[u.setor] || 'bg-text-muted'}`} />
                     <span className="text-sm font-medium text-text-secondary">{SETOR_LABELS[u.setor]}</span>
                   </div>
                 )}
@@ -228,7 +228,7 @@ export default function UsersTable() {
                     <option value="false">Inativo</option>
                   </select>
                 ) : (
-                  <span className={`text-sm font-medium ${u.ativo ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}>
+                  <span className={`text-sm font-medium ${u.ativo ? 'text-success' : 'text-error'}`}>
                     {u.ativo ? 'OK (Ativo)' : 'Inativo'}
                   </span>
                 )}
@@ -236,10 +236,10 @@ export default function UsersTable() {
               <td className="rounded-r-lg border border-l-0 border-border bg-card px-4 py-3 transition-colors group-hover:bg-surface">
                 {editingId === u.id ? (
                   <div className="flex items-center gap-2">
-                    <button onClick={handleCancel} className="rounded p-1 text-[#ef4444] hover:bg-[#ef4444]/10">
+                    <button onClick={handleCancel} className="rounded p-1 text-error hover:bg-error/10">
                       <X className="h-4 w-4" />
                     </button>
-                    <button onClick={() => handleSave(u.id)} className="rounded p-1 text-[#22c55e] hover:bg-[#22c55e]/10">
+                    <button onClick={() => handleSave(u.id)} className="rounded p-1 text-success hover:bg-success/10">
                       <Check className="h-4 w-4" />
                     </button>
                   </div>

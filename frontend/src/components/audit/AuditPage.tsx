@@ -28,18 +28,23 @@ function formatDuration(seconds: number | undefined | null): string {
   return `${s}s`
 }
 
+/** True when an ISO date string already carries timezone info (Z or ±hh:mm offset). */
+function hasTimezoneInfo(dateStr: string): boolean {
+  const timePart = dateStr.split('T')[1] ?? ''
+  return dateStr.endsWith('Z') || timePart.includes('+') || timePart.includes('-')
+}
+
 function timeAgo(dateStr: string): string {
-  const tzString = dateStr.endsWith('Z') || dateStr.includes('+') || dateStr.includes('-') && dateStr.split('T')[1]?.includes('-') ? dateStr : `${dateStr}Z`
-  const now = new Date()
-  const date = new Date(tzString)
-  const diffMs = now.getTime() - date.getTime()
-  const diffMin = Math.floor(diffMs / 60000)
-  if (diffMin < 1) return 'agora mesmo'
-  if (diffMin < 60) return `há ${diffMin}min`
-  const diffH = Math.floor(diffMin / 60)
-  if (diffH < 24) return `há ${diffH}h`
-  const diffD = Math.floor(diffH / 24)
-  return `há ${diffD}d`
+  // Backend timestamps without a timezone are UTC — append 'Z' so the browser
+  // doesn't reinterpret them as local time.
+  const normalizedDate = hasTimezoneInfo(dateStr) ? dateStr : `${dateStr}Z`
+  const minutesAgo = Math.floor((Date.now() - new Date(normalizedDate).getTime()) / 60000)
+  if (minutesAgo < 1) return 'agora mesmo'
+  if (minutesAgo < 60) return `há ${minutesAgo}min`
+  const hoursAgo = Math.floor(minutesAgo / 60)
+  if (hoursAgo < 24) return `há ${hoursAgo}h`
+  const daysAgo = Math.floor(hoursAgo / 24)
+  return `há ${daysAgo}d`
 }
 
 function getDeviceIcon(userAgent?: string) {
@@ -130,7 +135,7 @@ function OverviewTab() {
         ) : activeSessions.length === 0 ? (
           <div className="p-10 text-center text-text-muted">Nenhum usuário online no momento</div>
         ) : (
-          <div className="divide-y divide-[#2a2a2a]">
+          <div className="divide-y divide-divider">
             {activeSessions.map((session) => (
               <div key={session.id} className="flex items-center gap-4 px-6 py-4 hover:bg-surface-hover transition-colors">
                 {/* Avatar */}
@@ -142,7 +147,7 @@ function OverviewTab() {
                       {(session.usuarioNome || '?').charAt(0).toUpperCase()}
                     </div>
                   )}
-                  <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-[#1a1a1a] bg-emerald-400" />
+                  <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-card bg-emerald-400" />
                 </div>
 
                 {/* Info */}
@@ -194,7 +199,7 @@ function SessionsTab() {
           <select
             value={filterUser}
             onChange={(e) => setFilterUser(e.target.value)}
-            className="appearance-none rounded-lg border border-border bg-card px-4 py-2 pr-8 text-sm text-text-primary focus:border-[#d4a843] focus:outline-none"
+            className="appearance-none rounded-lg border border-border bg-card px-4 py-2 pr-8 text-sm text-text-primary focus:border-gold focus:outline-none"
           >
             <option value="">Todos os usuários</option>
             {usuarios.map((u) => (
@@ -227,7 +232,7 @@ function SessionsTab() {
                 <th className="px-6 py-3 font-medium">IP</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#2a2a2a]">
+            <tbody className="divide-y divide-divider">
               {sessions.map((s) => {
                 const duration = s.fim
                   ? Math.floor((new Date(s.fim).getTime() - new Date(s.inicio).getTime()) / 1000)
@@ -320,7 +325,7 @@ function SystemsUsageTab() {
                       initial={{ width: 0 }}
                       animate={{ width: `${(item.totalAcessos / maxAcessos) * 100}%` }}
                       transition={{ duration: 0.6, delay: idx * 0.1 }}
-                      className="h-full rounded-full bg-gradient-to-r from-[#d4a843] to-[#e5bc55]"
+                      className="h-full rounded-full bg-gradient-to-r from-gold to-gold-light"
                     />
                   </div>
                 </div>
@@ -354,7 +359,7 @@ function SystemsUsageTab() {
                 <th className="px-6 py-3 font-medium">Duração</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#2a2a2a]">
+            <tbody className="divide-y divide-divider">
               {recentes.map((r) => (
                 <tr key={r.id} className="hover:bg-surface-hover transition-colors">
                   <td className="px-6 py-4 text-text-primary font-medium">{r.usuarioNome || '—'}</td>
@@ -407,7 +412,7 @@ function ActivityLogsTab() {
           <select
             value={filterAcao}
             onChange={(e) => setFilterAcao(e.target.value)}
-            className="appearance-none rounded-lg border border-border bg-card px-4 py-2 pr-8 text-sm text-text-primary focus:border-[#d4a843] focus:outline-none"
+            className="appearance-none rounded-lg border border-border bg-card px-4 py-2 pr-8 text-sm text-text-primary focus:border-gold focus:outline-none"
           >
             <option value="">Todas as ações</option>
             {acoes.map((a) => (
@@ -439,7 +444,7 @@ function ActivityLogsTab() {
                 <th className="px-6 py-3 font-medium">Detalhes</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#2a2a2a]">
+            <tbody className="divide-y divide-divider">
               {logs.map((log) => (
                 <tr key={log.id} className="hover:bg-surface-hover transition-colors">
                   <td className="px-6 py-4 text-text-secondary whitespace-nowrap">{formatDateTime(log.dataHora)}</td>
@@ -456,7 +461,7 @@ function ActivityLogsTab() {
                         variant="ghost"
                         size="sm"
                         onClick={() => setExpandedId(expandedId === log.id ? null : log.id)}
-                        className="text-xs text-gold hover:text-[#e5bc55]"
+                        className="text-xs text-gold hover:text-gold-light"
                       >
                         <Eye className="mr-1 h-3 w-3" />
                         {expandedId === log.id ? 'Fechar' : 'Ver'}
@@ -497,16 +502,16 @@ function ActivityLogsTab() {
 export default function AuditPage() {
   const user = useAuthStore((s) => s.user)
   const setCurrentPage = useUIStore((s) => s.setCurrentPage)
+  const [activeTab, setActiveTab] = useState<AuditTab>('overview')
 
   useEffect(() => {
     setCurrentPage('Auditoria')
   }, [setCurrentPage])
 
+  // All hooks must run before any early return (Rules of Hooks).
   if (user?.perfil !== 'ADMIN') {
     return <Navigate to="/" replace />
   }
-
-  const [activeTab, setActiveTab] = useState<AuditTab>('overview')
 
   const tabs: { key: AuditTab; label: string; icon: typeof Activity }[] = [
     { key: 'overview', label: 'Visão Geral', icon: Activity },

@@ -171,7 +171,7 @@ export default function KanbanBoard() {
                       {...provided.droppableProps}
                       className={`min-h-[200px] flex-1 space-y-2 rounded-lg border border-dashed p-2 transition-colors ${
                         snapshot.isDraggingOver
-                          ? 'border-[#d4a843]/40 bg-gold/5'
+                          ? 'border-gold/40 bg-gold/5'
                           : 'border-border bg-sidebar/50'
                       }`}
                     >

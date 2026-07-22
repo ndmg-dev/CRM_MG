@@ -12,8 +12,12 @@
   --color-surface-hover: var(--mg-color-bg-active);
   --color-surface-active: var(--mg-color-border-default);
 
+  --color-surface-raised: var(--mg-color-bg-raised);
+
   --color-gold: var(--mg-color-gold-base);
   --color-gold-hover: var(--mg-color-gold-hover);
+  --color-gold-active: var(--mg-color-gold-active);
+  --color-gold-light: var(--mg-color-gold-light);
   --color-gold-muted: var(--mg-color-gold-dim);
 
   --color-text-primary: var(--mg-color-text-primary);
@@ -21,12 +25,21 @@
   --color-text-muted: var(--mg-color-text-muted);
 
   --color-border: var(--mg-color-border-default);
+  --color-divider: var(--mg-color-border-divider);
   --color-border-light: var(--mg-color-border-strong);
+  --color-border-emphasis: var(--mg-color-border-emphasis);
 
   --color-success: var(--mg-color-status-success);
+  --color-success-hover: var(--mg-color-status-success-hover);
   --color-warning: var(--mg-color-status-warning);
   --color-error: var(--mg-color-status-error);
+  --color-error-hover: var(--mg-color-status-error-hover);
+  --color-error-active: var(--mg-color-status-error-active);
   --color-info: var(--mg-color-status-info);
+
+  --color-accent-purple: var(--mg-color-accent-purple);
+  --color-accent-cyan: var(--mg-color-accent-cyan);
+  --color-accent-pink: var(--mg-color-accent-pink);
 }
 
 /* ============================================

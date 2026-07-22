@@ -32,7 +32,7 @@ function SystemCard({ sistema }: { sistema: Sistema }) {
   
   let colorClass = 'text-gold'
   let bgClass = 'bg-gold/10 group-hover:bg-gold/20'
-  let borderHoverClass = 'hover:border-[#d4a843]/50'
+  let borderHoverClass = 'hover:border-gold/50'
 
   if (isAutomation) {
     colorClass = 'text-purple-400'
@@ -40,8 +40,8 @@ function SystemCard({ sistema }: { sistema: Sistema }) {
     borderHoverClass = 'hover:border-purple-500/50'
   } else if (isStatic) {
     colorClass = 'text-text-muted'
-    bgClass = 'bg-[#2a2a2a]/50 group-hover:bg-[#2a2a2a]'
-    borderHoverClass = 'hover:border-[#6b6b6b]/50'
+    bgClass = 'bg-divider/50 group-hover:bg-divider'
+    borderHoverClass = 'hover:border-text-muted/50'
   }
 
   return (
@@ -139,7 +139,7 @@ export default function SystemsHub() {
               placeholder="Buscar sistema..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-48 bg-transparent text-sm text-text-primary placeholder-[#6b6b6b] outline-none"
+              className="w-48 bg-transparent text-sm text-text-primary placeholder-text-muted outline-none"
             />
           </div>
           
@@ -198,13 +198,13 @@ export default function SystemsHub() {
                   <tr key={s.id} className="border-b border-border last:border-0 hover:bg-surface-hover/50 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="group relative flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-hover text-text-secondary transition-colors hover:bg-[#333333]">
+                        <div className="group relative flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-hover text-text-secondary transition-colors hover:bg-border-light">
                           <Icon className="h-5 w-5" />
                           
                           {/* Tooltip */}
-                          <div className="pointer-events-none absolute left-14 top-1/2 z-50 w-64 -translate-y-1/2 rounded-lg border border-[#3a3a3a] bg-card p-3 text-xs font-normal text-text-secondary opacity-0 shadow-xl transition-all group-hover:opacity-100 group-hover:translate-x-1">
+                          <div className="pointer-events-none absolute left-14 top-1/2 z-50 w-64 -translate-y-1/2 rounded-lg border border-border-emphasis bg-card p-3 text-xs font-normal text-text-secondary opacity-0 shadow-xl transition-all group-hover:opacity-100 group-hover:translate-x-1">
                             {s.descricao}
-                            <div className="absolute -left-1.5 top-1/2 h-3 w-3 -translate-y-1/2 rotate-45 border-b border-l border-[#3a3a3a] bg-card" />
+                            <div className="absolute -left-1.5 top-1/2 h-3 w-3 -translate-y-1/2 rotate-45 border-b border-l border-border-emphasis bg-card" />
                           </div>
                         </div>
                         <span className="font-medium text-text-primary">{s.nome}</span>
@@ -222,7 +222,7 @@ export default function SystemsHub() {
                     <td className="px-6 py-4 text-right">
                       <Link 
                         to={`/sistemas/${s.id}`}
-                        className="inline-flex cursor-pointer items-center justify-center rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-black transition-colors hover:bg-[#c9952b] active:bg-[#b8941f]"
+                        className="inline-flex cursor-pointer items-center justify-center rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-black transition-colors hover:bg-gold-hover active:bg-gold-active"
                       >
                         Acessar
                       </Link>
