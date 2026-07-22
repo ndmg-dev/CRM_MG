@@ -7,6 +7,7 @@ import { useHeartbeat } from '@/hooks/useHeartbeat'
 
 export default function MainLayout() {
   const sidebarOpen = useUIStore((s) => s.sidebarOpen)
+  const fullBleedSystem = useUIStore((s) => s.fullBleedSystem)
   useHeartbeat()
 
   return (
@@ -18,8 +19,8 @@ export default function MainLayout() {
         transition={{ duration: 0.2, ease: 'easeInOut' }}
         className="flex-1"
       >
-        <Header />
-        <div className="p-6">
+        {!fullBleedSystem && <Header />}
+        <div className={fullBleedSystem ? '' : 'p-6'}>
           <Outlet />
         </div>
       </motion.main>

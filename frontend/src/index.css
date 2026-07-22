@@ -1,4 +1,10 @@
 @import "tailwindcss";
+/*
+  Sucessor do plugin `tailwindcss-animate` (v3) para o Tailwind v4. Fornece as
+  classes `animate-in`/`fade-in-0`/`zoom-in-95`/`slide-in-from-*` usadas pelos
+  componentes shadcn do sistema embutido calculadora-rescisao (popover, etc.).
+*/
+@import "tw-animate-css";
 
 /* ============================================
    CRM Mendonça Galvão — Design System Tokens
@@ -195,4 +201,201 @@ body {
 
 .animate-slide-up {
   animation: slideUp 0.4s ease-out forwards;
+}
+
+/* ============================================================
+   SISTEMA EMBUTIDO: Calculadora de Rescisão
+   Tokens semânticos (primary/foreground/popover/...) usados só
+   pelo JSX da calculadora — todos apontam para o design system
+   @mg (ESPECIFICACOES_MG). Nenhum valor visual vive fora dos
+   tokens --mg-*. NÃO afeta o restante do CRM.
+   ============================================================ */
+
+@theme {
+  --color-background-subtle: var(--mg-color-bg-surface);
+  --color-foreground: var(--mg-color-text-primary);
+  --color-card-alt: var(--mg-color-bg-surface);
+  --color-card-foreground: var(--mg-color-text-primary);
+  --color-popover: var(--mg-color-bg-card);
+  --color-popover-foreground: var(--mg-color-text-primary);
+  --color-primary: var(--mg-color-gold-base);
+  --color-primary-hover: var(--mg-color-gold-hover);
+  --color-primary-foreground: var(--mg-color-bg-base);
+  --color-secondary: var(--mg-color-bg-surface);
+  --color-secondary-foreground: var(--mg-color-text-secondary);
+  --color-muted: var(--mg-color-bg-active);
+  --color-muted-foreground: var(--mg-color-text-secondary);
+  --color-accent: var(--mg-color-gold-base);
+  --color-accent-foreground: var(--mg-color-bg-base);
+  --color-destructive: var(--mg-color-status-error);
+  --color-destructive-foreground: var(--mg-color-text-primary);
+  --color-border-subtle: var(--mg-color-bg-active);
+  --color-input: var(--mg-color-bg-surface);
+  --color-input-border: var(--mg-color-border-default);
+  --color-ring: var(--mg-color-gold-base);
+
+  --color-calc-background: var(--mg-color-bg-base);
+  --color-calc-card: var(--mg-color-bg-card);
+  --color-calc-border: var(--mg-color-border-default);
+}
+
+/*
+  Tudo abaixo é redefinido APENAS dentro de `.calc-root`.
+  Fontes, raios e espaçamentos seguem estritamente os tokens do
+  ESPECIFICACOES_MG (Inter via --mg-font-family-base, raios --mg-radius-*).
+*/
+.calc-root {
+  /* Tokens que colidem com o CRM */
+  --color-background: var(--color-calc-background);
+  --color-card: var(--color-calc-card);
+  --color-border: var(--color-calc-border);
+
+  /* Raios dos utilitários rounded-* usados no JSX da calculadora →
+     resolvem para os tokens de radius do ESPECIFICACOES_MG */
+  --radius-sm: var(--mg-radius-sm);
+  --radius-md: var(--mg-radius-md);
+  --radius-lg: var(--mg-radius-lg);
+  --radius-xl: var(--mg-radius-lg);
+  --radius-2xl: var(--mg-radius-xl);
+
+  font-family: var(--mg-font-family-base);
+  color: var(--color-foreground);
+}
+
+/* Restaura o comportamento do Tailwind v3 (border padrão usa a cor de borda) */
+.calc-root *,
+.calc-root ::before,
+.calc-root ::after {
+  border-color: var(--color-border);
+}
+
+.calc-root h1,
+.calc-root h2,
+.calc-root h3,
+.calc-root h4,
+.calc-root h5,
+.calc-root h6 {
+  font-family: var(--mg-font-family-base);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+/* Fundo da aplicação (plano, sem vinhetas — fora do spec) */
+.calc-root .bg-app {
+  position: relative;
+  min-height: 100vh;
+  background-color: var(--color-background);
+}
+
+/* Navbar: sticky dentro do container do CRM (não fixed na viewport) */
+.calc-root .navbar-blur {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  backdrop-filter: blur(12px);
+  background-color: color-mix(in srgb, var(--color-card) 80%, transparent);
+  border-bottom: 1px solid var(--color-border);
+}
+/* Sem navbar fixa, remove o respiro que a página original reservava */
+.calc-root main {
+  padding-top: var(--mg-space-6) !important;
+}
+
+/* Cards */
+.calc-root .card-graphite {
+  border-radius: var(--mg-radius-xl);
+  background-color: var(--color-card);
+  padding: var(--mg-space-6);
+  border: 1px solid var(--color-border);
+}
+@media (min-width: 768px) {
+  .calc-root .card-graphite { padding: var(--mg-space-8); }
+}
+.calc-root .card-graphite-sm {
+  border-radius: var(--mg-radius-lg);
+  background-color: var(--color-card);
+  padding: var(--mg-space-4);
+  border: 1px solid var(--color-border);
+}
+@media (min-width: 768px) {
+  .calc-root .card-graphite-sm { padding: var(--mg-space-6); }
+}
+
+/* Input */
+.calc-root .input-dark {
+  background-color: var(--color-input);
+  border: 1px solid var(--color-input-border);
+  border-radius: var(--mg-radius-md);
+  height: 2.75rem;
+  padding: 0 var(--mg-space-4);
+  color: var(--color-foreground);
+  transition: all 0.15s ease;
+}
+.calc-root .input-dark::placeholder { color: var(--color-muted-foreground); }
+.calc-root .input-dark:focus {
+  outline: none;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-primary) 40%, transparent);
+}
+
+/* Botões amber (primário do spec) */
+.calc-root .btn-amber {
+  height: 2.75rem;
+  padding: 0 var(--mg-space-6);
+  border-radius: var(--mg-radius-md);
+  background-color: var(--color-primary);
+  color: var(--color-primary-foreground);
+  font-weight: 600;
+  transition: all 0.15s ease;
+}
+.calc-root .btn-amber:hover { background-color: var(--color-primary-hover); }
+.calc-root .btn-amber:disabled { opacity: 0.5; cursor: not-allowed; }
+.calc-root .btn-amber-outline {
+  height: 2.75rem;
+  padding: 0 var(--mg-space-6);
+  border-radius: var(--mg-radius-md);
+  background-color: transparent;
+  border: 1px solid var(--color-primary);
+  color: var(--color-primary);
+  font-weight: 600;
+  transition: all 0.15s ease;
+}
+.calc-root .btn-amber-outline:hover {
+  background-color: color-mix(in srgb, var(--color-primary) 10%, transparent);
+}
+
+/* Chips */
+.calc-root .chip {
+  padding: var(--mg-space-2) var(--mg-space-4);
+  border-radius: var(--mg-radius-md);
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+.calc-root .chip-inactive {
+  background-color: var(--color-background-subtle);
+  border-color: var(--color-border);
+  color: var(--color-secondary-foreground);
+}
+.calc-root .chip-inactive:hover {
+  border-color: color-mix(in srgb, var(--color-primary) 40%, transparent);
+}
+.calc-root .chip-active {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-primary-foreground);
+}
+
+/* Números tabulares (fonte do spec, dígitos alinhados) */
+.calc-root .font-mono-numbers,
+.calc-root .number-display {
+  font-family: var(--mg-font-family-base);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Impressão */
+@media print {
+  .no-print { display: none !important; }
+  .print-only { display: block !important; }
 }

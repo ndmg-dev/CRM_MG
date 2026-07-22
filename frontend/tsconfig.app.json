@@ -6,8 +6,10 @@
     "module": "esnext",
     "types": ["vite/client"],
     "skipLibCheck": true,
+    "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@calc/*": ["./src/systems/calculadora-rescisao/*"]
     },
 
     /* Bundler mode */

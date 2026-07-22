@@ -1,10 +1,11 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, Suspense } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Loader2, AlertTriangle, ExternalLink, Info } from 'lucide-react'
 import { useUIStore } from '@/stores/uiStore'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { Button } from '@/components/ui/button'
+import { getSystemComponent } from '@/systems/registry'
 
 export default function SystemViewer() {
   const { id } = useParams<{ id: string }>()
@@ -17,12 +18,21 @@ export default function SystemViewer() {
   })
 
   const sistema = sistemas.find((s) => s.id === id)
+  // Sistema migrado para código nativo (undefined => mantém o iframe antigo)
+  const InternalSystem = getSystemComponent(sistema?.slug)
+  const setFullBleedSystem = useUIStore((s) => s.setFullBleedSystem)
   const [iframeLoaded, setIframeLoaded] = useState(false)
   const [iframeError, setIframeError] = useState(false)
 
   useEffect(() => {
     setCurrentPage(sistema?.nome || 'Sistema')
   }, [sistema, setCurrentPage])
+
+  // Sistema migrado abre em página cheia (esconde o Header do CRM)
+  useEffect(() => {
+    setFullBleedSystem(!!InternalSystem)
+    return () => setFullBleedSystem(false)
+  }, [InternalSystem, setFullBleedSystem])
 
   // PostMessage listener with strict origin validation
   useEffect(() => {
@@ -64,6 +74,22 @@ export default function SystemViewer() {
           Voltar aos Sistemas
         </Button>
       </div>
+    )
+  }
+
+  // Sistema migrado para código nativo? Renderiza direto (iframe abaixo
+  // permanece intacto como fallback para sistemas não migrados / flag off).
+  if (InternalSystem) {
+    return (
+      <Suspense
+        fallback={
+          <div className="flex h-[60vh] items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-gold" />
+          </div>
+        }
+      >
+        <InternalSystem />
+      </Suspense>
     )
   }
 
