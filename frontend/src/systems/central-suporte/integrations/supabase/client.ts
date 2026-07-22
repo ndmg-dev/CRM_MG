@@ -5,10 +5,20 @@ import type { Database } from './types';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
+/**
+ * Fail-soft: se as envs não estiverem no build, o CRM continua funcionando
+ * (login inclusive) e apenas a Central fica indisponível. O placeholder
+ * impede o createClient de lançar erro na carga do módulo.
+ */
+export const isSupportSupabaseConfigured = Boolean(SUPABASE_URL && SUPABASE_PUBLISHABLE_KEY);
+
 // Import the supabase client like this:
 // import { supabase } from "@suporte/integrations/supabase/client";
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+export const supabase = createClient<Database>(
+  SUPABASE_URL || 'https://placeholder.supabase.co',
+  SUPABASE_PUBLISHABLE_KEY || 'placeholder',
+  {
   auth: {
     storage: localStorage,
     persistSession: true,

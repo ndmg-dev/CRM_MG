@@ -1,3 +1,4 @@
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import List
 
@@ -19,6 +20,11 @@ class Settings(BaseSettings):
     JWT_SECRET: str
     JWT_EXPIRATION_SECONDS: int = 86400  # 24 hours
     GOOGLE_CLIENT_ID: str = ""
+    # Restrição de acesso ao login Google. O default preserva o comportamento
+    # que antes era hardcoded no auth_service; e-mails avulsos de fora do
+    # domínio podem ser liberados via GOOGLE_ALLOWED_EMAILS.
+    GOOGLE_ALLOWED_DOMAIN: str = "mendoncagalvao.com.br"
+    GOOGLE_ALLOWED_EMAILS: List[str] = Field(default_factory=list)
     OPENAI_API_KEY: str = ""
     
     EVOLUTION_API_URL: str = "http://evolution-api:8080"

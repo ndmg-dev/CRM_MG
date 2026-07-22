@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { Loader2, ShieldAlert } from "lucide-react";
 import { Button } from "@suporte/components/ui/button";
-import { supabase } from "@suporte/integrations/supabase/client";
+import { supabase, isSupportSupabaseConfigured } from "@suporte/integrations/supabase/client";
 import { endUnifiedSession } from "@/lib/unifiedAuth";
 
 export function SupportSessionGate({ children }: { children: ReactNode }) {
@@ -14,6 +14,12 @@ export function SupportSessionGate({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (mockMode) {
+      return;
+    }
+
+    if (!isSupportSupabaseConfigured) {
+      setMessage("A Central de Suporte não está configurada neste ambiente (variáveis do Supabase ausentes no build).");
+      setStatus("error");
       return;
     }
 

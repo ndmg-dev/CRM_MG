@@ -1,6 +1,9 @@
 import type { AuthResponse } from '@/types'
 import { api } from '@/lib/api'
-import { supabase } from '@/systems/central-suporte/integrations/supabase/client'
+import {
+  supabase,
+  isSupportSupabaseConfigured,
+} from '@/systems/central-suporte/integrations/supabase/client'
 import { useAuthStore } from '@/stores/authStore'
 
 /**
@@ -12,6 +15,12 @@ export async function establishUnifiedSession(googleIdToken: string): Promise<Au
   // O CRM valida domínio, atividade e autorização antes de provisionar qualquer
   // identidade na Central. O token retornado fica apenas em memória até o fim.
   const crmSession = await api.auth.loginWithGoogle(googleIdToken)
+
+  // Fail-soft: sem as envs do Supabase, o login do CRM segue normal e apenas
+  // a Central de Suporte fica indisponível (o gate dela orienta o usuário).
+  if (!isSupportSupabaseConfigured) {
+    return crmSession
+  }
 
   const { error: supabaseError } = await supabase.auth.signInWithIdToken({
     provider: 'google',
@@ -36,7 +45,9 @@ export async function establishUnifiedSession(googleIdToken: string): Promise<Au
 
 export async function endUnifiedSession(): Promise<void> {
   try {
-    await supabase.auth.signOut({ scope: 'local' }).catch(() => {})
+    if (isSupportSupabaseConfigured) {
+      await supabase.auth.signOut({ scope: 'local' }).catch(() => {})
+    }
   } finally {
     useAuthStore.getState().logout()
   }
