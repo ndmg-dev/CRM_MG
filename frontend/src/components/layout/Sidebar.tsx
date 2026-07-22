@@ -2,6 +2,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
+import { endUnifiedSession } from '@/lib/unifiedAuth'
 import {
   LayoutDashboard,
   Grid3X3,
@@ -63,7 +64,6 @@ const adminItems = [
 export default function Sidebar() {
   const location = useLocation()
   const user = useAuthStore((s) => s.user)
-  const logout = useAuthStore((s) => s.logout)
   const { sidebarOpen, toggleSidebar } = useUIStore()
 
   const isAdmin = user?.perfil === 'ADMIN'
@@ -250,7 +250,7 @@ export default function Sidebar() {
 
           {/* Logout */}
           <button
-            onClick={() => { logout(); window.location.href = '/login' }}
+            onClick={async () => { await endUnifiedSession(); window.location.href = '/login' }}
             className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-text-secondary transition-colors hover:bg-surface hover:text-text-primary"
           >
             <LogOut className="h-4 w-4 shrink-0" />

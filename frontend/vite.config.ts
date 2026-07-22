@@ -12,6 +12,7 @@ export default defineConfig(({ mode }) => {
       alias: {
         '@': path.resolve(__dirname, './src'),
         '@calc': path.resolve(__dirname, './src/systems/calculadora-rescisao'),
+        '@suporte': path.resolve(__dirname, './src/systems/central-suporte'),
       },
     },
     server: {

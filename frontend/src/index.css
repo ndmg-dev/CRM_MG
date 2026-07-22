@@ -399,3 +399,64 @@ body {
   .no-print { display: none !important; }
   .print-only { display: block !important; }
 }
+
+/* ============================================================
+   SISTEMA EMBUTIDO: Central de Suporte
+   Tokens semânticos shadcn usados só pelo JSX da Central —
+   todos resolvem para o design system @mg (ESPECIFICACOES_MG).
+   Registrados no @theme para gerar os utilitários; os valores
+   reais são definidos (escopados) em .suporte-root.
+   ============================================================ */
+
+@theme {
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+.suporte-root {
+  /* Tokens que colidem com o CRM (escopados) */
+  --color-background: var(--mg-color-bg-base);
+  --color-foreground: var(--mg-color-text-primary);
+  --color-card: var(--mg-color-bg-card);
+  --color-card-foreground: var(--mg-color-text-primary);
+  --color-popover: var(--mg-color-bg-card);
+  --color-popover-foreground: var(--mg-color-text-primary);
+  --color-primary: var(--mg-color-gold-base);
+  --color-primary-foreground: var(--mg-color-bg-base);
+  --color-secondary: var(--mg-color-bg-surface);
+  --color-secondary-foreground: var(--mg-color-text-primary);
+  --color-muted: var(--mg-color-bg-active);
+  --color-muted-foreground: var(--mg-color-text-secondary);
+  --color-accent: var(--mg-color-bg-active);
+  --color-accent-foreground: var(--mg-color-text-primary);
+  --color-destructive: var(--mg-color-status-error);
+  --color-destructive-foreground: var(--mg-color-text-primary);
+  --color-border: var(--mg-color-border-default);
+  --color-input: var(--mg-color-border-default);
+  --color-ring: var(--mg-color-gold-base);
+  --radius: var(--mg-radius-md);
+
+  --sidebar-foreground: var(--mg-color-text-primary);
+  --sidebar-primary: var(--mg-color-gold-base);
+  --sidebar-primary-foreground: var(--mg-color-bg-base);
+  --sidebar-accent: var(--mg-color-bg-active);
+  --sidebar-accent-foreground: var(--mg-color-text-primary);
+  --sidebar-border: var(--mg-color-border-default);
+  --sidebar-ring: var(--mg-color-gold-base);
+
+  color: var(--color-foreground);
+  background-color: var(--color-background);
+  font-family: var(--mg-font-family-base);
+}
+
+/* Comportamento Tailwind v3 (border padrão usa a cor de borda) */
+.suporte-root *,
+.suporte-root ::before,
+.suporte-root ::after {
+  border-color: var(--color-border);
+}

@@ -9,7 +9,8 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
-      "@calc/*": ["./src/systems/calculadora-rescisao/*"]
+      "@calc/*": ["./src/systems/calculadora-rescisao/*"],
+      "@suporte/*": ["./src/systems/central-suporte/*"]
     },
 
     /* Bundler mode */
