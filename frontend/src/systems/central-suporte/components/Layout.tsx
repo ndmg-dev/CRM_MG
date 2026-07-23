@@ -9,7 +9,7 @@ const Layout = () => {
       <div className="min-h-screen flex w-full bg-background">
         <AppSidebar />
         <main className="flex-1 overflow-auto">
-          <div className="p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-8 animate-fade-in">
+          <div className="p-4 md:p-6 lg:p-8 w-full space-y-8 animate-fade-in">
             <header className="flex items-center gap-4 mb-8">
               <SidebarTrigger className="md:hidden" />
               <div className="flex-1">
