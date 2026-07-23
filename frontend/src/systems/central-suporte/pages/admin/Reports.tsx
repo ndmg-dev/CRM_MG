@@ -93,8 +93,16 @@ const Reports = () => {
       .filter((ticket) => ticket.created_at && ticket.responded_at)
       .map((ticket) => (new Date(ticket.responded_at!).getTime() - new Date(ticket.created_at!).getTime()) / 3_600_000);
     const resolutionHours = filteredTickets
-      .filter((ticket) => ticket.created_at && ticket.updated_at && ["resolved", "closed"].includes(ticket.status || ""))
-      .map((ticket) => (new Date(ticket.updated_at!).getTime() - new Date(ticket.created_at!).getTime()) / 3_600_000);
+      .filter((ticket) => ticket.created_at && ["resolved", "closed"].includes(ticket.status || ""))
+      // resolved_at é gravado por trigger no momento da resolução; updated_at
+      // permanece como fallback para chamados resolvidos antes da migração.
+      .map((ticket) => {
+        const resolvedAt = ticket.resolved_at ?? ticket.updated_at
+        return resolvedAt
+          ? (new Date(resolvedAt).getTime() - new Date(ticket.created_at!).getTime()) / 3_600_000
+          : null
+      })
+      .filter((hours): hours is number => hours !== null && hours >= 0);
     const average = (values: number[]) => values.length
       ? Math.round((values.reduce((sum, value) => sum + value, 0) / values.length) * 10) / 10
       : null;

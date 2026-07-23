@@ -1,4 +1,4 @@
-export type Json =
+﻿export type Json =
   | string
   | number
   | boolean
@@ -715,6 +715,7 @@ export type Database = {
           incident_id: string | null
           priority: Database["public"]["Enums"]["ticket_priority"] | null
           requester_id: string | null
+          resolved_at: string | null
           responded_at: string | null
           status: Database["public"]["Enums"]["ticket_status"] | null
           subcategory_id: string | null
@@ -737,6 +738,7 @@ export type Database = {
           incident_id?: string | null
           priority?: Database["public"]["Enums"]["ticket_priority"] | null
           requester_id?: string | null
+          resolved_at?: string | null
           responded_at?: string | null
           status?: Database["public"]["Enums"]["ticket_status"] | null
           subcategory_id?: string | null
@@ -759,6 +761,7 @@ export type Database = {
           incident_id?: string | null
           priority?: Database["public"]["Enums"]["ticket_priority"] | null
           requester_id?: string | null
+          resolved_at?: string | null
           responded_at?: string | null
           status?: Database["public"]["Enums"]["ticket_status"] | null
           subcategory_id?: string | null
