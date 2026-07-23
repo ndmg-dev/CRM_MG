@@ -74,6 +74,11 @@ CREATE TRIGGER trg_ticket_first_response
   EXECUTE FUNCTION public.track_ticket_first_response();
 
 -- 4) Backfill histórico (só preenche onde está NULL)
+-- IMPORTANTE: a tabela tickets tem trigger que auto-atualiza updated_at em
+-- qualquer UPDATE — e o painel/TV filtra "concluído hoje" por updated_at.
+-- Sem desligar os triggers, o backfill marcaria todos os resolvidos
+-- históricos como atualizados hoje (regressão real ocorrida em 23/07/2026).
+ALTER TABLE public.tickets DISABLE TRIGGER USER;
 -- 4a) TM Resposta real, recuperada dos comentários já existentes
 UPDATE public.tickets t
    SET responded_at = fr.first_response
@@ -94,3 +99,5 @@ UPDATE public.tickets
    SET resolved_at = updated_at
  WHERE status IN ('resolved', 'closed')
    AND resolved_at IS NULL;
+
+ALTER TABLE public.tickets ENABLE TRIGGER USER;
