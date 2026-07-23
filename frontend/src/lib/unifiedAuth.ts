@@ -4,6 +4,10 @@ import {
   supabase,
   isSupportSupabaseConfigured,
 } from '@/systems/central-suporte/integrations/supabase/client'
+import {
+  isFeriasSupabaseConfigured,
+  supabase as feriasSupabase,
+} from '@ferias/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 
 /**
@@ -45,14 +49,34 @@ export async function establishUnifiedSession(googleIdToken: string): Promise<Au
     console.warn('[unifiedAuth] Central de Suporte não autenticada (CRM segue normal):', error)
   }
 
+  if (isFeriasSupabaseConfigured) {
+    try {
+      const { error: feriasError } = await feriasSupabase.auth.signInWithIdToken({
+        provider: 'google',
+        token: googleIdToken,
+      })
+      if (feriasError) {
+        throw new Error(feriasError.message)
+      }
+    } catch (error) {
+      // Fail-soft: falha nas Férias nunca bloqueia o login do CRM.
+      console.warn('[unifiedAuth] Agendamento de Férias não autenticado (CRM segue normal):', error)
+    }
+  }
+
   return crmSession
 }
 
 export async function endUnifiedSession(): Promise<void> {
   try {
-    if (isSupportSupabaseConfigured) {
-      await supabase.auth.signOut({ scope: 'local' }).catch(() => {})
-    }
+    await Promise.allSettled([
+      isSupportSupabaseConfigured
+        ? supabase.auth.signOut({ scope: 'local' })
+        : Promise.resolve(),
+      isFeriasSupabaseConfigured
+        ? feriasSupabase.auth.signOut({ scope: 'local' })
+        : Promise.resolve(),
+    ])
   } finally {
     useAuthStore.getState().logout()
   }

@@ -13,6 +13,7 @@ export default defineConfig(({ mode }) => {
         '@': path.resolve(__dirname, './src'),
         '@calc': path.resolve(__dirname, './src/systems/calculadora-rescisao'),
         '@suporte': path.resolve(__dirname, './src/systems/central-suporte'),
+        '@ferias': path.resolve(__dirname, './src/systems/agendamento-ferias'),
       },
     },
     server: {

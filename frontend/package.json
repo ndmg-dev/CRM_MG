@@ -10,6 +10,7 @@
         "preview": "vite preview"
     },
     "dependencies": {
+        "@emailjs/browser": "^4.4.1",
         "@hello-pangea/dnd": "^18.0.1",
         "@mg/tokens": "file:packages/@mg/tokens",
         "@mg/ui": "file:packages/@mg/ui",

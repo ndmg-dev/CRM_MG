@@ -16,6 +16,7 @@ export const systemRegistry: Record<string, LazyExoticComponent<ComponentType>> 
   // Slug em produção (seed) é 'central-de-suporte'; o alias curto cobre ambientes antigos.
   'central-de-suporte': lazy(() => import('@suporte/App')),
   'central-suporte': lazy(() => import('@suporte/App')),
+  'agendamento-ferias': lazy(() => import('@ferias/App')),
 }
 
 /**
