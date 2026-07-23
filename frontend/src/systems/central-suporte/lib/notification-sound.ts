@@ -1,7 +1,7 @@
-// Notification sound utility using Web Audio API + custom uploaded sounds
+﻿// Notification sound utility using Web Audio API + custom uploaded sounds
 import { supabase } from "@suporte/integrations/supabase/client";
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_URL = import.meta.env.VITE_SUPORTE_SUPABASE_URL;
 
 let audioContext: AudioContext | null = null;
 let audioUnlocked = false;

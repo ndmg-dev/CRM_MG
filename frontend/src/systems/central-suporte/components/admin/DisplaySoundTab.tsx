@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+﻿import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@suporte/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@suporte/components/ui/card";
@@ -22,7 +22,7 @@ import { toast } from "sonner";
 import { clearSoundCache } from "@suporte/lib/notification-sound";
 import { clearBrowserNotifCache } from "@suporte/hooks/useBrowserNotifications";
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_URL = import.meta.env.VITE_SUPORTE_SUPABASE_URL;
 
 type SoundType = "ticket_opened" | "ticket_closed" | "assignee";
 
@@ -103,7 +103,7 @@ export function DisplaySoundTab() {
       queryClient.invalidateQueries({ queryKey: ["system-settings"] });
       queryClient.invalidateQueries({ queryKey: ["siren-config"] });
     },
-    onError: () => toast.error("Erro ao salvar configuração"),
+    onError: () => toast.error("Erro ao salvar configuraÃ§Ã£o"),
   });
 
   // Upload a sound file
@@ -201,7 +201,7 @@ export function DisplaySoundTab() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notification-sounds"] });
       clearSoundCache();
-      toast.success("Usando toque padrão do sistema");
+      toast.success("Usando toque padrÃ£o do sistema");
     },
   });
 
@@ -212,7 +212,7 @@ export function DisplaySoundTab() {
     }
     const audio = new Audio(url);
     audioRef.current = audio;
-    audio.play().catch(() => toast.error("Não foi possível reproduzir o áudio"));
+    audio.play().catch(() => toast.error("NÃ£o foi possÃ­vel reproduzir o Ã¡udio"));
   };
 
   const handleFileUpload = (type: SoundType, assigneeId?: string) => {
@@ -242,19 +242,19 @@ export function DisplaySoundTab() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <Monitor className="h-5 w-5" />
-            Tempo de Transição do Painel (TV)
+            Tempo de TransiÃ§Ã£o do Painel (TV)
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Define o tempo (em segundos) que cada tela do carrossel fica visível antes de avançar.
+            Define o tempo (em segundos) que cada tela do carrossel fica visÃ­vel antes de avanÃ§ar.
           </p>
           <div className="flex items-center gap-4">
             <Slider
               value={[carouselDuration]}
               onValueChange={([v]) => {
                 updateSetting.mutate({ key: "carousel_slide_duration", value: String(v) });
-                toast.success("Tempo de transição atualizado");
+                toast.success("Tempo de transiÃ§Ã£o atualizado");
               }}
               min={5}
               max={120}
@@ -281,14 +281,14 @@ export function DisplaySoundTab() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Desative tipos de notificação sonora individualmente. Quando desativado, nenhum som será reproduzido para aquele evento.
+            Desative tipos de notificaÃ§Ã£o sonora individualmente. Quando desativado, nenhum som serÃ¡ reproduzido para aquele evento.
           </p>
 
           {([
             { key: "sound_ticket_opened", label: "Som de Chamado Aberto", icon: <Bell className="h-4 w-4" /> },
             { key: "sound_ticket_closed", label: "Som de Chamado Finalizado", icon: <BellOff className="h-4 w-4" /> },
-            { key: "sound_assignee", label: "Som por Responsável", icon: <UserCheck className="h-4 w-4" /> },
-            { key: "browser_notifications", label: "Notificações no Navegador", icon: <Globe className="h-4 w-4" /> },
+            { key: "sound_assignee", label: "Som por ResponsÃ¡vel", icon: <UserCheck className="h-4 w-4" /> },
+            { key: "browser_notifications", label: "NotificaÃ§Ãµes no Navegador", icon: <Globe className="h-4 w-4" /> },
           ] as { key: keyof typeof soundToggles; label: string; icon: React.ReactNode }[]).map(({ key, label, icon }) => (
             <div key={key} className="flex items-center justify-between rounded-lg border p-3">
               <div className="flex items-center gap-3">
@@ -316,7 +316,7 @@ export function DisplaySoundTab() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <Volume2 className="h-5 w-5" />
-            Sons de Notificação
+            Sons de NotificaÃ§Ã£o
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -329,7 +329,7 @@ export function DisplaySoundTab() {
               const file = e.target.files?.[0];
               if (file) {
                 if (file.size > 5 * 1024 * 1024) {
-                  toast.error("Arquivo deve ter no máximo 5MB");
+                  toast.error("Arquivo deve ter no mÃ¡ximo 5MB");
                   return;
                 }
                 uploadSound.mutate({
@@ -378,16 +378,16 @@ export function DisplaySoundTab() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <UserCheck className="h-5 w-5" />
-            Sons por Responsável
+            Sons por ResponsÃ¡vel
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Defina toques diferentes para cada responsável. O som toca quando o membro é atribuído a um chamado (manual ou automaticamente).
+            Defina toques diferentes para cada responsÃ¡vel. O som toca quando o membro Ã© atribuÃ­do a um chamado (manual ou automaticamente).
           </p>
 
           <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">Selecione o responsável</label>
+            <label className="text-xs text-muted-foreground">Selecione o responsÃ¡vel</label>
             <Select value={selectedStaffId || "none"} onValueChange={(v) => setSelectedStaffId(v === "none" ? "" : v)}>
               <SelectTrigger className="w-full max-w-[300px]">
                 <SelectValue placeholder="Selecione um membro" />
@@ -400,7 +400,7 @@ export function DisplaySoundTab() {
                     <SelectItem key={p.id} value={p.id}>
                       <span className="flex items-center gap-2">
                         {p.full_name || p.email}
-                        {hasSound && <span className="text-primary">♪</span>}
+                        {hasSound && <span className="text-primary">â™ª</span>}
                       </span>
                     </SelectItem>
                   );
@@ -411,7 +411,7 @@ export function DisplaySoundTab() {
 
           {selectedStaffId ? (
             <SoundSection
-              title={staffProfiles?.find(p => p.id === selectedStaffId)?.full_name || "Responsável"}
+              title={staffProfiles?.find(p => p.id === selectedStaffId)?.full_name || "ResponsÃ¡vel"}
               icon={<UserCheck className="h-4 w-4" />}
               sounds={staffAssigneeSounds}
               activeSound={activeAssigneeSound}
@@ -424,7 +424,7 @@ export function DisplaySoundTab() {
             />
           ) : (
             <p className="text-sm text-muted-foreground py-4 text-center border rounded-lg bg-muted/30">
-              Selecione um responsável acima para configurar o toque.
+              Selecione um responsÃ¡vel acima para configurar o toque.
             </p>
           )}
 
@@ -443,7 +443,7 @@ export function DisplaySoundTab() {
                       onClick={() => setSelectedStaffId(p.id)}
                     >
                       {p.full_name?.split(" ")[0] || p.email?.split("@")[0]}
-                      {active ? ` ♪ ${active.name}` : " — padrão"}
+                      {active ? ` â™ª ${active.name}` : " â€” padrÃ£o"}
                     </Badge>
                   );
                 })}
@@ -487,7 +487,7 @@ function SoundSection({
         </h4>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={onUseDefault}>
-            Usar padrão
+            Usar padrÃ£o
           </Button>
           <Button variant="outline" size="sm" onClick={onUpload} disabled={isUploading}>
             <Upload className="h-3.5 w-3.5 mr-1" />
@@ -497,12 +497,12 @@ function SoundSection({
       </div>
 
       <div className="text-xs text-muted-foreground">
-        Ativo: <strong>{activeSound ? activeSound.name : "Padrão do sistema"}</strong>
+        Ativo: <strong>{activeSound ? activeSound.name : "PadrÃ£o do sistema"}</strong>
       </div>
 
       {sounds.length === 0 ? (
         <p className="text-sm text-muted-foreground py-3 text-center border rounded-lg bg-muted/30">
-          Nenhum toque personalizado. O som padrão será utilizado.
+          Nenhum toque personalizado. O som padrÃ£o serÃ¡ utilizado.
         </p>
       ) : (
         <div className="space-y-2">

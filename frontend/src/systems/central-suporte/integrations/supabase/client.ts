@@ -2,8 +2,11 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+// Namespace por sistema: cada app Supabase embutido no CRM tem suas próprias
+// variáveis (VITE_SUPORTE_*, VITE_FERIAS_*, ...), evitando colisão quando
+// vários sistemas coexistirem no mesmo build.
+const SUPABASE_URL = import.meta.env.VITE_SUPORTE_SUPABASE_URL;
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPORTE_SUPABASE_PUBLISHABLE_KEY;
 
 /**
  * Fail-soft: se as envs não estiverem no build, o CRM continua funcionando
