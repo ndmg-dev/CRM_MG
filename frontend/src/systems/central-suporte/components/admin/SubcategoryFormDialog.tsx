@@ -34,23 +34,28 @@ export function SubcategoryFormDialog({ open, onOpenChange, categoryId, category
   const queryClient = useQueryClient();
   const isEdit = !!subcategory;
 
+  // Responsável padrão: colaboradores dos setores vinculados à categoria-pai
+  // (não mais por cargo de TI).
   const { data: staffProfiles } = useQuery({
-    queryKey: ["staff-profiles-categories"],
+    queryKey: ["profiles-by-category-sector", categoryId],
     queryFn: async () => {
-      const { data: roles, error: rolesError } = await supabase
-        .from("user_roles")
-        .select("user_id")
-        .in("role", ["support_agent", "dev", "admin_ti", "coordinator"]);
-      if (rolesError) throw rolesError;
-      if (!roles?.length) return [];
-      const uniqueIds = [...new Set(roles.map(r => r.user_id))];
+      if (!categoryId) return [];
+      const { data: cs, error: csError } = await supabase
+        .from("category_sectors")
+        .select("sector_id")
+        .eq("category_id", categoryId);
+      if (csError) throw csError;
+      const sectorIds = (cs || []).map((r) => r.sector_id);
+      if (sectorIds.length === 0) return [];
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, full_name, email")
-        .in("id", uniqueIds);
+        .select("id, full_name, email, sector_id")
+        .in("sector_id", sectorIds)
+        .order("full_name");
       if (error) throw error;
       return data || [];
     },
+    enabled: open && !!categoryId,
   });
 
   useEffect(() => {

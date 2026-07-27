@@ -34,23 +34,22 @@ export function CategoryFormDialog({ open, onOpenChange, category }: CategoryFor
   const queryClient = useQueryClient();
   const isEdit = !!category;
 
+  // Responsável padrão: candidatos são os colaboradores dos setores vinculados
+  // à categoria (não mais por cargo de TI). Ex.: categoria do setor DP lista
+  // apenas colaboradores do DP.
   const { data: staffProfiles } = useQuery({
-    queryKey: ["staff-profiles-categories"],
+    queryKey: ["profiles-by-sector", selectedSectorIds],
     queryFn: async () => {
-      const { data: roles, error: rolesError } = await supabase
-        .from("user_roles")
-        .select("user_id")
-        .in("role", ["support_agent", "dev", "admin_ti", "coordinator"]);
-      if (rolesError) throw rolesError;
-      if (!roles?.length) return [];
-      const uniqueIds = [...new Set(roles.map(r => r.user_id))];
+      if (selectedSectorIds.length === 0) return [];
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, full_name, email")
-        .in("id", uniqueIds);
+        .select("id, full_name, email, sector_id")
+        .in("sector_id", selectedSectorIds)
+        .order("full_name");
       if (error) throw error;
       return data || [];
     },
+    enabled: open,
   });
 
   const { data: sectors } = useQuery({
@@ -194,7 +193,11 @@ export function CategoryFormDialog({ open, onOpenChange, category }: CategoryFor
           </div>
           <div className="space-y-2">
             <Label>Responsável padrão</Label>
-            <Select value={defaultAssigneeId || "none"} onValueChange={(v) => setDefaultAssigneeId(v === "none" ? "" : v)}>
+            <Select
+              value={defaultAssigneeId || "none"}
+              onValueChange={(v) => setDefaultAssigneeId(v === "none" ? "" : v)}
+              disabled={selectedSectorIds.length === 0}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Nenhum (atribuição automática)" />
               </SelectTrigger>
@@ -205,6 +208,11 @@ export function CategoryFormDialog({ open, onOpenChange, category }: CategoryFor
                 ))}
               </SelectContent>
             </Select>
+            <p className="text-xs text-muted-foreground">
+              {selectedSectorIds.length === 0
+                ? "Selecione ao menos um setor acima para listar os responsáveis."
+                : "Colaboradores dos setores vinculados a esta categoria."}
+            </p>
           </div>
         </div>
         <DialogFooter>
