@@ -74,17 +74,13 @@ export default function Sidebar() {
     queryFn: () => api.sistemas.getAll(),
   })
 
-  const isManager = user?.perfil === 'ADMIN' || user?.perfil === 'COORDENADOR'
-
-  const visibleSistemas = sistemas.filter((s) => {
-    const setorSistema = s.setor ?? 'GERAL'
-    if (setorSistema === 'RESTRITO') {
-      return user?.perfil === 'ADMIN'
-    }
-    if (isManager) return true
-    return setorSistema === 'GERAL' || setorSistema === user?.setor
+  const { data: setores = [] } = useQuery({
+    queryKey: ['setores'],
+    queryFn: () => api.setores.getAll(),
   })
 
+  // O backend já entrega apenas os sistemas permitidos pela política do setor
+  // do usuário (services/visibility_service.py). Aqui só agrupamos.
   const SETOR_LABELS: Record<string, { label: string; color: string; activeClass: string }> = {
     DP: { label: 'Dep. Pessoal', color: 'text-blue-400', activeClass: 'bg-blue-500/10 text-blue-400 font-semibold' },
     CONTABIL: { label: 'Contábil', color: 'text-emerald-400', activeClass: 'bg-emerald-500/10 text-emerald-400 font-semibold' },
@@ -95,12 +91,17 @@ export default function Sidebar() {
     RESTRITO: { label: 'Restrito', color: 'text-red-500', activeClass: 'bg-red-500/10 text-red-500 font-semibold' },
   }
 
-  const setorOrder = ['DP', 'CONTABIL', 'FISCAL', 'SOCIETARIO', 'TI', 'GERAL', 'RESTRITO']
+  // Os grupos saem dos sistemas recebidos, não de uma lista fixa — assim um
+  // setor criado pelo admin também ganha sua seção.
+  const nomeSetor = Object.fromEntries(setores.map(s => [s.codigo, s.nome]))
+  const setorOrder = [...new Set(sistemas.map(s => s.setor ?? 'GERAL'))].sort((a, b) =>
+    (nomeSetor[a] || a).localeCompare(nomeSetor[b] || b)
+  )
   const sistemasBySetor = setorOrder.reduce((acc, setor) => {
-    const found = visibleSistemas.filter(s => (s.setor ?? 'GERAL') === setor)
+    const found = sistemas.filter(s => (s.setor ?? 'GERAL') === setor)
     if (found.length > 0) acc[setor] = found
     return acc
-  }, {} as Record<string, typeof visibleSistemas>)
+  }, {} as Record<string, typeof sistemas>)
 
   return (
     <motion.aside
@@ -180,7 +181,7 @@ export default function Sidebar() {
                     className="ml-11 mt-1 flex flex-col gap-1 overflow-hidden max-h-[50vh] overflow-y-auto"
                   >
                     {Object.entries(sistemasBySetor).map(([setor, items]) => {
-                      const meta = SETOR_LABELS[setor] || { label: setor, color: 'text-text-muted', activeClass: 'bg-gold/10 text-gold font-semibold' }
+                      const meta = SETOR_LABELS[setor] || { label: nomeSetor[setor] || setor, color: 'text-text-muted', activeClass: 'bg-gold/10 text-gold font-semibold' }
                       return (
                         <div key={setor} className="mb-2">
                           <div className={`py-1 text-[10px] font-bold tracking-wider uppercase ${meta.color}`}>

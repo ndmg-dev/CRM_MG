@@ -1,4 +1,10 @@
-import type { StatusTarefa, Prioridade, Perfil, RegimeTributario } from '@/types'
+import type {
+  StatusTarefa,
+  Prioridade,
+  Perfil,
+  RegimeTributario,
+  VisibilidadeSistemas,
+} from '@/types'
 
 // ---------------------------------------------------------------------------
 // Status da Tarefa
@@ -89,6 +95,24 @@ export const SETOR_LABELS: Record<string, string> = {
 
 /** Cor padrão de um setor sem cor cadastrada. */
 export const SETOR_COR_PADRAO = '#94a3b8'
+
+// ---------------------------------------------------------------------------
+// Visibilidade de sistemas por setor
+// ---------------------------------------------------------------------------
+
+export const VISIBILIDADE_LABELS: Record<VisibilidadeSistemas, string> = {
+  PROPRIO: 'Próprio setor',
+  TOTAL: 'Todos os sistemas',
+  RESTRITO: 'Restrito',
+  PERSONALIZADO: 'Personalizado',
+}
+
+export const VISIBILIDADE_DESCRICOES: Record<VisibilidadeSistemas, string> = {
+  PROPRIO: 'Vê os sistemas do próprio setor e os marcados como Geral.',
+  TOTAL: 'Vê todo o catálogo, exceto os sistemas restritos (só administradores).',
+  RESTRITO: 'Não vê nada por padrão — apenas o que for liberado individualmente.',
+  PERSONALIZADO: 'Próprio setor e Geral, mais os setores escolhidos abaixo.',
+}
 
 export function formatSetor(codigo?: string | null): string {
   if (!codigo) return 'Sem setor'

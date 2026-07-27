@@ -1,28 +1,17 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Search, Building2, Calculator, Plane, BarChart3, Receipt, Headphones, Bot, Sparkles, Cpu, CalendarCheck, MessageCircle, Clock, UserCircle, Percent, LayoutGrid, List, FileText, Calendar, User, DollarSign, Store, Megaphone, Target, Palmtree, FileCheck, Fingerprint, HandCoins, Mail, UserMinus } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useUIStore } from '@/stores/uiStore'
-import { useAuthStore } from '@/stores/authStore'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
-import type { Sistema, SetorSistema } from '@/types'
+import type { Sistema } from '@/types'
 import LoadingSpinner from '@/components/common/LoadingSpinner'
 import EmptyState from '@/components/common/EmptyState'
 import PageHeader from '@/components/common/PageHeader'
 import { ICON_MAP } from '@/lib/icons'
 
-const SETOR_TABS: { key: SetorSistema | 'ALL'; label: string; color: string }[] = [
-  { key: 'ALL', label: 'Todos', color: '' },
-  { key: 'DP', label: 'Dep. Pessoal', color: 'text-blue-400' },
-  { key: 'CONTABIL', label: 'Contábil', color: 'text-emerald-400' },
-  { key: 'FISCAL', label: 'Fiscal', color: 'text-orange-400' },
-  { key: 'SOCIETARIO', label: 'Societário', color: 'text-purple-400' },
-  { key: 'TI', label: 'Tecnologia (TI)', color: 'text-cyan-400' },
-  { key: 'GERAL', label: 'Geral', color: 'text-text-secondary' },
-  { key: 'RESTRITO', label: 'Restrito', color: 'text-red-500' },
-]
 
 function SystemCard({ sistema }: { sistema: Sistema }) {
   const Icon = ICON_MAP[sistema.icone] || Building2
@@ -69,7 +58,7 @@ export default function SystemsHub() {
   const setCurrentPage = useUIStore((s) => s.setCurrentPage)
   useEffect(() => { setCurrentPage('Sistemas') }, [setCurrentPage])
 
-  const [activeTab, setActiveTab] = useState<SetorSistema | 'ALL'>('ALL')
+  const [activeTab, setActiveTab] = useState<string>('ALL')
   const [search, setSearch] = useState('')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
 
@@ -78,23 +67,29 @@ export default function SystemsHub() {
     queryFn: () => api.sistemas.getAll(),
   })
 
-  const user = useAuthStore((s) => s.user)
-  const isManager = user?.perfil === 'ADMIN' || user?.perfil === 'COORDENADOR'
-
-  // Visibility filter:
-  // - RESTRITO is ONLY visible to ADMIN
-  // - Managers (ADMIN/COORDENADOR) see all other sectors
-  // - Others see only their own setor + GERAL
-  const visibleSistemas = sistemas.filter((s) => {
-    const setorSistema = s.setor ?? 'GERAL'
-    if (setorSistema === 'RESTRITO') {
-      return user?.perfil === 'ADMIN'
-    }
-    if (isManager) return true
-    return setorSistema === 'GERAL' || setorSistema === user?.setor
+  const { data: setores = [] } = useQuery({
+    queryKey: ['setores'],
+    queryFn: () => api.setores.getAll(),
   })
 
-  const filtered = visibleSistemas.filter((s) => {
+  // As abas saem dos sistemas que o backend de fato liberou — assim um setor
+  // novo aparece sozinho e nenhuma aba fica vazia.
+  const tabs = useMemo(() => {
+    const nomePorCodigo = Object.fromEntries(setores.map((s) => [s.codigo, s.nome]))
+    const presentes = [...new Set(sistemas.map((s) => s.setor ?? 'GERAL'))]
+    const ordenados = presentes.sort((a, b) =>
+      (nomePorCodigo[a] || a).localeCompare(nomePorCodigo[b] || b)
+    )
+    return [
+      { key: 'ALL', label: 'Todos' },
+      ...ordenados.map((codigo) => ({ key: codigo, label: nomePorCodigo[codigo] || codigo })),
+    ]
+  }, [sistemas, setores])
+
+  // A visibilidade é decidida no backend, pela política do setor do usuário
+  // (ver services/visibility_service.py). Refiltrar aqui reintroduziria uma
+  // regra paralela e esconderia sistemas que o setor tem direito de ver.
+  const filtered = sistemas.filter((s) => {
     const matchesTab = activeTab === 'ALL' || (s.setor ?? 'GERAL') === activeTab
     const matchesSearch = !search ||
       s.nome.toLowerCase().includes(search.toLowerCase()) ||
@@ -112,23 +107,19 @@ export default function SystemsHub() {
       {/* Tabs + Search */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap gap-1 rounded-lg bg-card p-1">
-          {SETOR_TABS.map((tab) => {
-            // Hide RESTRITO tab for non-admins
-            if (tab.key === 'RESTRITO' && user?.perfil !== 'ADMIN') return null;
-            return (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                  activeTab === tab.key
-                    ? 'bg-gold text-black'
-                    : `text-text-secondary hover:text-text-primary ${tab.color}`
-                }`}
-              >
-                {tab.label}
-              </button>
-            )
-          })}
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                activeTab === tab.key
+                  ? 'bg-gold text-black'
+                  : 'text-text-secondary hover:text-text-primary'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
 
         <div className="flex items-center gap-3">

@@ -1,8 +1,9 @@
 import uuid
 from datetime import datetime
 from sqlalchemy import Column, String, Boolean, DateTime
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 from app.db.base import Base
+from app.enums.visibilidade_sistemas import VisibilidadeSistemas
 
 class Setor(Base):
     __tablename__ = "setores"
@@ -14,4 +15,10 @@ class Setor(Base):
     nome = Column(String(100), nullable=False)
     cor = Column(String(30), nullable=True)
     ativo = Column(Boolean, nullable=False, default=True)
+    # Política de visualização do catálogo de sistemas para quem está no setor.
+    visibilidade_sistemas = Column(
+        String(20), nullable=False, default=VisibilidadeSistemas.PROPRIO.value
+    )
+    # Códigos de outros setores visíveis — usado apenas em PERSONALIZADO.
+    setores_visiveis = Column(JSONB, nullable=False, default=list)
     data_criacao = Column(DateTime, nullable=False, default=datetime.utcnow)

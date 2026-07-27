@@ -1,11 +1,15 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import LoadingSpinner from '@/components/common/LoadingSpinner'
-import { SETOR_COR_PADRAO } from '@/lib/constants'
+import {
+  SETOR_COR_PADRAO,
+  VISIBILIDADE_DESCRICOES,
+  VISIBILIDADE_LABELS,
+} from '@/lib/constants'
 import { Check, X, Plus } from 'lucide-react'
 import toast from 'react-hot-toast'
-import type { SetorRecord } from '@/types'
+import type { SetorRecord, VisibilidadeSistemas } from '@/types'
 import { Button } from '@mg/ui'
 
 const CODIGO_REGEX = /^[A-Z][A-Z0-9_]{1,49}$/
@@ -21,7 +25,78 @@ function sugerirCodigo(nome: string): string {
     .slice(0, 50)
 }
 
-const FORM_INICIAL = { codigo: '', nome: '', cor: SETOR_COR_PADRAO }
+const MODOS: VisibilidadeSistemas[] = ['PROPRIO', 'TOTAL', 'RESTRITO', 'PERSONALIZADO']
+
+const FORM_INICIAL = {
+  codigo: '',
+  nome: '',
+  cor: SETOR_COR_PADRAO,
+  visibilidade_sistemas: 'PROPRIO' as VisibilidadeSistemas,
+  setores_visiveis: [] as string[],
+}
+
+interface VisibilidadePickerProps {
+  modo: VisibilidadeSistemas
+  visiveis: string[]
+  /** Setores que podem ser escolhidos — o próprio setor nunca entra na lista. */
+  opcoes: SetorRecord[]
+  onChange: (modo: VisibilidadeSistemas, visiveis: string[]) => void
+}
+
+/** Escolhe o quanto do catálogo de sistemas o setor enxerga. */
+function VisibilidadePicker({ modo, visiveis, opcoes, onChange }: VisibilidadePickerProps) {
+  const alternar = (codigo: string) => {
+    const proximo = visiveis.includes(codigo)
+      ? visiveis.filter((c) => c !== codigo)
+      : [...visiveis, codigo]
+    onChange(modo, proximo)
+  }
+
+  return (
+    <div className="space-y-2">
+      <select
+        value={modo}
+        onChange={(e) => onChange(e.target.value as VisibilidadeSistemas, visiveis)}
+        className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-text-primary outline-none"
+        aria-label="Visualização de sistemas"
+      >
+        {MODOS.map((m) => (
+          <option key={m} value={m}>{VISIBILIDADE_LABELS[m]}</option>
+        ))}
+      </select>
+      <p className="text-xs text-text-muted">{VISIBILIDADE_DESCRICOES[modo]}</p>
+
+      {modo === 'PERSONALIZADO' && (
+        <div className="flex flex-wrap gap-2 rounded-lg border border-border bg-card p-2">
+          {opcoes.length === 0 && (
+            <span className="text-xs text-text-muted">Nenhum outro setor cadastrado.</span>
+          )}
+          {opcoes.map((s) => {
+            const marcado = visiveis.includes(s.codigo)
+            return (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => alternar(s.codigo)}
+                aria-pressed={marcado}
+                className={`rounded-full border px-3 py-1 text-xs transition-colors ${
+                  marcado
+                    ? 'border-gold bg-gold/10 font-semibold text-gold'
+                    : 'border-border text-text-muted hover:text-text-primary'
+                }`}
+              >
+                {s.nome}
+              </button>
+            )
+          })}
+        </div>
+      )}
+      {modo === 'PERSONALIZADO' && visiveis.length === 0 && (
+        <p className="text-xs text-error">Selecione ao menos um setor.</p>
+      )}
+    </div>
+  )
+}
 
 export default function SectorsTable() {
   const queryClient = useQueryClient()
@@ -72,13 +147,25 @@ export default function SectorsTable() {
   const [codigoEditadoManualmente, setCodigoEditadoManualmente] = useState(false)
 
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [editForm, setEditForm] = useState<{ nome: string; cor: string; ativo: boolean } | null>(null)
+  const [editForm, setEditForm] = useState<{
+    nome: string
+    cor: string
+    ativo: boolean
+    visibilidade_sistemas: VisibilidadeSistemas
+    setores_visiveis: string[]
+  } | null>(null)
 
   const codigo = createForm.codigo
   const codigoValido = CODIGO_REGEX.test(codigo)
   const codigoDuplicado = setores.some((s) => s.codigo === codigo)
+  const politicaCompleta = (modo: VisibilidadeSistemas, visiveis: string[]) =>
+    modo !== 'PERSONALIZADO' || visiveis.length > 0
   const podeCriar =
-    !!createForm.nome.trim() && codigoValido && !codigoDuplicado && !createMutation.isPending
+    !!createForm.nome.trim() &&
+    codigoValido &&
+    !codigoDuplicado &&
+    politicaCompleta(createForm.visibilidade_sistemas, createForm.setores_visiveis) &&
+    !createMutation.isPending
 
   const handleNomeChange = (nome: string) => {
     setCreateForm((f) => ({
@@ -90,11 +177,22 @@ export default function SectorsTable() {
 
   const handleEdit = (setor: SetorRecord) => {
     setEditingId(setor.id)
-    setEditForm({ nome: setor.nome, cor: setor.cor || SETOR_COR_PADRAO, ativo: setor.ativo })
+    setEditForm({
+      nome: setor.nome,
+      cor: setor.cor || SETOR_COR_PADRAO,
+      ativo: setor.ativo,
+      visibilidade_sistemas: setor.visibilidade_sistemas,
+      setores_visiveis: setor.setores_visiveis,
+    })
   }
 
   const handleSave = (id: string) => {
-    if (editForm) updateMutation.mutate({ id, data: editForm })
+    if (!editForm) return
+    if (!politicaCompleta(editForm.visibilidade_sistemas, editForm.setores_visiveis)) {
+      toast.error('No modo Personalizado selecione ao menos um setor.')
+      return
+    }
+    updateMutation.mutate({ id, data: editForm })
     setEditingId(null)
     setEditForm(null)
   }
@@ -182,6 +280,24 @@ export default function SectorsTable() {
               </button>
             </div>
           </div>
+
+          <div className="mt-4 max-w-xl">
+            <label className="mb-1 block text-xs font-medium uppercase text-text-muted">
+              Visualização de sistemas
+            </label>
+            <VisibilidadePicker
+              modo={createForm.visibilidade_sistemas}
+              visiveis={createForm.setores_visiveis}
+              opcoes={setores}
+              onChange={(modo, visiveis) =>
+                setCreateForm((f) => ({
+                  ...f,
+                  visibilidade_sistemas: modo,
+                  setores_visiveis: visiveis,
+                }))
+              }
+            />
+          </div>
         </div>
       )}
 
@@ -191,6 +307,7 @@ export default function SectorsTable() {
             <tr>
               <th className="px-4 py-2 text-left text-xs font-medium uppercase text-text-muted">Setor</th>
               <th className="px-4 py-2 text-left text-xs font-medium uppercase text-text-muted">Código</th>
+              <th className="px-4 py-2 text-left text-xs font-medium uppercase text-text-muted">Sistemas</th>
               <th className="px-4 py-2 text-left text-xs font-medium uppercase text-text-muted">Colaboradores</th>
               <th className="px-4 py-2 text-left text-xs font-medium uppercase text-text-muted">Status</th>
               <th className="px-4 py-2 text-left text-xs font-medium uppercase text-text-muted">Ações</th>
@@ -198,7 +315,8 @@ export default function SectorsTable() {
           </thead>
           <tbody>
             {setores.map((s) => (
-              <tr key={s.id} className="group">
+              <Fragment key={s.id}>
+              <tr className="group">
                 <td className="rounded-l-lg border border-r-0 border-border bg-card px-4 py-3 transition-colors group-hover:bg-surface">
                   {editingId === s.id && editForm ? (
                     <div className="flex items-center gap-2">
@@ -228,6 +346,16 @@ export default function SectorsTable() {
                 </td>
                 <td className="border-b border-t border-border bg-card px-4 py-3 transition-colors group-hover:bg-surface">
                   <span className="font-mono text-xs text-text-muted">{s.codigo}</span>
+                </td>
+                <td className="border-b border-t border-border bg-card px-4 py-3 transition-colors group-hover:bg-surface">
+                  <span className="text-sm text-text-secondary">
+                    {VISIBILIDADE_LABELS[s.visibilidade_sistemas]}
+                  </span>
+                  {s.visibilidade_sistemas === 'PERSONALIZADO' && (
+                    <p className="text-xs text-text-muted">
+                      + {s.setores_visiveis.join(', ')}
+                    </p>
+                  )}
                 </td>
                 <td className="border-b border-t border-border bg-card px-4 py-3 transition-colors group-hover:bg-surface">
                   <span className="text-sm text-text-secondary">{s.total_usuarios}</span>
@@ -276,10 +404,34 @@ export default function SectorsTable() {
                   )}
                 </td>
               </tr>
+              {editingId === s.id && editForm && (
+                <tr>
+                  <td colSpan={6} className="rounded-lg border border-border bg-card px-4 pb-4">
+                    <label className="mb-1 block text-xs font-medium uppercase text-text-muted">
+                      Visualização de sistemas
+                    </label>
+                    <div className="max-w-xl">
+                      <VisibilidadePicker
+                        modo={editForm.visibilidade_sistemas}
+                        visiveis={editForm.setores_visiveis}
+                        opcoes={setores.filter((o) => o.id !== s.id)}
+                        onChange={(modo, visiveis) =>
+                          setEditForm({
+                            ...editForm,
+                            visibilidade_sistemas: modo,
+                            setores_visiveis: visiveis,
+                          })
+                        }
+                      />
+                    </div>
+                  </td>
+                </tr>
+              )}
+              </Fragment>
             ))}
             {setores.length === 0 && (
               <tr>
-                <td colSpan={5} className="rounded-lg border border-border bg-card px-4 py-6 text-center text-sm text-text-muted">
+                <td colSpan={6} className="rounded-lg border border-border bg-card px-4 py-6 text-center text-sm text-text-muted">
                   Nenhum setor cadastrado.
                 </td>
               </tr>

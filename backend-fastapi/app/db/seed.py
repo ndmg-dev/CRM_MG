@@ -8,16 +8,20 @@ o admin cria e edita setores pela interface.
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.enums.visibilidade_sistemas import VisibilidadeSistemas
 from app.models.sector import Setor
 
-SETORES_PADRAO: list[tuple[str, str, str]] = [
-    ("FISCAL", "Fiscal", "#22d3ee"),
-    ("CONTABIL", "Contábil", "#f87171"),
-    ("DP", "Departamento Pessoal", "#f472b6"),
-    ("SOCIETARIO", "Societário", "#a78bfa"),
-    ("DIRETORIA", "Diretoria", "#fbbf24"),
-    ("TI", "Tecnologia (TI)", "#facc15"),
-    ("GERAL", "Geral", "#94a3b8"),
+#: (codigo, nome, cor, visibilidade). DIRETORIA e TI nascem com visão TOTAL
+#: porque antes dependiam do perfil COORDENADOR para enxergar o catálogo
+#: inteiro — agora a permissão é do setor, e não do perfil.
+SETORES_PADRAO: list[tuple[str, str, str, VisibilidadeSistemas]] = [
+    ("FISCAL", "Fiscal", "#22d3ee", VisibilidadeSistemas.PROPRIO),
+    ("CONTABIL", "Contábil", "#f87171", VisibilidadeSistemas.PROPRIO),
+    ("DP", "Departamento Pessoal", "#f472b6", VisibilidadeSistemas.PROPRIO),
+    ("SOCIETARIO", "Societário", "#a78bfa", VisibilidadeSistemas.PROPRIO),
+    ("DIRETORIA", "Diretoria", "#fbbf24", VisibilidadeSistemas.TOTAL),
+    ("TI", "Tecnologia (TI)", "#facc15", VisibilidadeSistemas.TOTAL),
+    ("GERAL", "Geral", "#94a3b8", VisibilidadeSistemas.PROPRIO),
 ]
 
 
@@ -26,8 +30,15 @@ async def seed_setores(db: AsyncSession) -> None:
     existentes = set(result.scalars().all())
 
     novos = [
-        Setor(codigo=codigo, nome=nome, cor=cor, ativo=True)
-        for codigo, nome, cor in SETORES_PADRAO
+        Setor(
+            codigo=codigo,
+            nome=nome,
+            cor=cor,
+            ativo=True,
+            visibilidade_sistemas=visibilidade.value,
+            setores_visiveis=[],
+        )
+        for codigo, nome, cor, visibilidade in SETORES_PADRAO
         if codigo not in existentes
     ]
     if not novos:

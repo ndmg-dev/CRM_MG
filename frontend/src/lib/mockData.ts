@@ -24,13 +24,13 @@ import { sleep } from './utils'
 // Mock Setores — espelha o seed de `setores` do backend
 // ---------------------------------------------------------------------------
 const mockSetores: SetorRecord[] = [
-  { id: 's1', codigo: 'FISCAL', nome: 'Fiscal', cor: '#22d3ee', ativo: true, data_criacao: '2024-01-01T00:00:00', total_usuarios: 0 },
-  { id: 's2', codigo: 'CONTABIL', nome: 'Contábil', cor: '#f87171', ativo: true, data_criacao: '2024-01-01T00:00:00', total_usuarios: 0 },
-  { id: 's3', codigo: 'DP', nome: 'Departamento Pessoal', cor: '#f472b6', ativo: true, data_criacao: '2024-01-01T00:00:00', total_usuarios: 0 },
-  { id: 's4', codigo: 'SOCIETARIO', nome: 'Societário', cor: '#a78bfa', ativo: true, data_criacao: '2024-01-01T00:00:00', total_usuarios: 0 },
-  { id: 's5', codigo: 'DIRETORIA', nome: 'Diretoria', cor: '#fbbf24', ativo: true, data_criacao: '2024-01-01T00:00:00', total_usuarios: 0 },
-  { id: 's6', codigo: 'TI', nome: 'Tecnologia (TI)', cor: '#facc15', ativo: true, data_criacao: '2024-01-01T00:00:00', total_usuarios: 0 },
-  { id: 's7', codigo: 'GERAL', nome: 'Geral', cor: '#94a3b8', ativo: true, data_criacao: '2024-01-01T00:00:00', total_usuarios: 0 },
+  { id: 's1', codigo: 'FISCAL', nome: 'Fiscal', cor: '#22d3ee', ativo: true, visibilidade_sistemas: 'PROPRIO', setores_visiveis: [], data_criacao: '2024-01-01T00:00:00', total_usuarios: 0 },
+  { id: 's2', codigo: 'CONTABIL', nome: 'Contábil', cor: '#f87171', ativo: true, visibilidade_sistemas: 'PROPRIO', setores_visiveis: [], data_criacao: '2024-01-01T00:00:00', total_usuarios: 0 },
+  { id: 's3', codigo: 'DP', nome: 'Departamento Pessoal', cor: '#f472b6', ativo: true, visibilidade_sistemas: 'PROPRIO', setores_visiveis: [], data_criacao: '2024-01-01T00:00:00', total_usuarios: 0 },
+  { id: 's4', codigo: 'SOCIETARIO', nome: 'Societário', cor: '#a78bfa', ativo: true, visibilidade_sistemas: 'PROPRIO', setores_visiveis: [], data_criacao: '2024-01-01T00:00:00', total_usuarios: 0 },
+  { id: 's5', codigo: 'DIRETORIA', nome: 'Diretoria', cor: '#fbbf24', ativo: true, visibilidade_sistemas: 'TOTAL', setores_visiveis: [], data_criacao: '2024-01-01T00:00:00', total_usuarios: 0 },
+  { id: 's6', codigo: 'TI', nome: 'Tecnologia (TI)', cor: '#facc15', ativo: true, visibilidade_sistemas: 'TOTAL', setores_visiveis: [], data_criacao: '2024-01-01T00:00:00', total_usuarios: 0 },
+  { id: 's7', codigo: 'GERAL', nome: 'Geral', cor: '#94a3b8', ativo: true, visibilidade_sistemas: 'PROPRIO', setores_visiveis: [], data_criacao: '2024-01-01T00:00:00', total_usuarios: 0 },
 ]
 
 // ---------------------------------------------------------------------------
@@ -204,12 +204,19 @@ export const mockApi = {
       if (mockSetores.some((s) => s.codigo === codigo)) {
         throw new Error(`Já existe um setor com o código ${codigo}`)
       }
+      const visibilidade = data.visibilidade_sistemas || 'PROPRIO'
+      const visiveis = visibilidade === 'PERSONALIZADO' ? data.setores_visiveis || [] : []
+      if (visibilidade === 'PERSONALIZADO' && !visiveis.length) {
+        throw new Error('No modo Personalizado informe ao menos um setor visível')
+      }
       const novo: SetorRecord = {
         id: `s${mockSetores.length + 1}`,
         codigo,
         nome: (data.nome || '').trim(),
         cor: data.cor ?? null,
         ativo: data.ativo ?? true,
+        visibilidade_sistemas: visibilidade,
+        setores_visiveis: visiveis,
         data_criacao: new Date().toISOString(),
         total_usuarios: 0,
       }
@@ -224,8 +231,21 @@ export const mockApi = {
       if (data.ativo === false && emUso) {
         throw new Error(`Não é possível desativar: ${emUso} usuário(s) ainda vinculados`)
       }
+      const modo = data.visibilidade_sistemas ?? mockSetores[idx].visibilidade_sistemas
+      const visiveis =
+        modo === 'PERSONALIZADO'
+          ? data.setores_visiveis ?? mockSetores[idx].setores_visiveis
+          : []
+      if (modo === 'PERSONALIZADO' && !visiveis.length) {
+        throw new Error('No modo Personalizado informe ao menos um setor visível')
+      }
       // `codigo` é imutável, como no backend
-      Object.assign(mockSetores[idx], { ...data, codigo: mockSetores[idx].codigo })
+      Object.assign(mockSetores[idx], {
+        ...data,
+        codigo: mockSetores[idx].codigo,
+        visibilidade_sistemas: modo,
+        setores_visiveis: visiveis,
+      })
       return { ...mockSetores[idx], total_usuarios: emUso }
     },
     delete: async (id: string): Promise<void> => {
@@ -236,6 +256,15 @@ export const mockApi = {
       if (emUso) {
         throw new Error(
           `Não é possível excluir: ${emUso} usuário(s) ainda vinculados a este setor`
+        )
+      }
+      const referenciado = mockSetores.filter(
+        (s) => s.id !== id && s.setores_visiveis.includes(mockSetores[idx].codigo)
+      )
+      if (referenciado.length) {
+        throw new Error(
+          `Não é possível excluir: ${referenciado.map((s) => s.nome).join(', ')} têm ` +
+            'visibilidade sobre os sistemas deste setor'
         )
       }
       mockSetores.splice(idx, 1)

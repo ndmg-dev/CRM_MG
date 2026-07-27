@@ -1,8 +1,10 @@
 import re
-from pydantic import BaseModel, ConfigDict, field_validator
-from typing import Optional
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator
+from typing import List, Optional
 from datetime import datetime
 from uuid import UUID
+
+from app.enums.visibilidade_sistemas import VisibilidadeSistemas
 
 CODIGO_PATTERN = re.compile(r"^[A-Z][A-Z0-9_]{1,49}$")
 
@@ -14,6 +16,24 @@ class SetorBase(BaseModel):
     nome: str
     cor: Optional[str] = None
     ativo: bool = True
+    visibilidade_sistemas: VisibilidadeSistemas = VisibilidadeSistemas.PROPRIO
+    setores_visiveis: List[str] = []
+
+    @model_validator(mode="after")
+    def validar_setores_visiveis(self):
+        # A lista só faz sentido em PERSONALIZADO; nos demais modos ela seria
+        # uma configuração morta que engana quem lê a tela depois.
+        if self.visibilidade_sistemas != VisibilidadeSistemas.PERSONALIZADO:
+            self.setores_visiveis = []
+        else:
+            self.setores_visiveis = sorted(
+                {normalizar_codigo(c) for c in self.setores_visiveis if c.strip()}
+            )
+            if not self.setores_visiveis:
+                raise ValueError(
+                    "No modo PERSONALIZADO informe ao menos um setor visível"
+                )
+        return self
 
     @field_validator("codigo")
     @classmethod
@@ -43,6 +63,17 @@ class SetorUpdate(BaseModel):
     nome: Optional[str] = None
     cor: Optional[str] = None
     ativo: Optional[bool] = None
+    visibilidade_sistemas: Optional[VisibilidadeSistemas] = None
+    # A coerência entre modo e lista depende do estado já gravado, então é
+    # verificada no endpoint, depois de mesclar os campos enviados.
+    setores_visiveis: Optional[List[str]] = None
+
+    @field_validator("setores_visiveis")
+    @classmethod
+    def normalizar_visiveis(cls, v: Optional[List[str]]) -> Optional[List[str]]:
+        if v is None:
+            return v
+        return sorted({normalizar_codigo(c) for c in v if c.strip()})
 
     @field_validator("nome")
     @classmethod

@@ -9,6 +9,10 @@ from app.core.security import get_current_user
 from app.models.user import Usuario
 from app.models.system import Sistema
 from app.schemas.system import SistemaResponse
+from app.services.visibility_service import (
+    carregar_contexto_visibilidade,
+    filtrar_sistemas,
+)
 
 router = APIRouter()
 
@@ -21,22 +25,10 @@ async def get_sistemas(
     query = select(Sistema).where(Sistema.ativo == True)
     if categoria:
         query = query.where(Sistema.categoria == categoria)
-        
+
     result = await db.execute(query)
     sistemas = result.scalars().all()
-    
-    # Managers see all. Others see based on Setor (GERAL + seu próprio) ou acessos extras explícitos
-    if current_user.perfil not in ["ADMIN", "COORDENADOR"]:
-        from app.models.user_system_access import UsuarioSistemaAcesso
-        access_query = select(UsuarioSistemaAcesso.sistema_id).where(
-            UsuarioSistemaAcesso.usuario_id == current_user.id
-        )
-        access_result = await db.execute(access_query)
-        allowed_ids = {row for row in access_result.scalars()}
-        
-        sistemas = [
-            s for s in sistemas 
-            if s.setor == "GERAL" or s.setor == current_user.setor or s.id in allowed_ids
-        ]
-        
-    return sistemas
+
+    # A política de visibilidade é definida no cadastro do setor do usuário.
+    setor, acessos = await carregar_contexto_visibilidade(db, current_user)
+    return filtrar_sistemas(sistemas, current_user, setor, acessos)

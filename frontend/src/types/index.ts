@@ -5,12 +5,18 @@ export type Perfil = 'ADMIN' | 'COORDENADOR' | 'ANALISTA' | 'ASSISTENTE' | 'VISU
  */
 export type Setor = string
 
+/** Quanto do catálogo de sistemas os colaboradores do setor enxergam. */
+export type VisibilidadeSistemas = 'PROPRIO' | 'TOTAL' | 'RESTRITO' | 'PERSONALIZADO'
+
 export interface SetorRecord {
   id: string
   codigo: string
   nome: string
   cor?: string | null
   ativo: boolean
+  visibilidade_sistemas: VisibilidadeSistemas
+  /** Códigos de outros setores visíveis — só usado em PERSONALIZADO. */
+  setores_visiveis: string[]
   data_criacao: string
   total_usuarios: number
 }

@@ -11,6 +11,7 @@ from app.models.user import Usuario
 from app.models.sector import Setor
 from app.models.audit_log import LogAuditoria
 from app.schemas.sector import SetorCreate, SetorUpdate, SetorResponse
+from app.enums.visibilidade_sistemas import VisibilidadeSistemas
 
 router = APIRouter()
 
@@ -29,9 +30,28 @@ def _to_response(setor: Setor, contagens: dict[str, int]) -> SetorResponse:
         nome=setor.nome,
         cor=setor.cor,
         ativo=setor.ativo,
+        visibilidade_sistemas=setor.visibilidade_sistemas,
+        setores_visiveis=setor.setores_visiveis or [],
         data_criacao=setor.data_criacao,
         total_usuarios=contagens.get(setor.codigo, 0),
     )
+
+
+async def _validar_setores_visiveis(
+    db: AsyncSession, codigos: list[str], proprio_codigo: str
+) -> None:
+    if proprio_codigo in codigos:
+        raise HTTPException(
+            status_code=400,
+            detail="O próprio setor já é visível; não precisa constar na lista",
+        )
+    result = await db.execute(select(Setor.codigo).where(Setor.codigo.in_(codigos)))
+    existentes = set(result.scalars())
+    faltando = sorted(set(codigos) - existentes)
+    if faltando:
+        raise HTTPException(
+            status_code=400, detail=f"Setores inexistentes: {', '.join(faltando)}"
+        )
 
 
 @router.get("", response_model=List[SetorResponse])
@@ -61,11 +81,16 @@ async def create_setor(
             status_code=400, detail=f"Já existe um setor com o código {setor_in.codigo}"
         )
 
+    if setor_in.setores_visiveis:
+        await _validar_setores_visiveis(db, setor_in.setores_visiveis, setor_in.codigo)
+
     setor = Setor(
         codigo=setor_in.codigo,
         nome=setor_in.nome,
         cor=setor_in.cor,
         ativo=setor_in.ativo,
+        visibilidade_sistemas=setor_in.visibilidade_sistemas.value,
+        setores_visiveis=setor_in.setores_visiveis,
     )
     db.add(setor)
     db.add(
@@ -73,7 +98,11 @@ async def create_setor(
             usuario_id=current_user.id,
             acao="CREATE_SECTOR",
             alvo=f"Setor {setor.nome}",
-            detalhes={"codigo": setor.codigo},
+            detalhes={
+                "codigo": setor.codigo,
+                "visibilidade_sistemas": setor.visibilidade_sistemas,
+                "setores_visiveis": setor.setores_visiveis,
+            },
         )
     )
 
@@ -102,6 +131,25 @@ async def update_setor(
         raise HTTPException(status_code=404, detail="Setor não encontrado")
 
     update_data = setor_in.model_dump(exclude_unset=True)
+
+    if "visibilidade_sistemas" in update_data:
+        update_data["visibilidade_sistemas"] = update_data["visibilidade_sistemas"].value
+
+    # Coerência entre o modo e a lista, considerando o que já está gravado.
+    modo = update_data.get("visibilidade_sistemas", setor.visibilidade_sistemas)
+    visiveis = update_data.get("setores_visiveis", setor.setores_visiveis or [])
+    if modo == VisibilidadeSistemas.PERSONALIZADO.value:
+        if not visiveis:
+            raise HTTPException(
+                status_code=400,
+                detail="No modo PERSONALIZADO informe ao menos um setor visível",
+            )
+        await _validar_setores_visiveis(db, visiveis, setor.codigo)
+        update_data["setores_visiveis"] = visiveis
+    else:
+        # Fora do PERSONALIZADO a lista é limpa, para não ficar configuração
+        # morta sugerindo um acesso que não existe.
+        update_data["setores_visiveis"] = []
 
     if update_data.get("ativo") is False:
         contagens = await _contagem_usuarios(db)
@@ -151,6 +199,25 @@ async def delete_setor(
             detail=(
                 f"Não é possível excluir: {em_uso} usuário(s) ainda estão vinculados "
                 f"a este setor. Reatribua-os antes de excluir."
+            ),
+        )
+
+    # Outro setor pode enxergar os sistemas deste via modo PERSONALIZADO;
+    # excluir sem avisar deixaria a configuração daquele setor apontando para
+    # um código inexistente.
+    result = await db.execute(
+        select(Setor.nome).where(
+            Setor.setores_visiveis.contains([setor.codigo]), Setor.id != setor.id
+        )
+    )
+    referenciado_por = sorted(result.scalars())
+    if referenciado_por:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Não é possível excluir: os setores "
+                f"{', '.join(referenciado_por)} têm visibilidade sobre os sistemas "
+                "deste setor. Ajuste a configuração deles antes de excluir."
             ),
         )
 
