@@ -97,10 +97,13 @@ Observações:
 
 ## 7. Segredo compartilhado
 
-- String aleatória forte (ex.: `openssl rand -hex 32`).
-- Guardada como **secret de deploy** em cada lado (no Férias: Vault do Supabase;
-  no Cronos: env/secret). **Nunca** commitada, **nunca** exposta no client.
-- Combinar o valor por canal seguro (não por este arquivo).
+- 32 bytes aleatórios, transportados em **base64** (rótulo `base64:...`).
+- **Chave do HMAC = os bytes DECODIFICADOS do base64** (não a string base64).
+  Os dois lados devem decodificar antes de assinar/validar. ⚠️ confirmar que o
+  Cronos faz assim.
+- Guardada como **secret de deploy** em cada lado (Férias: Vault; Cronos:
+  env/secret), sem o prefixo `base64:`. **Nunca** commitada nem exposta no client.
+- Combinar o valor por canal seguro.
 
 ## 8. Itens a confirmar pelo lado Cronos
 
