@@ -97,12 +97,14 @@ Observações:
 
 ## 7. Segredo compartilhado
 
-- 32 bytes aleatórios, transportados em **base64** (rótulo `base64:...`).
-- **Chave do HMAC = os bytes DECODIFICADOS do base64** (não a string base64).
-  Os dois lados devem decodificar antes de assinar/validar. ⚠️ confirmar que o
-  Cronos faz assim.
-- Guardada como **secret de deploy** em cada lado (Férias: Vault; Cronos:
-  env/secret), sem o prefixo `base64:`. **Nunca** commitada nem exposta no client.
+- **Chave do HMAC = a string do segredo como texto UTF-8, EXATAMENTE como está**
+  (sem decodificar). Se o valor vier com prefixo `base64:...`, o prefixo faz
+  parte da chave. Definido pelo Cronos (`secret.encode('utf-8')`).
+- Os dois lados guardam o **valor idêntico** como secret de deploy (Férias:
+  Vault; Cronos: env). **Nunca** commitado nem exposto no client.
+- Recomendação (Cronos) para o go-live: gerar um segredo **hex** novo
+  (`openssl rand -hex 32`) — remove a ambiguidade do base64 e substitui o que já
+  passou por canais inseguros. Funciona igual (é texto opaco nos dois lados).
 - Combinar o valor por canal seguro.
 
 ## 8. Itens a confirmar pelo lado Cronos

@@ -56,17 +56,14 @@ returns text language sql immutable as $$
   );
 $$;
 
--- Segredo vem em base64 (rotulado "base64:" pelo Cronos). A chave do HMAC são
--- os BYTES DECODIFICADOS do base64 — não o texto. Ambos os lados devem fazer
--- igual (confirmar com o Cronos). Guardar no Vault SEM o prefixo "base64:".
+-- Chave do HMAC = a STRING do segredo como texto UTF-8, EXATAMENTE como está
+-- (o Cronos faz secret.encode('utf-8') sem decodificar; se o valor tiver o
+-- prefixo "base64:", ele FAZ parte da chave). Guardar no Vault o valor idêntico
+-- ao do Cronos. Funciona igual para segredo hex ou base64 — é sempre texto opaco.
 create or replace function integracao_cronos.assinar(p jsonb, p_secret text)
 returns text language sql as $$
   select 'sha256=' || encode(
-    extensions.hmac(
-      convert_to(integracao_cronos.montar_canonico(p), 'UTF8'),
-      decode(p_secret, 'base64'),
-      'sha256'
-    ), 'hex');
+    extensions.hmac(integracao_cronos.montar_canonico(p), p_secret, 'sha256'), 'hex');
 $$;
 
 -- Helper: POST assinado via pg_net; devolve o request_id.
