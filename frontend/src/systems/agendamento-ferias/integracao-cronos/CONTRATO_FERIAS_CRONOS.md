@@ -59,15 +59,15 @@ Assinatura sobre uma **string canônica**, não sobre o JSON serializado (evita
 divergência de serialização entre os lados).
 
 ```
-base = tenant_id + "\n" + email + "\n" + ferias_ref_id + "\n" +
-       data_inicio + "\n" + data_fim + "\n" + status + "\n" + evento_em
+base = ferias_ref_id + "\n" + tenant_id + "\n" + email + "\n" +
+       data_inicio + "\n" + data_fim + "\n" + status
 assinatura = "sha256=" + hex( HMAC_SHA256( base, SEGREDO_COMPARTILHADO ) )
 ```
 
-- Ordem dos campos é **fixa** e exatamente a acima.
+- Ordem dos campos é **fixa** e exatamente a acima (definida pelo lado Cronos).
+- `evento_em` **NÃO** entra na assinatura (vai no corpo apenas, para auditoria).
 - Separador é `\n` (0x0A).
-- `data_inicio`/`data_fim` no formato `YYYY-MM-DD`; `evento_em` exatamente como
-  enviado no payload.
+- `data_inicio`/`data_fim` no formato `YYYY-MM-DD`.
 - O Cronos: reconstrói `base` a partir dos campos recebidos, recalcula o HMAC com
   o mesmo segredo e compara (comparação em tempo constante). **Rejeitar (401) se
   não bater.** Nunca processar payload sem assinatura válida.

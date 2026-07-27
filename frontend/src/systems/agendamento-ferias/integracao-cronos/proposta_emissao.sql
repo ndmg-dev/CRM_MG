@@ -45,12 +45,14 @@ create table if not exists integracao_cronos.eventos_log (
 );
 
 -- 3) Assinatura canônica (usada na 1ª emissão E no retry → sempre idêntica).
+-- Ordem EXATA definida pelo lado Cronos (fonte da verdade, sem evento_em):
+--   ferias_ref_id \n tenant_id \n email \n data_inicio \n data_fim \n status
 create or replace function integracao_cronos.montar_canonico(p jsonb)
 returns text language sql immutable as $$
   select concat_ws(
     E'\n',
-    p->>'tenant_id', p->>'email', p->>'ferias_ref_id',
-    p->>'data_inicio', p->>'data_fim', p->>'status', p->>'evento_em'
+    p->>'ferias_ref_id', p->>'tenant_id', p->>'email',
+    p->>'data_inicio', p->>'data_fim', p->>'status'
   );
 $$;
 

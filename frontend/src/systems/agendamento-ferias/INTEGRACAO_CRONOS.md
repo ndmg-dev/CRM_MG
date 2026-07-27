@@ -20,9 +20,9 @@ Contrato completo proposto: **[CONTRATO_FERIAS_CRONOS.md](./CONTRATO_FERIAS_CRON
 
 - [x] Cronos aceita o contrato (status enum idêntico: agendada/em_andamento/concluida/cancelada)
 - [x] Segredo HMAC gerado e combinado (guardado fora do repo; vai no Vault / env do Cronos)
-- [x] URL do endpoint: `https://pontoadmin.mendoncagalvao.com.br/api/v1/integrations/ferias/webhook`
-- [x] Conectividade Coolify Férias → Cronos: **OK** (domínio acessível; retorna 404 até o Cronos publicar o endpoint)
-- [x] `tenant_id` fixo (= company_id do Cronos): `00000000-0000-0000-0000-000000000001`
+- [x] URL do endpoint (Cronos, oficial): `https://backendponto.nucleodigital.cloud/api/v1/integrations/ferias/webhook`
+- [x] `tenant_id` (string mapeada pelo Cronos): `mendonca-galvao`
+- [x] Assinatura HMAC alinhada à ordem do Cronos (ferias_ref_id, tenant_id, email, data_inicio, data_fim, status; sem evento_em)
 - [x] Match de colaborador por e-mail
 
 **Bloqueio restante para aplicar:** o Cronos precisa **publicar o endpoint**
