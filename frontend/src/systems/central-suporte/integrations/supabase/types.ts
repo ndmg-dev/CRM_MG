@@ -840,6 +840,15 @@ export type Database = {
     }
     Functions: {
       admin_delete_user: { Args: { _user_id: string }; Returns: undefined }
+      admin_pre_register_support_user: {
+        Args: {
+          _email: string
+          _full_name: string
+          _roles: Database["public"]["Enums"]["app_role"][]
+          _sector_id: string
+        }
+        Returns: undefined
+      }
       ensure_support_user_profile: { Args: never; Returns: undefined }
       archive_ticket: {
         Args: { _reason: string; _ticket_id: string }

@@ -2,13 +2,14 @@ import { useState, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@suporte/components/ui/card";
 import { Button } from "@suporte/components/ui/button";
 import { Badge } from "@suporte/components/ui/badge";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@suporte/integrations/supabase/client";
 import { UserEditDialog } from "./UserEditDialog";
 import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
 import { toast } from "sonner";
 import { useUserSector } from "@suporte/hooks/useUserSector";
+import { UserPreRegistrationDialog } from "./UserPreRegistrationDialog";
 
 const roleLabels: Record<string, string> = {
   user: "Usuário",
@@ -109,6 +110,7 @@ export function UsersTab({ readOnly }: UsersTabProps) {
   }, [users, userSector]);
 
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [preRegistrationOpen, setPreRegistrationOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingUser, setDeletingUser] = useState<any>(null);
@@ -141,6 +143,12 @@ export function UsersTab({ readOnly }: UsersTabProps) {
             <CardTitle>Gestão de Usuários</CardTitle>
             <CardDescription>Gerencie acessos, setores e permissões do sistema</CardDescription>
           </div>
+          {!readOnly && (userSector.isDirection || userSector.isAdmin) && (
+            <Button onClick={() => setPreRegistrationOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Pré-cadastrar usuário
+            </Button>
+          )}
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -225,6 +233,11 @@ export function UsersTab({ readOnly }: UsersTabProps) {
       {!readOnly && (
         <>
           <UserEditDialog open={editDialogOpen} onOpenChange={setEditDialogOpen} user={editingUser} />
+          <UserPreRegistrationDialog
+            open={preRegistrationOpen}
+            onOpenChange={setPreRegistrationOpen}
+            sectors={sectors || []}
+          />
           <DeleteConfirmDialog
             open={deleteDialogOpen}
             onOpenChange={setDeleteDialogOpen}
