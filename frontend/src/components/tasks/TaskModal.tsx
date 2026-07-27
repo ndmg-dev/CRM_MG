@@ -7,7 +7,7 @@ import { api } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import toast from 'react-hot-toast'
 import type { Tarefa, StatusTarefa, Prioridade, Setor } from '@/types'
-import { STATUS_LABELS, PRIORITY_LABELS, SETOR_LABELS } from '@/lib/constants'
+import { STATUS_LABELS, PRIORITY_LABELS } from '@/lib/constants'
 import { formatDateTime } from '@/lib/utils'
 
 interface TaskModalProps {
@@ -33,6 +33,12 @@ export default function TaskModal({ task, onClose }: TaskModalProps) {
   
   const clientes = clientesPage?.content || []
 
+  // Setores vêm do cadastro dinâmico; um setor novo precisa aparecer aqui.
+  const { data: setores = [] } = useQuery({
+    queryKey: ['setores'],
+    queryFn: () => api.setores.getAll(),
+  })
+
   const filteredUsuarios = isCoordenador 
     ? usuarios.filter(u => u.setor === user?.setor)
     : usuarios
@@ -42,11 +48,18 @@ export default function TaskModal({ task, onClose }: TaskModalProps) {
     descricao: task?.descricao || '',
     clienteId: task?.clienteId || '',
     responsavelId: task?.responsavelId || '',
-    setorOrigem: (task?.setorOrigem || (isCoordenador ? user?.setor : 'FISCAL')) as Setor,
+    setorOrigem: (task?.setorOrigem || (isCoordenador ? user?.setor : '') || '') as Setor,
     prioridade: (task?.prioridade || 'MEDIA') as Prioridade,
     status: (task?.status || 'PENDENTE') as StatusTarefa,
     dataVencimento: task?.dataVencimento?.split('T')[0] || '',
   })
+
+  // Sem setor fixo no código: assim que a lista chega, seleciona o primeiro.
+  useEffect(() => {
+    if (!form.setorOrigem && setores.length) {
+      setForm((f) => (f.setorOrigem ? f : { ...f, setorOrigem: setores[0].codigo }))
+    }
+  }, [setores, form.setorOrigem])
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
@@ -140,9 +153,11 @@ export default function TaskModal({ task, onClose }: TaskModalProps) {
                   onChange={(e) => !isCoordenador && setForm({ ...form, setorOrigem: e.target.value as Setor })}
                   disabled={isCoordenador}
                 >
-                  {Object.entries(SETOR_LABELS).filter(([k]) => k !== 'DIRETORIA').map(([k, v]) => (
-                    <option key={k} value={k}>{v}</option>
-                  ))}
+                  {setores
+                    .filter((s) => s.codigo !== 'DIRETORIA')
+                    .map((s) => (
+                      <option key={s.id} value={s.codigo}>{s.nome}</option>
+                    ))}
                 </select>
               </div>
               <div>

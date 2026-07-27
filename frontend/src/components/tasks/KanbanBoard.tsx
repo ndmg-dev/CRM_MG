@@ -13,7 +13,7 @@ import TaskCard from './TaskCard'
 import TaskModal from './TaskModal'
 import toast from 'react-hot-toast'
 import type { Tarefa, StatusTarefa, TaskFilters } from '@/types'
-import { STATUS_LABELS, STATUS_COLORS, KANBAN_COLUMNS, SETOR_LABELS, PRIORITY_LABELS } from '@/lib/constants'
+import { STATUS_LABELS, STATUS_COLORS, KANBAN_COLUMNS, PRIORITY_LABELS } from '@/lib/constants'
 
 export default function KanbanBoard() {
   const setCurrentPage = useUIStore((s) => s.setCurrentPage)
@@ -32,6 +32,11 @@ export default function KanbanBoard() {
   const { data: tarefas = [], isLoading } = useQuery({
     queryKey: ['tarefas', filters],
     queryFn: () => api.tarefas.getAll(Object.keys(filters).length > 0 ? filters : undefined),
+  })
+
+  const { data: setores = [] } = useQuery({
+    queryKey: ['setores'],
+    queryFn: () => api.setores.getAll(),
   })
 
   const statusMutation = useMutation({
@@ -119,8 +124,8 @@ export default function KanbanBoard() {
               onChange={(e) => setFilters({ ...filters, setor: e.target.value as any || undefined })}
             >
               <option value="">Todos os Setores</option>
-              {Object.entries(SETOR_LABELS).map(([k, v]) => (
-                <option key={k} value={k}>{v}</option>
+              {setores.map((s) => (
+                <option key={s.id} value={s.codigo}>{s.nome}</option>
               ))}
             </select>
           )}

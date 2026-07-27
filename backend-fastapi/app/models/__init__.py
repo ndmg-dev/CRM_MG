@@ -1,5 +1,6 @@
 from app.db.base import Base
 from app.models.user import Usuario
+from app.models.sector import Setor
 from app.models.client import Cliente
 from app.models.task import Tarefa
 from app.models.system import Sistema
@@ -15,6 +16,7 @@ from app.models.system_access_log import SystemAccessLog
 __all__ = [
     "Base",
     "Usuario",
+    "Setor",
     "Cliente",
     "Tarefa",
     "Sistema",

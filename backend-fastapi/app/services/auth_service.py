@@ -3,7 +3,8 @@ import asyncio
 from fastapi import HTTPException, status
 from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token as google_id_token
-from sqlalchemy import select
+from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -41,23 +42,29 @@ async def verify_google_id_token(token: str) -> dict:
 async def authenticate_google_user(db: AsyncSession, token: str) -> Usuario:
     user_info = await verify_google_id_token(token)
     email = user_info.get("email")
-    name = user_info.get("name") or (email.split("@", 1)[0] if email else None)
-    picture = user_info.get("picture")
 
     if not email:
         raise HTTPException(status_code=400, detail="Google token não contém e-mail")
 
+    # Normaliza para casar com o cadastro feito pelo admin, que também grava
+    # o e-mail em minúsculo — sem isso o mesmo usuário é duplicado.
+    email = email.strip().lower()
+    name = user_info.get("name") or email.split("@", 1)[0]
+    picture = user_info.get("picture")
+
     allowed_domain = settings.GOOGLE_ALLOWED_DOMAIN.strip().lower()
     allowed_emails = {item.strip().lower() for item in settings.GOOGLE_ALLOWED_EMAILS}
     if allowed_domain and not (
-        email.lower().endswith(f"@{allowed_domain}") or email.lower() in allowed_emails
+        email.endswith(f"@{allowed_domain}") or email in allowed_emails
     ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"Acesso restrito ao domínio {allowed_domain}",
         )
 
-    user = await db.scalar(select(Usuario).where(Usuario.email == email))
+    user = await db.scalar(
+        select(Usuario).where(func.lower(Usuario.email) == email)
+    )
     if not user:
         user = Usuario(
             nome=name,
@@ -67,11 +74,23 @@ async def authenticate_google_user(db: AsyncSession, token: str) -> Usuario:
             ativo=True,
         )
         db.add(user)
-        await db.commit()
-        await db.refresh(user)
-    elif user.foto_perfil != picture or user.nome != name:
+        try:
+            await db.commit()
+        except IntegrityError:
+            # Login simultâneo (ou cadastro pelo admin) criou o mesmo e-mail
+            await db.rollback()
+            user = await db.scalar(
+                select(Usuario).where(func.lower(Usuario.email) == email)
+            )
+            if not user:
+                raise HTTPException(
+                    status_code=500, detail="Falha ao provisionar usuário"
+                )
+        else:
+            await db.refresh(user)
+    elif user.foto_perfil != picture:
+        # O nome cadastrado pelo admin prevalece sobre o nome vindo do Google.
         user.foto_perfil = picture
-        user.nome = name
         await db.commit()
         await db.refresh(user)
 

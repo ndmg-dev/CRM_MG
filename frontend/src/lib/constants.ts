@@ -1,4 +1,4 @@
-import type { StatusTarefa, Prioridade, Setor, Perfil, RegimeTributario } from '@/types'
+import type { StatusTarefa, Prioridade, Perfil, RegimeTributario } from '@/types'
 
 // ---------------------------------------------------------------------------
 // Status da Tarefa
@@ -72,7 +72,12 @@ export const PRIORITY_COLORS: Record<Prioridade, { bg: string; text: string; dot
 // Setor
 // ---------------------------------------------------------------------------
 
-export const SETOR_LABELS: Record<Setor, string> = {
+/**
+ * Rótulos dos setores originais. Os setores agora vêm da API (`/setores`);
+ * este mapa serve apenas de fallback para exibir códigos legados quando a
+ * lista ainda não carregou. Use `formatSetor` em vez de indexar direto.
+ */
+export const SETOR_LABELS: Record<string, string> = {
   FISCAL: 'Fiscal',
   CONTABIL: 'Contábil',
   DP: 'Departamento Pessoal',
@@ -80,6 +85,14 @@ export const SETOR_LABELS: Record<Setor, string> = {
   TI: 'Tecnologia (TI)',
   DIRETORIA: 'Diretoria',
   GERAL: 'Geral',
+}
+
+/** Cor padrão de um setor sem cor cadastrada. */
+export const SETOR_COR_PADRAO = '#94a3b8'
+
+export function formatSetor(codigo?: string | null): string {
+  if (!codigo) return 'Sem setor'
+  return SETOR_LABELS[codigo] || codigo
 }
 
 // ---------------------------------------------------------------------------

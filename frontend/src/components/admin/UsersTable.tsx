@@ -1,22 +1,22 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import LoadingSpinner from '@/components/common/LoadingSpinner'
 import { getInitials } from '@/lib/utils'
-import { PERFIL_LABELS, SETOR_LABELS } from '@/lib/constants'
+import { PERFIL_LABELS, SETOR_COR_PADRAO, formatSetor } from '@/lib/constants'
 import { Check, X, Plus } from 'lucide-react'
 import toast from 'react-hot-toast'
-import type { Perfil, Setor, Usuario } from '@/types'
-import { Button, Badge } from '@mg/ui'
+import type { Perfil, Usuario } from '@/types'
+import { Button } from '@mg/ui'
 
-const SETOR_COLORS: Record<string, string> = {
-  DP: 'bg-accent-pink',
-  FISCAL: 'bg-accent-cyan',
-  CONTABIL: 'bg-error',
-  SOCIETARIO: 'bg-accent-purple',
-  TI: 'bg-warning',
-  GERAL: 'bg-text-muted',
-  RESTRITO: 'bg-error',
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+const FORM_INICIAL = {
+  nome: '',
+  email: '',
+  perfil: 'VISUALIZADOR' as Perfil,
+  setor: '',
+  ativo: true,
 }
 
 export default function UsersTable() {
@@ -26,11 +26,28 @@ export default function UsersTable() {
     queryFn: () => api.usuarios.getAll(),
   })
 
+  const { data: setores = [], isLoading: isLoadingSetores } = useQuery({
+    queryKey: ['setores'],
+    queryFn: () => api.setores.getAll(),
+  })
+
+  // Rótulo e cor vêm do cadastro de setores; o fallback cobre códigos legados
+  // que ainda estejam gravados em usuários mas já não existam na tabela.
+  const setorPorCodigo = useMemo(
+    () => Object.fromEntries(setores.map((s) => [s.codigo, s])),
+    [setores]
+  )
+  const labelSetor = (codigo?: string | null) =>
+    codigo ? setorPorCodigo[codigo]?.nome ?? formatSetor(codigo) : 'Sem setor'
+  const corSetor = (codigo?: string | null) =>
+    (codigo && setorPorCodigo[codigo]?.cor) || SETOR_COR_PADRAO
+
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<Usuario> }) =>
       api.usuarios.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['usuarios'] })
+      queryClient.invalidateQueries({ queryKey: ['setores'] })
       toast.success('Usuário atualizado com sucesso!')
     },
     onError: (err: any) => {
@@ -42,6 +59,7 @@ export default function UsersTable() {
     mutationFn: (id: string) => api.usuarios.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['usuarios'] })
+      queryClient.invalidateQueries({ queryKey: ['setores'] })
       toast.success('Usuário excluído com sucesso!')
     },
     onError: (err: any) => {
@@ -53,9 +71,10 @@ export default function UsersTable() {
     mutationFn: (data: Partial<Usuario>) => api.usuarios.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['usuarios'] })
+      queryClient.invalidateQueries({ queryKey: ['setores'] })
       toast.success('Usuário criado com sucesso!')
       setIsCreating(false)
-      setCreateForm({ nome: '', email: '', perfil: 'VISUALIZADOR' as Perfil, setor: 'GERAL' as Setor, ativo: true })
+      setCreateForm(FORM_INICIAL)
     },
     onError: (err: any) => {
       toast.error(err.message || 'Erro ao criar usuário.')
@@ -63,19 +82,32 @@ export default function UsersTable() {
   })
 
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [editForm, setEditForm] = useState<{ perfil: Perfil; setor: Setor; ativo: boolean } | null>(null)
+  const [editForm, setEditForm] = useState<{
+    perfil: Perfil
+    setor: string
+    ativo: boolean
+  } | null>(null)
 
   const [isCreating, setIsCreating] = useState(false)
-  const [createForm, setCreateForm] = useState({ nome: '', email: '', perfil: 'VISUALIZADOR' as Perfil, setor: 'GERAL' as Setor, ativo: true })
+  const [createForm, setCreateForm] = useState(FORM_INICIAL)
+
+  const emailNormalizado = createForm.email.trim().toLowerCase()
+  const emailValido = EMAIL_REGEX.test(emailNormalizado)
+  const emailDuplicado = users.some((u) => u.email.toLowerCase() === emailNormalizado)
+  const podeCriar =
+    !!createForm.nome.trim() && emailValido && !emailDuplicado && !createMutation.isPending
 
   const handleEdit = (user: Usuario) => {
     setEditingId(user.id)
-    setEditForm({ perfil: user.perfil, setor: user.setor, ativo: user.ativo })
+    setEditForm({ perfil: user.perfil, setor: user.setor ?? '', ativo: user.ativo })
   }
 
   const handleSave = (id: string) => {
     if (editForm) {
-      updateMutation.mutate({ id, data: editForm })
+      updateMutation.mutate({
+        id,
+        data: { ...editForm, setor: editForm.setor || null },
+      })
     }
     setEditingId(null)
     setEditForm(null)
@@ -92,15 +124,21 @@ export default function UsersTable() {
     }
   }
 
-  if (isLoading) return <LoadingSpinner label="Carregando usuários..." />
+  const handleCreate = () => {
+    createMutation.mutate({
+      ...createForm,
+      nome: createForm.nome.trim(),
+      email: emailNormalizado,
+      setor: createForm.setor || null,
+    })
+  }
+
+  if (isLoading || isLoadingSetores) return <LoadingSpinner label="Carregando usuários..." />
 
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <Button
-          variant="primary"
-          onClick={() => setIsCreating(!isCreating)}
-        >
+        <Button variant="primary" onClick={() => setIsCreating(!isCreating)}>
           <Plus className="h-4 w-4" />
           Novo Usuário
         </Button>
@@ -117,13 +155,21 @@ export default function UsersTable() {
               onChange={e => setCreateForm(f => ({ ...f, nome: e.target.value }))}
               className="rounded-lg border border-border bg-card px-3 py-2 text-sm text-text-primary outline-none"
             />
-            <input
-              type="email"
-              placeholder="E-mail"
-              value={createForm.email}
-              onChange={e => setCreateForm(f => ({ ...f, email: e.target.value }))}
-              className="rounded-lg border border-border bg-card px-3 py-2 text-sm text-text-primary outline-none"
-            />
+            <div>
+              <input
+                type="email"
+                placeholder="E-mail"
+                value={createForm.email}
+                onChange={e => setCreateForm(f => ({ ...f, email: e.target.value }))}
+                className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-text-primary outline-none"
+              />
+              {createForm.email && !emailValido && (
+                <p className="mt-1 text-xs text-error">E-mail inválido</p>
+              )}
+              {emailDuplicado && (
+                <p className="mt-1 text-xs text-error">Este e-mail já está cadastrado</p>
+              )}
+            </div>
             <select
               value={createForm.perfil}
               onChange={e => setCreateForm(f => ({ ...f, perfil: e.target.value as Perfil }))}
@@ -133,15 +179,16 @@ export default function UsersTable() {
             </select>
             <select
               value={createForm.setor}
-              onChange={e => setCreateForm(f => ({ ...f, setor: e.target.value as Setor }))}
+              onChange={e => setCreateForm(f => ({ ...f, setor: e.target.value }))}
               className="rounded-lg border border-border bg-card px-3 py-2 text-sm text-text-primary outline-none"
             >
-              {Object.entries(SETOR_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              <option value="">Sem setor</option>
+              {setores.map((s) => <option key={s.id} value={s.codigo}>{s.nome}</option>)}
             </select>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => createMutation.mutate(createForm)}
-                disabled={createMutation.isPending || !createForm.nome || !createForm.email}
+                onClick={handleCreate}
+                disabled={!podeCriar}
                 className="flex-1 rounded-lg bg-success py-2 text-sm font-bold text-white transition-colors hover:bg-success-hover disabled:opacity-50"
               >
                 Salvar
@@ -161,9 +208,9 @@ export default function UsersTable() {
         <table className="w-full border-separate border-spacing-y-2">
         <thead>
           <tr>
-            <th className="px-4 py-2 text-left text-xs font-medium uppercase text-text-muted">Nome ↑</th>
-            <th className="px-4 py-2 text-left text-xs font-medium uppercase text-text-muted">Cargo</th>
-            <th className="px-4 py-2 text-left text-xs font-medium uppercase text-text-muted">Setor ↑↓</th>
+            <th className="px-4 py-2 text-left text-xs font-medium uppercase text-text-muted">Nome</th>
+            <th className="px-4 py-2 text-left text-xs font-medium uppercase text-text-muted">Perfil</th>
+            <th className="px-4 py-2 text-left text-xs font-medium uppercase text-text-muted">Setor</th>
             <th className="px-4 py-2 text-left text-xs font-medium uppercase text-text-muted">Status</th>
             <th className="px-4 py-2 text-left text-xs font-medium uppercase text-text-muted">Ações</th>
           </tr>
@@ -195,7 +242,7 @@ export default function UsersTable() {
                   </select>
                 ) : (
                   <span className="text-sm text-text-secondary">
-                    {u.perfil === 'ADMIN' ? 'Desenvolvedor' : '—'}
+                    {PERFIL_LABELS[u.perfil] || u.perfil}
                   </span>
                 )}
               </td>
@@ -204,16 +251,22 @@ export default function UsersTable() {
                   <select
                     className="rounded border border-border bg-sidebar px-2 py-1 text-sm text-text-primary outline-none"
                     value={editForm.setor}
-                    onChange={(e) => setEditForm({ ...editForm, setor: e.target.value as Setor })}
+                    onChange={(e) => setEditForm({ ...editForm, setor: e.target.value })}
                   >
-                    {Object.entries(SETOR_LABELS).map(([k, v]) => (
-                      <option key={k} value={k}>{v}</option>
+                    <option value="">Sem setor</option>
+                    {setores.map((s) => (
+                      <option key={s.id} value={s.codigo}>{s.nome}</option>
                     ))}
                   </select>
                 ) : (
                   <div className="flex items-center gap-2">
-                    <div className={`h-2 w-2 rounded-full ${SETOR_COLORS[u.setor] || 'bg-text-muted'}`} />
-                    <span className="text-sm font-medium text-text-secondary">{SETOR_LABELS[u.setor]}</span>
+                    <div
+                      className="h-2 w-2 rounded-full"
+                      style={{ backgroundColor: corSetor(u.setor) }}
+                    />
+                    <span className="text-sm font-medium text-text-secondary">
+                      {labelSetor(u.setor)}
+                    </span>
                   </div>
                 )}
               </td>
@@ -229,7 +282,7 @@ export default function UsersTable() {
                   </select>
                 ) : (
                   <span className={`text-sm font-medium ${u.ativo ? 'text-success' : 'text-error'}`}>
-                    {u.ativo ? 'OK (Ativo)' : 'Inativo'}
+                    {u.ativo ? 'Ativo' : 'Inativo'}
                   </span>
                 )}
               </td>

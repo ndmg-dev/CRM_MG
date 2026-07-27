@@ -9,6 +9,7 @@
 import type {
   AuthResponse,
   Usuario,
+  SetorRecord,
   Cliente,
   Tarefa,
   Sistema,
@@ -123,6 +124,27 @@ const realApi = {
       }),
     delete: (id: string) =>
       request<void>(`/usuarios/${id}`, {
+        method: 'DELETE',
+      }),
+  },
+
+  setores: {
+    getAll: (incluirInativos = false) =>
+      request<SetorRecord[]>(
+        `/setores${incluirInativos ? '?incluir_inativos=true' : ''}`
+      ),
+    create: (data: Partial<SetorRecord>) =>
+      request<SetorRecord>('/setores', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    update: (id: string, data: Partial<SetorRecord>) =>
+      request<SetorRecord>(`/setores/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+    delete: (id: string) =>
+      request<void>(`/setores/${id}`, {
         method: 'DELETE',
       }),
   },

@@ -5,6 +5,7 @@ import { Navigate } from 'react-router-dom'
 import PageHeader from '@/components/common/PageHeader'
 import { Tabs } from '@mg/ui'
 import UsersTable from './UsersTable'
+import SectorsTable from './SectorsTable'
 import AuditLogViewer from './AuditLogViewer'
 
 export default function AdminPage() {
@@ -18,12 +19,13 @@ export default function AdminPage() {
     <div>
       <PageHeader
         title="Painel de Administração"
-        description="Gerencie usuários, permissões e consulte logs de auditoria"
+        description="Gerencie usuários, setores, permissões e consulte logs de auditoria"
       />
 
       <Tabs
         items={[
           { value: 'users', label: 'Usuários', content: <UsersTable /> },
+          { value: 'sectors', label: 'Setores', content: <SectorsTable /> },
           { value: 'audit', label: 'Logs de Auditoria', content: <AuditLogViewer /> }
         ]}
       />

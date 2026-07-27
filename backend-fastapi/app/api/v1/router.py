@@ -1,9 +1,10 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import auth, users, clients, systems, tasks, access, dashboard, audit_logs, portal, documents, notifications, search, sessions, system_tracking
+from app.api.v1.endpoints import auth, users, sectors, clients, systems, tasks, access, dashboard, audit_logs, portal, documents, notifications, search, sessions, system_tracking
 
 api_router = APIRouter()
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
 api_router.include_router(users.router, prefix="/usuarios", tags=["usuarios"])
+api_router.include_router(sectors.router, prefix="/setores", tags=["setores"])
 api_router.include_router(clients.router, prefix="/clientes", tags=["clientes"])
 api_router.include_router(systems.router, prefix="/sistemas", tags=["sistemas"])
 api_router.include_router(tasks.router, prefix="/tarefas", tags=["tarefas"])

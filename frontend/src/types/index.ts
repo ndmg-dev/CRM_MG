@@ -1,5 +1,19 @@
 export type Perfil = 'ADMIN' | 'COORDENADOR' | 'ANALISTA' | 'ASSISTENTE' | 'VISUALIZADOR'
-export type Setor = 'FISCAL' | 'CONTABIL' | 'DP' | 'SOCIETARIO' | 'DIRETORIA' | 'TI' | 'GERAL'
+/**
+ * Setores deixaram de ser um enum fixo: são cadastrados pelo admin na tabela
+ * `setores` e referenciados pelo seu `codigo`. Este alias representa o código.
+ */
+export type Setor = string
+
+export interface SetorRecord {
+  id: string
+  codigo: string
+  nome: string
+  cor?: string | null
+  ativo: boolean
+  data_criacao: string
+  total_usuarios: number
+}
 export type SetorSistema = 'DP' | 'CONTABIL' | 'FISCAL' | 'SOCIETARIO' | 'TI' | 'GERAL' | 'RESTRITO'
 export type StatusTarefa = 'PENDENTE' | 'EM_PROCESSAMENTO' | 'AGUARDANDO_CLIENTE' | 'CONCLUIDO'
 export type Prioridade = 'BAIXA' | 'MEDIA' | 'ALTA' | 'CRITICA'
@@ -11,7 +25,7 @@ export interface Usuario {
   nome: string
   email: string
   perfil: Perfil
-  setor: Setor
+  setor?: Setor | null
   ativo: boolean
   fotoPerfil?: string
   dataCriacao: string

@@ -16,8 +16,22 @@ import type {
   AuditFilters,
   StatusTarefa,
   Documento,
+  SetorRecord,
 } from '@/types'
 import { sleep } from './utils'
+
+// ---------------------------------------------------------------------------
+// Mock Setores — espelha o seed de `setores` do backend
+// ---------------------------------------------------------------------------
+const mockSetores: SetorRecord[] = [
+  { id: 's1', codigo: 'FISCAL', nome: 'Fiscal', cor: '#22d3ee', ativo: true, data_criacao: '2024-01-01T00:00:00', total_usuarios: 0 },
+  { id: 's2', codigo: 'CONTABIL', nome: 'Contábil', cor: '#f87171', ativo: true, data_criacao: '2024-01-01T00:00:00', total_usuarios: 0 },
+  { id: 's3', codigo: 'DP', nome: 'Departamento Pessoal', cor: '#f472b6', ativo: true, data_criacao: '2024-01-01T00:00:00', total_usuarios: 0 },
+  { id: 's4', codigo: 'SOCIETARIO', nome: 'Societário', cor: '#a78bfa', ativo: true, data_criacao: '2024-01-01T00:00:00', total_usuarios: 0 },
+  { id: 's5', codigo: 'DIRETORIA', nome: 'Diretoria', cor: '#fbbf24', ativo: true, data_criacao: '2024-01-01T00:00:00', total_usuarios: 0 },
+  { id: 's6', codigo: 'TI', nome: 'Tecnologia (TI)', cor: '#facc15', ativo: true, data_criacao: '2024-01-01T00:00:00', total_usuarios: 0 },
+  { id: 's7', codigo: 'GERAL', nome: 'Geral', cor: '#94a3b8', ativo: true, data_criacao: '2024-01-01T00:00:00', total_usuarios: 0 },
+]
 
 // ---------------------------------------------------------------------------
 // Mock Users
@@ -135,8 +149,96 @@ export const mockApi = {
       await sleep(500)
       const idx = mockUsuarios.findIndex((x) => x.id === id)
       if (idx === -1) throw new Error('Usuário não encontrado')
+      if (data.email) {
+        const email = data.email.trim().toLowerCase()
+        if (mockUsuarios.some((x) => x.id !== id && x.email.toLowerCase() === email)) {
+          throw new Error('E-mail já cadastrado')
+        }
+      }
       Object.assign(mockUsuarios[idx], data)
       return mockUsuarios[idx]
+    },
+    create: async (data: Partial<Usuario>): Promise<Usuario> => {
+      await sleep(500)
+      const email = (data.email || '').trim().toLowerCase()
+      if (!email) throw new Error('E-mail é obrigatório')
+      if (mockUsuarios.some((x) => x.email.toLowerCase() === email)) {
+        throw new Error('E-mail já cadastrado')
+      }
+      if (data.setor && !mockSetores.some((s) => s.codigo === data.setor && s.ativo)) {
+        throw new Error(`Setor '${data.setor}' não existe`)
+      }
+      const novo: Usuario = {
+        id: `u${mockUsuarios.length + 1}`,
+        nome: (data.nome || '').trim(),
+        email,
+        perfil: data.perfil || 'VISUALIZADOR',
+        setor: data.setor ?? null,
+        ativo: data.ativo ?? true,
+        dataCriacao: new Date().toISOString(),
+      }
+      mockUsuarios.push(novo)
+      return novo
+    },
+    delete: async (id: string): Promise<void> => {
+      await sleep(400)
+      const idx = mockUsuarios.findIndex((x) => x.id === id)
+      if (idx === -1) throw new Error('Usuário não encontrado')
+      mockUsuarios.splice(idx, 1)
+    },
+  },
+
+  setores: {
+    getAll: async (incluirInativos = false): Promise<SetorRecord[]> => {
+      await sleep(300)
+      const lista = incluirInativos ? mockSetores : mockSetores.filter((s) => s.ativo)
+      return lista.map((s) => ({
+        ...s,
+        total_usuarios: mockUsuarios.filter((u) => u.setor === s.codigo).length,
+      }))
+    },
+    create: async (data: Partial<SetorRecord>): Promise<SetorRecord> => {
+      await sleep(400)
+      const codigo = (data.codigo || '').trim().toUpperCase().replace(/ /g, '_')
+      if (!codigo) throw new Error('Código é obrigatório')
+      if (mockSetores.some((s) => s.codigo === codigo)) {
+        throw new Error(`Já existe um setor com o código ${codigo}`)
+      }
+      const novo: SetorRecord = {
+        id: `s${mockSetores.length + 1}`,
+        codigo,
+        nome: (data.nome || '').trim(),
+        cor: data.cor ?? null,
+        ativo: data.ativo ?? true,
+        data_criacao: new Date().toISOString(),
+        total_usuarios: 0,
+      }
+      mockSetores.push(novo)
+      return novo
+    },
+    update: async (id: string, data: Partial<SetorRecord>): Promise<SetorRecord> => {
+      await sleep(400)
+      const idx = mockSetores.findIndex((s) => s.id === id)
+      if (idx === -1) throw new Error('Setor não encontrado')
+      const emUso = mockUsuarios.filter((u) => u.setor === mockSetores[idx].codigo).length
+      if (data.ativo === false && emUso) {
+        throw new Error(`Não é possível desativar: ${emUso} usuário(s) ainda vinculados`)
+      }
+      // `codigo` é imutável, como no backend
+      Object.assign(mockSetores[idx], { ...data, codigo: mockSetores[idx].codigo })
+      return { ...mockSetores[idx], total_usuarios: emUso }
+    },
+    delete: async (id: string): Promise<void> => {
+      await sleep(400)
+      const idx = mockSetores.findIndex((s) => s.id === id)
+      if (idx === -1) throw new Error('Setor não encontrado')
+      const emUso = mockUsuarios.filter((u) => u.setor === mockSetores[idx].codigo).length
+      if (emUso) {
+        throw new Error(
+          `Não é possível excluir: ${emUso} usuário(s) ainda vinculados a este setor`
+        )
+      }
+      mockSetores.splice(idx, 1)
     },
   },
 
