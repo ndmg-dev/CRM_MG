@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { endUnifiedSession } from '@/lib/unifiedAuth'
@@ -14,40 +14,13 @@ import {
   ChevronRight,
   LogOut,
   Building2,
-  Calculator,
-  Plane,
-  BarChart3,
-  Receipt,
-  Headphones,
-  Bot,
-  Sparkles,
-  Cpu,
-  CalendarCheck,
-  MessageCircle,
-  Clock,
-  UserCircle,
-  Percent,
-  FileText,
-  Calendar,
-  User,
-  DollarSign,
-  Store,
-  Megaphone,
-  Target,
-  Palmtree,
-  FileCheck,
-  Fingerprint,
-  Mail,
-  UserMinus,
   Key,
   Moon,
+  X,
 } from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
 import { ICON_MAP } from '@/lib/icons'
 import { useAuthStore } from '@/stores/authStore'
 import { useUIStore } from '@/stores/uiStore'
-import { getInitials } from '@/lib/utils'
-import { Button } from '@mg/ui'
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -61,7 +34,13 @@ const adminItems = [
   { to: '/auditoria', icon: Eye, label: 'Auditoria' },
 ]
 
-export default function Sidebar() {
+interface SidebarProps {
+  /** Drawer aberto em telas < lg. */
+  mobileOpen?: boolean
+  onMobileClose?: () => void
+}
+
+export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
   const location = useLocation()
   const user = useAuthStore((s) => s.user)
   const { sidebarOpen, toggleSidebar } = useUIStore()
@@ -103,36 +82,44 @@ export default function Sidebar() {
     return acc
   }, {} as Record<string, typeof sistemas>)
 
+  // `collapsed` é o modo ícone-apenas do desktop. No drawer mobile a lista
+  // sempre aparece expandida, senão o menu ficaria ilegível.
+  const collapsed = !sidebarOpen
+
+  // Botões do rodapé: mesmo tratamento visual (secundário, bordado) do
+  // sistema de ponto de referência.
+  const footerBtn =
+    'flex w-full items-center gap-2.5 rounded-lg border border-border bg-surface-raised px-3 py-2 text-[13px] font-medium text-text-secondary transition-colors hover:border-border-light hover:bg-surface hover:text-text-primary'
+
   return (
-    <motion.aside
-      initial={false}
-      animate={{ width: sidebarOpen ? 256 : 72 }}
-      transition={{ duration: 0.2, ease: 'easeInOut' }}
-      className="fixed left-0 top-0 z-30 flex h-screen flex-col border-r border-border bg-sidebar"
+    <aside
+      className={`fixed inset-y-0 left-0 z-40 flex h-screen w-56 flex-col border-r border-border bg-sidebar transition-transform duration-200 ease-in-out lg:transition-[width] ${
+        mobileOpen ? 'translate-x-0' : '-translate-x-full'
+      } lg:translate-x-0 ${collapsed ? 'lg:w-[72px]' : 'lg:w-56'}`}
+      aria-label="Navegação principal"
     >
-      {/* Brand */}
-      <div className="flex h-16 items-center gap-3 border-b border-border px-4">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center">
-          <img src="/logo-icon.png" alt="MG Logo" className="h-full w-full object-contain" />
+      {/* Marca */}
+      <div className={`flex h-[52px] shrink-0 items-center border-b border-border ${collapsed ? 'lg:justify-center lg:px-2' : ''} px-4`}>
+        <img src="/logo-icon.png" alt="" aria-hidden="true" className={`h-7 w-7 shrink-0 object-contain ${collapsed ? 'lg:mr-0' : 'mr-2.5'}`} />
+        <div className={`min-w-0 ${collapsed ? 'lg:hidden' : ''}`}>
+          <p className="truncate text-[12px] font-semibold uppercase tracking-label text-gold">
+            Mendonça Galvão
+          </p>
+          <p className="truncate text-[10px] text-text-muted">Contadores Associados</p>
         </div>
-        <AnimatePresence>
-          {sidebarOpen && (
-            <motion.div
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -10 }}
-              transition={{ duration: 0.15 }}
-              className="overflow-hidden"
-            >
-              <p className="text-sm font-semibold text-text-primary whitespace-nowrap">Mendonça Galvão</p>
-              <p className="text-xs text-text-muted whitespace-nowrap">CRM Contábil</p>
-            </motion.div>
-          )}
-        </AnimatePresence>
+
+        {/* Fechar drawer (apenas mobile) */}
+        <button
+          onClick={onMobileClose}
+          aria-label="Fechar menu de navegação"
+          className="ml-auto flex h-8 w-8 items-center justify-center rounded-md text-text-secondary hover:bg-surface hover:text-text-primary lg:hidden"
+        >
+          <X className="h-[18px] w-[18px]" />
+        </button>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 space-y-1 px-3 py-4">
+      {/* Navegação */}
+      <nav className="flex-1 overflow-y-auto py-2">
         {allItems.map((item) => {
           const isActive = item.to === '/'
             ? location.pathname === '/'
@@ -142,49 +129,32 @@ export default function Sidebar() {
             <div key={item.to} className="flex flex-col">
               <NavLink
                 to={item.to}
-                className={`group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                title={collapsed ? item.label : undefined}
+                className={`flex items-center gap-3 border-l-[3px] px-4 py-2.5 text-[13px] font-medium transition-colors ${
+                  collapsed ? 'lg:justify-center lg:px-0' : ''
+                } ${
                   isActive
-                    ? 'bg-gold/10 text-gold'
-                    : 'text-text-secondary hover:bg-surface hover:text-text-primary'
+                    ? 'border-gold bg-gold-soft text-gold'
+                    : 'border-transparent text-text-secondary hover:bg-surface hover:text-text-primary'
                 }`}
               >
-                <div className="relative shrink-0">
-                  <item.icon className="h-5 w-5" />
-                  {isActive && (
-                    <motion.div
-                      layoutId="sidebar-indicator"
-                      className="absolute -left-[21px] top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-gold"
-                      transition={{ duration: 0.2 }}
-                    />
-                  )}
-                </div>
-                <AnimatePresence>
-                  {sidebarOpen && (
-                    <motion.span
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      className="whitespace-nowrap"
-                    >
-                      {item.label}
-                    </motion.span>
-                  )}
-                </AnimatePresence>
+                <item.icon className="h-[18px] w-[18px] shrink-0" />
+                <span className={`truncate ${collapsed ? 'lg:hidden' : ''}`}>{item.label}</span>
               </NavLink>
 
               <AnimatePresence>
-                {item.to === '/sistemas' && isActive && sidebarOpen && (
+                {item.to === '/sistemas' && isActive && !collapsed && (
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
-                    className="ml-11 mt-1 flex flex-col gap-1 overflow-hidden max-h-[50vh] overflow-y-auto"
+                    className="max-h-[50vh] overflow-y-auto overflow-x-hidden border-l-[3px] border-transparent bg-background/40 py-1 pl-4 pr-2"
                   >
                     {Object.entries(sistemasBySetor).map(([setor, items]) => {
                       const meta = SETOR_LABELS[setor] || { label: nomeSetor[setor] || setor, color: 'text-text-muted', activeClass: 'bg-gold/10 text-gold font-semibold' }
                       return (
-                        <div key={setor} className="mb-2">
-                          <div className={`py-1 text-[10px] font-bold tracking-wider uppercase ${meta.color}`}>
+                        <div key={setor} className="mb-1.5">
+                          <div className={`px-2 py-1 text-[10px] font-bold uppercase tracking-label ${meta.color}`}>
                             {meta.label}
                           </div>
                           {items.map(s => {
@@ -195,7 +165,7 @@ export default function Sidebar() {
                                 to={`/sistemas/${s.id}`}
                                 end
                                 className={({ isActive: isSubActive }) =>
-                                  `flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs transition-colors ${
+                                  `flex items-center gap-2 rounded-md px-2 py-1.5 text-[12px] transition-colors ${
                                     isSubActive ? meta.activeClass : 'text-text-secondary hover:bg-surface hover:text-text-primary'
                                   }`
                                 }
@@ -216,75 +186,49 @@ export default function Sidebar() {
         })}
       </nav>
 
-    {/* Footer: User info + collapse toggle */}
-      <div className="border-t border-border p-3">
-        {/* User Email */}
+      {/* Rodapé: usuário + ações */}
+      <div className="shrink-0 border-t border-border p-2.5">
         {user && (
-          <div className="mb-3 px-1">
-            <AnimatePresence>
-              {sidebarOpen && (
-                <motion.p
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="truncate text-sm font-medium text-gold"
-                >
-                  {user.email || 'admin@pontomg.local'}
-                </motion.p>
-              )}
-            </AnimatePresence>
-          </div>
+          <p
+            title={user.email}
+            className={`mb-2 truncate px-1 text-[11px] text-text-muted ${collapsed ? 'lg:hidden' : ''}`}
+          >
+            {user.email}
+          </p>
         )}
 
-        <div className="flex flex-col gap-1">
-          {/* Change Password (Visual only) */}
-          <button className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-text-secondary transition-colors hover:bg-surface hover:text-text-primary">
+        <div className="flex flex-col gap-1.5">
+          {/* Alterar senha — sem handler no código atual; preservado como está. */}
+          <button className={footerBtn} title={collapsed ? 'Alterar senha' : undefined}>
             <Key className="h-4 w-4 shrink-0" />
-            <AnimatePresence>
-              {sidebarOpen && (
-                <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="whitespace-nowrap">
-                  Alterar senha
-                </motion.span>
-              )}
-            </AnimatePresence>
+            <span className={collapsed ? 'lg:hidden' : ''}>Alterar senha</span>
           </button>
 
-          {/* Logout */}
           <button
             onClick={async () => { await endUnifiedSession(); window.location.href = '/login' }}
-            className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-text-secondary transition-colors hover:bg-surface hover:text-text-primary"
+            className={footerBtn}
+            title={collapsed ? 'Sair' : undefined}
           >
             <LogOut className="h-4 w-4 shrink-0" />
-            <AnimatePresence>
-              {sidebarOpen && (
-                <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="whitespace-nowrap">
-                  Sair
-                </motion.span>
-              )}
-            </AnimatePresence>
+            <span className={collapsed ? 'lg:hidden' : ''}>Sair</span>
           </button>
 
-          {/* Theme (Visual only) */}
-          <button className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-text-secondary transition-colors hover:bg-surface hover:text-text-primary">
+          {/* Seletor de tema — sem handler no código atual; preservado como está. */}
+          <button className={footerBtn} title={collapsed ? 'Tema escuro' : undefined}>
             <Moon className="h-4 w-4 shrink-0" />
-            <AnimatePresence>
-              {sidebarOpen && (
-                <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="whitespace-nowrap">
-                  Tema escuro
-                </motion.span>
-              )}
-            </AnimatePresence>
+            <span className={collapsed ? 'lg:hidden' : ''}>Tema escuro</span>
           </button>
         </div>
 
-        {/* Collapse toggle */}
+        {/* Colapso — recurso de desktop, some no drawer mobile */}
         <button
           onClick={toggleSidebar}
-          className="mt-2 flex w-full items-center justify-center rounded-lg py-1.5 text-text-muted transition-colors hover:bg-surface hover:text-text-secondary"
+          aria-label={collapsed ? 'Expandir barra lateral' : 'Recolher barra lateral'}
+          className="mt-1.5 hidden w-full items-center justify-center rounded-md py-1.5 text-text-muted transition-colors hover:bg-surface hover:text-text-secondary lg:flex"
         >
-          {sidebarOpen ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
         </button>
       </div>
-    </motion.aside>
+    </aside>
   )
 }
