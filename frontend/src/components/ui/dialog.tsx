@@ -73,7 +73,7 @@ function DialogContent({
   return (
     <div
       className={cn(
-        'w-full rounded-lg border border-border bg-card p-6 shadow-2xl',
+        'w-full rounded-xl border border-border bg-surface-raised p-5 shadow-overlay',
         maxWidth,
         className
       )}

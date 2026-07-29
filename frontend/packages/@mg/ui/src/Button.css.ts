@@ -37,18 +37,26 @@ export const variant = styleVariants({
   ghost: [
     base,
     {
-      background: 'transparent',
+      background: vars.color.bg.raised,
       color: vars.color.text.primary,
-      borderColor: vars.color.border.strong,
-      selectors: { '&:hover:not(:disabled)': { background: vars.color.bg.hover } },
+      borderColor: vars.color.border.default,
+      selectors: {
+        '&:hover:not(:disabled)': {
+          background: vars.color.bg.hover,
+          borderColor: vars.color.border.strong,
+        },
+      },
     },
   ],
+  // Destrutivo translúcido (texto + borda vermelhos), como no sistema de ponto.
+  // Vermelho sólido pesa demais numa interface desta densidade.
   danger: [
     base,
     {
-      background: vars.color.status.error,
-      color: '#ffffff',
-      selectors: { '&:hover:not(:disabled)': { filter: 'brightness(1.08)' } },
+      background: vars.color.status['error-soft'],
+      color: vars.color.status.error,
+      borderColor: vars.color.status.error,
+      selectors: { '&:hover:not(:disabled)': { background: vars.color.status['error-soft'], filter: 'brightness(1.3)' } },
     },
   ],
 });
