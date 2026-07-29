@@ -57,7 +57,7 @@ function VisibilidadePicker({ modo, visiveis, opcoes, onChange }: VisibilidadePi
       <select
         value={modo}
         onChange={(e) => onChange(e.target.value as VisibilidadeSistemas, visiveis)}
-        className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-text-primary outline-none"
+        className="w-full rounded-lg border border-border bg-surface-raised px-3 py-2 text-sm text-text-primary outline-none"
         aria-label="Visualização de sistemas"
       >
         {MODOS.map((m) => (
@@ -67,7 +67,7 @@ function VisibilidadePicker({ modo, visiveis, opcoes, onChange }: VisibilidadePi
       <p className="text-xs text-text-muted">{VISIBILIDADE_DESCRICOES[modo]}</p>
 
       {modo === 'PERSONALIZADO' && (
-        <div className="flex flex-wrap gap-2 rounded-lg border border-border bg-card p-2">
+        <div className="flex flex-wrap gap-2 rounded-xl border border-border bg-card p-2">
           {opcoes.length === 0 && (
             <span className="text-xs text-text-muted">Nenhum outro setor cadastrado.</span>
           )}
@@ -232,7 +232,7 @@ export default function SectorsTable() {
               placeholder="Nome do setor"
               value={createForm.nome}
               onChange={(e) => handleNomeChange(e.target.value)}
-              className="rounded-lg border border-border bg-card px-3 py-2 text-sm text-text-primary outline-none"
+              className="rounded-lg border border-border bg-surface-raised px-3 py-2 text-sm text-text-primary outline-none"
             />
             <div>
               <input
@@ -243,7 +243,7 @@ export default function SectorsTable() {
                   setCodigoEditadoManualmente(true)
                   setCreateForm((f) => ({ ...f, codigo: sugerirCodigo(e.target.value) }))
                 }}
-                className="w-full rounded-lg border border-border bg-card px-3 py-2 font-mono text-sm text-text-primary outline-none"
+                className="w-full rounded-lg border border-border bg-surface-raised px-3 py-2 font-mono text-sm text-text-primary outline-none"
               />
               {codigo && !codigoValido && (
                 <p className="mt-1 text-xs text-error">
@@ -406,7 +406,7 @@ export default function SectorsTable() {
               </tr>
               {editingId === s.id && editForm && (
                 <tr>
-                  <td colSpan={6} className="rounded-lg border border-border bg-card px-4 pb-4">
+                  <td colSpan={6} className="border-t border-border bg-surface-raised px-4 pb-4">
                     <label className="mb-1 block text-xs font-medium uppercase text-text-muted">
                       Visualização de sistemas
                     </label>
@@ -431,7 +431,7 @@ export default function SectorsTable() {
             ))}
             {setores.length === 0 && (
               <tr>
-                <td colSpan={6} className="rounded-lg border border-border bg-card px-4 py-6 text-center text-sm text-text-muted">
+                <td colSpan={6} className="px-4 py-8 text-center text-sm text-text-muted">
                   Nenhum setor cadastrado.
                 </td>
               </tr>

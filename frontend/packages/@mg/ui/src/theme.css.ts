@@ -9,11 +9,16 @@ import { createGlobalThemeContract } from '@vanilla-extract/css';
 export const vars = createGlobalThemeContract(
   {
     color: {
-      gold:   { base: null, hover: null, dim: null },
-      bg:     { base: null, surface: null, card: null, hover: null, active: null },
+      gold:   { base: null, hover: null, dim: null, soft: null, border: null },
+      bg:     { base: null, sidebar: null, surface: null, card: null, raised: null, hover: null, active: null },
       text:   { primary: null, secondary: null, muted: null },
-      border: { default: null, strong: null },
-      status: { success: null, warning: null, error: null, info: null },
+      border: { subtle: null, default: null, strong: null },
+      status: {
+        success: null, 'success-soft': null,
+        warning: null, 'warning-soft': null,
+        error: null, 'error-soft': null,
+        info: null, 'info-soft': null,
+      },
     },
     radius: { xs: null, sm: null, md: null, lg: null, xl: null },
     space:  { 1: null, 2: null, 3: null, 4: null, 5: null, 6: null, 8: null },

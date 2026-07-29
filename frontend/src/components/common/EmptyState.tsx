@@ -22,14 +22,14 @@ export default function EmptyState({
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="flex flex-col items-center justify-center py-16 text-center"
+      className="flex flex-col items-center justify-center py-12 text-center"
     >
-      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-surface">
-        <Icon className="h-8 w-8 text-text-muted" />
+      <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-lg bg-surface">
+        <Icon className="h-5 w-5 text-text-muted" aria-hidden="true" />
       </div>
-      <h3 className="mb-1 text-lg font-semibold text-text-secondary">{title}</h3>
+      <h3 className="mb-1 text-[14px] font-semibold text-text-secondary">{title}</h3>
       {description && (
-        <p className="mb-4 max-w-sm text-sm text-text-muted">{description}</p>
+        <p className="mb-4 max-w-sm text-[12px] text-text-muted">{description}</p>
       )}
       {actionLabel && onAction && (
         <Button onClick={onAction} size="sm">

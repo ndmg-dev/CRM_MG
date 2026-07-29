@@ -128,12 +128,12 @@ export default function ClientForm() {
 
   if (isEditing && isLoading) return <LoadingSpinner label="Carregando..." />
 
-  const inputClass = "w-full rounded-lg border border-border bg-card px-4 py-2.5 text-sm text-text-primary placeholder-text-muted outline-none transition-colors focus:border-gold focus:ring-1 focus:ring-gold/30"
+  const inputClass = "w-full rounded-lg border border-border bg-surface-raised px-3 py-2 text-sm text-text-primary placeholder-text-muted outline-none transition-colors focus:border-gold focus:ring-1 focus:ring-gold/30"
   const labelClass = "mb-1.5 block text-sm font-medium text-text-secondary"
 
   return (
     <div className="mx-auto max-w-2xl">
-      <div className="mb-6 flex items-center gap-3">
+      <div className="mb-4 flex items-center gap-3">
         <Button variant="ghost" size="sm" onClick={() => navigate('/clientes')}>
           <ArrowLeft className="mr-1 h-4 w-4" />
           Voltar
@@ -141,7 +141,7 @@ export default function ClientForm() {
         <h1 className="text-xl font-bold text-text-primary">{isEditing ? 'Editar Cliente' : 'Novo Cliente'}</h1>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-5 rounded-xl border border-border bg-card p-6">
+      <form onSubmit={handleSubmit} className="space-y-5 rounded-xl border border-border bg-card p-4">
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <div>
             <label className={labelClass}>Razão Social *</label>

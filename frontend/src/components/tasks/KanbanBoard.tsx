@@ -115,7 +115,7 @@ export default function KanbanBoard() {
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: 'auto' }}
           exit={{ opacity: 0, height: 0 }}
-          className="mb-6 flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card p-4"
+          className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card p-4"
         >
           {isAdmin && (
             <select

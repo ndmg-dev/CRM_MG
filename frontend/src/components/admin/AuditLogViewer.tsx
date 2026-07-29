@@ -22,7 +22,7 @@ export default function AuditLogViewer() {
 
   return (
     <div>
-      <div className="mb-4 flex items-center gap-2 rounded-lg border border-border bg-card p-3">
+      <div className="mb-4 flex items-center gap-2 rounded-xl border border-border bg-card p-3">
         <Filter className="h-4 w-4 text-text-muted" />
         <select
           className="bg-transparent text-sm text-text-primary outline-none [&>option]:bg-card"
@@ -44,7 +44,7 @@ export default function AuditLogViewer() {
       {logs.length === 0 ? (
         <EmptyState title="Nenhum log encontrado" />
       ) : (
-        <div className="overflow-hidden rounded-lg border border-border bg-card">
+        <div className="overflow-hidden rounded-xl border border-border bg-card">
           <table className="w-full">
             <thead>
               <tr className="border-b border-border bg-sidebar/50">
