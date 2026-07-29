@@ -41,7 +41,7 @@ function SystemCard({ sistema }: { sistema: Sistema }) {
         animate={{ opacity: 1, scale: 1 }}
         whileHover={{ scale: 1.02 }}
         transition={{ duration: 0.2 }}
-        className={`group flex h-full flex-col items-center justify-center rounded-2xl border border-border bg-card p-6 text-center transition-all ${borderHoverClass}`}
+        className={`group flex h-full flex-col items-center justify-center rounded-xl border border-border bg-card p-4 text-center transition-all ${borderHoverClass}`}
       >
         <div className={`mb-4 flex h-16 w-16 items-center justify-center rounded-2xl transition-colors ${bgClass} ${colorClass}`}>
           <Icon className="h-8 w-8" />
@@ -105,7 +105,7 @@ export default function SystemsHub() {
       />
 
       {/* Tabs + Search */}
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap gap-1 rounded-lg bg-card p-1">
           {tabs.map((tab) => (
             <button
@@ -123,7 +123,7 @@ export default function SystemsHub() {
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2">
+          <div className="flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2">
             <Search className="h-4 w-4 text-text-muted" />
             <input
               type="text"
@@ -135,7 +135,7 @@ export default function SystemsHub() {
           </div>
           
           {/* View Toggle */}
-          <div className="flex items-center gap-1 rounded-lg border border-border bg-card p-1">
+          <div className="flex items-center gap-1 rounded-xl border border-border bg-card p-1">
             <button
               onClick={() => setViewMode('grid')}
               className={`rounded p-1.5 transition-colors ${

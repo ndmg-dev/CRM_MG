@@ -199,7 +199,7 @@ function SessionsTab() {
           <select
             value={filterUser}
             onChange={(e) => setFilterUser(e.target.value)}
-            className="appearance-none rounded-lg border border-border bg-card px-4 py-2 pr-8 text-sm text-text-primary focus:border-gold focus:outline-none"
+            className="appearance-none rounded-lg border border-border bg-surface-raised px-3 py-2 pr-8 text-sm text-text-primary focus:border-gold focus:outline-none"
           >
             <option value="">Todos os usuários</option>
             {usuarios.map((u) => (
@@ -298,7 +298,7 @@ function SystemsUsageTab() {
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="rounded-xl border border-border bg-card p-6"
+        className="rounded-xl border border-border bg-card p-4"
       >
         <h3 className="mb-4 text-sm font-medium text-text-primary flex items-center gap-2">
           <Trophy className="h-4 w-4 text-gold" />
@@ -412,7 +412,7 @@ function ActivityLogsTab() {
           <select
             value={filterAcao}
             onChange={(e) => setFilterAcao(e.target.value)}
-            className="appearance-none rounded-lg border border-border bg-card px-4 py-2 pr-8 text-sm text-text-primary focus:border-gold focus:outline-none"
+            className="appearance-none rounded-lg border border-border bg-surface-raised px-3 py-2 pr-8 text-sm text-text-primary focus:border-gold focus:outline-none"
           >
             <option value="">Todas as ações</option>
             {acoes.map((a) => (
@@ -528,18 +528,23 @@ export default function AuditPage() {
       />
 
       {/* Tab Navigation */}
-      <div className="mb-6 flex gap-1 rounded-lg bg-card p-1 w-fit border border-border">
+      {/*
+        `max-w-full` + rolagem interna: a barra tem ~464px e estourava a
+        viewport de 390px, criando rolagem horizontal na página inteira.
+      */}
+      <div className="mb-4 flex max-w-full gap-1 overflow-x-auto rounded-lg border border-border bg-card p-1 sm:w-fit">
         {tabs.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+            aria-current={activeTab === tab.key ? 'page' : undefined}
+            className={`flex shrink-0 items-center gap-2 rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors ${
               activeTab === tab.key
-                ? 'bg-gold text-black'
+                ? 'bg-gold text-background'
                 : 'text-text-secondary hover:text-text-primary'
             }`}
           >
-            <tab.icon className="h-4 w-4" />
+            <tab.icon className="h-4 w-4 shrink-0" />
             {tab.label}
           </button>
         ))}
