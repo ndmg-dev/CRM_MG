@@ -17,6 +17,12 @@ import type {
   StatusTarefa,
   Documento,
   SetorRecord,
+  UserSession,
+  SystemUsageSummary,
+  SystemAccessLog,
+  Notificacao,
+  SearchResponse,
+  SearchResultItem,
 } from '@/types'
 import { sleep } from './utils'
 
@@ -117,6 +123,33 @@ let tarefas = [...mockTarefas]
 let mockDocumentos: Documento[] = [
   { id: 'd1', clienteId: 'c1', nomeArquivo: 'extrato_maio.pdf', tamanhoBytes: 154200, tipoMime: 'application/pdf', caminhoStorage: '/fake/path/extrato_maio.pdf', enviadoPor: 'CLIENTE', status: 'RECEBIDO', dataEnvio: '2024-06-05T10:30:00' },
   { id: 'd2', clienteId: 'c1', nomeArquivo: 'notas_fiscais_maio.zip', tamanhoBytes: 2048500, tipoMime: 'application/zip', caminhoStorage: '/fake/path/notas_fiscais_maio.zip', enviadoPor: 'CLIENTE', status: 'RECEBIDO', dataEnvio: '2024-06-06T14:20:00' },
+]
+
+// ---------------------------------------------------------------------------
+// Mock Sessões / Tracking / Notificações
+// ---------------------------------------------------------------------------
+const mockSessoes: UserSession[] = [
+  { id: 'ses1', usuarioId: 'u1', usuarioNome: 'Arthur Monteiro', usuarioEmail: 'arthur.monteiro@mendoncagalvao.com.br', usuarioPerfil: 'ADMIN', usuarioSetor: 'DIRETORIA', inicio: '2024-06-10T08:02:00', ultimaAtividade: '2024-06-10T11:45:00', ipAddress: '192.168.0.11', userAgent: 'Chrome/125 Windows', ativa: true },
+  { id: 'ses2', usuarioId: 'u2', usuarioNome: 'Fernanda Lima', usuarioEmail: 'fernanda.lima@mendoncagalvao.com.br', usuarioPerfil: 'COORDENADOR', usuarioSetor: 'FISCAL', inicio: '2024-06-10T08:15:00', ultimaAtividade: '2024-06-10T11:40:00', ipAddress: '192.168.0.24', userAgent: 'Firefox/126 Windows', ativa: true },
+  { id: 'ses3', usuarioId: 'u3', usuarioNome: 'Ricardo Santos', usuarioEmail: 'ricardo.santos@mendoncagalvao.com.br', usuarioPerfil: 'ANALISTA', usuarioSetor: 'CONTABIL', inicio: '2024-06-09T09:00:00', ultimaAtividade: '2024-06-09T17:30:00', fim: '2024-06-09T17:31:00', ipAddress: '192.168.0.31', userAgent: 'Chrome/125 Windows', ativa: false },
+]
+
+const mockTopSistemas: SystemUsageSummary[] = [
+  { sistemaId: 's1', sistemaNome: 'Abertura de Empresa', totalAcessos: 42, tempoTotalMinutos: 318 },
+  { sistemaId: 's2', sistemaNome: 'Cálculo Adiantamento', totalAcessos: 27, tempoTotalMinutos: 154 },
+  { sistemaId: 's3', sistemaNome: 'Aeronord - Convocações & Recibos', totalAcessos: 11, tempoTotalMinutos: 72 },
+]
+
+const mockAcessosRecentes: SystemAccessLog[] = [
+  { id: 1, usuarioId: 'u1', usuarioNome: 'Arthur Monteiro', sistemaId: 's1', sistemaNome: 'Abertura de Empresa', inicio: '2024-06-10T10:12:00', fim: '2024-06-10T10:41:00', duracaoSegundos: 1740 },
+  { id: 2, usuarioId: 'u2', usuarioNome: 'Fernanda Lima', sistemaId: 's2', sistemaNome: 'Cálculo Adiantamento', inicio: '2024-06-10T09:30:00', fim: '2024-06-10T09:52:00', duracaoSegundos: 1320 },
+  { id: 3, usuarioId: 'u4', usuarioNome: 'Mariana Costa', sistemaId: 's1', sistemaNome: 'Abertura de Empresa', inicio: '2024-06-10T08:45:00', duracaoSegundos: undefined },
+]
+
+const mockNotificacoes: Notificacao[] = [
+  { id: 'n1', usuario_id: 'u1', titulo: 'Tarefa vencida', mensagem: 'A tarefa "Fechamento contábil — Tech Solutions" passou do prazo.', lida: false, data_criacao: '2024-06-10T09:12:00' },
+  { id: 'n2', usuario_id: 'u1', titulo: 'Novo documento recebido', mensagem: 'Comércio ABC S.A. enviou "notas_fiscais_maio.zip" pelo portal do cliente.', lida: false, data_criacao: '2024-06-10T08:40:00' },
+  { id: 'n3', usuario_id: 'u1', titulo: 'Acesso concedido', mensagem: 'Ricardo Santos recebeu acesso ao sistema "Cálculo Adiantamento".', lida: true, data_criacao: '2024-06-09T16:05:00' },
 ]
 
 // ---------------------------------------------------------------------------
@@ -472,5 +505,96 @@ export const mockApi = {
       mockDocumentos.push(newDoc)
       return newDoc
     }
-  }
+  },
+
+  // -------------------------------------------------------------------------
+  // Namespaces abaixo existiam apenas no `realApi`. Sem eles, `api.sessoes`,
+  // `api.notificacoes`, `api.search` e `api.tracking` ficavam `undefined` no
+  // modo mock e `useHeartbeat`/`Header` derrubavam o shell autenticado.
+  // -------------------------------------------------------------------------
+  sessoes: {
+    heartbeat: async (): Promise<void> => {
+      await sleep(100)
+    },
+    getAtivas: async (): Promise<UserSession[]> => {
+      await sleep(300)
+      return mockSessoes.filter((s) => s.ativa)
+    },
+    getHistorico: async (
+      filters?: { usuarioId?: string; dataInicio?: string; dataFim?: string },
+      page = 0,
+      size = 20,
+    ): Promise<PaginatedResponse<UserSession>> => {
+      await sleep(400)
+      let result = [...mockSessoes]
+      if (filters?.usuarioId) result = result.filter((s) => s.usuarioId === filters.usuarioId)
+      return { content: result, totalElements: result.length, totalPages: 1, page, size }
+    },
+  },
+
+  tracking: {
+    // O id do sistema é ignorado no mock; a assinatura real é (sistemaId: string).
+    entrar: async (): Promise<void> => {
+      await sleep(100)
+    },
+    sair: async (): Promise<void> => {
+      await sleep(100)
+    },
+    getResumo: async (): Promise<{ topSistemas: SystemUsageSummary[]; acessosRecentes: SystemAccessLog[] }> => {
+      await sleep(400)
+      return { topSistemas: mockTopSistemas, acessosRecentes: mockAcessosRecentes }
+    },
+  },
+
+  notificacoes: {
+    getAll: async (): Promise<Notificacao[]> => {
+      await sleep(300)
+      return mockNotificacoes
+    },
+    marcarComoLida: async (id: string): Promise<Notificacao> => {
+      await sleep(200)
+      const notif = mockNotificacoes.find((n) => n.id === id)
+      if (!notif) throw new Error('Notificação não encontrada')
+      notif.lida = true
+      return notif
+    },
+  },
+
+  search: {
+    query: async (q: string): Promise<SearchResponse> => {
+      await sleep(250)
+      const term = q.trim().toLowerCase()
+      if (term.length < 2) return { results: [] }
+
+      const results: SearchResultItem[] = [
+        ...mockSistemas
+          .filter((s) => s.nome.toLowerCase().includes(term))
+          .map((s) => ({
+            id: s.id,
+            type: 'sistema',
+            title: s.nome,
+            subtitle: s.descricao,
+            url: `/sistemas/${s.id}`,
+            icon: s.icone,
+          })),
+        ...mockClientes
+          .filter(
+            (c) =>
+              c.razaoSocial.toLowerCase().includes(term) ||
+              c.nomeFantasia.toLowerCase().includes(term) ||
+              c.cnpj.includes(term),
+          )
+          .map((c) => ({
+            id: c.id,
+            type: 'cliente',
+            title: c.razaoSocial,
+            subtitle: c.nomeFantasia,
+            url: `/clientes/${c.id}`,
+            icon: 'building-2',
+          })),
+      ]
+
+      return { results: results.slice(0, 8) }
+    },
+  },
 }
