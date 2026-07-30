@@ -122,7 +122,7 @@ export default function Topbar() {
         </button>
         <div className="hidden lg:block" />
 
-        <div className="hidden lg:flex items-center justify-center gap-1 min-w-0 overflow-x-auto">
+        <div className="hidden lg:flex items-center justify-center gap-1 min-w-0">
           {menusPermitidos.map((item) => {
             const active = isItemActive(location.pathname, item.path, item.end);
             return (
