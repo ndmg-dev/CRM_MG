@@ -133,7 +133,7 @@ export function Topbar() {
       aria-label="Navegação do Sistema de Chamados"
       className="sticky top-0 z-30 w-full bg-neutral-950/95 backdrop-blur border-b border-neutral-800"
     >
-      <div className="grid grid-cols-[auto_1fr_auto] lg:grid-cols-3 items-center gap-1 px-3 h-14">
+      <div className="grid grid-cols-[auto_1fr_auto] lg:grid-cols-[1fr_auto_1fr] items-center gap-1 px-3 h-14">
         {/* Mobile hamburger */}
         <button
           type="button"
