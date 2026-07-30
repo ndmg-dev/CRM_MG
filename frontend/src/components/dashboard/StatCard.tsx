@@ -1,109 +1,67 @@
-import { useEffect, useRef, useState } from 'react'
-import { motion, useInView } from 'framer-motion'
 import type { LucideIcon } from 'lucide-react'
 import { TrendingUp, TrendingDown } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import IconBadge, { type IconBadgeTone } from '@/components/common/IconBadge'
 
 interface StatCardProps {
   icon: LucideIcon
   label: string
   value: number | string
   subtitle?: string
-  color?: string
+  /** Tom semântico do badge do ícone. */
+  tone?: IconBadgeTone
   trend?: { value: number; positive: boolean }
 }
 
-// ---------------------------------------------------------------------------
-// Animated counter — counts up from 0 to target over ~1.2s
-// ---------------------------------------------------------------------------
-function AnimatedCounter({ target }: { target: number }) {
-  const [current, setCurrent] = useState(0)
-  const ref = useRef<HTMLSpanElement>(null)
-  const isInView = useInView(ref, { once: true })
-
-  useEffect(() => {
-    if (!isInView) return
-
-    const duration = 1200 // ms
-    const steps = 40
-    const increment = target / steps
-    let step = 0
-
-    const interval = setInterval(() => {
-      step++
-      if (step >= steps) {
-        setCurrent(target)
-        clearInterval(interval)
-      } else {
-        setCurrent(Math.round(increment * step))
-      }
-    }, duration / steps)
-
-    return () => clearInterval(interval)
-  }, [isInView, target])
-
-  return <span ref={ref}>{current.toLocaleString('pt-BR')}</span>
-}
-
-// ---------------------------------------------------------------------------
-// StatCard
-// ---------------------------------------------------------------------------
+/**
+ * KPI compacto do dashboard (~136px de altura), na proporção do sistema de
+ * ponto: badge do ícone no topo, rótulo em caixa alta, valor em destaque e
+ * descrição secundária.
+ *
+ * O contador animado anterior foi removido de propósito: números que sobem
+ * durante 1,2s atrapalham a leitura numa tela de operação.
+ */
 export default function StatCard({
-  icon: Icon,
+  icon,
   label,
   value,
   subtitle,
-  color = '#d4a843',
+  tone = 'gold',
   trend,
 }: StatCardProps) {
-  const isNumeric = typeof value === 'number'
+  const display = typeof value === 'number' ? value.toLocaleString('pt-BR') : value
 
   return (
-    <motion.div
-      whileHover={{ borderColor: color }}
-      className={cn(
-        'group relative rounded-lg border border-border bg-card p-6',
-        'transition-colors duration-300',
-      )}
-    >
-      {/* Icon */}
-      <div
-        className="mb-4 flex h-10 w-10 items-center justify-center rounded-full"
-        style={{ backgroundColor: `${color}15` }}
-      >
-        <Icon className="h-5 w-5" style={{ color }} />
-      </div>
+    <div className="flex min-h-[136px] flex-col rounded-xl border border-border bg-card p-4 transition-colors hover:border-border-light">
+      <IconBadge icon={icon} tone={tone} />
 
-      {/* Value */}
-      <p className="text-3xl font-bold text-text-primary">
-        {isNumeric ? <AnimatedCounter target={value as number} /> : value}
+      <p className="mt-3 text-[10px] font-semibold uppercase tracking-label text-text-muted">
+        {label}
       </p>
 
-      {/* Label + trend */}
-      <div className="mt-1 flex items-center gap-2">
-        <p className="text-sm text-text-secondary">{label}</p>
-
+      <div className="mt-1 flex items-baseline gap-2">
+        <p className="text-[30px] font-bold leading-none text-text-primary tabular-nums">
+          {display}
+        </p>
         {trend && (
           <span
-            className={cn(
-              'flex items-center gap-0.5 text-xs font-medium',
-              trend.positive ? 'text-success' : 'text-error',
-            )}
+            className={`flex items-center gap-0.5 text-[11px] font-medium ${
+              trend.positive ? 'text-success' : 'text-error'
+            }`}
           >
             {trend.positive ? (
-              <TrendingUp className="h-3 w-3" />
+              <TrendingUp className="h-3 w-3" aria-hidden="true" />
             ) : (
-              <TrendingDown className="h-3 w-3" />
+              <TrendingDown className="h-3 w-3" aria-hidden="true" />
             )}
-            {trend.value}%
+            {/* O sinal também vai em texto — cor sozinha não comunica estado. */}
+            {trend.positive ? '+' : '−'}{trend.value}%
           </span>
         )}
       </div>
 
-      {/* Subtitle */}
       {subtitle && (
-        <p className="mt-3 text-xs text-text-muted">{subtitle}</p>
+        <p className="mt-auto pt-2 text-[11px] leading-snug text-text-muted">{subtitle}</p>
       )}
-    </motion.div>
+    </div>
   )
 }

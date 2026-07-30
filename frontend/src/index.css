@@ -12,7 +12,7 @@
 
 @theme {
   --color-background: var(--mg-color-bg-base);
-  --color-sidebar: var(--mg-color-bg-surface);
+  --color-sidebar: var(--mg-color-bg-sidebar);
   --color-card: var(--mg-color-bg-card);
   --color-surface: var(--mg-color-bg-hover);
   --color-surface-hover: var(--mg-color-bg-active);
@@ -25,27 +25,58 @@
   --color-gold-active: var(--mg-color-gold-active);
   --color-gold-light: var(--mg-color-gold-light);
   --color-gold-muted: var(--mg-color-gold-dim);
+  --color-gold-soft: var(--mg-color-gold-soft);
+  --color-gold-border: var(--mg-color-gold-border);
 
   --color-text-primary: var(--mg-color-text-primary);
   --color-text-secondary: var(--mg-color-text-secondary);
   --color-text-muted: var(--mg-color-text-muted);
+  --color-text-disabled: var(--mg-color-text-disabled);
 
   --color-border: var(--mg-color-border-default);
+  --color-border-subtle: var(--mg-color-border-subtle);
   --color-divider: var(--mg-color-border-divider);
   --color-border-light: var(--mg-color-border-strong);
   --color-border-emphasis: var(--mg-color-border-emphasis);
 
   --color-success: var(--mg-color-status-success);
   --color-success-hover: var(--mg-color-status-success-hover);
+  --color-success-soft: var(--mg-color-status-success-soft);
   --color-warning: var(--mg-color-status-warning);
+  --color-warning-soft: var(--mg-color-status-warning-soft);
   --color-error: var(--mg-color-status-error);
   --color-error-hover: var(--mg-color-status-error-hover);
   --color-error-active: var(--mg-color-status-error-active);
+  --color-error-soft: var(--mg-color-status-error-soft);
   --color-info: var(--mg-color-status-info);
+  --color-info-soft: var(--mg-color-status-info-soft);
 
   --color-accent-purple: var(--mg-color-accent-purple);
   --color-accent-cyan: var(--mg-color-accent-cyan);
   --color-accent-pink: var(--mg-color-accent-pink);
+
+  /*
+    Utilitários aditivos do design system (referência: sistema de ponto).
+    Deliberadamente NÃO sobrescrevemos a escala `--radius-*` do Tailwind:
+    isso mudaria `rounded-*` também dentro dos sistemas embutidos, que estão
+    fora do escopo desta refatoração. Os raios do CRM são aplicados por
+    componente via `rounded-[10px]`/`rounded-xl`.
+  */
+  --tracking-label: var(--mg-font-letter-spacing-label);
+
+  /*
+    Breakpoints do grid de KPIs (spec §7.2): 1 / 2 / 3 / 6 colunas.
+    Os três são customizados de propósito. O Tailwind v4 emite os breakpoints
+    customizados ANTES dos padrão, então misturar `md:` (padrão) com
+    `ultra:` (customizado) faria o `md:` vencer a cascata em telas largas.
+    Declarados em ordem crescente, eles se sobrepõem corretamente.
+  */
+  --breakpoint-kpi2: 768px;
+  --breakpoint-kpi3: 1200px;
+  --breakpoint-kpi6: 1600px;
+
+  --shadow-subtle: var(--mg-shadow-subtle);
+  --shadow-overlay: var(--mg-shadow-overlay);
 }
 
 /* ============================================
@@ -64,12 +95,19 @@ body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  line-height: 1.6;
+  /* Densidade do sistema de ponto: linhas mais justas que o 1.6 anterior */
+  line-height: var(--mg-font-line-height-normal);
 }
 
 ::selection {
-  background-color: rgba(212, 168, 67, 0.35);
-  color: #f5f5f5;
+  background-color: color-mix(in srgb, var(--mg-color-gold-base) 35%, transparent);
+  color: var(--mg-color-text-primary);
+}
+
+/* Foco visível consistente em todo o CRM (acessibilidade — WCAG 2.4.7) */
+:focus-visible {
+  outline: 2px solid var(--mg-color-gold-base);
+  outline-offset: 2px;
 }
 
 /* ============================================
@@ -78,7 +116,7 @@ body {
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: #333333 transparent;
+  scrollbar-color: var(--mg-color-border-strong) transparent;
 }
 
 ::-webkit-scrollbar {
@@ -91,70 +129,23 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: #333333;
+  background-color: var(--mg-color-border-strong);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: #444444;
-}
-
-/* ============================================
-   Glass-Morphism Utility
-   ============================================ */
-
-.glass-card {
-  background: rgba(26, 26, 26, 0.6);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 8px;
-}
-
-.glass-card-hover {
-  background: rgba(26, 26, 26, 0.6);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 8px;
-  transition: background 0.2s ease, border-color 0.2s ease;
-}
-
-.glass-card-hover:hover {
-  background: rgba(37, 37, 37, 0.7);
-  border-color: rgba(255, 255, 255, 0.1);
+  background-color: var(--mg-color-border-emphasis);
 }
 
 /* ============================================
    Custom Animations
+
+   Removidos nesta refatoração por estarem sem uso em todo o `src/`
+   (verificado por grep, incluindo os sistemas embutidos):
+   `.glass-card`, `.glass-card-hover`, `.animate-glow`, `.animate-float`,
+   `.animate-shimmer`, `.animate-slide-up` e seus keyframes. O
+   glass-morphism também destoava da direção visual sóbria adotada.
    ============================================ */
-
-@keyframes glow {
-  0%, 100% {
-    box-shadow: 0 0 8px rgba(212, 168, 67, 0.3);
-  }
-  50% {
-    box-shadow: 0 0 20px rgba(212, 168, 67, 0.6);
-  }
-}
-
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-6px);
-  }
-}
-
-@keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
-}
 
 @keyframes fadeIn {
   from {
@@ -165,42 +156,20 @@ body {
   }
 }
 
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-glow {
-  animation: glow 2s ease-in-out infinite;
-}
-
-.animate-float {
-  animation: float 3s ease-in-out infinite;
-}
-
-.animate-shimmer {
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.04) 50%,
-    rgba(255, 255, 255, 0) 100%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 2s linear infinite;
-}
-
 .animate-fade-in {
   animation: fadeIn 0.3s ease-out forwards;
 }
 
-.animate-slide-up {
-  animation: slideUp 0.4s ease-out forwards;
+/* Respeita quem pediu menos movimento no sistema operacional. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* ============================================================

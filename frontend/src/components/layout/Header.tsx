@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Bell, Search, Check, CheckCircle2 } from 'lucide-react'
+import { Bell, Search, CheckCircle2, Menu } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useUIStore } from '@/stores/uiStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -10,7 +10,12 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useDebounce } from '@/hooks/useDebounce'
 import { ICON_MAP } from '@/lib/icons'
 
-export default function Header() {
+interface HeaderProps {
+  /** Abre o drawer de navegação em telas < lg. */
+  onMenuClick?: () => void
+}
+
+export default function Header({ onMenuClick }: HeaderProps) {
   const currentPage = useUIStore((s) => s.currentPage)
   const user = useAuthStore((s) => s.user)
   const queryClient = useQueryClient()
@@ -60,24 +65,34 @@ export default function Header() {
   const unreadCount = notificacoes.filter(n => !n.lida).length
 
   return (
-    <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-border bg-background/80 px-6 backdrop-blur-md">
-      {/* Page Title */}
-      <h2 className="text-lg font-semibold text-text-primary">{currentPage}</h2>
+    <header className="sticky top-0 z-20 flex h-[52px] items-center justify-between border-b border-border bg-background/85 px-4 backdrop-blur-md lg:px-5">
+      {/* Menu (drawer) + título da página */}
+      <div className="flex min-w-0 items-center gap-2">
+        <button
+          onClick={onMenuClick}
+          aria-label="Abrir menu de navegação"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-surface hover:text-text-primary lg:hidden"
+        >
+          <Menu className="h-[18px] w-[18px]" />
+        </button>
+        <h2 className="truncate text-[15px] font-semibold text-text-primary">{currentPage}</h2>
+      </div>
 
       {/* Right side */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         {/* Search */}
         <div className="relative hidden sm:block" ref={searchRef}>
-          <div className={`flex items-center gap-2 rounded-lg border bg-card px-3 py-1.5 transition-colors ${isSearchFocused ? 'border-gold' : 'border-border'
+          <div className={`flex h-9 items-center gap-2 rounded-lg border bg-surface-raised px-3 transition-colors ${isSearchFocused ? 'border-gold-border' : 'border-border'
             }`}>
-            <Search className="h-4 w-4 text-text-muted" />
+            <Search className="h-4 w-4 shrink-0 text-text-muted" />
             <input
               type="text"
               placeholder="Buscar (sistemas, clientes...)"
+              aria-label="Buscar sistemas e clientes"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => setIsSearchFocused(true)}
-              className="w-56 bg-transparent text-sm text-text-primary placeholder-text-muted outline-none"
+              className="w-44 bg-transparent text-[13px] text-text-primary placeholder-text-muted outline-none xl:w-56"
             />
           </div>
 
@@ -134,11 +149,17 @@ export default function Header() {
         <div className="relative" ref={notifRef}>
           <button
             onClick={() => setShowNotif(!showNotif)}
+            aria-label={
+              unreadCount > 0
+                ? `Notificações (${unreadCount} não lidas)`
+                : 'Notificações'
+            }
+            aria-expanded={showNotif}
             className="relative flex h-9 w-9 items-center justify-center rounded-lg text-text-secondary transition-colors hover:bg-surface hover:text-text-primary"
           >
-            <Bell className="h-5 w-5" />
+            <Bell className="h-[18px] w-[18px]" />
             {unreadCount > 0 && (
-              <span className="absolute right-1.5 top-1.5 flex h-3 w-3 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white shadow-[0_0_0_2px_#0a0a0a]">
+              <span className="absolute right-1 top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-error px-1 text-[9px] font-bold text-background">
                 {unreadCount}
               </span>
             )}
@@ -212,10 +233,14 @@ export default function Header() {
         {/* User avatar */}
         {user && (
           user.fotoPerfil ? (
-            <img src={user.fotoPerfil} alt={user.nome} className="h-9 w-9 rounded-full object-cover border border-border" referrerPolicy="no-referrer" />
+            <img src={user.fotoPerfil} alt={user.nome} title={user.nome} className="h-8 w-8 rounded-full border border-border object-cover" referrerPolicy="no-referrer" />
           ) : (
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-hover text-xs font-bold text-gold">
-              {getInitials(user.nome)}
+            <div
+              title={user.nome}
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-gold-border bg-gold-muted text-[11px] font-bold text-gold"
+            >
+              <span className="sr-only">{user.nome}</span>
+              <span aria-hidden="true">{getInitials(user.nome)}</span>
             </div>
           )
         )}

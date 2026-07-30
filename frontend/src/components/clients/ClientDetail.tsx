@@ -42,7 +42,7 @@ function DocumentGroup({ clienteId, competencia, documentos, onNotify }: { clien
   }
 
   return (
-    <div className="mb-4 overflow-hidden rounded-lg border border-border bg-card">
+    <div className="mb-4 overflow-hidden rounded-xl border border-border bg-card">
       <div
         onClick={() => setIsOpen(!isOpen)}
         className="flex w-full cursor-pointer items-center justify-between bg-surface-raised px-6 py-4 transition-colors hover:bg-divider"
@@ -282,7 +282,7 @@ export default function ClientDetail() {
   return (
     <div>
       {/* Header */}
-      <div className="mb-6 flex items-center gap-3">
+      <div className="mb-4 flex items-center gap-3">
         <Button variant="ghost" size="sm" onClick={() => navigate('/clientes')}>
           <ArrowLeft className="mr-1 h-4 w-4" />
           Voltar
@@ -298,7 +298,7 @@ export default function ClientDetail() {
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mb-6 rounded-xl border border-border bg-card p-6"
+        className="mb-6 rounded-xl border border-border bg-card p-4"
       >
         <div className="flex items-center gap-4">
           <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gold/10">
@@ -321,7 +321,7 @@ export default function ClientDetail() {
       </motion.div>
 
         {/* Tabs navigation */}
-        <div className="mb-6 flex gap-1 rounded-lg bg-card p-1 w-fit border border-border">
+        <div className="mb-4 flex gap-1 rounded-lg bg-card p-1 w-fit border border-border">
           <button
             onClick={() => setActiveTab('detalhes')}
             className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
@@ -352,7 +352,7 @@ export default function ClientDetail() {
             {infoItems.map((item) => (
               <div
                 key={item.label}
-                className="flex items-start gap-3 rounded-lg border border-border bg-card p-4"
+                className="flex items-start gap-3 rounded-xl border border-border bg-card p-4"
               >
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-hover">
                   <item.icon className="h-4 w-4 text-text-muted" />

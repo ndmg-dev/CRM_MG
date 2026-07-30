@@ -153,7 +153,7 @@ export default function UsersTable() {
               placeholder="Nome completo"
               value={createForm.nome}
               onChange={e => setCreateForm(f => ({ ...f, nome: e.target.value }))}
-              className="rounded-lg border border-border bg-card px-3 py-2 text-sm text-text-primary outline-none"
+              className="rounded-lg border border-border bg-surface-raised px-3 py-2 text-sm text-text-primary outline-none"
             />
             <div>
               <input
@@ -161,7 +161,7 @@ export default function UsersTable() {
                 placeholder="E-mail"
                 value={createForm.email}
                 onChange={e => setCreateForm(f => ({ ...f, email: e.target.value }))}
-                className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-text-primary outline-none"
+                className="w-full rounded-lg border border-border bg-surface-raised px-3 py-2 text-sm text-text-primary outline-none"
               />
               {createForm.email && !emailValido && (
                 <p className="mt-1 text-xs text-error">E-mail inválido</p>
@@ -173,14 +173,14 @@ export default function UsersTable() {
             <select
               value={createForm.perfil}
               onChange={e => setCreateForm(f => ({ ...f, perfil: e.target.value as Perfil }))}
-              className="rounded-lg border border-border bg-card px-3 py-2 text-sm text-text-primary outline-none"
+              className="rounded-lg border border-border bg-surface-raised px-3 py-2 text-sm text-text-primary outline-none"
             >
               {Object.entries(PERFIL_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
             <select
               value={createForm.setor}
               onChange={e => setCreateForm(f => ({ ...f, setor: e.target.value }))}
-              className="rounded-lg border border-border bg-card px-3 py-2 text-sm text-text-primary outline-none"
+              className="rounded-lg border border-border bg-surface-raised px-3 py-2 text-sm text-text-primary outline-none"
             >
               <option value="">Sem setor</option>
               {setores.map((s) => <option key={s.id} value={s.codigo}>{s.nome}</option>)}
