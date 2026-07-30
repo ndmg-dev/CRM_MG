@@ -109,7 +109,7 @@ export default function Topbar() {
       aria-label="Navegação do Agendamento de Férias"
       className="sticky top-0 z-30 w-full bg-[#0a0a0a]/95 backdrop-blur border-b border-[#262626]"
     >
-      <div className="grid grid-cols-[auto_1fr_auto] lg:grid-cols-3 items-center gap-1 px-3 h-14">
+      <div className="grid grid-cols-[auto_1fr_auto] lg:grid-cols-[1fr_auto_1fr] items-center gap-1 px-3 h-14">
         <button
           type="button"
           className="lg:hidden flex items-center justify-center h-11 w-11 rounded-md text-gray-400 hover:bg-[#1a1a1a] focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold"
