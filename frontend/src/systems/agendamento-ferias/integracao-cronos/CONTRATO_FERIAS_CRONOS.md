@@ -6,7 +6,7 @@ ser acordada pelos dois lados.
 
 - **Emissor**: sistema de Férias (Supabase self-hosted, Coolify) via Database
   Webhook (pg_net).
-- **Receptor**: Cronos, endpoint `POST /integrations/ferias/webhook`.
+- **Receptor**: Cronos, endpoint `POST /api/v1/ferias/webhook`.
 - **Integração só por rede.** Sem import de código nem acesso a banco entre repos.
 
 ---
