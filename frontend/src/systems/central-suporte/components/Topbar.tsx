@@ -123,7 +123,7 @@ export function Topbar() {
 
   const itemClasses = (active: boolean) =>
     cn(
-      "flex items-center gap-2 rounded-md px-3 h-11 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400",
+      "flex items-center gap-2 rounded-md px-3 h-11 text-sm whitespace-nowrap shrink-0 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400",
       active ? "text-amber-400 bg-neutral-800" : "text-neutral-300 hover:text-neutral-100 hover:bg-neutral-800/60"
     );
 
@@ -148,7 +148,7 @@ export function Topbar() {
         <div className="hidden lg:block" />
 
         {/* Desktop nav (centralizado) */}
-        <div className="hidden lg:flex items-center justify-center gap-1">
+        <div className="hidden lg:flex items-center justify-center gap-1 min-w-0 overflow-x-auto">
           {directItems.map((item) => (
             <button
               key={item.url}
@@ -183,7 +183,7 @@ export function Topbar() {
                     key={item.url}
                     type="button"
                     className={cn(
-                      "flex w-full items-center gap-2 px-3 h-11 text-sm text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400",
+                      "flex w-full items-center gap-2 px-3 h-11 text-sm text-left whitespace-nowrap focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400",
                       isItemActive(location.pathname, item.url)
                         ? "text-amber-400 bg-neutral-800"
                         : "text-neutral-300 hover:text-neutral-100 hover:bg-neutral-800/60"

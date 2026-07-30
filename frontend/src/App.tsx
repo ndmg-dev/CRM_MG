@@ -70,7 +70,7 @@ export default function App() {
                   }
                 />
                 <Route
-                  path="/sistemas/:id"
+                  path="/sistemas/:id/*"
                   element={
                     <Suspense fallback={<LoadingSpinner label="Carregando..." />}>
                       <SystemViewer />

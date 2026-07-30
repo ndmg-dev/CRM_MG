@@ -99,7 +99,7 @@ export default function Topbar() {
   }, []);
 
   const itemClasses = (active) =>
-    `flex items-center gap-2 rounded-md px-3 h-11 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold ${
+    `flex items-center gap-2 rounded-md px-3 h-11 text-sm whitespace-nowrap shrink-0 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold ${
       active ? "text-gold bg-[#1a1a1a] font-medium" : "text-gray-400 hover:text-white hover:bg-[#1a1a1a]"
     }`;
 
@@ -122,7 +122,7 @@ export default function Topbar() {
         </button>
         <div className="hidden lg:block" />
 
-        <div className="hidden lg:flex items-center justify-center gap-1">
+        <div className="hidden lg:flex items-center justify-center gap-1 min-w-0 overflow-x-auto">
           {menusPermitidos.map((item) => {
             const active = isItemActive(location.pathname, item.path, item.end);
             return (
