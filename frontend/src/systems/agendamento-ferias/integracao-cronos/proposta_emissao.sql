@@ -14,7 +14,7 @@
 -- =====================================================================
 
 -- 0) Secrets no Vault (rodar UMA vez, com valores reais):
---    select vault.create_secret('https://cronos.exemplo/integrations/ferias/webhook', 'cronos_webhook_url');
+--    select vault.create_secret('https://cronos.exemplo/api/v1/ferias/webhook', 'cronos_webhook_url');
 --    select vault.create_secret('<segredo-hmac-combinado>',                            'cronos_webhook_secret');
 --    select vault.create_secret('<tenant_id-fixo-combinado>',                          'cronos_tenant_id');
 
@@ -159,7 +159,16 @@ begin
   begin
     if lower(btrim(coalesce(new.status,''))) = 'aprovada'
        and (tg_op = 'INSERT' or lower(btrim(coalesce(old.status,''))) is distinct from 'aprovada') then
-      perform integracao_cronos.enviar_evento(new.id, 'agendada');
+      -- Aprovação pode ser retroativa/tardia: decide o status inicial já
+      -- correto conforme as datas, em vez de sempre 'agendada' e esperar
+      -- o job diário alcançar.
+      if new.data_fim < current_date then
+        perform integracao_cronos.enviar_evento(new.id, 'concluida');
+      elsif new.data_inicio <= current_date then
+        perform integracao_cronos.enviar_evento(new.id, 'em_andamento');
+      else
+        perform integracao_cronos.enviar_evento(new.id, 'agendada');
+      end if;
 
     elsif lower(btrim(coalesce(new.status,''))) in ('rejeitada','reprovada','cancelada')
        and tg_op = 'UPDATE'

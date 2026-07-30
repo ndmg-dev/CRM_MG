@@ -20,7 +20,7 @@ Contrato completo proposto: **[CONTRATO_FERIAS_CRONOS.md](./CONTRATO_FERIAS_CRON
 
 - [x] Cronos aceita o contrato (status enum idêntico: agendada/em_andamento/concluida/cancelada)
 - [x] Segredo HMAC gerado e combinado (guardado fora do repo; vai no Vault / env do Cronos)
-- [x] URL do endpoint (Cronos, oficial): `https://backendponto.nucleodigital.cloud/api/v1/integrations/ferias/webhook`
+- [x] URL do endpoint (Cronos, oficial): `https://backendponto.nucleodigital.cloud/api/v1/ferias/webhook`
 - [x] `tenant_id` (string mapeada pelo Cronos): `mendonca-galvao`
 - [x] Assinatura HMAC alinhada à ordem do Cronos (ferias_ref_id, tenant_id, email, data_inicio, data_fim, status; sem evento_em)
 - [x] Match de colaborador por e-mail
@@ -54,6 +54,23 @@ No mesmo [proposta_emissao.sql](./integracao-cronos/proposta_emissao.sql):
 Depende do endpoint do Cronos no ar. Validar: aprovação→agendada, job→em_andamento,
 cancelamento→cancelada, job→concluida, reenvio duplicado (idempotência), e falha de
 rede (Cronos fora → retry entrega depois).
+
+## Decisão de arquitetura — direção da integração (28/07)
+
+**FériasMG é a fonte única de verdade para férias.** A integração permanece
+**unidirecional** (Férias → Cronos), por decisão de processo de RH, não
+limitação técnica.
+
+- O RH sempre cadastra/aprova férias no FériasMG (fluxo de aprovação por setor
+  já existe aqui). O Cronos recebe e bloqueia o ponto — é somente leitor.
+- O botão "Adicionar férias" do Cronos (`origem="admin"`) é para exceção/urgência
+  pontual e **não sincroniza de volta** para o FériasMG — quem usar esse botão
+  precisa também formalizar a solicitação aqui, se for o caso.
+- **Não haverá** endpoint de ingestão no FériasMG nem emissão do lado Cronos.
+  Isso evita risco de loop, duplicidade e uma segunda fonte de verdade para
+  dado de RH.
+- Se essa decisão mudar no futuro, reavaliar com endpoint de ingestão +
+  campo `origem` no Cronos para evitar reemissão do que veio via webhook.
 
 ---
 
