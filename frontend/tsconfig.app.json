@@ -11,7 +11,8 @@
       "@/*": ["./src/*"],
       "@calc/*": ["./src/systems/calculadora-rescisao/*"],
       "@suporte/*": ["./src/systems/central-suporte/*"],
-      "@ferias/*": ["./src/systems/agendamento-ferias/*"]
+      "@ferias/*": ["./src/systems/agendamento-ferias/*"],
+      "@ponto/*": ["./src/systems/processar-ponto/*"]
     },
 
     /* Bundler mode */

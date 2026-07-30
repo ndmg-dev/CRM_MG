@@ -429,3 +429,42 @@ body {
 .suporte-root ::after {
   border-color: var(--color-border);
 }
+
+/* ============================================================
+   SISTEMA EMBUTIDO: Processar Ponto
+   Paleta própria (dark + dourado) do app original, escopada em
+   .ponto-root para não herdar nem vazar tokens do CRM.
+   ============================================================ */
+
+@theme {
+  --color-secondaryHover: #c9952b;
+  --color-hover: #202020;
+  --color-active: #262626;
+  --color-textPrimary: #f5f5f5;
+  --color-textSecondary: #a0a0a0;
+  --color-textMuted: #6b6b6b;
+  --color-borderStrong: #333333;
+  --color-goldDim: rgba(212, 168, 67, 0.12);
+  --color-goldHover: #c9952b;
+}
+
+.ponto-root {
+  /* Tokens que colidem com o CRM (escopados) */
+  --color-primary: #d4a843;
+  --color-secondary: #d4a843;
+  --color-background: #0a0a0a;
+  --color-surface: #141414;
+  --color-card: #1a1a1a;
+  --color-border: #262626;
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-info: #3b82f6;
+  --color-gold: #d4a843;
+}
+
+.ponto-root *,
+.ponto-root ::before,
+.ponto-root ::after {
+  border-color: var(--color-border);
+}

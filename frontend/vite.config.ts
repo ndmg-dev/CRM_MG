@@ -14,6 +14,7 @@ export default defineConfig(({ mode }) => {
         '@calc': path.resolve(__dirname, './src/systems/calculadora-rescisao'),
         '@suporte': path.resolve(__dirname, './src/systems/central-suporte'),
         '@ferias': path.resolve(__dirname, './src/systems/agendamento-ferias'),
+        '@ponto': path.resolve(__dirname, './src/systems/processar-ponto'),
       },
     },
     server: {
