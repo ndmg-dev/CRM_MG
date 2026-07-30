@@ -133,11 +133,7 @@ export function Topbar() {
       aria-label="Navegação do Sistema de Chamados"
       className="sticky top-0 z-30 w-full bg-neutral-950/95 backdrop-blur border-b border-neutral-800"
     >
-      <div className="flex items-center gap-1 px-3 h-14">
-        <span className="hidden lg:inline text-sm font-semibold text-neutral-100 mr-2 shrink-0">
-          Chamados
-        </span>
-
+      <div className="grid grid-cols-[auto_1fr_auto] lg:grid-cols-3 items-center gap-1 px-3 h-14">
         {/* Mobile hamburger */}
         <button
           type="button"
@@ -149,9 +145,10 @@ export function Topbar() {
         >
           {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
+        <div className="hidden lg:block" />
 
-        {/* Desktop nav */}
-        <div className="hidden lg:flex items-center gap-1 flex-1">
+        {/* Desktop nav (centralizado) */}
+        <div className="hidden lg:flex items-center justify-center gap-1">
           {directItems.map((item) => (
             <button
               key={item.url}
@@ -243,12 +240,9 @@ export function Topbar() {
           )}
         </div>
 
-        {/* Mobile title (center-ish, since hamburger + settings take the edges) */}
-        <span className="lg:hidden flex-1 text-sm font-semibold text-neutral-100 text-center">
-          Chamados
-        </span>
+        <div className="lg:hidden" />
 
-        <div className="flex items-center gap-1 ml-auto">
+        <div className="flex items-center justify-end gap-1">
           <button
             type="button"
             className="hidden lg:flex items-center justify-center h-11 w-11 rounded-md text-neutral-300 hover:text-neutral-100 hover:bg-neutral-800/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400"

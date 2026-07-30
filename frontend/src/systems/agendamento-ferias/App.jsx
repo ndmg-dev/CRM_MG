@@ -1,6 +1,6 @@
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import Sidebar from "./components/Sidebar";
+import Topbar from "./components/Topbar";
 import Dashboard from "./pages/Dashboard";
 import Solicitacoes from "./pages/Solicitacoes";
 import Calendario from "./pages/Calendario";
@@ -52,8 +52,8 @@ function EstruturaBase() {
 
   return (
     <FeriasRouterProvider>
-      <div className="flex h-screen overflow-hidden bg-[#0a0a0a] font-sans">
-        <Sidebar />
+      <div className="flex h-screen flex-col overflow-hidden bg-[#0a0a0a] font-sans">
+        <Topbar />
         <main className="relative min-w-0 flex-1 overflow-y-auto">
           <Routes>
             <Route path="/" element={<Dashboard />} />
