@@ -430,6 +430,12 @@ body {
   border-color: var(--color-border);
 }
 
+/* Barra de progresso do carrossel da TV (ViewerCarousel) */
+@keyframes progress-fill {
+  from { width: 0%; }
+  to { width: 100%; }
+}
+
 /* ============================================================
    SISTEMA EMBUTIDO: Processar Ponto
    Paleta própria (dark + dourado) do app original, escopada em

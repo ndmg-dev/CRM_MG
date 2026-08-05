@@ -31,7 +31,11 @@ export default function SystemViewer() {
   // Sistema migrado abre em página cheia (esconde o Header do CRM)
   useEffect(() => {
     setFullBleedSystem(!!InternalSystem)
-    return () => setFullBleedSystem(false)
+    return () => {
+      setFullBleedSystem(false)
+      // Sai do modo quiosque (TV) se o usuário navegar pra fora daqui.
+      useUIStore.getState().setKioskMode(false)
+    }
   }, [InternalSystem, setFullBleedSystem])
 
   // PostMessage listener with strict origin validation

@@ -8,6 +8,7 @@ import { useHeartbeat } from '@/hooks/useHeartbeat'
 export default function MainLayout() {
   const sidebarOpen = useUIStore((s) => s.sidebarOpen)
   const fullBleedSystem = useUIStore((s) => s.fullBleedSystem)
+  const kioskMode = useUIStore((s) => s.kioskMode)
   useHeartbeat()
 
   // Drawer da navegação em telas < lg. Estado puramente visual, local ao
@@ -28,10 +29,12 @@ export default function MainLayout() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Sidebar mobileOpen={mobileNavOpen} onMobileClose={() => setMobileNavOpen(false)} />
+      {!kioskMode && (
+        <Sidebar mobileOpen={mobileNavOpen} onMobileClose={() => setMobileNavOpen(false)} />
+      )}
 
       {/* Overlay do drawer — só existe abaixo de lg */}
-      {mobileNavOpen && (
+      {!kioskMode && mobileNavOpen && (
         <div
           onClick={() => setMobileNavOpen(false)}
           className="fixed inset-0 z-30 bg-black/60 lg:hidden"
@@ -41,11 +44,11 @@ export default function MainLayout() {
 
       <main
         className={`min-h-screen transition-[margin] duration-200 ease-in-out ${
-          sidebarOpen ? 'lg:ml-56' : 'lg:ml-[72px]'
+          kioskMode ? '' : sidebarOpen ? 'lg:ml-56' : 'lg:ml-[72px]'
         }`}
       >
-        {!fullBleedSystem && <Header onMenuClick={() => setMobileNavOpen(true)} />}
-        <div className={fullBleedSystem ? '' : 'p-4 lg:p-5'}>
+        {!fullBleedSystem && !kioskMode && <Header onMenuClick={() => setMobileNavOpen(true)} />}
+        <div className={fullBleedSystem || kioskMode ? '' : 'p-4 lg:p-5'}>
           <Outlet />
         </div>
       </main>
