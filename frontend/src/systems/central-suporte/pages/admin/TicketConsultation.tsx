@@ -39,6 +39,8 @@ const statusLabels: Record<string, string> = {
   new: "Novo",
   open: "Aberto",
   pending: "Pendente",
+  parado: "Parado",
+  testing: "Em Teste",
   resolved: "Resolvido",
   closed: "Fechado",
   canceled: "Cancelado",

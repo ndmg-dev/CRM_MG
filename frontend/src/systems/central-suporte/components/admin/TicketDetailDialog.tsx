@@ -53,10 +53,22 @@ const priorityLabels: Record<string, string> = {
   p3: "Baixa",
 };
 
+const statusBadgeClass: Record<string, string> = {
+  new: "border-blue-400/50 bg-blue-400/10 text-blue-300",
+  open: "border-blue-400/50 bg-blue-400/10 text-blue-300",
+  pending: "border-yellow-400/50 bg-yellow-400/10 text-yellow-300",
+  parado: "border-slate-400/50 bg-slate-400/10 text-slate-300",
+  testing: "border-orange-400/50 bg-orange-400/10 text-orange-300",
+  resolved: "border-emerald-400/50 bg-emerald-400/10 text-emerald-300",
+  closed: "border-emerald-400/50 bg-emerald-400/10 text-emerald-300",
+  canceled: "border-red-400/50 bg-red-400/10 text-red-300",
+};
+
 const statusLabels: Record<string, string> = {
   new: "A Fazer",
   open: "A Fazer",
   pending: "Em Andamento",
+  parado: "Parado",
   testing: "Em Teste",
   resolved: "Concluído",
   closed: "Concluído",
@@ -66,6 +78,7 @@ const statusLabels: Record<string, string> = {
 const statusDropdownOptions = [
   { value: "open", label: "A Fazer" },
   { value: "pending", label: "Em Andamento" },
+  { value: "parado", label: "Parado" },
   { value: "testing", label: "Em Teste" },
   { value: "closed", label: "Concluído" },
 ];
@@ -417,11 +430,18 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
         )}
         <DialogHeader>
           <div className="flex items-center gap-2">
-            <Badge variant="outline"><Badge variant="outline">{String(ticket.ticket_code).padStart(3, '0')}</Badge></Badge>
+            <Badge variant="outline" className="border-primary/50 text-primary font-semibold">
+              {String(ticket.ticket_code).padStart(3, '0')}
+            </Badge>
             <Badge variant={ticket.priority === "p0" || ticket.priority === "p1" ? "destructive" : "secondary"}>
               {priorityLabels[ticket.priority || "p3"]}
             </Badge>
-            <Badge variant="outline">{statusLabels[ticket.status || "new"]}</Badge>
+            <Badge
+              variant="outline"
+              className={cn(statusBadgeClass[ticket.status || "new"], "animate-pulse")}
+            >
+              {statusLabels[ticket.status || "new"]}
+            </Badge>
           </div>
           <DialogTitle className="text-lg mt-2">{ticket.title}</DialogTitle>
         </DialogHeader>
@@ -466,7 +486,7 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
                     }
                     onValueChange={(v) => updateTicket.mutate({ status: v })}
                   >
-                    <SelectTrigger className="h-9">
+                    <SelectTrigger className="h-9 border-2 border-primary">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -482,7 +502,7 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
                     value={ticket.priority || "p3"}
                     onValueChange={(v) => updateTicket.mutate({ priority: v })}
                   >
-                    <SelectTrigger className="h-9">
+                    <SelectTrigger className="h-9 border-2 border-primary">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -508,7 +528,7 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
                       }
                     }}
                   >
-                    <SelectTrigger className="h-9">
+                    <SelectTrigger className="h-9 border-2 border-primary">
                       <SelectValue placeholder="Nenhum" />
                     </SelectTrigger>
                     <SelectContent>
@@ -525,7 +545,7 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
                     value={ticket.assignee_id || "unassigned"}
                     onValueChange={(v) => updateTicket.mutate({ assignee_id: v === "unassigned" ? null : v })}
                   >
-                    <SelectTrigger className="h-9">
+                    <SelectTrigger className="h-9 border-2 border-primary">
                       <SelectValue placeholder="Nenhum" />
                     </SelectTrigger>
                     <SelectContent>
@@ -542,7 +562,7 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
-                        className={cn("h-9 w-full justify-start text-left font-normal", !ticket.due_date && "text-muted-foreground")}
+                        className={cn("h-9 w-full justify-start text-left font-normal border-2 border-primary", !ticket.due_date && "text-muted-foreground")}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
                         {ticket.due_date ? format(new Date(ticket.due_date), "dd/MM/yyyy") : "Definir prazo"}
@@ -567,7 +587,7 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
                 <div>
                   <Label className="text-xs text-muted-foreground mb-1 block">Status</Label>
-                  <Badge variant="outline">{statusLabels[ticket.status || "new"]}</Badge>
+                  <Badge variant="outline" className={statusBadgeClass[ticket.status || "new"]}>{statusLabels[ticket.status || "new"]}</Badge>
                 </div>
                 <div>
                   <Label className="text-xs text-muted-foreground mb-1 block">Prioridade</Label>
@@ -689,6 +709,7 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
                     }
                   }}
                   rows={2}
+                  className="border-2 border-primary focus-visible:ring-primary/40"
                 />
                 {commentFile && (
                   <div className="flex items-center gap-2 text-xs bg-muted/50 rounded p-2">
@@ -718,8 +739,21 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
                   <div className="flex items-center gap-2">
                     {!readOnly && (
                       <>
-                        <Switch id="internal" checked={isInternal} onCheckedChange={setIsInternal} />
-                        <Label htmlFor="internal" className="text-xs text-muted-foreground">Nota interna</Label>
+                        <Switch
+                          id="internal"
+                          checked={isInternal}
+                          onCheckedChange={setIsInternal}
+                          className="border-2 border-muted-foreground/40 data-[state=checked]:bg-amber-500 data-[state=unchecked]:bg-muted"
+                        />
+                        <Label
+                          htmlFor="internal"
+                          className={cn(
+                            "text-xs",
+                            isInternal ? "text-amber-400 font-semibold" : "text-muted-foreground"
+                          )}
+                        >
+                          Nota interna
+                        </Label>
                       </>
                     )}
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => fileInputRef.current?.click()} title="Anexar arquivo">
