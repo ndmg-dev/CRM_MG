@@ -14,6 +14,7 @@ import {
   X,
   ChevronDown,
   LogOut,
+  Maximize,
 } from "lucide-react";
 import { useNavigate, useLocation } from "@suporte/lib/router-shim";
 import { useQuery } from "@tanstack/react-query";
@@ -21,6 +22,7 @@ import { supabase } from "@suporte/integrations/supabase/client";
 import { NotificationBell } from "@suporte/components/NotificationBell";
 import { endUnifiedSession } from "@/lib/unifiedAuth";
 import { useAuthStore } from "@/stores/authStore";
+import { useUIStore } from "@/stores/uiStore";
 import { cn } from "@suporte/lib/utils";
 
 const directItems = [
@@ -59,7 +61,9 @@ export function Topbar() {
 
   const [openDropdown, setOpenDropdown] = useState<"open-ticket" | "management" | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [hidden, setHidden] = useState(false);
   const navRef = useRef<HTMLElement>(null);
+  const setKioskMode = useUIStore((s) => s.setKioskMode);
 
   const { data: userRoles } = useQuery({
     queryKey: ["user-roles"],
@@ -90,6 +94,29 @@ export function Topbar() {
     await endUnifiedSession();
     window.location.href = "/login";
   };
+
+  const enterTvMode = async () => {
+    try {
+      await document.documentElement.requestFullscreen?.();
+    } catch {
+      // Navegador recusou tela cheia (ex: precisa de gesto do usuário) — a
+      // gente ainda esconde os menus, só não força o fullscreen do SO.
+    }
+    setKioskMode(true);
+    setHidden(true);
+  };
+
+  // Saiu do fullscreen (Esc, gesto do TV, etc.) -> volta os menus.
+  useEffect(() => {
+    function onFullscreenChange() {
+      if (!document.fullscreenElement) {
+        setKioskMode(false);
+        setHidden(false);
+      }
+    }
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", onFullscreenChange);
+  }, [setKioskMode]);
 
   useEffect(() => {
     setOpenDropdown(null);
@@ -127,6 +154,8 @@ export function Topbar() {
       "flex items-center gap-2 rounded-md px-3 h-11 text-sm whitespace-nowrap shrink-0 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400",
       active ? "text-amber-400 bg-neutral-800" : "text-neutral-300 hover:text-neutral-100 hover:bg-neutral-800/60"
     );
+
+  if (hidden) return null;
 
   return (
     <nav
@@ -244,6 +273,18 @@ export function Topbar() {
         <div className="lg:hidden" />
 
         <div className="flex items-center justify-end gap-1">
+          {isViewerOnly && (
+            <button
+              type="button"
+              className="flex items-center justify-center h-11 w-11 rounded-md text-neutral-300 hover:text-neutral-100 hover:bg-neutral-800/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400"
+              onClick={enterTvMode}
+              aria-label="Modo TV (tela cheia, sem menus)"
+              title="Modo TV (tela cheia, sem menus)"
+            >
+              <Maximize className="h-4 w-4" />
+              <span className="sr-only">Modo TV</span>
+            </button>
+          )}
           <NotificationBell />
           <button
             type="button"
