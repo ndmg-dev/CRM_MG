@@ -90,7 +90,7 @@ const Reports = () => {
   // Calculado somente sobre chamados ativos/não arquivados carregados acima.
   const metrics = useMemo(() => {
     const responseHours = filteredTickets
-      .filter((ticket) => ticket.created_at && ticket.responded_at)
+      .filter((ticket) => ticket.created_at && ticket.responded_at && ticket.status !== "parado")
       .map((ticket) => (new Date(ticket.responded_at!).getTime() - new Date(ticket.created_at!).getTime()) / 3_600_000);
     const resolutionHours = filteredTickets
       .filter((ticket) => ticket.created_at && ["resolved", "closed"].includes(ticket.status || ""))
@@ -119,7 +119,7 @@ const Reports = () => {
       (t) =>
         t.due_date &&
         new Date(t.due_date) < now &&
-        !["resolved", "closed", "canceled"].includes(t.status || "")
+        !["resolved", "closed", "canceled", "parado"].includes(t.status || "")
     ).length;
   }, [filteredTickets]);
 
@@ -134,7 +134,7 @@ const Reports = () => {
   const statusData = useMemo(() => {
     const counts: Record<string, number> = {};
     const labels: Record<string, string> = {
-      new: "Novo", open: "Aberto", pending: "Pendente",
+      new: "Novo", open: "Aberto", pending: "Pendente", parado: "Parado", testing: "Em Teste",
       resolved: "Resolvido", closed: "Fechado", canceled: "Cancelado",
     };
     filteredTickets.forEach((t) => {

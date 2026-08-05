@@ -16,13 +16,14 @@ import { TaskDetailDialog } from "@suporte/components/admin/TaskDetailDialog";
 import { useUserSector } from "@suporte/hooks/useUserSector";
 
 
-type ColumnId = "tasks" | "open" | "pending" | "testing" | "resolved";
+type ColumnId = "tasks" | "open" | "pending" | "parado" | "testing" | "resolved";
 
 
 const columnConfig: { id: ColumnId; label: string; color: string; borderColor: string; badgeClass: string }[] = [
   { id: "tasks", label: "Tarefas", color: "bg-purple-500/10 border-purple-500/20", borderColor: "border-l-purple-500", badgeClass: "bg-purple-500/20 text-purple-400 hover:bg-purple-500/30" },
   { id: "open", label: "A Fazer", color: "bg-blue-500/10 border-blue-500/20", borderColor: "border-l-blue-500", badgeClass: "bg-blue-500/20 text-blue-400 hover:bg-blue-500/30" },
   { id: "pending", label: "Em Andamento", color: "bg-yellow-500/10 border-yellow-500/20", borderColor: "border-l-yellow-500", badgeClass: "bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30" },
+  { id: "parado", label: "Parados", color: "bg-slate-500/10 border-slate-500/20", borderColor: "border-l-slate-500", badgeClass: "bg-slate-500/20 text-slate-400 hover:bg-slate-500/30" },
   { id: "testing", label: "Em Teste", color: "bg-orange-500/10 border-orange-500/20", borderColor: "border-l-orange-500", badgeClass: "bg-orange-500/20 text-orange-400 hover:bg-orange-500/30" },
   { id: "resolved", label: "Concluído", color: "bg-green-500/10 border-green-500/20", borderColor: "border-l-green-500", badgeClass: "bg-green-500/20 text-green-400 hover:bg-green-500/30" },
 ];
@@ -206,6 +207,7 @@ const KanbanBoard = () => {
     tasks: isTasksFilter ? pendingTasks : pendingTasks,
     open: isTasksFilter ? [] : sortByPriorityThenAge(filteredTickets.filter(t => t.status === "new" || t.status === "open")),
     pending: isTasksFilter ? [] : sortByPriorityThenAge(filteredTickets.filter(t => t.status === "pending")),
+    parado: isTasksFilter ? [] : sortByPriorityThenAge(filteredTickets.filter(t => t.status === "parado")),
     testing: isTasksFilter ? [] : sortByPriorityThenAge(filteredTickets.filter(t => t.status === "testing")),
     resolved: isTasksFilter ? completedTasks : [...sortByPriorityThenAge(filteredTickets.filter(t => t.status === "resolved" || t.status === "closed")), ...completedTasks],
   });

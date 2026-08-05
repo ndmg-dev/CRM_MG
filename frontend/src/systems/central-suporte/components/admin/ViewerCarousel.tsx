@@ -8,7 +8,7 @@ import { supabase } from "@suporte/integrations/supabase/client";
 
 const CARDS_PER_PAGE = 9;
 
-type ColumnId = "tasks" | "open" | "pending" | "testing" | "resolved";
+type ColumnId = "tasks" | "open" | "pending" | "parado" | "testing" | "resolved";
 
 interface ColumnDef {
   id: ColumnId;
@@ -34,7 +34,7 @@ type Slide =
 function buildSlides(columns: Record<ColumnId, any[]>): Slide[] {
   const slides: Slide[] = [{ type: "overview" }];
 
-  const statusOrder: ColumnId[] = ["tasks", "open", "pending", "testing", "resolved"];
+  const statusOrder: ColumnId[] = ["tasks", "open", "pending", "parado", "testing", "resolved"];
   for (const colId of statusOrder) {
     const items = columns[colId];
     const totalPages = Math.max(1, Math.ceil(items.length / CARDS_PER_PAGE));

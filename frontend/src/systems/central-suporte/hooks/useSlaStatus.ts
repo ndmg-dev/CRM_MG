@@ -22,7 +22,7 @@ export function useSlaStatus(tickets: any[] | undefined) {
     const now = Date.now();
 
     for (const ticket of tickets) {
-      if (["resolved", "closed", "canceled"].includes(ticket.status)) continue;
+      if (["resolved", "closed", "canceled", "parado"].includes(ticket.status)) continue;
       if (!ticket.due_date) continue;
 
       const dueDate = new Date(ticket.due_date).getTime();
