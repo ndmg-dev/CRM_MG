@@ -18,6 +18,7 @@ export const systemRegistry: Record<string, LazyExoticComponent<ComponentType>> 
   'central-suporte': lazy(() => import('@suporte/App')),
   'agendamento-ferias': lazy(() => import('@ferias/App')),
   'processamento-ponto': lazy(() => import('@ponto/ProcessarPontoApp')),
+  'calculo-adiantamento': lazy(() => import('@adiantamento/CalculoAdiantamentoApp')),
 }
 
 /**
