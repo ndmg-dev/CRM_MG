@@ -24,6 +24,7 @@ import { endUnifiedSession } from "@/lib/unifiedAuth";
 import { useAuthStore } from "@/stores/authStore";
 import { useUIStore } from "@/stores/uiStore";
 import { cn } from "@suporte/lib/utils";
+import { unlockAudio, playDefaultChime } from "@suporte/lib/notification-sound";
 
 const directItems = [
   { title: "Portal do Usuário", url: "/portal", icon: Home, end: true },
@@ -102,6 +103,11 @@ export function Topbar() {
       // Navegador recusou tela cheia (ex: precisa de gesto do usuário) — a
       // gente ainda esconde os menus, só não força o fullscreen do SO.
     }
+    // Esse clique é o gesto do usuário que os navegadores exigem pra permitir
+    // áudio — força o desbloqueio aqui (em vez de depender de alguém tocar
+    // na TV sozinho) e toca um som de teste pra confirmar que funcionou.
+    unlockAudio();
+    playDefaultChime();
     setKioskMode(true);
     setHidden(true);
   };
