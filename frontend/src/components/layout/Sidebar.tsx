@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useQuery } from '@tanstack/react-query'
@@ -22,67 +21,6 @@ import {
 import { ICON_MAP } from '@/lib/icons'
 import { useAuthStore } from '@/stores/authStore'
 import { useUIStore } from '@/stores/uiStore'
-
-const OPEN_CATEGORY_STORAGE_KEY = 'mg.sidebar.openCategory'
-
-interface CategoryGroupProps {
-  setor: string
-  meta: { label: string; color: string; activeClass: string }
-  items: Array<{ id: string; nome: string; icone: string }>
-  isOpen: boolean
-  onToggle: () => void
-}
-
-/** Cabeçalho de categoria colapsável dentro da sublista de "Sistemas". */
-function CategoryGroup({ setor, meta, items, isOpen, onToggle }: CategoryGroupProps) {
-  const panelId = `sidebar-categoria-${setor}`
-
-  return (
-    <div className="mb-1.5">
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-expanded={isOpen}
-        aria-controls={panelId}
-        className={`flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-label ${meta.color}`}
-      >
-        <span className="truncate">{meta.label}</span>
-        <span className="font-mono text-[9.5px] font-normal normal-case tracking-normal text-[#55555e]">
-          {items.length}
-        </span>
-        <span
-          aria-hidden="true"
-          className="ml-auto h-1.5 w-1.5 shrink-0 border-b-[1.5px] border-r-[1.5px] border-[#55555e] transition-transform duration-[220ms] ease-in-out"
-          style={{ transform: isOpen ? 'rotate(-135deg)' : 'rotate(45deg)' }}
-        />
-      </button>
-
-      {isOpen && (
-        <div id={panelId} role="group">
-          {items.map((s, idx) => {
-            const Icon = ICON_MAP[s.icone] || Building2
-            return (
-              <NavLink
-                key={s.id}
-                to={`/sistemas/${s.id}`}
-                end
-                className={({ isActive: isSubActive }) =>
-                  `sidebar-category-item flex items-center gap-2 rounded-md px-2 py-1.5 text-[12px] transition-colors ${
-                    isSubActive ? meta.activeClass : 'text-text-secondary hover:bg-surface hover:text-text-primary'
-                  }`
-                }
-                style={{ animationDelay: `${idx * 15}ms` }}
-              >
-                <Icon className="h-3.5 w-3.5 shrink-0" />
-                <span className="truncate">{s.nome}</span>
-              </NavLink>
-            )
-          })}
-        </div>
-      )}
-    </div>
-  )
-}
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -143,42 +81,6 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
     if (found.length > 0) acc[setor] = found
     return acc
   }, {} as Record<string, typeof sistemas>)
-
-  // Accordion: só uma categoria aberta por vez. A rota ativa tem prioridade
-  // sobre o valor salvo em localStorage no momento da montagem.
-  const [openCategory, setOpenCategory] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (setorOrder.length === 0) return
-
-    const activeSistema = location.pathname.startsWith('/sistemas/')
-      ? sistemas.find(s => location.pathname === `/sistemas/${s.id}` || location.pathname.startsWith(`/sistemas/${s.id}/`))
-      : undefined
-
-    if (activeSistema) {
-      setOpenCategory(activeSistema.setor ?? 'GERAL')
-      return
-    }
-
-    const saved = typeof window !== 'undefined' ? window.localStorage.getItem(OPEN_CATEGORY_STORAGE_KEY) : null
-    if (saved && (setorOrder as string[]).includes(saved)) {
-      setOpenCategory(saved)
-    } else {
-      setOpenCategory(setorOrder[0])
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [setorOrder.join(','), sistemas.length])
-
-  const handleToggleCategory = (setor: string) => {
-    setOpenCategory(prev => {
-      const next = prev === setor ? null : setor
-      if (typeof window !== 'undefined') {
-        if (next) window.localStorage.setItem(OPEN_CATEGORY_STORAGE_KEY, next)
-        else window.localStorage.removeItem(OPEN_CATEGORY_STORAGE_KEY)
-      }
-      return next
-    })
-  }
 
   // `collapsed` é o modo ícone-apenas do desktop. No drawer mobile a lista
   // sempre aparece expandida, senão o menu ficaria ilegível.
@@ -251,14 +153,29 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
                     {Object.entries(sistemasBySetor).map(([setor, items]) => {
                       const meta = SETOR_LABELS[setor] || { label: nomeSetor[setor] || setor, color: 'text-text-muted', activeClass: 'bg-gold/10 text-gold font-semibold' }
                       return (
-                        <CategoryGroup
-                          key={setor}
-                          setor={setor}
-                          meta={meta}
-                          items={items}
-                          isOpen={openCategory === setor}
-                          onToggle={() => handleToggleCategory(setor)}
-                        />
+                        <div key={setor} className="mb-1.5">
+                          <div className={`px-2 py-1 text-[10px] font-bold uppercase tracking-label ${meta.color}`}>
+                            {meta.label}
+                          </div>
+                          {items.map(s => {
+                            const Icon = ICON_MAP[s.icone] || Building2
+                            return (
+                              <NavLink
+                                key={s.id}
+                                to={`/sistemas/${s.id}`}
+                                end
+                                className={({ isActive: isSubActive }) =>
+                                  `flex items-center gap-2 rounded-md px-2 py-1.5 text-[12px] transition-colors ${
+                                    isSubActive ? meta.activeClass : 'text-text-secondary hover:bg-surface hover:text-text-primary'
+                                  }`
+                                }
+                              >
+                                <Icon className="h-3.5 w-3.5 shrink-0" />
+                                <span className="truncate">{s.nome}</span>
+                              </NavLink>
+                            )
+                          })}
+                        </div>
                       )
                     })}
                   </motion.div>

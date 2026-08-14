@@ -13,7 +13,6 @@
       "@suporte/*": ["./src/systems/central-suporte/*"],
       "@ferias/*": ["./src/systems/agendamento-ferias/*"],
       "@ponto/*": ["./src/systems/processar-ponto/*"],
-      "@obrigacoes/*": ["./src/systems/obrigacoes/*"],
       "@adiantamento/*": ["./src/systems/calculo-adiantamento/*"]
     },
 
