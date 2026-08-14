@@ -3,6 +3,7 @@ import { Topbar } from "@suporte/components/Topbar";
 import { Outlet, useNavigate, useLocation } from "@suporte/lib/router-shim";
 import { useUserSector } from "@suporte/hooks/useUserSector";
 import { supabase } from "@suporte/integrations/supabase/client";
+import { playNotificationSound } from "@suporte/lib/notification-sound";
 
 const Layout = () => {
   const { isViewer, roles } = useUserSector();
@@ -22,6 +23,10 @@ const Layout = () => {
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "tickets" },
         () => {
+          // Viewer não é "alvo" de linhas em `notifications` (isso é por
+          // responsável), então o som não pode depender do NotificationBell
+          // — toca direto aqui pra qualquer chamado novo, sempre.
+          playNotificationSound("ticket_opened");
           if (location.pathname !== "/admin/kanban") {
             navigate("/admin/kanban");
           }
