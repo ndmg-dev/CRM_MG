@@ -34,8 +34,10 @@ function getAudioContext(): AudioContext {
   return audioContext;
 }
 
-// Unlock audio context on first user interaction (required by browsers)
-function unlockAudio() {
+// Unlock audio context on first user interaction (required by browsers).
+// Exportada pra poder ser forçada a partir de um gesto explícito (ex: botão
+// "Modo TV"), sem depender do viewer encostar na tela sozinho.
+export function unlockAudio() {
   if (audioUnlocked) return;
   const ctx = getAudioContext();
   if (ctx.state === "suspended") {
@@ -76,7 +78,7 @@ function playTone(ctx: AudioContext, freq: number, startTime: number, duration: 
   osc.stop(startTime + duration);
 }
 
-function playDefaultChime() {
+export function playDefaultChime() {
   const ctx = getAudioContext();
   if (ctx.state === "suspended") ctx.resume();
 

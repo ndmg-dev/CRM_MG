@@ -8,7 +8,7 @@ import { supabase } from "@suporte/integrations/supabase/client";
 
 const CARDS_PER_PAGE = 9;
 
-type ColumnId = "tasks" | "open" | "pending" | "testing" | "resolved";
+type ColumnId = "tasks" | "open" | "pending" | "parado" | "testing" | "resolved";
 
 interface ColumnDef {
   id: ColumnId;
@@ -34,7 +34,7 @@ type Slide =
 function buildSlides(columns: Record<ColumnId, any[]>): Slide[] {
   const slides: Slide[] = [{ type: "overview" }];
 
-  const statusOrder: ColumnId[] = ["tasks", "open", "pending", "testing", "resolved"];
+  const statusOrder: ColumnId[] = ["tasks", "open", "pending", "parado", "testing", "resolved"];
   for (const colId of statusOrder) {
     const items = columns[colId];
     const totalPages = Math.max(1, Math.ceil(items.length / CARDS_PER_PAGE));
@@ -207,18 +207,18 @@ function OverviewSlide({
   onTaskClick: (id: string) => void;
 }) {
   return (
-    <div className="flex gap-4 h-full">
+    <div className="flex gap-3 h-full overflow-x-auto pb-1">
       {columnConfig.map((col) => {
         const items = columns[col.id];
         return (
-          <div key={col.id} className="flex-1 min-w-0 flex flex-col gap-3">
-            <div className={`flex items-center justify-between p-2 rounded-lg border ${col.color}`}>
-              <span className="font-semibold">{col.label}</span>
+          <div key={col.id} className="flex-1 min-w-[200px] flex flex-col gap-2">
+            <div className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg border ${col.color}`}>
+              <span className="font-semibold text-sm truncate">{col.label}</span>
               <Badge className={col.badgeClass} variant={col.badgeClass ? undefined : "secondary"}>
                 {items.length}
               </Badge>
             </div>
-            <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+            <div className="flex-1 overflow-y-auto space-y-2 pr-1">
               {items.map((item: any) =>
                 item._isTask ? (
                   <KanbanTaskCard

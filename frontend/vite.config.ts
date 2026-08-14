@@ -16,6 +16,7 @@ export default defineConfig(({ mode }) => {
         '@ferias': path.resolve(__dirname, './src/systems/agendamento-ferias'),
         '@ponto': path.resolve(__dirname, './src/systems/processar-ponto'),
         '@obrigacoes': path.resolve(__dirname, './src/systems/obrigacoes'),
+        '@adiantamento': path.resolve(__dirname, './src/systems/calculo-adiantamento'),
       },
     },
     server: {

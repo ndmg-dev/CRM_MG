@@ -933,6 +933,7 @@ export type Database = {
         | "new"
         | "open"
         | "pending"
+        | "parado"
         | "testing"
         | "resolved"
         | "closed"
@@ -1091,6 +1092,7 @@ export const Constants = {
         "new",
         "open",
         "pending",
+        "parado",
         "testing",
         "resolved",
         "closed",

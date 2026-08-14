@@ -22,6 +22,7 @@ export const systemRegistry: Record<string, LazyExoticComponent<ComponentType>> 
   // com um destes antes de abrir. Os dois cobrem as duas grafias prováveis.
   'obrigacoes-acessorias': lazy(() => import('@obrigacoes/App')),
   'obrigacoes': lazy(() => import('@obrigacoes/App')),
+  'calculo-adiantamento': lazy(() => import('@adiantamento/CalculoAdiantamentoApp')),
 }
 
 /**
