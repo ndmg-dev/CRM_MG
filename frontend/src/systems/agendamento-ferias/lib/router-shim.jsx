@@ -4,7 +4,6 @@ const RouterContext = createContext({ pathname: "/", navigate: () => {} });
 
 export function FeriasRouterProvider({ children, initial = "/" }) {
   const [pathname, setPathname] = useState(initial);
-
   const navigate = (to) => {
     setPathname(to);
     window.scrollTo({ top: 0 });

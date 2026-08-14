@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+# Contém SUPABASE_SERVICE_ROLE_KEY, que bypassa RLS.
+.env
