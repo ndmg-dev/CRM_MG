@@ -20,6 +20,10 @@ const KanbanBoard = lazy(() => import('@/components/tasks/KanbanBoard'))
 const AdminPage = lazy(() => import('@/components/admin/AdminPage'))
 const AuditPage = lazy(() => import('@/components/audit/AuditPage'))
 const PortalCliente = lazy(() => import('@/pages/PortalCliente'))
+// Portal de Obrigações Acessórias: perímetro do CLIENTE, com sessão própria
+// (Supabase do módulo, magic link). Fica FORA do AuthGuard de propósito — o
+// cliente não tem conta Google do escritório.
+const PortalObrigacoes = lazy(() => import('@obrigacoes/portal/PortalApp'))
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -49,6 +53,15 @@ export default function App() {
                   <PortalCliente />
                 </Suspense>
               } 
+            />
+
+            <Route
+              path="/obrigacoes/portal/*"
+              element={
+                <Suspense fallback={<LoadingSpinner label="Carregando portal..." />}>
+                  <PortalObrigacoes />
+                </Suspense>
+              }
             />
 
             <Route element={<AuthGuard />}>

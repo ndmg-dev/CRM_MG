@@ -18,6 +18,10 @@ export const systemRegistry: Record<string, LazyExoticComponent<ComponentType>> 
   'central-suporte': lazy(() => import('@suporte/App')),
   'agendamento-ferias': lazy(() => import('@ferias/App')),
   'processamento-ponto': lazy(() => import('@ponto/ProcessarPontoApp')),
+  // Slug ainda não existe em `sistemas_seed.sql`: cadastrar o sistema no CRM
+  // com um destes antes de abrir. Os dois cobrem as duas grafias prováveis.
+  'obrigacoes-acessorias': lazy(() => import('@obrigacoes/App')),
+  'obrigacoes': lazy(() => import('@obrigacoes/App')),
 }
 
 /**

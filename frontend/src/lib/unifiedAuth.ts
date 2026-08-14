@@ -8,6 +8,10 @@ import {
   isFeriasSupabaseConfigured,
   supabase as feriasSupabase,
 } from '@ferias/lib/supabase'
+import {
+  isObrigacoesSupabaseConfigured,
+  supabase as obrigacoesSupabase,
+} from '@obrigacoes/integrations/supabase/client'
 import { useAuthStore } from '@/stores/authStore'
 
 /**
@@ -25,28 +29,30 @@ export async function establishUnifiedSession(googleIdToken: string): Promise<Au
   // identidade na Central. O token retornado fica apenas em memória até o fim.
   const crmSession = await api.auth.loginWithGoogle(googleIdToken)
 
-  if (!isSupportSupabaseConfigured) {
-    return crmSession
-  }
+  // Antes este bloco era um early return (`if (!isSupportSupabaseConfigured)
+  // return crmSession`), o que fazia os sistemas seguintes serem pulados
+  // inteiros quando a Central não estava configurada — cada satélite deve ser
+  // independente dos outros, não só do CRM.
+  if (isSupportSupabaseConfigured) {
+    try {
+      const { error: supabaseError } = await supabase.auth.signInWithIdToken({
+        provider: 'google',
+        token: googleIdToken,
+      })
+      if (supabaseError) {
+        throw new Error(supabaseError.message)
+      }
 
-  try {
-    const { error: supabaseError } = await supabase.auth.signInWithIdToken({
-      provider: 'google',
-      token: googleIdToken,
-    })
-    if (supabaseError) {
-      throw new Error(supabaseError.message)
+      const { error: provisioningError } = await supabase.rpc('ensure_support_user_profile')
+      if (provisioningError) {
+        // Sessão criada mas sem perfil provisionado: desfaz só a parte da Central.
+        await supabase.auth.signOut({ scope: 'local' }).catch(() => {})
+        throw new Error(provisioningError.message)
+      }
+    } catch (error) {
+      // Fail-soft: registra para diagnóstico e segue com o CRM logado.
+      console.warn('[unifiedAuth] Central de Suporte não autenticada (CRM segue normal):', error)
     }
-
-    const { error: provisioningError } = await supabase.rpc('ensure_support_user_profile')
-    if (provisioningError) {
-      // Sessão criada mas sem perfil provisionado: desfaz só a parte da Central.
-      await supabase.auth.signOut({ scope: 'local' }).catch(() => {})
-      throw new Error(provisioningError.message)
-    }
-  } catch (error) {
-    // Fail-soft: registra para diagnóstico e segue com o CRM logado.
-    console.warn('[unifiedAuth] Central de Suporte não autenticada (CRM segue normal):', error)
   }
 
   if (isFeriasSupabaseConfigured) {
@@ -64,6 +70,24 @@ export async function establishUnifiedSession(googleIdToken: string): Promise<Au
     }
   }
 
+  // Obrigações Acessórias. Só o perímetro do ESCRITÓRIO (/app) entra por aqui:
+  // o cliente do portal não tem conta Google do escritório e autentica direto
+  // no Supabase do módulo, por magic link. São dois perímetros, não um filtro.
+  if (isObrigacoesSupabaseConfigured) {
+    try {
+      const { error: obrigacoesError } = await obrigacoesSupabase.auth.signInWithIdToken({
+        provider: 'google',
+        token: googleIdToken,
+      })
+      if (obrigacoesError) {
+        throw new Error(obrigacoesError.message)
+      }
+    } catch (error) {
+      // Fail-soft: falha em Obrigações nunca bloqueia o login do CRM.
+      console.warn('[unifiedAuth] Obrigações Acessórias não autenticado (CRM segue normal):', error)
+    }
+  }
+
   return crmSession
 }
 
@@ -75,6 +99,9 @@ export async function endUnifiedSession(): Promise<void> {
         : Promise.resolve(),
       isFeriasSupabaseConfigured
         ? feriasSupabase.auth.signOut({ scope: 'local' })
+        : Promise.resolve(),
+      isObrigacoesSupabaseConfigured
+        ? obrigacoesSupabase.auth.signOut({ scope: 'local' })
         : Promise.resolve(),
     ])
   } finally {
