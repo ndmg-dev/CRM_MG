@@ -12,13 +12,12 @@ import {
   Shield,
   Eye,
   LogOut,
-  Building2,
   Key,
   Moon,
   Search,
   X,
 } from 'lucide-react'
-import { ICON_MAP } from '@/lib/icons'
+import { getSystemIcon } from '@/lib/icons'
 import { getSetorColors, type SetorColors } from '@/lib/constants'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -59,7 +58,7 @@ function CategoryGroup({ setor, meta, items, isOpen, onToggle }: CategoryGroupPr
       {isOpen && (
         <div id={panelId} role="group">
           {items.map((s, idx) => {
-            const Icon = ICON_MAP[s.icone] || Building2
+            const Icon = getSystemIcon(s.icone, s.id)
             return (
               <NavLink
                 key={s.id}
