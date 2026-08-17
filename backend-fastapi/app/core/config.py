@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     
     # JWT & Auth
     JWT_SECRET: str
-    JWT_EXPIRATION_SECONDS: int = 86400  # 24 hours
+    JWT_EXPIRATION_SECONDS: int = 604800  # 7 dias
     GOOGLE_CLIENT_ID: str = ""
     # Restrição de acesso ao login Google. O default preserva o comportamento
     # que antes era hardcoded no auth_service; e-mails avulsos de fora do
