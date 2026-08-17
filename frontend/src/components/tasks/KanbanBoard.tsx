@@ -20,6 +20,8 @@ import TaskCard from './TaskCard'
 import TaskModal from './TaskModal'
 import TaskStats from './TaskStats'
 import TaskDetailDrawer from './TaskDetailDrawer'
+import TaskListView from './TaskListView'
+import TaskCalendarView from './TaskCalendarView'
 import TaskFilterBar from './TaskFilterBar'
 import toast from 'react-hot-toast'
 import type { Tarefa, StatusTarefa, TaskFilters } from '@/types'
@@ -29,6 +31,38 @@ import {
   STATUS_EMPTY_STATE,
   KANBAN_COLUMNS,
 } from '@/lib/constants'
+
+type BoardView = 'quadro' | 'lista' | 'prazos'
+
+const VIEWS: Array<{ id: BoardView; label: string }> = [
+  { id: 'quadro', label: 'Quadro' },
+  { id: 'lista', label: 'Lista' },
+  { id: 'prazos', label: 'Prazos' },
+]
+
+/** Alternador de visão. Mesmo conjunto de tarefas, três leituras. */
+function ViewSwitch({ value, onChange }: { value: BoardView; onChange: (v: BoardView) => void }) {
+  return (
+    <div role="tablist" aria-label="Visão do quadro" className="flex h-8 items-center gap-0.5 rounded-lg border border-border bg-surface-raised p-0.5">
+      {VIEWS.map((v) => (
+        <button
+          key={v.id}
+          type="button"
+          role="tab"
+          aria-selected={value === v.id}
+          onClick={() => onChange(v.id)}
+          className={`h-7 rounded-md px-2.5 text-[12px] font-medium transition-colors ${
+            value === v.id
+              ? 'bg-gold text-background'
+              : 'text-text-secondary hover:text-text-primary'
+          }`}
+        >
+          {v.label}
+        </button>
+      ))}
+    </div>
+  )
+}
 
 export default function KanbanBoard() {
   const setCurrentPage = useUIStore((s) => s.setCurrentPage)
@@ -47,6 +81,7 @@ export default function KanbanBoard() {
   const [showFilters, setShowFilters] = useState(false)
   const [filters, setFilters] = useState<TaskFilters>({})
   const [quick, setQuick] = useState<QuickFilters>({})
+  const [view, setView] = useState<BoardView>('quadro')
 
   const { data: tarefas = [], isLoading } = useQuery({
     queryKey: ['tarefas', filters],
@@ -120,7 +155,13 @@ export default function KanbanBoard() {
       case 'AGUARDANDO_CLIENTE':
         return isManager ? () => setCreateStatus(status) : undefined
       case 'EM_PROCESSAMENTO':
-        return () => setFilters((f) => ({ ...f, status: 'PENDENTE' }))
+        // Filtrar o quadro por PENDENTE esvaziaria as outras colunas; a lista
+        // é a leitura certa para "ver pendentes".
+        return () => {
+          setFilters((f) => ({ ...f, status: 'PENDENTE' }))
+          setShowFilters(true)
+          setView('lista')
+        }
       case 'CONCLUIDO':
         return isAdmin ? () => navigate('/auditoria') : undefined
     }
@@ -134,27 +175,28 @@ export default function KanbanBoard() {
         title="Quadro de Tarefas"
         description="Gerencie as obrigações e demandas internas"
         actions={
-          isManager && (
-            <div className="flex gap-2">
-              <Button
-                variant={showFilters ? 'secondary' : 'outline'}
-                size="sm"
-                onClick={() => setShowFilters(!showFilters)}
-              >
-                <Filter className="mr-1 h-4 w-4" />
-                Filtros
-                {hasActiveFilters && (
-                  <span className="ml-1 flex h-5 w-5 items-center justify-center rounded-full bg-gold text-xs text-black">
-                    !
-                  </span>
-                )}
-              </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <ViewSwitch value={view} onChange={setView} />
+            <Button
+              variant={showFilters ? 'secondary' : 'outline'}
+              size="sm"
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              <Filter className="mr-1 h-4 w-4" />
+              Filtros
+              {hasActiveFilters && (
+                <span className="ml-1 flex h-4 w-4 items-center justify-center rounded-full bg-gold text-[10px] font-bold text-background">
+                  !
+                </span>
+              )}
+            </Button>
+            {isManager && (
               <Button size="sm" onClick={() => setCreateStatus('PENDENTE')}>
                 <Plus className="mr-1 h-4 w-4" />
                 Nova Tarefa
               </Button>
-            </div>
-          )
+            )}
+          </div>
         }
       />
 
@@ -176,7 +218,24 @@ export default function KanbanBoard() {
         />
       )}
 
+      {view === 'lista' && (
+        <TaskListView
+          tarefas={visibleTarefas}
+          nomeSetor={nomeSetor}
+          onSelect={setSelectedTask}
+        />
+      )}
+
+      {view === 'prazos' && (
+        <TaskCalendarView
+          tarefas={visibleTarefas}
+          nomeSetor={nomeSetor}
+          onSelect={setSelectedTask}
+        />
+      )}
+
       {/* Kanban columns */}
+      {view === 'quadro' && (
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
           {KANBAN_COLUMNS.map((status) => {
@@ -264,6 +323,7 @@ export default function KanbanBoard() {
           })}
         </div>
       </DragDropContext>
+      )}
 
       {/* Task detail drawer */}
       {selectedTask && (
