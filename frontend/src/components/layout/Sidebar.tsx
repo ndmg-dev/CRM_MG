@@ -19,13 +19,14 @@ import {
   X,
 } from 'lucide-react'
 import { ICON_MAP } from '@/lib/icons'
+import { getSetorColors, type SetorColors } from '@/lib/constants'
 import { useAuthStore } from '@/stores/authStore'
 
 const OPEN_CATEGORY_STORAGE_KEY = 'mg.sidebar.openCategory'
 
 interface CategoryGroupProps {
   setor: string
-  meta: { label: string; color: string; activeClass: string }
+  meta: SetorColors
   items: Array<{ id: string; nome: string; icone: string }>
   isOpen: boolean
   onToggle: () => void
@@ -42,7 +43,7 @@ function CategoryGroup({ setor, meta, items, isOpen, onToggle }: CategoryGroupPr
         onClick={onToggle}
         aria-expanded={isOpen}
         aria-controls={panelId}
-        className={`flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-label ${meta.color}`}
+        className={`flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-label ${meta.text}`}
       >
         <span className="truncate">{meta.label}</span>
         <span className="font-mono text-[9.5px] font-normal normal-case tracking-normal text-[#55555e]">
@@ -119,15 +120,8 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
 
   // O backend já entrega apenas os sistemas permitidos pela política do setor
   // do usuário (services/visibility_service.py). Aqui só agrupamos.
-  const SETOR_LABELS: Record<string, { label: string; color: string; activeClass: string }> = {
-    DP: { label: 'Dep. Pessoal', color: 'text-blue-400', activeClass: 'bg-blue-500/10 text-blue-400 font-semibold' },
-    CONTABIL: { label: 'Contábil', color: 'text-emerald-400', activeClass: 'bg-emerald-500/10 text-emerald-400 font-semibold' },
-    FISCAL: { label: 'Fiscal', color: 'text-orange-400', activeClass: 'bg-orange-500/10 text-orange-400 font-semibold' },
-    SOCIETARIO: { label: 'Societário', color: 'text-purple-400', activeClass: 'bg-purple-500/10 text-purple-400 font-semibold' },
-    TI: { label: 'Tecnologia (TI)', color: 'text-cyan-400', activeClass: 'bg-cyan-500/10 text-cyan-400 font-semibold' },
-    GERAL: { label: 'Geral', color: 'text-text-muted', activeClass: 'bg-gold/10 text-gold font-semibold' },
-    RESTRITO: { label: 'Restrito', color: 'text-red-500', activeClass: 'bg-red-500/10 text-red-500 font-semibold' },
-  }
+  // As cores por setor vivem em `constants.ts`, compartilhadas com o quadro
+  // de tarefas.
 
   // Os grupos saem dos sistemas recebidos, não de uma lista fixa — assim um
   // setor criado pelo admin também ganha sua seção.
@@ -303,7 +297,7 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
           {isSistemasActive && (
             <div className="max-h-[50vh] overflow-y-auto overflow-x-hidden border-l-[3px] border-transparent bg-background/40 py-1 pl-4 pr-2">
               {Object.entries(sistemasBySetor).map(([setor, items]) => {
-                const meta = SETOR_LABELS[setor] || { label: nomeSetor[setor] || setor, color: 'text-text-muted', activeClass: 'bg-gold/10 text-gold font-semibold' }
+                const meta = getSetorColors(setor, nomeSetor[setor])
                 return (
                   <CategoryGroup
                     key={setor}
@@ -376,7 +370,7 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
 
               <div className="flex flex-col gap-1 overflow-y-auto overflow-x-hidden">
                 {Object.entries(flyoutSistemasBySetor).map(([setor, items]) => {
-                  const meta = SETOR_LABELS[setor] || { label: nomeSetor[setor] || setor, color: 'text-text-muted', activeClass: 'bg-gold/10 text-gold font-semibold' }
+                  const meta = getSetorColors(setor, nomeSetor[setor])
                   return (
                     <CategoryGroup
                       key={setor}
