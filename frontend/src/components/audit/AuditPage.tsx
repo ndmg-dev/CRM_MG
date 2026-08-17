@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useQuery } from '@tanstack/react-query'
@@ -7,7 +7,6 @@ import {
   LogIn, LogOut, Globe, Smartphone, Shield, Trophy
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
-import { useUIStore } from '@/stores/uiStore'
 import { api } from '@/lib/api'
 import { formatDateTime } from '@/lib/utils'
 import PageHeader from '@/components/common/PageHeader'
@@ -501,12 +500,7 @@ function ActivityLogsTab() {
 // ─── Main Audit Page ─────────────────────────────────────────────────────────
 export default function AuditPage() {
   const user = useAuthStore((s) => s.user)
-  const setCurrentPage = useUIStore((s) => s.setCurrentPage)
   const [activeTab, setActiveTab] = useState<AuditTab>('overview')
-
-  useEffect(() => {
-    setCurrentPage('Auditoria')
-  }, [setCurrentPage])
 
   // All hooks must run before any early return (Rules of Hooks).
   if (user?.perfil !== 'ADMIN') {

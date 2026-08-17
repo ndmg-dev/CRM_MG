@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Save } from 'lucide-react'
-import { useUIStore } from '@/stores/uiStore'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { Button } from '@/components/ui/button'
@@ -64,9 +63,7 @@ export default function ClientForm() {
   const isEditing = !!id
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const setCurrentPage = useUIStore((s) => s.setCurrentPage)
 
-  useEffect(() => { setCurrentPage(isEditing ? 'Editar Cliente' : 'Novo Cliente') }, [isEditing, setCurrentPage])
 
   const { data: existing, isLoading } = useQuery({
     queryKey: ['cliente', id],

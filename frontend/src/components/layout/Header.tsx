@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Bell, Search, CheckCircle2, Menu } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useUIStore } from '@/stores/uiStore'
 import { useAuthStore } from '@/stores/authStore'
 import { api } from '@/lib/api'
 import { getInitials, formatDateTime } from '@/lib/utils'
@@ -16,7 +15,6 @@ interface HeaderProps {
 }
 
 export default function Header({ onMenuClick }: HeaderProps) {
-  const currentPage = useUIStore((s) => s.currentPage)
   const user = useAuthStore((s) => s.user)
   const queryClient = useQueryClient()
   const navigate = useNavigate()
@@ -66,7 +64,9 @@ export default function Header({ onMenuClick }: HeaderProps) {
 
   return (
     <header className="sticky top-0 z-20 flex h-[52px] items-center justify-between border-b border-border bg-background/85 px-4 backdrop-blur-md lg:px-5">
-      {/* Menu (drawer) + título da página */}
+      {/* Menu (drawer). O título da página não vive aqui: toda página já tem o
+          seu — PageHeader, ou um `h1` próprio em Dashboard e ClientDetail —
+          e repeti-lo na barra deixava o mesmo texto duas vezes na tela. */}
       <div className="flex min-w-0 items-center gap-2">
         <button
           onClick={onMenuClick}
@@ -75,7 +75,6 @@ export default function Header({ onMenuClick }: HeaderProps) {
         >
           <Menu className="h-[18px] w-[18px]" />
         </button>
-        <h2 className="truncate text-[15px] font-semibold text-text-primary">{currentPage}</h2>
       </div>
 
       {/* Right side */}

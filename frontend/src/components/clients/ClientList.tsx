@@ -1,8 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Plus, Search, Building2, Link2 } from 'lucide-react'
-import { useUIStore } from '@/stores/uiStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
@@ -15,8 +14,6 @@ import { REGIME_LABELS } from '@/lib/constants'
 import toast from 'react-hot-toast'
 
 export default function ClientList() {
-  const setCurrentPage = useUIStore((s) => s.setCurrentPage)
-  useEffect(() => { setCurrentPage('Clientes') }, [setCurrentPage])
 
   const navigate = useNavigate()
   const [search, setSearch] = useState('')

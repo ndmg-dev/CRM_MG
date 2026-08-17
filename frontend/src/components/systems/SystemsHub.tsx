@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Search, LayoutGrid, List } from 'lucide-react'
-import { useUIStore } from '@/stores/uiStore'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import type { Sistema } from '@/types'
@@ -59,8 +58,6 @@ function SystemCard({ sistema }: { sistema: Sistema }) {
 }
 
 export default function SystemsHub() {
-  const setCurrentPage = useUIStore((s) => s.setCurrentPage)
-  useEffect(() => { setCurrentPage('Sistemas') }, [setCurrentPage])
 
   const [activeTab, setActiveTab] = useState<string>('ALL')
   const [search, setSearch] = useState('')
