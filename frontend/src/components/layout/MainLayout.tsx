@@ -6,13 +6,11 @@ import { useUIStore } from '@/stores/uiStore'
 import { useHeartbeat } from '@/hooks/useHeartbeat'
 
 export default function MainLayout() {
-  const sidebarOpen = useUIStore((s) => s.sidebarOpen)
   const fullBleedSystem = useUIStore((s) => s.fullBleedSystem)
   const kioskMode = useUIStore((s) => s.kioskMode)
   useHeartbeat()
 
-  // Drawer da navegação em telas < lg. Estado puramente visual, local ao
-  // shell — não toca no `sidebarOpen` (que segue sendo o colapso no desktop).
+  // Drawer da navegação em telas < lg. Estado puramente visual, local ao shell.
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const location = useLocation()
 
@@ -44,7 +42,7 @@ export default function MainLayout() {
 
       <main
         className={`min-h-screen transition-[margin] duration-200 ease-in-out ${
-          kioskMode ? '' : sidebarOpen ? 'lg:ml-56' : 'lg:ml-[72px]'
+          kioskMode ? '' : 'lg:ml-16'
         }`}
       >
         {!fullBleedSystem && !kioskMode && <Header onMenuClick={() => setMobileNavOpen(true)} />}
