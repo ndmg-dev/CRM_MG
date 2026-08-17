@@ -13,6 +13,7 @@ import PageHeader from '@/components/common/PageHeader'
 import EmptyState from '@/components/common/EmptyState'
 import TaskCard from './TaskCard'
 import TaskModal from './TaskModal'
+import TaskStats from './TaskStats'
 import toast from 'react-hot-toast'
 import type { Tarefa, StatusTarefa, TaskFilters } from '@/types'
 import {
@@ -138,6 +139,8 @@ export default function KanbanBoard() {
           )
         }
       />
+
+      <TaskStats tarefas={tarefas} user={user} nomeSetor={nomeSetor} />
 
       {/* Filters bar */}
       {showFilters && (
