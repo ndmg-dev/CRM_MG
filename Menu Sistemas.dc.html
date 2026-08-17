@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  *{ box-sizing:border-box; }
+  body{ margin:0; }
+  ::-webkit-scrollbar{ width:8px; }
+  ::-webkit-scrollbar-thumb{ background:#2c2c31; border-radius:8px; }
+  ::-webkit-scrollbar-track{ background:transparent; }
+  .lucide{ display:block; }
+  a{ color:inherit; text-decoration:none; }
+  @keyframes popIn{ from{ opacity:0; transform:translateY(-6px) scale(.985);} to{ opacity:1; transform:none;} }
+  @keyframes flyIn{ from{ opacity:0; transform:translateX(-8px);} to{ opacity:1; transform:none;} }
+</style>
+</helmet>
+<div style="position:relative; width:1200px; height:760px; background:#0a0a0b; font-family:'Plus Jakarta Sans',system-ui,sans-serif; color:#e7e7ea; overflow:hidden; border-radius:14px;">
+
+  <!-- Top bar -->
+  <div style="position:absolute; top:0; left:0; right:0; height:60px; display:flex; align-items:center; gap:14px; padding-left:16px; border-bottom:1px solid #1a1a1e; background:#0f0f11; z-index:5;">
+    <div style="width:34px; height:34px; border-radius:9px; background:linear-gradient(135deg,#f5b301,#c98a00); display:flex; align-items:center; justify-content:center;">
+      <i data-lucide="layers" width="19" height="19" stroke-width="2.4" style="color:#1a1400;"></i>
+    </div>
+    <div style="font-size:19px; font-weight:700; letter-spacing:-.01em;">Dashboard</div>
+  </div>
+
+  <!-- Sidebar -->
+  <div style="position:absolute; top:60px; left:0; bottom:0; width:64px; background:#0f0f11; border-right:1px solid #1a1a1e; display:flex; flex-direction:column; align-items:center; gap:8px; padding-top:16px; z-index:6;">
+    <div style="width:40px; height:40px; border-radius:11px; background:rgba(245,179,1,.16); border:1px solid rgba(245,179,1,.35); display:flex; align-items:center; justify-content:center;">
+      <i data-lucide="layout-dashboard" width="19" height="19" stroke-width="2" style="color:#f5b301;"></i>
+    </div>
+    <button onClick="{{ toggle }}" style="{{ launcherStyle }}">
+      <i data-lucide="layout-grid" width="19" height="19" stroke-width="2"></i>
+    </button>
+    <div style="width:40px; height:40px; border-radius:11px; display:flex; align-items:center; justify-content:center; color:#6a6a72;">
+      <i data-lucide="users" width="19" height="19" stroke-width="2"></i>
+    </div>
+    <div style="width:40px; height:40px; border-radius:11px; display:flex; align-items:center; justify-content:center; color:#6a6a72;">
+      <i data-lucide="clipboard-list" width="19" height="19" stroke-width="2"></i>
+    </div>
+    <div style="width:40px; height:40px; border-radius:11px; display:flex; align-items:center; justify-content:center; color:#6a6a72;">
+      <i data-lucide="shield" width="19" height="19" stroke-width="2"></i>
+    </div>
+    <div style="width:40px; height:40px; border-radius:11px; display:flex; align-items:center; justify-content:center; color:#6a6a72;">
+      <i data-lucide="eye" width="19" height="19" stroke-width="2"></i>
+    </div>
+  </div>
+
+  <!-- Dim dashboard content behind -->
+  <div style="position:absolute; top:60px; left:64px; right:0; bottom:0; padding:26px 30px; opacity:.5;">
+    <div style="display:flex; gap:20px;">
+      <div style="flex:1; height:150px; background:#121214; border:1px solid #1e1e22; border-radius:14px; padding:20px;">
+        <div style="font-size:12px; letter-spacing:.08em; color:#7a7a82; font-weight:600;">USUÁRIOS</div>
+        <div style="font-size:44px; font-weight:800; margin-top:6px;">6041</div>
+        <div style="font-size:13px; color:#7a7a82; margin-top:4px;">Colaboradores ativos</div>
+      </div>
+      <div style="flex:1; height:150px; background:#121214; border:1px solid #1e1e22; border-radius:14px; padding:20px;">
+        <div style="font-size:12px; letter-spacing:.08em; color:#7a7a82; font-weight:600;">SISTEMAS</div>
+        <div style="font-size:44px; font-weight:800; margin-top:6px;">26</div>
+        <div style="font-size:13px; color:#7a7a82; margin-top:4px;">Disponíveis</div>
+      </div>
+      <div style="flex:1; height:150px; background:#121214; border:1px solid #1e1e22; border-radius:14px; padding:20px;">
+        <div style="font-size:12px; letter-spacing:.08em; color:#7a7a82; font-weight:600;">ACESSOS HOJE</div>
+        <div style="font-size:44px; font-weight:800; margin-top:6px;">1.284</div>
+        <div style="font-size:13px; color:#7a7a82; margin-top:4px;">Nas últimas 24h</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scrim -->
+  <sc-if value="{{ open }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ close }}" style="position:absolute; inset:0; z-index:8; background:rgba(0,0,0,.35);"></div>
+  </sc-if>
+
+  <!-- Systems panel -->
+  <sc-if value="{{ open }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute; top:70px; left:72px; width:308px; z-index:9; background:#141416; border:1px solid #2a2a30; border-radius:14px; box-shadow:0 24px 60px rgba(0,0,0,.55); animation:popIn .15s ease; display:flex; flex-direction:column; max-height:640px;">
+
+      <!-- Search -->
+      <div style="padding:14px 14px 10px;">
+        <div style="display:flex; align-items:center; gap:9px; background:#0e0e10; border:1px solid #2a2a30; border-radius:10px; padding:10px 12px;">
+          <i data-lucide="search" width="16" height="16" stroke-width="2" style="color:#6a6a72;"></i>
+          <input value="{{ query }}" onChange="{{ onQuery }}" placeholder="Buscar sistema..." style="flex:1; background:transparent; border:none; outline:none; color:#e7e7ea; font-family:inherit; font-size:14px;" />
+        </div>
+      </div>
+
+      <!-- Category list -->
+      <div style="overflow:visible; padding:2px 8px 8px;">
+        <sc-for list="{{ categories }}" as="cat" hint-placeholder-count="7">
+          <div style="position:relative;" onMouseEnter="{{ cat.enter }}" onMouseLeave="{{ clearActive }}">
+            <button style="{{ cat.rowStyle }}">
+              <span style="width:26px; height:26px; border-radius:7px; display:flex; align-items:center; justify-content:center; flex:none; background:{{ cat.tint }};">
+                <i data-lucide="{{ cat.icon }}" width="15" height="15" stroke-width="2.1" style="color:{{ cat.color }};"></i>
+              </span>
+              <span style="font-size:12.5px; font-weight:800; letter-spacing:.05em; color:{{ cat.color }};">{{ cat.label }}</span>
+              <sc-if value="{{ cat.showCount }}" hint-placeholder-val="{{ true }}">
+                <span style="font-size:11px; font-weight:700; color:#6a6a72; margin-left:3px;">{{ cat.count }}</span>
+              </sc-if>
+              <span style="flex:1;"></span>
+              <i data-lucide="chevron-right" width="16" height="16" stroke-width="2" style="color:#5a5a62;"></i>
+            </button>
+
+            <!-- Flyout -->
+            <sc-if value="{{ cat.isActive }}" hint-placeholder-val="{{ false }}">
+              <div style="position:absolute; left:100%; top:-8px; padding-left:12px; z-index:20;">
+                <div style="width:262px; background:#17171a; border:1px solid #2c2c33; border-radius:12px; box-shadow:0 22px 50px rgba(0,0,0,.6); overflow:hidden; animation:flyIn .13s ease;">
+                  <div style="padding:11px 14px; border-bottom:1px solid #232329; display:flex; align-items:center; gap:8px;">
+                    <span style="width:8px; height:8px; border-radius:3px; background:{{ cat.color }};"></span>
+                    <span style="font-size:12px; font-weight:800; letter-spacing:.05em; color:{{ cat.color }};">{{ cat.label }}</span>
+                  </div>
+                  <div style="padding:6px;">
+                    <sc-for list="{{ cat.systems }}" as="sys" hint-placeholder-count="4">
+                      <a href="#" style="display:flex; align-items:center; gap:11px; padding:9px 10px; border-radius:8px;" onMouseEnter="{{ sys.hoverOn }}" onMouseLeave="{{ sys.hoverOff }}" onClick="{{ noop }}">
+                        <i data-lucide="{{ sys.icon }}" width="16" height="16" stroke-width="2" style="color:#b7b7bf; flex:none;"></i>
+                        <span style="font-size:13.5px; font-weight:500; color:#dcdce0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ sys.name }}</span>
+                      </a>
+                    </sc-for>
+                  </div>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+
+      <!-- Footer -->
+      <div style="border-top:1px solid #232329; padding:8px;">
+        <button style="width:100%; padding:11px; border:none; background:transparent; color:#9a9aa2; font-family:inherit; font-size:13.5px; font-weight:600; cursor:pointer; border-radius:9px; display:flex; align-items:center; justify-content:center; gap:8px;">
+          <i data-lucide="layout-grid" width="15" height="15" stroke-width="2"></i>
+          Ver central de sistemas
+        </button>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1200,&quot;height&quot;:760},&quot;showCounts&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Menu&quot;},&quot;density&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;comfortable&quot;,&quot;options&quot;:[&quot;comfortable&quot;,&quot;compact&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Menu&quot;}}">
+class Component extends DCLogic {
+  state = { open: true, activeCat: 'contabil', query: '', hover: null };
+
+  categories = [
+    { id:'contabil', label:'CONTÁBIL', color:'#22c55e', tint:'rgba(34,197,94,.13)', icon:'calculator', systems:[
+      { name:'BIMG - Business Intelligence', icon:'bar-chart-3' },
+      { name:'ContAI', icon:'bot' },
+      { name:'Copilot Contábil', icon:'sparkles' },
+      { name:'Portal do Colaborador', icon:'layout-dashboard' },
+      { name:'Contábil Script', icon:'file-code-2' },
+      { name:'Documentação Contábil', icon:'file-text' } ] },
+    { id:'pessoal', label:'DEP. PESSOAL', color:'#3b82f6', tint:'rgba(59,130,246,.13)', icon:'users', systems:[
+      { name:'Folha de Pagamento', icon:'wallet' },
+      { name:'Ponto Eletrônico', icon:'clock' },
+      { name:'eSocial', icon:'send' },
+      { name:'Admissão Digital', icon:'user-plus' },
+      { name:'Férias & Rescisões', icon:'palmtree' },
+      { name:'Benefícios', icon:'gift' },
+      { name:'Portal do RH', icon:'briefcase' } ] },
+    { id:'fiscal', label:'FISCAL', color:'#f59e0b', tint:'rgba(245,158,11,.13)', icon:'receipt', systems:[
+      { name:'Apuração Fiscal', icon:'percent' },
+      { name:'SPED Fiscal', icon:'database' },
+      { name:'Notas Fiscais', icon:'file-spreadsheet' } ] },
+    { id:'geral', label:'GERAL', color:'#94a3b8', tint:'rgba(148,163,184,.14)', icon:'layout-grid', systems:[
+      { name:'Dashboard Geral', icon:'gauge' },
+      { name:'Central de Avisos', icon:'bell' } ] },
+    { id:'restrito', label:'RESTRITO', color:'#ef4444', tint:'rgba(239,68,68,.13)', icon:'lock', systems:[
+      { name:'Auditoria', icon:'search-check' },
+      { name:'Configurações Master', icon:'settings' } ] },
+    { id:'societario', label:'SOCIETÁRIO', color:'#a855f7', tint:'rgba(168,85,247,.14)', icon:'building-2', systems:[
+      { name:'Contratos', icon:'file-signature' },
+      { name:'Societário Docs', icon:'folder-open' },
+      { name:'Assembleias', icon:'gavel' } ] },
+    { id:'ti', label:'TECNOLOGIA (TI)', color:'#06b6d4', tint:'rgba(6,182,212,.14)', icon:'cpu', systems:[
+      { name:'Suporte TI', icon:'headphones' },
+      { name:'Infraestrutura', icon:'server' },
+      { name:'Acessos', icon:'key-round' } ] },
+  ];
+
+  componentDidMount(){ this._tries = 0; this._paint(); }
+  componentDidUpdate(){ if (window.lucide) { try { lucide.createIcons(); } catch(e){} } }
+  _paint(){ if (window.lucide) { try { lucide.createIcons(); } catch(e){} } else if (this._tries++ < 50) { setTimeout(()=>this._paint(), 100); } }
+
+  renderVals(){
+    const q = (this.state.query||'').trim().toLowerCase();
+    const showCounts = this.props.showCounts ?? true;
+    const dense = (this.props.density ?? 'comfortable') === 'compact';
+    const pad = dense ? '8px 10px' : '11px 11px';
+
+    const cats = this.categories.map(c => {
+      const sys = c.systems.filter(s => !q || s.name.toLowerCase().includes(q) || c.label.toLowerCase().includes(q));
+      const active = this.state.activeCat === c.id;
+      return {
+        ...c,
+        systems: sys.map(s => ({
+          ...s,
+          hoverOn: (e)=>{ e.currentTarget.style.background = c.tint; },
+          hoverOff: (e)=>{ e.currentTarget.style.background = 'transparent'; },
+        })),
+        isActive: active,
+        showCount: showCounts,
+        count: c.systems.length,
+        rowStyle: `display:flex; align-items:center; gap:10px; width:100%; padding:${pad}; border:none; background:${active?'#1e1e22':'transparent'}; border-radius:9px; cursor:pointer; text-align:left; transition:background .12s;`,
+        enter: ()=> this.setState({ activeCat: c.id }),
+      };
+    }).filter(c => !q || c.systems.length > 0);
+
+    return {
+      open: this.state.open,
+      query: this.state.query || '',
+      categories: cats,
+      launcherStyle: `width:40px; height:40px; border-radius:11px; display:flex; align-items:center; justify-content:center; cursor:pointer; font:inherit; ${this.state.open ? 'background:rgba(245,179,1,.16); border:1px solid rgba(245,179,1,.35); color:#f5b301;' : 'background:transparent; border:1px solid transparent; color:#9a9aa2;'}`,
+      toggle: ()=> this.setState(s => ({ open: !s.open, activeCat: s.open ? null : 'contabil' })),
+      close: ()=> this.setState({ open:false, activeCat:null }),
+      clearActive: ()=> {},
+      onQuery: (e)=> this.setState({ query: e.target.value }),
+      noop: (e)=> e.preventDefault(),
+    };
+  }
+}
+</script>
+</body>
+</html>
