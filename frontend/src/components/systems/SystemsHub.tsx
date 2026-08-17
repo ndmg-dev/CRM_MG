@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Search, Building2, Calculator, Plane, BarChart3, Receipt, Headphones, Bot, Sparkles, Cpu, CalendarCheck, MessageCircle, Clock, UserCircle, Percent, LayoutGrid, List, FileText, Calendar, User, DollarSign, Store, Megaphone, Target, Palmtree, FileCheck, Fingerprint, HandCoins, Mail, UserMinus } from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
+import { Search, LayoutGrid, List } from 'lucide-react'
 import { useUIStore } from '@/stores/uiStore'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
@@ -10,11 +9,11 @@ import type { Sistema } from '@/types'
 import LoadingSpinner from '@/components/common/LoadingSpinner'
 import EmptyState from '@/components/common/EmptyState'
 import PageHeader from '@/components/common/PageHeader'
-import { ICON_MAP } from '@/lib/icons'
+import { getSystemIcon } from '@/lib/icons'
 
 
 function SystemCard({ sistema }: { sistema: Sistema }) {
-  const Icon = ICON_MAP[sistema.icone] || Building2
+  const Icon = getSystemIcon(sistema.icone, sistema.id)
 
   const isAutomation = sistema.categoria === 'AUTOMATION'
   const isStatic = sistema.categoria === 'STATIC'
@@ -44,6 +43,11 @@ function SystemCard({ sistema }: { sistema: Sistema }) {
         className={`group flex h-full flex-col items-center justify-center rounded-xl border border-border bg-card p-4 text-center transition-all ${borderHoverClass}`}
       >
         <div className={`mb-4 flex h-16 w-16 items-center justify-center rounded-2xl transition-colors ${bgClass} ${colorClass}`}>
+          {/* Falso positivo do react-hooks/static-components: acha que
+              qualquer variável capitalizada vinda de chamada de função
+              define um componente novo a cada render. `getSystemIcon` só
+              escolhe entre ícones já existentes do lucide-react. */}
+          {/* eslint-disable-next-line react-hooks/static-components */}
           <Icon className="h-8 w-8" />
         </div>
         <h3 className="text-sm font-semibold text-text-primary transition-colors group-hover:text-white">
@@ -184,7 +188,7 @@ export default function SystemsHub() {
             </thead>
             <tbody>
               {filtered.map((s) => {
-                const Icon = ICON_MAP[s.icone] || Building2
+                const Icon = getSystemIcon(s.icone, s.id)
                 return (
                   <tr key={s.id} className="border-b border-border last:border-0 hover:bg-surface-hover/50 transition-colors">
                     <td className="px-6 py-4">
