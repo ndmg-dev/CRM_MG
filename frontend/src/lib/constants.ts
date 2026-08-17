@@ -130,6 +130,14 @@ export interface SetorColors {
   text: string
   /** Fundo translúcido da pill. */
   bg: string
+  /** Cor sólida — marcador redondo do cabeçalho do submenu de sistemas. */
+  dot: string
+  /**
+   * Hover translúcido na cor do setor. Precisa ser a classe literal: o
+   * Tailwind varre o código-fonte, então `hover:${bg}` montado em runtime
+   * nunca chega a gerar CSS.
+   */
+  hoverBg: string
   /** Item selecionado dentro do grupo (usado na navegação lateral). */
   activeClass: string
 }
@@ -143,18 +151,20 @@ export interface SetorColors {
  * que devolve o fallback neutro.
  */
 export const SETOR_COLORS: Record<string, SetorColors> = {
-  DP: { label: 'Dep. Pessoal', text: 'text-blue-400', bg: 'bg-blue-500/10', activeClass: 'bg-blue-500/10 text-blue-400 font-semibold' },
-  CONTABIL: { label: 'Contábil', text: 'text-emerald-400', bg: 'bg-emerald-500/10', activeClass: 'bg-emerald-500/10 text-emerald-400 font-semibold' },
-  FISCAL: { label: 'Fiscal', text: 'text-orange-400', bg: 'bg-orange-500/10', activeClass: 'bg-orange-500/10 text-orange-400 font-semibold' },
-  SOCIETARIO: { label: 'Societário', text: 'text-purple-400', bg: 'bg-purple-500/10', activeClass: 'bg-purple-500/10 text-purple-400 font-semibold' },
-  TI: { label: 'Tecnologia (TI)', text: 'text-cyan-400', bg: 'bg-cyan-500/10', activeClass: 'bg-cyan-500/10 text-cyan-400 font-semibold' },
-  GERAL: { label: 'Geral', text: 'text-text-muted', bg: 'bg-surface', activeClass: 'bg-gold/10 text-gold font-semibold' },
-  RESTRITO: { label: 'Restrito', text: 'text-red-500', bg: 'bg-red-500/10', activeClass: 'bg-red-500/10 text-red-500 font-semibold' },
+  DP: { label: 'Dep. Pessoal', text: 'text-blue-400', bg: 'bg-blue-500/10', dot: 'bg-blue-400', hoverBg: 'hover:bg-blue-500/10', activeClass: 'bg-blue-500/10 text-blue-400 font-semibold' },
+  CONTABIL: { label: 'Contábil', text: 'text-emerald-400', bg: 'bg-emerald-500/10', dot: 'bg-emerald-400', hoverBg: 'hover:bg-emerald-500/10', activeClass: 'bg-emerald-500/10 text-emerald-400 font-semibold' },
+  FISCAL: { label: 'Fiscal', text: 'text-orange-400', bg: 'bg-orange-500/10', dot: 'bg-orange-400', hoverBg: 'hover:bg-orange-500/10', activeClass: 'bg-orange-500/10 text-orange-400 font-semibold' },
+  SOCIETARIO: { label: 'Societário', text: 'text-purple-400', bg: 'bg-purple-500/10', dot: 'bg-purple-400', hoverBg: 'hover:bg-purple-500/10', activeClass: 'bg-purple-500/10 text-purple-400 font-semibold' },
+  TI: { label: 'Tecnologia (TI)', text: 'text-cyan-400', bg: 'bg-cyan-500/10', dot: 'bg-cyan-400', hoverBg: 'hover:bg-cyan-500/10', activeClass: 'bg-cyan-500/10 text-cyan-400 font-semibold' },
+  GERAL: { label: 'Geral', text: 'text-text-muted', bg: 'bg-surface', dot: 'bg-text-muted', hoverBg: 'hover:bg-surface', activeClass: 'bg-gold/10 text-gold font-semibold' },
+  RESTRITO: { label: 'Restrito', text: 'text-red-500', bg: 'bg-red-500/10', dot: 'bg-red-500', hoverBg: 'hover:bg-red-500/10', activeClass: 'bg-red-500/10 text-red-500 font-semibold' },
 }
 
 const SETOR_COLORS_FALLBACK: Omit<SetorColors, 'label'> = {
   text: 'text-text-muted',
   bg: 'bg-surface',
+  dot: 'bg-text-muted',
+  hoverBg: 'hover:bg-surface',
   activeClass: 'bg-gold/10 text-gold font-semibold',
 }
 

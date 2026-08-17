@@ -175,6 +175,37 @@ body {
   animation: sidebarCategoryItemIn 220ms ease both;
 }
 
+/* Menu de Sistemas: entrada do painel de categorias e do submenu lateral. */
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes flyIn {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.animate-pop-in {
+  animation: popIn 150ms ease;
+}
+
+.animate-fly-in {
+  animation: flyIn 130ms ease;
+}
+
 /* Respeita quem pediu menos movimento no sistema operacional. */
 @media (prefers-reduced-motion: reduce) {
   *,

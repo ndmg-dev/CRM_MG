@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
 import { NavLink, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
@@ -14,12 +13,12 @@ import {
   LogOut,
   Key,
   Moon,
-  Search,
   X,
 } from 'lucide-react'
 import { getSystemIcon } from '@/lib/icons'
 import { getSetorColors, type SetorColors } from '@/lib/constants'
 import { useAuthStore } from '@/stores/authStore'
+import SystemsMenu from './SystemsMenu'
 
 const OPEN_CATEGORY_STORAGE_KEY = 'mg.sidebar.openCategory'
 
@@ -170,73 +169,38 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
     })
   }
 
-  // Flyout de "Sistemas" — só existe no rail de desktop (>= lg). No drawer
-  // mobile "Sistemas" continua expandindo inline (ver bloco `lg:hidden`).
-  const [flyoutOpen, setFlyoutOpen] = useState(false)
-  const [flyoutPos, setFlyoutPos] = useState({ top: 0, left: 0 })
-  const [search, setSearch] = useState('')
-  const flyoutRef = useRef<HTMLDivElement>(null)
+  // Menu de Sistemas — só existe no rail de desktop (>= lg). No drawer
+  // mobile "Sistemas" continua expandindo inline (ver bloco `lg:hidden`):
+  // submenu por hover não funciona em toque.
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 })
   const triggerRef = useRef<HTMLButtonElement>(null)
-  const searchInputRef = useRef<HTMLInputElement>(null)
 
-  // Navegar (para um sistema ou para qualquer outro item do rail) fecha o flyout.
-  useEffect(() => setFlyoutOpen(false), [location.pathname])
+  // Navegar (para um sistema ou para qualquer outro item do rail) fecha o menu.
+  useEffect(() => setMenuOpen(false), [location.pathname])
 
-  // O painel é renderizado em portal no `body`: dentro da `aside` ele seria
-  // recortado pelo `overflow-y-auto` da nav, e o `transform` da própria aside
-  // ainda quebraria um `position: fixed`. Logo, a posição vem do botão.
+  // A posição vem do gatilho: o painel é portalado no `body` e precisa se
+  // ancorar ao rail sem depender da árvore de layout.
   useEffect(() => {
-    if (!flyoutOpen) return
+    if (!menuOpen) return
     const place = () => {
-      const rect = triggerRef.current?.getBoundingClientRect()
-      if (!rect) return
-      const maxTop = Math.max(8, window.innerHeight - 520 - 8)
-      setFlyoutPos({ top: Math.min(rect.top, maxTop), left: rect.right + 8 })
+      const trigger = triggerRef.current
+      if (!trigger) return
+      const rect = trigger.getBoundingClientRect()
+      // Ancora na borda do rail, não no botão (34px dentro de 64px) — senão o
+      // painel abriria por cima da própria barra.
+      const rail = trigger.closest('aside')?.getBoundingClientRect()
+      const maxTop = Math.max(8, window.innerHeight - 640 - 8)
+      setMenuPos({ top: Math.min(rect.top, maxTop), left: (rail?.right ?? rect.right) + 8 })
     }
     place()
     window.addEventListener('resize', place)
     return () => window.removeEventListener('resize', place)
-  }, [flyoutOpen])
+  }, [menuOpen])
 
-  useEffect(() => {
-    if (!flyoutOpen) return
-    const onPointerDown = (e: MouseEvent) => {
-      const target = e.target as Node
-      // O próprio gatilho é tratado pelo seu onClick; ignorá-lo aqui evita
-      // fechar no mousedown e reabrir no click seguinte.
-      if (triggerRef.current?.contains(target)) return
-      if (flyoutRef.current && !flyoutRef.current.contains(target)) {
-        setFlyoutOpen(false)
-      }
-    }
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setFlyoutOpen(false)
-    }
-    document.addEventListener('mousedown', onPointerDown)
-    document.addEventListener('keydown', onKeyDown)
-    return () => {
-      document.removeEventListener('mousedown', onPointerDown)
-      document.removeEventListener('keydown', onKeyDown)
-    }
-  }, [flyoutOpen])
-
-  useEffect(() => {
-    if (flyoutOpen) {
-      searchInputRef.current?.focus()
-    } else {
-      setSearch('')
-    }
-  }, [flyoutOpen])
-
-  const query = search.trim().toLowerCase()
-  const isFiltering = query.length > 0
-  const flyoutSistemasBySetor = isFiltering
-    ? setorOrder.reduce((acc, setor) => {
-        const found = (sistemasBySetor[setor] || []).filter(s => s.nome.toLowerCase().includes(query))
-        if (found.length > 0) acc[setor] = found
-        return acc
-      }, {} as typeof sistemasBySetor)
-    : sistemasBySetor
+  const setorSistemaAtivo = location.pathname.startsWith('/sistemas/')
+    ? sistemas.find(s => location.pathname.startsWith(`/sistemas/${s.id}`))?.setor ?? undefined
+    : undefined
 
   // Botões do rodapé: mesmo tratamento visual (secundário, bordado) do
   // sistema de ponto de referência.
@@ -340,60 +304,22 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
           ref={triggerRef}
           type="button"
           title="Sistemas"
-          aria-expanded={flyoutOpen}
+          aria-expanded={menuOpen}
           aria-haspopup="menu"
-          onClick={() => setFlyoutOpen(prev => !prev)}
-          className={railIconBtnClass(isSistemasActive || flyoutOpen)}
+          onClick={() => setMenuOpen(prev => !prev)}
+          className={railIconBtnClass(isSistemasActive || menuOpen)}
         >
           <Grid3X3 className="h-[18px] w-[18px] shrink-0" />
         </button>
 
-        {flyoutOpen && createPortal(
-            <div
-              ref={flyoutRef}
-              role="menu"
-              aria-label="Sistemas"
-              style={{ top: flyoutPos.top, left: flyoutPos.left }}
-              className="fixed z-50 flex max-h-[520px] w-[230px] flex-col gap-2.5 rounded-[10px] border border-border bg-card p-3.5 shadow-overlay animate-fade-in"
-            >
-              <div className="flex shrink-0 items-center gap-2 rounded-md border border-border bg-background px-2.5 py-1.5">
-                <Search className="h-3.5 w-3.5 shrink-0 text-text-muted" />
-                <input
-                  ref={searchInputRef}
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Buscar sistema…"
-                  className="w-full min-w-0 bg-transparent text-[12px] text-text-primary placeholder:text-text-muted focus:outline-none"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1 overflow-y-auto overflow-x-hidden">
-                {Object.entries(flyoutSistemasBySetor).map(([setor, items]) => {
-                  const meta = getSetorColors(setor, nomeSetor[setor])
-                  return (
-                    <CategoryGroup
-                      key={setor}
-                      setor={setor}
-                      meta={meta}
-                      items={items}
-                      isOpen={isFiltering || openCategory === setor}
-                      onToggle={() => handleToggleCategory(setor)}
-                    />
-                  )
-                })}
-                {isFiltering && Object.keys(flyoutSistemasBySetor).length === 0 && (
-                  <p className="px-2 py-3 text-center text-[12px] text-text-muted">Nenhum sistema encontrado.</p>
-                )}
-              </div>
-
-              <NavLink
-                to="/sistemas"
-                className="shrink-0 truncate rounded-md border-t border-border px-2 pt-2 text-center text-[11px] font-medium text-text-muted transition-colors hover:text-gold"
-              >
-                Ver central de sistemas
-              </NavLink>
-            </div>,
-            document.body,
+        {menuOpen && (
+          <SystemsMenu
+            sistemasBySetor={sistemasBySetor}
+            nomeSetor={nomeSetor}
+            activeSetor={setorSistemaAtivo}
+            position={menuPos}
+            onClose={() => setMenuOpen(false)}
+          />
         )}
 
         {restItems.map((item) => {

@@ -52,6 +52,8 @@ import {
   Scale,
   Wrench,
   Bell,
+  LayoutGrid,
+  Lock,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -156,4 +158,22 @@ function hashString(value: string): number {
 export function getSystemIcon(icone: string | undefined, id: string): LucideIcon {
   if (icone && ICON_MAP[icone]) return ICON_MAP[icone]
   return FALLBACK_POOL[hashString(id) % FALLBACK_POOL.length]
+}
+
+/**
+ * Ícone que representa o setor em si (não um sistema dele) — usado no
+ * quadradinho colorido de cada categoria no menu de Sistemas.
+ */
+const SETOR_ICONS: Record<string, LucideIcon> = {
+  CONTABIL: Calculator,
+  DP: Users,
+  FISCAL: Receipt,
+  GERAL: LayoutGrid,
+  RESTRITO: Lock,
+  SOCIETARIO: Building2,
+  TI: Cpu,
+}
+
+export function getSetorIcon(codigo?: string | null): LucideIcon {
+  return (codigo && SETOR_ICONS[codigo]) || LayoutGrid
 }
