@@ -10,6 +10,21 @@
    CRM Mendonça Galvão — Design System Tokens
    ============================================ */
 
+/*
+  Tokens do header global.
+
+  Ficam aqui, e não em `@mg/tokens`, porque aquele pacote é gerado a partir
+  de `tokens.json` por um build próprio que não roda junto com o build do
+  frontend — escrever direto no `build/tokens.css` seria perdido na próxima
+  geração. Se o design system passar a versionar estes valores, o lugar certo
+  é `tokens.json`, e aqui fica só o mapeamento para utilitário.
+*/
+:root {
+  --mg-header-gradient: linear-gradient(100deg, #1a1814 0%, #151412 26%, #111214 58%, #0e0f11 100%);
+  --mg-header-hairline: rgba(210, 170, 63, 0.1);
+  --mg-gold-border-soft: rgba(210, 170, 63, 0.16);
+}
+
 @theme {
   --color-background: var(--mg-color-bg-base);
   --color-sidebar: var(--mg-color-bg-sidebar);
@@ -77,6 +92,23 @@
 
   --shadow-subtle: var(--mg-shadow-subtle);
   --shadow-overlay: var(--mg-shadow-overlay);
+
+  /*
+    Header global. `gold-border-soft` não reaproveita o nome `gold-soft`:
+    `--color-gold-soft` já existe e alimenta o `bg-gold-soft` dos itens ativos
+    da navegação — sobrescrevê-lo mudaria aqueles estados junto.
+  */
+  --background-image-header-gradient: var(--mg-header-gradient);
+  --color-gold-border-soft: var(--mg-gold-border-soft);
+  --shadow-header: inset 0 -1px 0 var(--mg-header-hairline), 0 1px 0 rgba(0, 0, 0, 0.5);
+
+  /*
+    Campo de busca do header: leve realce de cima para baixo, no lugar do
+    fundo sólido. Os valores vivem no utilitário para o TSX não carregar cor
+    crua.
+  */
+  --background-image-search-field: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.012));
+  --shadow-search-field: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 /* ============================================
