@@ -17,26 +17,54 @@ export const STATUS_LABELS: Record<StatusTarefa, string> = {
   CONCLUIDO: 'Concluído',
 }
 
-export const STATUS_COLORS: Record<StatusTarefa, { bg: string; text: string; border: string }> = {
+export const STATUS_COLORS: Record<StatusTarefa, { bg: string; text: string; border: string; dot: string }> = {
   PENDENTE: {
     bg: 'bg-yellow-500/10',
     text: 'text-yellow-400',
     border: 'border-yellow-500/30',
+    dot: 'bg-yellow-400',
   },
   EM_PROCESSAMENTO: {
     bg: 'bg-blue-500/10',
     text: 'text-blue-400',
     border: 'border-blue-500/30',
+    dot: 'bg-blue-400',
   },
   AGUARDANDO_CLIENTE: {
     bg: 'bg-orange-500/10',
     text: 'text-orange-400',
     border: 'border-orange-500/30',
+    dot: 'bg-orange-400',
   },
   CONCLUIDO: {
     bg: 'bg-green-500/10',
     text: 'text-green-400',
     border: 'border-green-500/30',
+    dot: 'bg-green-400',
+  },
+}
+
+/** Texto do estado vazio de cada coluna do quadro. */
+export const STATUS_EMPTY_STATE: Record<StatusTarefa, { title: string; description: string; actionLabel: string }> = {
+  PENDENTE: {
+    title: 'Nenhuma tarefa pendente',
+    description: 'Novas obrigações e demandas internas entram nesta coluna.',
+    actionLabel: 'Nova tarefa',
+  },
+  EM_PROCESSAMENTO: {
+    title: 'Nada em processamento',
+    description: 'Arraste uma tarefa pendente para assumir o trabalho.',
+    actionLabel: 'Ver pendentes',
+  },
+  AGUARDANDO_CLIENTE: {
+    title: 'Sem pendência externa',
+    description: 'Tarefas travadas por documento ou resposta do cliente ficam aqui.',
+    actionLabel: 'Cobrar cliente',
+  },
+  CONCLUIDO: {
+    title: 'Nada concluído ainda',
+    description: 'O histórico completo fica na auditoria do setor.',
+    actionLabel: 'Ver auditoria',
   },
 }
 

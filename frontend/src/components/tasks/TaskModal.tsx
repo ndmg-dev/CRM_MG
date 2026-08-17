@@ -12,10 +12,12 @@ import { formatDateTime } from '@/lib/utils'
 
 interface TaskModalProps {
   task?: Tarefa
+  /** Status inicial ao criar — o `+` de cada coluna do quadro usa o seu. */
+  initialStatus?: StatusTarefa
   onClose: () => void
 }
 
-export default function TaskModal({ task, onClose }: TaskModalProps) {
+export default function TaskModal({ task, initialStatus, onClose }: TaskModalProps) {
   const isEditing = !!task
   const queryClient = useQueryClient()
   const user = useAuthStore((s) => s.user)
@@ -50,7 +52,7 @@ export default function TaskModal({ task, onClose }: TaskModalProps) {
     responsavelId: task?.responsavelId || '',
     setorOrigem: (task?.setorOrigem || (isCoordenador ? user?.setor : '') || '') as Setor,
     prioridade: (task?.prioridade || 'MEDIA') as Prioridade,
-    status: (task?.status || 'PENDENTE') as StatusTarefa,
+    status: (task?.status || initialStatus || 'PENDENTE') as StatusTarefa,
     dataVencimento: task?.dataVencimento?.split('T')[0] || '',
   })
 
