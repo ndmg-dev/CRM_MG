@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { NavLink, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
@@ -179,17 +180,39 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
   // Flyout de "Sistemas" — só existe no rail de desktop (>= lg). No drawer
   // mobile "Sistemas" continua expandindo inline (ver bloco `lg:hidden`).
   const [flyoutOpen, setFlyoutOpen] = useState(false)
+  const [flyoutPos, setFlyoutPos] = useState({ top: 0, left: 0 })
   const [search, setSearch] = useState('')
   const flyoutRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
 
   // Navegar (para um sistema ou para qualquer outro item do rail) fecha o flyout.
   useEffect(() => setFlyoutOpen(false), [location.pathname])
 
+  // O painel é renderizado em portal no `body`: dentro da `aside` ele seria
+  // recortado pelo `overflow-y-auto` da nav, e o `transform` da própria aside
+  // ainda quebraria um `position: fixed`. Logo, a posição vem do botão.
+  useEffect(() => {
+    if (!flyoutOpen) return
+    const place = () => {
+      const rect = triggerRef.current?.getBoundingClientRect()
+      if (!rect) return
+      const maxTop = Math.max(8, window.innerHeight - 520 - 8)
+      setFlyoutPos({ top: Math.min(rect.top, maxTop), left: rect.right + 8 })
+    }
+    place()
+    window.addEventListener('resize', place)
+    return () => window.removeEventListener('resize', place)
+  }, [flyoutOpen])
+
   useEffect(() => {
     if (!flyoutOpen) return
     const onPointerDown = (e: MouseEvent) => {
-      if (flyoutRef.current && !flyoutRef.current.contains(e.target as Node)) {
+      const target = e.target as Node
+      // O próprio gatilho é tratado pelo seu onClick; ignorá-lo aqui evita
+      // fechar no mousedown e reabrir no click seguinte.
+      if (triggerRef.current?.contains(target)) return
+      if (flyoutRef.current && !flyoutRef.current.contains(target)) {
         setFlyoutOpen(false)
       }
     }
@@ -320,24 +343,25 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
 
       {/* Navegação — desktop: rail icon-only + flyout de "Sistemas". */}
       <nav className="hidden flex-1 flex-col items-center gap-2.5 overflow-y-auto py-3.5 lg:flex">
-        <div className="relative">
-          <button
-            type="button"
-            title="Sistemas"
-            aria-expanded={flyoutOpen}
-            aria-haspopup="menu"
-            onClick={() => setFlyoutOpen(prev => !prev)}
-            className={railIconBtnClass(isSistemasActive || flyoutOpen)}
-          >
-            <Grid3X3 className="h-[18px] w-[18px] shrink-0" />
-          </button>
+        <button
+          ref={triggerRef}
+          type="button"
+          title="Sistemas"
+          aria-expanded={flyoutOpen}
+          aria-haspopup="menu"
+          onClick={() => setFlyoutOpen(prev => !prev)}
+          className={railIconBtnClass(isSistemasActive || flyoutOpen)}
+        >
+          <Grid3X3 className="h-[18px] w-[18px] shrink-0" />
+        </button>
 
-          {flyoutOpen && (
+        {flyoutOpen && createPortal(
             <div
               ref={flyoutRef}
               role="menu"
               aria-label="Sistemas"
-              className="absolute left-full top-0 z-50 ml-2 flex max-h-[520px] w-[230px] flex-col gap-2.5 rounded-[10px] border border-border bg-card p-3.5 shadow-overlay animate-fade-in"
+              style={{ top: flyoutPos.top, left: flyoutPos.left }}
+              className="fixed z-50 flex max-h-[520px] w-[230px] flex-col gap-2.5 rounded-[10px] border border-border bg-card p-3.5 shadow-overlay animate-fade-in"
             >
               <div className="flex shrink-0 items-center gap-2 rounded-md border border-border bg-background px-2.5 py-1.5">
                 <Search className="h-3.5 w-3.5 shrink-0 text-text-muted" />
@@ -375,9 +399,9 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
               >
                 Ver central de sistemas
               </NavLink>
-            </div>
-          )}
-        </div>
+            </div>,
+            document.body,
+        )}
 
         {restItems.map((item) => {
           const isActive = item.to === '/'
