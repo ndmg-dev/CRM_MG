@@ -19,6 +19,7 @@ import EmptyState from '@/components/common/EmptyState'
 import TaskCard from './TaskCard'
 import TaskModal from './TaskModal'
 import TaskStats from './TaskStats'
+import TaskDetailDrawer from './TaskDetailDrawer'
 import TaskFilterBar from './TaskFilterBar'
 import toast from 'react-hot-toast'
 import type { Tarefa, StatusTarefa, TaskFilters } from '@/types'
@@ -40,6 +41,7 @@ export default function KanbanBoard() {
   const isAdmin = user?.perfil === 'ADMIN'
 
   const [selectedTask, setSelectedTask] = useState<Tarefa | null>(null)
+  const [editingTask, setEditingTask] = useState<Tarefa | null>(null)
   /** Status com que o modal de criação abre; `null` = modal fechado. */
   const [createStatus, setCreateStatus] = useState<StatusTarefa | null>(null)
   const [showFilters, setShowFilters] = useState(false)
@@ -263,11 +265,30 @@ export default function KanbanBoard() {
         </div>
       </DragDropContext>
 
-      {/* Task detail modal */}
+      {/* Task detail drawer */}
       {selectedTask && (
-        <TaskModal
+        <TaskDetailDrawer
           task={selectedTask}
+          setorLabel={nomeSetor[selectedTask.setorOrigem]}
+          isMoving={statusMutation.isPending}
           onClose={() => setSelectedTask(null)}
+          onEdit={() => {
+            setEditingTask(selectedTask)
+            setSelectedTask(null)
+          }}
+          onMoveStatus={(status) => {
+            statusMutation.mutate({ id: selectedTask.id, status })
+            // Mesma mutation otimista do arrasto; o painel acompanha na hora.
+            setSelectedTask({ ...selectedTask, status })
+          }}
+        />
+      )}
+
+      {/* Task edit modal */}
+      {editingTask && (
+        <TaskModal
+          task={editingTask}
+          onClose={() => setEditingTask(null)}
         />
       )}
 
