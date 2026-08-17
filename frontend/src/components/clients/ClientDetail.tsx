@@ -1,8 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { ArrowLeft, Edit, Building2, Phone, FileText, CalendarDays, Download, Bell, FileIcon, MessageSquare, Link2, ChevronDown, ChevronUp, Folder, Sparkles, X, CheckCircle, AlertCircle } from 'lucide-react'
-import { useUIStore } from '@/stores/uiStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
@@ -194,7 +193,6 @@ export default function ClientDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<'detalhes' | 'documentos'>('detalhes')
-  const setCurrentPage = useUIStore((s) => s.setCurrentPage)
   const user = useAuthStore(s => s.user)
   const canManageDocuments = user?.perfil === 'ADMIN' || user?.setor === 'CONTABIL'
 
@@ -245,10 +243,6 @@ export default function ClientDetail() {
       toast.error('Erro ao gerar link de upload')
     }
   }
-
-  useEffect(() => {
-    setCurrentPage(cliente?.nomeFantasia || 'Cliente')
-  }, [cliente, setCurrentPage])
 
   if (isLoading) return <LoadingSpinner label="Carregando cliente..." />
   if (!cliente) return null

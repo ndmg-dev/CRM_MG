@@ -1,6 +1,4 @@
-import { useEffect } from 'react'
 import { Users, UserCheck, Grid3X3, ClipboardList, AlertTriangle, Activity } from 'lucide-react'
-import { useUIStore } from '@/stores/uiStore'
 import { api } from '@/lib/api'
 import { useQuery } from '@tanstack/react-query'
 import StatCard from './StatCard'
@@ -10,8 +8,6 @@ import IconBadge from '@/components/common/IconBadge'
 import { formatDateTime } from '@/lib/utils'
 
 export default function DashboardPage() {
-  const setCurrentPage = useUIStore((s) => s.setCurrentPage)
-  useEffect(() => { setCurrentPage('Dashboard') }, [setCurrentPage])
 
   const { data: summary, isLoading } = useQuery({
     queryKey: ['dashboard'],

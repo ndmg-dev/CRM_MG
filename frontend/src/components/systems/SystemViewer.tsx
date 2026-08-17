@@ -10,7 +10,6 @@ import { getSystemComponent } from '@/systems/registry'
 export default function SystemViewer() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const setCurrentPage = useUIStore((s) => s.setCurrentPage)
 
   const { data: sistemas = [] } = useQuery({
     queryKey: ['sistemas'],
@@ -23,10 +22,6 @@ export default function SystemViewer() {
   const setFullBleedSystem = useUIStore((s) => s.setFullBleedSystem)
   const [iframeLoaded, setIframeLoaded] = useState(false)
   const [iframeError, setIframeError] = useState(false)
-
-  useEffect(() => {
-    setCurrentPage(sistema?.nome || 'Sistema')
-  }, [sistema, setCurrentPage])
 
   // Sistema migrado abre em página cheia (esconde o Header do CRM)
   useEffect(() => {

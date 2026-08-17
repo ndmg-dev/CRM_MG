@@ -1,8 +1,7 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd'
 import { Plus, Filter, Inbox } from 'lucide-react'
-import { useUIStore } from '@/stores/uiStore'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/authStore'
 import { api } from '@/lib/api'
@@ -65,8 +64,6 @@ function ViewSwitch({ value, onChange }: { value: BoardView; onChange: (v: Board
 }
 
 export default function KanbanBoard() {
-  const setCurrentPage = useUIStore((s) => s.setCurrentPage)
-  useEffect(() => { setCurrentPage('Tarefas') }, [setCurrentPage])
 
   const queryClient = useQueryClient()
   const navigate = useNavigate()
