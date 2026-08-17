@@ -1,12 +1,17 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd'
-import { Plus, Filter, X, Inbox } from 'lucide-react'
+import { Plus, Filter, Inbox } from 'lucide-react'
 import { useUIStore } from '@/stores/uiStore'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/authStore'
 import { api } from '@/lib/api'
+import {
+  applyQuickFilters,
+  hasQuickFilters,
+  isTarefaVencida,
+  type QuickFilters,
+} from '@/lib/taskFilters'
 import { Button } from '@/components/ui/button'
 import LoadingSpinner from '@/components/common/LoadingSpinner'
 import PageHeader from '@/components/common/PageHeader'
@@ -14,6 +19,7 @@ import EmptyState from '@/components/common/EmptyState'
 import TaskCard from './TaskCard'
 import TaskModal from './TaskModal'
 import TaskStats from './TaskStats'
+import TaskFilterBar from './TaskFilterBar'
 import toast from 'react-hot-toast'
 import type { Tarefa, StatusTarefa, TaskFilters } from '@/types'
 import {
@@ -21,7 +27,6 @@ import {
   STATUS_COLORS,
   STATUS_EMPTY_STATE,
   KANBAN_COLUMNS,
-  PRIORITY_LABELS,
 } from '@/lib/constants'
 
 export default function KanbanBoard() {
@@ -39,6 +44,7 @@ export default function KanbanBoard() {
   const [createStatus, setCreateStatus] = useState<StatusTarefa | null>(null)
   const [showFilters, setShowFilters] = useState(false)
   const [filters, setFilters] = useState<TaskFilters>({})
+  const [quick, setQuick] = useState<QuickFilters>({})
 
   const { data: tarefas = [], isLoading } = useQuery({
     queryKey: ['tarefas', filters],
@@ -48,6 +54,11 @@ export default function KanbanBoard() {
   const { data: setores = [] } = useQuery({
     queryKey: ['setores'],
     queryFn: () => api.setores.getAll(),
+  })
+
+  const { data: usuarios = [] } = useQuery({
+    queryKey: ['usuarios'],
+    queryFn: () => api.usuarios.getAll(),
   })
 
   const statusMutation = useMutation({
@@ -83,10 +94,15 @@ export default function KanbanBoard() {
     statusMutation.mutate({ id: draggableId, status: newStatus })
   }, [statusMutation])
 
-  const getColumnTasks = (status: StatusTarefa) =>
-    tarefas.filter((t) => t.status === status)
+  // Os chips são aplicados no cliente, sobre o que o servidor já filtrou.
+  const visibleTarefas = applyQuickFilters(tarefas, quick, user?.id)
 
-  const hasActiveFilters = Object.values(filters).some(Boolean)
+  const overdueCount = tarefas.filter(isTarefaVencida).length
+
+  const getColumnTasks = (status: StatusTarefa) =>
+    visibleTarefas.filter((t) => t.status === status)
+
+  const hasActiveFilters = Object.values(filters).some(Boolean) || hasQuickFilters(quick)
 
   // Nome dos setores cadastrados pelo admin, para as pills do card.
   const nomeSetor = Object.fromEntries(setores.map((s) => [s.codigo, s.nome]))
@@ -144,41 +160,18 @@ export default function KanbanBoard() {
 
       {/* Filters bar */}
       {showFilters && (
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
-          exit={{ opacity: 0, height: 0 }}
-          className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card p-4"
-        >
-          {isAdmin && (
-            <select
-              className="rounded-md border border-border bg-surface-hover px-3 py-1.5 text-sm text-text-primary outline-none"
-              value={filters.setor || ''}
-              onChange={(e) => setFilters({ ...filters, setor: e.target.value as any || undefined })}
-            >
-              <option value="">Todos os Setores</option>
-              {setores.map((s) => (
-                <option key={s.id} value={s.codigo}>{s.nome}</option>
-              ))}
-            </select>
-          )}
-          <select
-            className="rounded-md border border-border bg-surface-hover px-3 py-1.5 text-sm text-text-primary outline-none"
-            value={filters.prioridade || ''}
-            onChange={(e) => setFilters({ ...filters, prioridade: e.target.value as any || undefined })}
-          >
-            <option value="">Todas as Prioridades</option>
-            {Object.entries(PRIORITY_LABELS).map(([k, v]) => (
-              <option key={k} value={k}>{v}</option>
-            ))}
-          </select>
-          {hasActiveFilters && (
-            <Button variant="ghost" size="sm" onClick={() => setFilters({})}>
-              <X className="mr-1 h-3 w-3" />
-              Limpar
-            </Button>
-          )}
-        </motion.div>
+        <TaskFilterBar
+          filters={filters}
+          onFiltersChange={setFilters}
+          quick={quick}
+          onQuickChange={setQuick}
+          setores={setores}
+          usuarios={usuarios}
+          isAdmin={isAdmin}
+          visibleCount={visibleTarefas.length}
+          totalCount={tarefas.length}
+          overdueCount={overdueCount}
+        />
       )}
 
       {/* Kanban columns */}
