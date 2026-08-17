@@ -96,6 +96,49 @@ export const SETOR_LABELS: Record<string, string> = {
 /** Cor padrão de um setor sem cor cadastrada. */
 export const SETOR_COR_PADRAO = '#94a3b8'
 
+export interface SetorColors {
+  label: string
+  /** Cor do texto do rótulo (cabeçalho de grupo, pill). */
+  text: string
+  /** Fundo translúcido da pill. */
+  bg: string
+  /** Item selecionado dentro do grupo (usado na navegação lateral). */
+  activeClass: string
+}
+
+/**
+ * Identidade visual por setor, compartilhada entre a navegação lateral e o
+ * quadro de tarefas. Vive aqui — e não em cada componente — para que os dois
+ * lugares nunca divirjam.
+ *
+ * Setores criados pelo admin não estão nesta lista; use `getSetorColors`,
+ * que devolve o fallback neutro.
+ */
+export const SETOR_COLORS: Record<string, SetorColors> = {
+  DP: { label: 'Dep. Pessoal', text: 'text-blue-400', bg: 'bg-blue-500/10', activeClass: 'bg-blue-500/10 text-blue-400 font-semibold' },
+  CONTABIL: { label: 'Contábil', text: 'text-emerald-400', bg: 'bg-emerald-500/10', activeClass: 'bg-emerald-500/10 text-emerald-400 font-semibold' },
+  FISCAL: { label: 'Fiscal', text: 'text-orange-400', bg: 'bg-orange-500/10', activeClass: 'bg-orange-500/10 text-orange-400 font-semibold' },
+  SOCIETARIO: { label: 'Societário', text: 'text-purple-400', bg: 'bg-purple-500/10', activeClass: 'bg-purple-500/10 text-purple-400 font-semibold' },
+  TI: { label: 'Tecnologia (TI)', text: 'text-cyan-400', bg: 'bg-cyan-500/10', activeClass: 'bg-cyan-500/10 text-cyan-400 font-semibold' },
+  GERAL: { label: 'Geral', text: 'text-text-muted', bg: 'bg-surface', activeClass: 'bg-gold/10 text-gold font-semibold' },
+  RESTRITO: { label: 'Restrito', text: 'text-red-500', bg: 'bg-red-500/10', activeClass: 'bg-red-500/10 text-red-500 font-semibold' },
+}
+
+const SETOR_COLORS_FALLBACK: Omit<SetorColors, 'label'> = {
+  text: 'text-text-muted',
+  bg: 'bg-surface',
+  activeClass: 'bg-gold/10 text-gold font-semibold',
+}
+
+/**
+ * Cores de um setor. `labelFallback` cobre os setores cadastrados pelo admin,
+ * cujo nome só existe na API.
+ */
+export function getSetorColors(codigo?: string | null, labelFallback?: string): SetorColors {
+  if (codigo && SETOR_COLORS[codigo]) return SETOR_COLORS[codigo]
+  return { label: labelFallback || codigo || 'Sem setor', ...SETOR_COLORS_FALLBACK }
+}
+
 // ---------------------------------------------------------------------------
 // Visibilidade de sistemas por setor
 // ---------------------------------------------------------------------------
