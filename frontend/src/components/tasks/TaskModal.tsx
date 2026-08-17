@@ -7,7 +7,7 @@ import { api } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import toast from 'react-hot-toast'
 import type { Tarefa, StatusTarefa, Prioridade, Setor } from '@/types'
-import { STATUS_LABELS, PRIORITY_LABELS } from '@/lib/constants'
+import { STATUS_LABELS, PRIORITY_LABELS, PRIORITY_COLORS } from '@/lib/constants'
 import { formatDateTime } from '@/lib/utils'
 
 interface TaskModalProps {
@@ -57,11 +57,9 @@ export default function TaskModal({ task, initialStatus, onClose }: TaskModalPro
   })
 
   // Sem setor fixo no código: assim que a lista chega, seleciona o primeiro.
-  useEffect(() => {
-    if (!form.setorOrigem && setores.length) {
-      setForm((f) => (f.setorOrigem ? f : { ...f, setorOrigem: setores[0].codigo }))
-    }
-  }, [setores, form.setorOrigem])
+  // Derivado em render em vez de num efeito — um setState dentro de efeito
+  // encadeia um render extra a cada carga da lista.
+  const setorOrigem = form.setorOrigem || setores[0]?.codigo || ''
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
@@ -69,13 +67,16 @@ export default function TaskModal({ task, initialStatus, onClose }: TaskModalPro
     return () => window.removeEventListener('keydown', handleEsc)
   }, [onClose])
 
+  const payload = () => ({
+    ...form,
+    setorOrigem,
+    clienteId: form.clienteId || undefined,
+    responsavelId: form.responsavelId || undefined,
+    dataVencimento: form.dataVencimento ? `${form.dataVencimento}T23:59:00` : undefined,
+  })
+
   const createMutation = useMutation({
-    mutationFn: () => api.tarefas.create({
-      ...form,
-      clienteId: form.clienteId || undefined,
-      responsavelId: form.responsavelId || undefined,
-      dataVencimento: form.dataVencimento ? `${form.dataVencimento}T23:59:00` : undefined,
-    }),
+    mutationFn: () => api.tarefas.create(payload()),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tarefas'] })
       toast.success('Tarefa criada com sucesso!')
@@ -85,12 +86,7 @@ export default function TaskModal({ task, initialStatus, onClose }: TaskModalPro
   })
 
   const updateMutation = useMutation({
-    mutationFn: () => api.tarefas.update(task!.id, {
-      ...form,
-      clienteId: form.clienteId || undefined,
-      responsavelId: form.responsavelId || undefined,
-      dataVencimento: form.dataVencimento ? `${form.dataVencimento}T23:59:00` : undefined,
-    }),
+    mutationFn: () => api.tarefas.update(task!.id, payload()),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tarefas'] })
       toast.success('Tarefa atualizada!')
@@ -102,11 +98,12 @@ export default function TaskModal({ task, initialStatus, onClose }: TaskModalPro
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.titulo) { toast.error('Título é obrigatório.'); return }
-    isEditing ? updateMutation.mutate() : createMutation.mutate()
+    if (isEditing) updateMutation.mutate()
+    else createMutation.mutate()
   }
 
-  const inputClass = "w-full rounded-lg border border-border bg-sidebar px-3 py-2 text-sm text-text-primary outline-none focus:border-gold"
-  const labelClass = "mb-1 block text-xs font-medium text-text-muted"
+  const inputClass = "h-[38px] w-full rounded-lg border border-border bg-sidebar px-3 text-[13px] text-text-primary outline-none focus:border-gold"
+  const labelClass = "mb-1 block text-[12px] text-text-muted"
   const isPending = createMutation.isPending || updateMutation.isPending
 
   return (
@@ -143,32 +140,49 @@ export default function TaskModal({ task, initialStatus, onClose }: TaskModalPro
 
             <div>
               <label className={labelClass}>Descrição</label>
-              <textarea className={`${inputClass} min-h-[80px] resize-none`} value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} placeholder="Detalhes da tarefa..." />
+              <textarea className={`${inputClass} min-h-[80px] resize-none py-2`} value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} placeholder="Detalhes da tarefa..." />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className={labelClass}>Setor</label>
-                <select 
-                  className={`${inputClass} ${isCoordenador ? 'opacity-70 cursor-not-allowed' : ''}`}
-                  value={form.setorOrigem} 
-                  onChange={(e) => !isCoordenador && setForm({ ...form, setorOrigem: e.target.value as Setor })}
-                  disabled={isCoordenador}
-                >
-                  {setores
-                    .filter((s) => s.codigo !== 'DIRETORIA')
-                    .map((s) => (
-                      <option key={s.id} value={s.codigo}>{s.nome}</option>
-                    ))}
-                </select>
-              </div>
-              <div>
-                <label className={labelClass}>Prioridade</label>
-                <select className={inputClass} value={form.prioridade} onChange={(e) => setForm({ ...form, prioridade: e.target.value as Prioridade })}>
-                  {Object.entries(PRIORITY_LABELS).map(([k, v]) => (
-                    <option key={k} value={k}>{v}</option>
+            <div>
+              <label className={labelClass}>Setor</label>
+              <select
+                className={`${inputClass} ${isCoordenador ? 'opacity-70 cursor-not-allowed' : ''}`}
+                value={setorOrigem}
+                onChange={(e) => !isCoordenador && setForm({ ...form, setorOrigem: e.target.value as Setor })}
+                disabled={isCoordenador}
+              >
+                {setores
+                  .filter((s) => s.codigo !== 'DIRETORIA')
+                  .map((s) => (
+                    <option key={s.id} value={s.codigo}>{s.nome}</option>
                   ))}
-                </select>
+              </select>
+            </div>
+
+            <div>
+              <label className={labelClass}>Prioridade</label>
+              {/* Quatro níveis num grupo segmentado: a escolha fica visível de
+                  uma vez, sem abrir um select para ver as opções. */}
+              <div role="radiogroup" aria-label="Prioridade" className="flex h-[38px] items-center gap-0.5 rounded-lg border border-border bg-sidebar p-0.5">
+                {(Object.keys(PRIORITY_LABELS) as Prioridade[]).map((p) => {
+                  const active = form.prioridade === p
+                  return (
+                    <button
+                      key={p}
+                      type="button"
+                      role="radio"
+                      aria-checked={active}
+                      onClick={() => setForm({ ...form, prioridade: p })}
+                      className={`h-full flex-1 rounded-md text-[12px] font-medium transition-colors ${
+                        active
+                          ? `${PRIORITY_COLORS[p].bg} ${PRIORITY_COLORS[p].text}`
+                          : 'text-text-muted hover:text-text-primary'
+                      }`}
+                    >
+                      {PRIORITY_LABELS[p]}
+                    </button>
+                  )
+                })}
               </div>
             </div>
 
@@ -221,7 +235,12 @@ export default function TaskModal({ task, initialStatus, onClose }: TaskModalPro
           </form>
 
           {/* Footer */}
-          <div className="flex justify-end gap-3 border-t border-border px-6 py-4">
+          <div className="flex flex-wrap items-center justify-end gap-3 border-t border-border px-6 py-4">
+            {!isEditing && (
+              <p className="mr-auto max-w-[60%] text-[11px] leading-snug text-text-muted">
+                A tarefa entra no quadro como <strong className="font-semibold text-text-secondary">{STATUS_LABELS[form.status]}</strong> e notifica o responsável.
+              </p>
+            )}
             <Button variant="secondary" onClick={onClose}>Cancelar</Button>
             <Button onClick={handleSubmit} disabled={isPending}>
               <Save className="mr-1 h-4 w-4" />
