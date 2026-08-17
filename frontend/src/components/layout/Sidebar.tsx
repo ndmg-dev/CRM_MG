@@ -81,8 +81,15 @@ function CategoryGroup({ setor, meta, items, isOpen, onToggle }: CategoryGroupPr
   )
 }
 
+/**
+ * Ordem da navegação: Dashboard, Sistemas, Clientes, Tarefas, Administração,
+ * Auditoria. "Sistemas" não entra nestas listas porque não é um link simples —
+ * abre o menu em cascata — e é renderizado entre `dashboardItem` e
+ * `secondaryItems`.
+ */
+const dashboardItem = { to: '/', icon: LayoutDashboard, label: 'Dashboard' }
+
 const navItems = [
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/clientes', icon: Users, label: 'Clientes' },
   { to: '/tarefas', icon: ClipboardList, label: 'Tarefas' },
 ]
@@ -104,7 +111,7 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
 
   const isAdmin = user?.perfil === 'ADMIN'
   const isSistemasActive = location.pathname.startsWith('/sistemas')
-  const restItems = isAdmin ? [...navItems, ...adminItems] : navItems
+  const secondaryItems = isAdmin ? [...navItems, ...adminItems] : navItems
 
   const { data: sistemas = [] } = useQuery({
     queryKey: ['sistemas'],
@@ -244,6 +251,18 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
 
       {/* Navegação — mobile: lista completa com labels e acordeão inline. */}
       <nav className="flex-1 overflow-y-auto py-2 lg:hidden">
+        <NavLink
+          to={dashboardItem.to}
+          className={`flex items-center gap-3 border-l-[3px] px-4 py-2.5 text-[13px] font-medium transition-colors ${
+            location.pathname === dashboardItem.to
+              ? 'border-gold bg-gold-soft text-gold'
+              : 'border-transparent text-text-secondary hover:bg-surface hover:text-text-primary'
+          }`}
+        >
+          <dashboardItem.icon className="h-[18px] w-[18px] shrink-0" />
+          <span className="truncate">{dashboardItem.label}</span>
+        </NavLink>
+
         <div className="flex flex-col">
           <NavLink
             to="/sistemas"
@@ -276,30 +295,32 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
           )}
         </div>
 
-        {restItems.map((item) => {
-          const isActive = item.to === '/'
-            ? location.pathname === '/'
-            : location.pathname.startsWith(item.to)
-
-          return (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={`flex items-center gap-3 border-l-[3px] px-4 py-2.5 text-[13px] font-medium transition-colors ${
-                isActive
-                  ? 'border-gold bg-gold-soft text-gold'
-                  : 'border-transparent text-text-secondary hover:bg-surface hover:text-text-primary'
-              }`}
-            >
-              <item.icon className="h-[18px] w-[18px] shrink-0" />
-              <span className="truncate">{item.label}</span>
-            </NavLink>
-          )
-        })}
+        {secondaryItems.map((item) => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            className={`flex items-center gap-3 border-l-[3px] px-4 py-2.5 text-[13px] font-medium transition-colors ${
+              location.pathname.startsWith(item.to)
+                ? 'border-gold bg-gold-soft text-gold'
+                : 'border-transparent text-text-secondary hover:bg-surface hover:text-text-primary'
+            }`}
+          >
+            <item.icon className="h-[18px] w-[18px] shrink-0" />
+            <span className="truncate">{item.label}</span>
+          </NavLink>
+        ))}
       </nav>
 
-      {/* Navegação — desktop: rail icon-only + flyout de "Sistemas". */}
+      {/* Navegação — desktop: rail icon-only + menu de "Sistemas". */}
       <nav className="hidden flex-1 flex-col items-center gap-2.5 overflow-y-auto py-3.5 lg:flex">
+        <NavLink
+          to={dashboardItem.to}
+          title={dashboardItem.label}
+          className={railIconBtnClass(location.pathname === dashboardItem.to)}
+        >
+          <dashboardItem.icon className="h-[18px] w-[18px] shrink-0" />
+        </NavLink>
+
         <button
           ref={triggerRef}
           type="button"
@@ -322,17 +343,16 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
           />
         )}
 
-        {restItems.map((item) => {
-          const isActive = item.to === '/'
-            ? location.pathname === '/'
-            : location.pathname.startsWith(item.to)
-
-          return (
-            <NavLink key={item.to} to={item.to} title={item.label} className={railIconBtnClass(isActive)}>
-              <item.icon className="h-[18px] w-[18px] shrink-0" />
-            </NavLink>
-          )
-        })}
+        {secondaryItems.map((item) => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            title={item.label}
+            className={railIconBtnClass(location.pathname.startsWith(item.to))}
+          >
+            <item.icon className="h-[18px] w-[18px] shrink-0" />
+          </NavLink>
+        ))}
       </nav>
 
       {/* Rodapé: usuário + ações */}
