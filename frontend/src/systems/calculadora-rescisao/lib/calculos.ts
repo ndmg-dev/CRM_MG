@@ -49,6 +49,8 @@ export interface DadosRescisao {
   dataAdmissao: Date | null;
   mesAnoRescisao: Date;
   diasTrabalhados: number;
+  /** true = divide por 30 (mês comercial); false/undefined = divide pelos dias reais do mês */
+  usar30DiasParaSaldo?: boolean;
   anosEmpresa: number;
   tipoDesligamento: 'sem_justa_causa' | 'acordo' | 'pedido_demissao' | 'justa_causa' | 'fgts_8' | 'nao_aplicavel';
   tipoAviso: 'indenizado' | 'trabalhado' | 'nao_aplicavel';
@@ -442,24 +444,31 @@ export function calcularRescisao(
   const competenciaAno = dados.mesAnoRescisao.getFullYear();
   const competenciaMes = dados.mesAnoRescisao.getMonth() + 1; // getMonth() retorna 0-11
   const diasDoMes = diasNoMes(competenciaAno, competenciaMes);
-  
-  // Valor diário usando dias reais do mês
-  const valorDiario = dados.salarioBruto / diasDoMes;
+
+  // Divisor do saldo de salário: dias reais do mês (padrão) ou 30 (mês comercial)
+  const divisorSaldo = dados.usar30DiasParaSaldo ? 30 : diasDoMes;
+
+  // Valor diário
+  const valorDiario = dados.salarioBruto / divisorSaldo;
   memorias.push({
     descricao: 'Valor diário',
-    formula: `Salário ÷ Dias do mês (${diasDoMes} dias em ${competenciaMes}/${competenciaAno})`,
-    substituicao: `R$ ${formatarMoeda(dados.salarioBruto)} ÷ ${diasDoMes}`,
+    formula: dados.usar30DiasParaSaldo
+      ? 'Salário ÷ 30 (mês comercial)'
+      : `Salário ÷ Dias do mês (${diasDoMes} dias em ${competenciaMes}/${competenciaAno})`,
+    substituicao: `R$ ${formatarMoeda(dados.salarioBruto)} ÷ ${divisorSaldo}`,
     resultado: valorDiario,
   });
-  
-  // Saldo de salário usando dias reais
-  // Limitar dias trabalhados ao máximo de dias do mês para evitar erro
-  const diasTrabalhadosValidados = Math.min(dados.diasTrabalhados, diasDoMes);
-  const saldoSalario = dados.salarioBruto * (diasTrabalhadosValidados / diasDoMes);
+
+  // Saldo de salário
+  // Limitar dias trabalhados ao máximo do divisor para evitar erro
+  const diasTrabalhadosValidados = Math.min(dados.diasTrabalhados, divisorSaldo);
+  const saldoSalario = dados.salarioBruto * (diasTrabalhadosValidados / divisorSaldo);
   memorias.push({
     descricao: 'Saldo de salário',
-    formula: `Salário × (Dias trabalhados ÷ Dias do mês)`,
-    substituicao: `R$ ${formatarMoeda(dados.salarioBruto)} × (${diasTrabalhadosValidados} ÷ ${diasDoMes})`,
+    formula: dados.usar30DiasParaSaldo
+      ? 'Salário × (Dias trabalhados ÷ 30)'
+      : 'Salário × (Dias trabalhados ÷ Dias do mês)',
+    substituicao: `R$ ${formatarMoeda(dados.salarioBruto)} × (${diasTrabalhadosValidados} ÷ ${divisorSaldo})`,
     resultado: saldoSalario,
   });
   

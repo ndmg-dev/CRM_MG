@@ -71,6 +71,7 @@ const dadosIniciais: DadosRescisao = {
   dataAdmissao: null,
   mesAnoRescisao: new Date(),
   diasTrabalhados: 30,
+  usar30DiasParaSaldo: false,
   anosEmpresa: 1,
   tipoDesligamento: 'sem_justa_causa',
   tipoAviso: 'indenizado',
@@ -416,15 +417,27 @@ export default function CalculadoraPage() {
                 </div>
               </div>
               <div>
-                <Label className="text-sm text-muted-foreground mb-2 block">Dias Trabalhados no Mês</Label>
+                <Label className={`text-sm mb-2 block ${dados.usar30DiasParaSaldo ? 'text-muted-foreground/50' : 'text-muted-foreground'}`}>
+                  Dias Trabalhados no Mês
+                </Label>
                 <InputDark
                   type="number"
                   min={0}
                   max={31}
                   value={dados.diasTrabalhados}
                   onChange={(e) => setDados({ ...dados, diasTrabalhados: parseInt(e.target.value) || 0 })}
-                  className="max-w-32"
+                  disabled={dados.usar30DiasParaSaldo}
+                  className={`max-w-32 ${dados.usar30DiasParaSaldo ? 'opacity-50' : ''}`}
                 />
+                <div className="flex items-center gap-2 mt-3">
+                  <Switch
+                    checked={dados.usar30DiasParaSaldo ?? false}
+                    onCheckedChange={(checked) => setDados({ ...dados, usar30DiasParaSaldo: checked })}
+                  />
+                  <Label className="text-sm text-foreground">
+                    Usar 30 dias para saldo de salário
+                  </Label>
+                </div>
               </div>
               {/* Salários por Ano */}
               {dados.dataAdmissao && (() => {
