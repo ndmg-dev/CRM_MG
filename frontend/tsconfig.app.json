@@ -14,7 +14,9 @@
       "@ferias/*": ["./src/systems/agendamento-ferias/*"],
       "@ponto/*": ["./src/systems/processar-ponto/*"],
       "@obrigacoes/*": ["./src/systems/obrigacoes/*"],
-      "@adiantamento/*": ["./src/systems/calculo-adiantamento/*"]
+      "@adiantamento/*": ["./src/systems/calculo-adiantamento/*"],
+      "@aeronord/*": ["./src/systems/aeronord/*"],
+      "@comissao/*": ["./src/systems/calculo-comissao/*"]
     },
 
     /* Bundler mode */

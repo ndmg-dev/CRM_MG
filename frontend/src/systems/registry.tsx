@@ -23,6 +23,8 @@ export const systemRegistry: Record<string, LazyExoticComponent<ComponentType>> 
   'obrigacoes-acessorias': lazy(() => import('@obrigacoes/App')),
   'obrigacoes': lazy(() => import('@obrigacoes/App')),
   'calculo-adiantamento': lazy(() => import('@adiantamento/CalculoAdiantamentoApp')),
+  'aeronord-convocacoes-recibos': lazy(() => import('@aeronord/AeronordApp')),
+  'calculo-comissao': lazy(() => import('@comissao/CalculoComissaoApp')),
 }
 
 /**
