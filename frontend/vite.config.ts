@@ -17,6 +17,8 @@ export default defineConfig(({ mode }) => {
         '@ponto': path.resolve(__dirname, './src/systems/processar-ponto'),
         '@obrigacoes': path.resolve(__dirname, './src/systems/obrigacoes'),
         '@adiantamento': path.resolve(__dirname, './src/systems/calculo-adiantamento'),
+        '@aeronord': path.resolve(__dirname, './src/systems/aeronord'),
+        '@comissao': path.resolve(__dirname, './src/systems/calculo-comissao'),
       },
     },
     server: {
