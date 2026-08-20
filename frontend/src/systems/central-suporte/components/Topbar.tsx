@@ -20,6 +20,7 @@ import { useNavigate, useLocation } from "@suporte/lib/router-shim";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@suporte/integrations/supabase/client";
 import { NotificationBell } from "@suporte/components/NotificationBell";
+import { MessageNotificationBell } from "@suporte/components/MessageNotificationBell";
 import { endUnifiedSession } from "@/lib/unifiedAuth";
 import { useAuthStore } from "@/stores/authStore";
 import { useUIStore } from "@/stores/uiStore";
@@ -291,6 +292,7 @@ export function Topbar() {
               <span className="sr-only">Modo TV</span>
             </button>
           )}
+          <MessageNotificationBell />
           <NotificationBell />
           <button
             type="button"

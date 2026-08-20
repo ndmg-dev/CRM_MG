@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Bell } from "lucide-react";
+import { MessageSquare } from "lucide-react";
 import { Button } from "@suporte/components/ui/button";
 import { Badge } from "@suporte/components/ui/badge";
 import {
@@ -14,18 +14,20 @@ import { playNotificationSound } from "@suporte/lib/notification-sound";
 import { showBrowserNotification } from "@suporte/hooks/useBrowserNotifications";
 import { useNavigate } from "@suporte/lib/router-shim";
 
-export function NotificationBell() {
+const MESSAGE_TITLE = "Novo comentário";
+
+export function MessageNotificationBell() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
   const { data: notifications } = useQuery({
-    queryKey: ["notifications"],
+    queryKey: ["message-notifications"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("notifications")
         .select("*")
-        .neq("title", "Novo comentário")
+        .eq("title", MESSAGE_TITLE)
         .order("created_at", { ascending: false })
         .limit(20);
       if (error) throw error;
@@ -35,14 +37,13 @@ export function NotificationBell() {
 
   const unreadCount = notifications?.filter((n) => !n.is_read).length || 0;
 
-  // Realtime subscription for new notifications
   useEffect(() => {
     const setupChannel = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
       const channel = supabase
-        .channel("user-notifications")
+        .channel("user-message-notifications")
         .on(
           "postgres_changes",
           {
@@ -53,23 +54,11 @@ export function NotificationBell() {
           },
           (payload: any) => {
             const record = payload?.new;
-            // Mensagens têm bolinha e som próprios (MessageNotificationBell).
-            if (record?.title?.includes("Novo comentário")) return;
+            if (!record?.title?.includes(MESSAGE_TITLE)) return;
 
-            queryClient.invalidateQueries({ queryKey: ["notifications"] });
-            const isClosing = record?.title?.includes("Encerrado");
-
-            if (record?.ticket_id && !isClosing) {
-              // Fetch ticket to get assignee for sound priority
-              supabase.from("tickets").select("assignee_id").eq("id", record.ticket_id).single().then(({ data: ticket }) => {
-                playNotificationSound("ticket_opened", ticket?.assignee_id);
-              });
-            } else {
-              playNotificationSound(isClosing ? "ticket_closed" : "ticket_opened");
-            }
-            if (record) {
-              showBrowserNotification(record.title || "Nova notificação", record.message || "");
-            }
+            queryClient.invalidateQueries({ queryKey: ["message-notifications"] });
+            playNotificationSound("comment_received");
+            showBrowserNotification(record.title || "Nova mensagem", record.message || "");
           }
         )
         .subscribe();
@@ -90,7 +79,8 @@ export function NotificationBell() {
       .from("notifications")
       .update({ is_read: true })
       .eq("id", id);
-    queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    queryClient.invalidateQueries({ queryKey: ["message-notifications"] });
+    queryClient.invalidateQueries({ queryKey: ["unread-comment-counts"] });
   };
 
   const markAllAsRead = async () => {
@@ -100,7 +90,8 @@ export function NotificationBell() {
       .from("notifications")
       .update({ is_read: true })
       .in("id", unread.map((n) => n.id));
-    queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    queryClient.invalidateQueries({ queryKey: ["message-notifications"] });
+    queryClient.invalidateQueries({ queryKey: ["unread-comment-counts"] });
   };
 
   const handleClick = (notification: any) => {
@@ -114,8 +105,8 @@ export function NotificationBell() {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
+        <Button variant="ghost" size="icon" className="relative" aria-label="Mensagens">
+          <MessageSquare className="h-5 w-5" />
           {unreadCount > 0 && (
             <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-[10px] bg-destructive text-destructive-foreground">
               {unreadCount > 9 ? "9+" : unreadCount}
@@ -125,7 +116,7 @@ export function NotificationBell() {
       </PopoverTrigger>
       <PopoverContent className="w-80 p-0" align="end">
         <div className="flex items-center justify-between p-3 border-b border-border">
-          <span className="font-semibold text-sm">Notificações</span>
+          <span className="font-semibold text-sm">Mensagens</span>
           {unreadCount > 0 && (
             <Button variant="ghost" size="sm" className="text-xs h-7" onClick={markAllAsRead}>
               Marcar tudo como lido
@@ -134,7 +125,7 @@ export function NotificationBell() {
         </div>
         <ScrollArea className="max-h-[300px]">
           {(!notifications || notifications.length === 0) ? (
-            <p className="text-xs text-muted-foreground text-center py-8">Nenhuma notificação</p>
+            <p className="text-xs text-muted-foreground text-center py-8">Nenhuma mensagem</p>
           ) : (
             notifications.map((n) => (
               <div
@@ -160,5 +151,3 @@ export function NotificationBell() {
     </Popover>
   );
 }
-
-
