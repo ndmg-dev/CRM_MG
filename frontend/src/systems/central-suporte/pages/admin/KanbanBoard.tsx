@@ -14,6 +14,7 @@ import { ViewerCarousel } from "@suporte/components/admin/ViewerCarousel";
 import { ViewerAudioUnlock } from "@suporte/components/admin/ViewerAudioUnlock";
 import { TaskDetailDialog } from "@suporte/components/admin/TaskDetailDialog";
 import { useUserSector } from "@suporte/hooks/useUserSector";
+import { useUnreadComments } from "@suporte/hooks/useUnreadComments";
 
 
 type ColumnId = "tasks" | "open" | "pending" | "parado" | "testing" | "resolved";
@@ -37,6 +38,7 @@ const KanbanBoard = () => {
   const [manualOrder, setManualOrder] = useState<Record<string, string[]>>({});
 
   const sector = useUserSector();
+  const unreadComments = useUnreadComments();
 
   const isViewer = sector.isViewer && !sector.roles.some(r => ["support_agent", "dev", "admin_ti"].includes(r));
   const isCoordinator = sector.isCoordinator;
@@ -271,6 +273,7 @@ const KanbanBoard = () => {
           columns={columns}
           columnConfig={columnConfig}
           slaMap={slaMap}
+          unreadComments={unreadComments}
           onTicketClick={(id) => setSelectedTicketId(id)}
           onTaskClick={(id) => setSelectedTaskId(id)}
           onNewTicket={() => {}}
@@ -343,6 +346,7 @@ const KanbanBoard = () => {
                                       borderColor={col.borderColor}
                                       isDragging={snapshot.isDragging}
                                       slaInfo={slaMap[item.id]}
+                                      unreadComments={unreadComments[item.id]}
                                       onClick={() => !snapshot.isDragging && setSelectedTicketId(item.id)}
                                       canMoveUp={index > 0}
                                       canMoveDown={index < items.length - 1}

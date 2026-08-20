@@ -22,6 +22,7 @@ interface ViewerCarouselProps {
   columns: Record<ColumnId, any[]>;
   columnConfig: ColumnDef[];
   slaMap: Record<string, SlaInfo>;
+  unreadComments?: Record<string, number>;
   onTicketClick: (id: string) => void;
   onTaskClick: (id: string) => void;
   onNewTicket: () => void;
@@ -50,6 +51,7 @@ export function ViewerCarousel({
   columns: rawColumns,
   columnConfig,
   slaMap,
+  unreadComments = {},
   onTicketClick,
   onTaskClick,
   onNewTicket,
@@ -161,6 +163,7 @@ export function ViewerCarousel({
             columns={columns}
             columnConfig={columnConfig}
             slaMap={slaMap}
+            unreadComments={unreadComments}
             onTicketClick={onTicketClick}
             onTaskClick={onTaskClick}
           />
@@ -170,6 +173,7 @@ export function ViewerCarousel({
             page={currentSlide.page}
             colConfig={getColConfig(currentSlide.columnId)}
             slaMap={slaMap}
+            unreadComments={unreadComments}
             onTicketClick={onTicketClick}
             onTaskClick={onTaskClick}
           />
@@ -197,12 +201,14 @@ function OverviewSlide({
   columns,
   columnConfig,
   slaMap,
+  unreadComments,
   onTicketClick,
   onTaskClick,
 }: {
   columns: Record<ColumnId, any[]>;
   columnConfig: ColumnDef[];
   slaMap: Record<string, SlaInfo>;
+  unreadComments: Record<string, number>;
   onTicketClick: (id: string) => void;
   onTaskClick: (id: string) => void;
 }) {
@@ -236,6 +242,7 @@ function OverviewSlide({
                     borderColor={col.borderColor}
                     isDragging={false}
                     slaInfo={slaMap[item.id]}
+                    unreadComments={unreadComments[item.id]}
                     onClick={() => onTicketClick(item.id)}
                   />
                 )
@@ -254,6 +261,7 @@ function StatusSlide({
   page,
   colConfig,
   slaMap,
+  unreadComments,
   onTicketClick,
   onTaskClick,
 }: {
@@ -261,6 +269,7 @@ function StatusSlide({
   page: number;
   colConfig: ColumnDef;
   slaMap: Record<string, SlaInfo>;
+  unreadComments: Record<string, number>;
   onTicketClick: (id: string) => void;
   onTaskClick: (id: string) => void;
 }) {
@@ -292,6 +301,7 @@ function StatusSlide({
               borderColor={colConfig.borderColor}
               isDragging={false}
               slaInfo={slaMap[item.id]}
+              unreadComments={unreadComments[item.id]}
               onClick={() => onTicketClick(item.id)}
             />
           )

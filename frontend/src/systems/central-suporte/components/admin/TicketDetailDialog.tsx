@@ -37,6 +37,7 @@ import { cn } from "@suporte/lib/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@suporte/integrations/supabase/client";
 import { toast } from "sonner";
+import { markCommentNotificationsRead } from "@suporte/hooks/useUnreadComments";
 
 interface TicketDetailDialogProps {
   ticketId: string | null;
@@ -95,6 +96,15 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pendingSectorId, setPendingSectorId] = useState<string | null>(null);
   const [sectorAssigneeId, setSectorAssigneeId] = useState<string>("unassigned");
+
+  // Abriu o chamado: some com a bolinha de comentário não lido no card.
+  useEffect(() => {
+    if (open && ticketId) {
+      markCommentNotificationsRead(ticketId).then(() => {
+        queryClient.invalidateQueries({ queryKey: ["unread-comment-counts"] });
+      });
+    }
+  }, [open, ticketId, queryClient]);
 
   const { data: canDelete } = useQuery({
     queryKey: ["can-delete-ticket"],
