@@ -3,6 +3,7 @@ from typing import Optional
 from datetime import datetime
 from uuid import UUID
 from app.enums.profile import Perfil
+from app.enums.visibilidade_usuario import VisibilidadeUsuario
 
 def normalizar_email(valor: str) -> str:
     """E-mails são comparados em minúsculo para evitar cadastros duplicados
@@ -18,6 +19,9 @@ class UsuarioBase(BaseModel):
     setor: Optional[str] = None
     ativo: bool = True
     foto_perfil: Optional[str] = None
+    # SETOR mantém o comportamento herdado do setor; INDIVIDUAL faz o usuário
+    # ver exatamente os sistemas concedidos um a um.
+    visibilidade_sistemas: VisibilidadeUsuario = VisibilidadeUsuario.SETOR
 
     @field_validator("email")
     @classmethod
@@ -42,6 +46,7 @@ class UsuarioUpdate(BaseModel):
     setor: Optional[str] = None
     ativo: Optional[bool] = None
     foto_perfil: Optional[str] = None
+    visibilidade_sistemas: Optional[VisibilidadeUsuario] = None
 
     @field_validator("email")
     @classmethod

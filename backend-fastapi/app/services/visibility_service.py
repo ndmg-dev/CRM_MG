@@ -11,6 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.enums.visibilidade_sistemas import VisibilidadeSistemas
+from app.enums.visibilidade_usuario import VisibilidadeUsuario
 from app.models.sector import Setor
 from app.models.system import Sistema
 from app.models.user import Usuario
@@ -49,13 +50,21 @@ def pode_ver_sistema(
     if usuario.perfil == "ADMIN":
         return True
 
-    # Concessão individual passa por cima da política do setor — mas nunca
-    # libera um sistema RESTRITO para quem não é ADMIN.
+    # Concessão individual é a decisão mais específica que existe e vence
+    # qualquer política, inclusive para sistemas RESTRITO. Só um ADMIN concede,
+    # um sistema por vez, e cada concessão fica registrada em auditoria
+    # (GRANT_ACCESS) — o padrão continua sendo RESTRITO invisível, porque sem
+    # concessão nenhuma o fluxo abaixo o barra.
+    if sistema.id in acessos_individuais:
+        return True
+
+    # Lista exata: o usuário não herda nada do setor, só o concedido acima.
+    if usuario.visibilidade_sistemas == VisibilidadeUsuario.INDIVIDUAL.value:
+        return False
+
     setor_sistema = sistema.setor or SETOR_SISTEMA_GERAL
     if setor_sistema == SETOR_SISTEMA_RESTRITO:
         return False
-    if sistema.id in acessos_individuais:
-        return True
 
     modo = (
         setor.visibilidade_sistemas

@@ -63,7 +63,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
   const unreadCount = notificacoes.filter(n => !n.lida).length
 
   return (
-    <header className="sticky top-0 z-20 flex h-[52px] items-center justify-between border-b border-border bg-background/85 px-4 backdrop-blur-md lg:px-5">
+    <header className="sticky top-0 z-20 flex h-[52px] items-center justify-between border-b border-border bg-header-gradient px-4 shadow-header backdrop-blur-md lg:px-5">
       {/* Menu (drawer). O título da página não vive aqui: toda página já tem o
           seu — PageHeader, ou um `h1` próprio em Dashboard e ClientDetail —
           e repeti-lo na barra deixava o mesmo texto duas vezes na tela. */}
@@ -81,9 +81,9 @@ export default function Header({ onMenuClick }: HeaderProps) {
       <div className="flex items-center gap-2">
         {/* Search */}
         <div className="relative hidden sm:block" ref={searchRef}>
-          <div className={`flex h-9 items-center gap-2 rounded-lg border bg-surface-raised px-3 transition-colors ${isSearchFocused ? 'border-gold-border' : 'border-border'
+          <div className={`flex h-9 items-center gap-2 rounded-lg border bg-search-field px-3 shadow-search-field transition-colors ${isSearchFocused ? 'border-gold-border' : 'border-gold-border-soft'
             }`}>
-            <Search className="h-4 w-4 shrink-0 text-text-muted" />
+            <Search className="h-4 w-4 shrink-0 text-gold" />
             <input
               type="text"
               placeholder="Buscar (sistemas, clientes...)"
