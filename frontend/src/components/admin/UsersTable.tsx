@@ -8,6 +8,7 @@ import { Check, X, Plus } from 'lucide-react'
 import toast from 'react-hot-toast'
 import type { Perfil, Usuario } from '@/types'
 import { Button } from '@mg/ui'
+import UserSystemsDialog from './UserSystemsDialog'
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -90,6 +91,8 @@ export default function UsersTable() {
 
   const [isCreating, setIsCreating] = useState(false)
   const [createForm, setCreateForm] = useState(FORM_INICIAL)
+  /** Usuário com o seletor de sistemas aberto; `null` = fechado. */
+  const [systemsUser, setSystemsUser] = useState<Usuario | null>(null)
 
   const emailNormalizado = createForm.email.trim().toLowerCase()
   const emailValido = EMAIL_REGEX.test(emailNormalizado)
@@ -301,6 +304,13 @@ export default function UsersTable() {
                     <Button
                       variant="ghost"
                       size="sm"
+                      onClick={() => setSystemsUser(u)}
+                    >
+                      Sistemas
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => handleEdit(u)}
                     >
                       Editar
@@ -320,6 +330,10 @@ export default function UsersTable() {
         </tbody>
         </table>
       </div>
+
+      {systemsUser && (
+        <UserSystemsDialog user={systemsUser} onClose={() => setSystemsUser(null)} />
+      )}
     </div>
   )
 }

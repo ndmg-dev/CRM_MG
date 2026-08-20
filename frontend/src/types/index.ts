@@ -26,6 +26,13 @@ export type Prioridade = 'BAIXA' | 'MEDIA' | 'ALTA' | 'CRITICA'
 export type RegimeTributario = 'SIMPLES_NACIONAL' | 'LUCRO_PRESUMIDO' | 'LUCRO_REAL'
 export type CategoriaSistema = 'MAIN' | 'AUTOMATION' | 'STATIC'
 
+/**
+ * De onde sai a lista de sistemas do usuário. `SETOR` (padrão) usa a política
+ * do setor mais o que for liberado individualmente; `INDIVIDUAL` usa apenas o
+ * que foi liberado, ignorando o setor.
+ */
+export type VisibilidadeUsuario = 'SETOR' | 'INDIVIDUAL'
+
 export interface Usuario {
   id: string
   nome: string
@@ -35,6 +42,7 @@ export interface Usuario {
   ativo: boolean
   fotoPerfil?: string
   dataCriacao: string
+  visibilidadeSistemas?: VisibilidadeUsuario
 }
 
 export interface Notificacao {
