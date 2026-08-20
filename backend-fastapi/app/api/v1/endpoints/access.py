@@ -24,15 +24,15 @@ async def grant_access(
     exists = await db.scalar(
         select(UsuarioSistemaAcesso).where(
             and_(
-                UsuarioSistemaAcesso.usuario_id == req.usuarioId,
-                UsuarioSistemaAcesso.sistema_id == req.sistemaId
+                UsuarioSistemaAcesso.usuario_id == req.usuario_id,
+                UsuarioSistemaAcesso.sistema_id == req.sistema_id
             )
         )
     )
     if not exists:
         access = UsuarioSistemaAcesso(
-            usuario_id=req.usuarioId,
-            sistema_id=req.sistemaId,
+            usuario_id=req.usuario_id,
+            sistema_id=req.sistema_id,
             granted_by=current_user.id
         )
         db.add(access)
@@ -40,8 +40,8 @@ async def grant_access(
         audit = LogAuditoria(
             usuario_id=current_user.id,
             acao="GRANT_ACCESS",
-            alvo=f"Sistema ID {req.sistemaId}",
-            detalhes={"usuario_alvo": str(req.usuarioId)}
+            alvo=f"Sistema ID {req.sistema_id}",
+            detalhes={"usuario_alvo": str(req.usuario_id)}
         )
         db.add(audit)
         
@@ -56,8 +56,8 @@ async def revoke_access(
     access = await db.scalar(
         select(UsuarioSistemaAcesso).where(
             and_(
-                UsuarioSistemaAcesso.usuario_id == req.usuarioId,
-                UsuarioSistemaAcesso.sistema_id == req.sistemaId
+                UsuarioSistemaAcesso.usuario_id == req.usuario_id,
+                UsuarioSistemaAcesso.sistema_id == req.sistema_id
             )
         )
     )
@@ -67,8 +67,8 @@ async def revoke_access(
         audit = LogAuditoria(
             usuario_id=current_user.id,
             acao="REVOKE_ACCESS",
-            alvo=f"Sistema ID {req.sistemaId}",
-            detalhes={"usuario_alvo": str(req.usuarioId)}
+            alvo=f"Sistema ID {req.sistema_id}",
+            detalhes={"usuario_alvo": str(req.usuario_id)}
         )
         db.add(audit)
         

@@ -8,6 +8,7 @@ import uuid
 import pytest
 
 from app.enums.visibilidade_sistemas import VisibilidadeSistemas as V
+from app.enums.visibilidade_usuario import VisibilidadeUsuario as U
 from app.models.sector import Setor
 from app.models.system import Sistema
 from app.models.user import Usuario
@@ -24,9 +25,10 @@ def setor(codigo, modo=V.PROPRIO, visiveis=None):
                  visibilidade_sistemas=modo.value, setores_visiveis=visiveis or [])
 
 
-def usuario(perfil="ANALISTA", setor_codigo="FISCAL"):
+def usuario(perfil="ANALISTA", setor_codigo="FISCAL", visibilidade=U.SETOR):
     return Usuario(id=uuid.uuid4(), nome="U", email="u@x.com", perfil=perfil,
-                   setor=setor_codigo, ativo=True)
+                   setor=setor_codigo, ativo=True,
+                   visibilidade_sistemas=visibilidade.value)
 
 
 FISCAL = sistema("FISCAL")
@@ -106,10 +108,62 @@ def test_acesso_individual_fura_o_modo_restrito():
     assert visiveis(usuario(), s, {CONTABIL.id}) == {"Sis CONTABIL"}
 
 
-def test_acesso_individual_nao_libera_sistema_restrito():
+def test_acesso_individual_libera_sistema_restrito():
+    """Mudança deliberada: antes a concessão individual não alcançava RESTRITO.
+
+    Só um ADMIN concede, um sistema por vez, e a ação fica em auditoria — é a
+    decisão mais específica que existe, então vence a política do setor.
+    """
     s = setor("FISCAL", V.TOTAL)
-    assert not pode_ver_sistema(RESTRITO, usuario(), s, {RESTRITO.id})
+    assert pode_ver_sistema(RESTRITO, usuario(), s, {RESTRITO.id})
+
+
+def test_restrito_continua_invisivel_sem_concessao_explicita():
+    """O afrouxamento acima não muda o padrão: sem conceder, segue invisível."""
+    assert not pode_ver_sistema(RESTRITO, usuario(), setor("FISCAL", V.TOTAL), set())
 
 
 def test_usuario_sem_setor_cai_no_modo_proprio():
     assert visiveis(usuario(setor_codigo=None), None) == {"Sis GERAL", "Sis None"}
+
+
+# ---------------------------------------------------------------------------
+# Visibilidade por usuário (INDIVIDUAL)
+# ---------------------------------------------------------------------------
+
+def test_individual_ve_so_o_que_foi_concedido():
+    """Nem o setor TOTAL entrega nada: a lista do usuário é exatamente a dele."""
+    u = usuario(visibilidade=U.INDIVIDUAL)
+    assert visiveis(u, setor("FISCAL", V.TOTAL), {CONTABIL.id}) == {"Sis CONTABIL"}
+
+
+def test_individual_sem_concessao_nao_ve_nada():
+    u = usuario(visibilidade=U.INDIVIDUAL)
+    assert visiveis(u, setor("FISCAL", V.TOTAL)) == set()
+
+
+def test_individual_nao_herda_nem_geral_do_setor():
+    """GERAL é o caso que mais escapa: ele passa em todos os modos de setor."""
+    u = usuario(visibilidade=U.INDIVIDUAL)
+    assert not pode_ver_sistema(GERAL, u, setor("FISCAL", V.PROPRIO), set())
+
+
+def test_individual_nao_restringe_admin():
+    u = usuario("ADMIN", visibilidade=U.INDIVIDUAL)
+    assert visiveis(u, setor("FISCAL", V.RESTRITO)) == {s.nome for s in TODOS}
+
+
+def test_modo_setor_preserva_o_comportamento_anterior():
+    """Guarda de regressão: quem não foi marcado segue como antes."""
+    assert visiveis(usuario(visibilidade=U.SETOR), setor("FISCAL", V.PROPRIO)) == {
+        "Sis FISCAL", "Sis GERAL", "Sis None",
+    }
+
+
+def test_usuario_sem_o_campo_preenchido_segue_o_setor():
+    """Linhas antigas, anteriores à migração, chegam com o campo vazio."""
+    u = Usuario(id=uuid.uuid4(), nome="U", email="u@x.com", perfil="ANALISTA",
+                setor="FISCAL", ativo=True)
+    assert visiveis(u, setor("FISCAL", V.PROPRIO)) == {
+        "Sis FISCAL", "Sis GERAL", "Sis None",
+    }
