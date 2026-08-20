@@ -84,12 +84,7 @@ export const KanbanTicketCard = ({
   const slaUrgencyBorder = !isResolved && urgency ? slaBorderMap[urgency] : "";
 
   return (
-    <div onClick={onClick} className="relative">
-      {!!unreadComments && (
-        <span className="absolute -top-1.5 -right-1.5 z-10 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-background animate-pulse">
-          {unreadComments > 9 ? "9+" : unreadComments}
-        </span>
-      )}
+    <div onClick={onClick}>
       <Card
         className={`cursor-pointer transition-all h-[180px] flex flex-col ${borderColor ? `border-l-4 ${borderColor}` : ""} ${isDragging ? "shadow-lg ring-2 ring-primary/30 rotate-2" : "hover:border-primary/50"} ${isResolved ? "opacity-75 hover:opacity-100" : ""} ${slaUrgencyBorder}`}
       >
@@ -147,6 +142,11 @@ export const KanbanTicketCard = ({
                     <ChevronDown className="h-3 w-3" />
                   </Button>
                 </div>
+              )}
+              {!!unreadComments && (
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white animate-pulse">
+                  {unreadComments > 9 ? "9+" : unreadComments}
+                </span>
               )}
               {ticket.assignee?.full_name && (
                 <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center text-[10px] text-primary font-bold">
