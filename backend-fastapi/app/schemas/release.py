@@ -25,7 +25,7 @@ class ReleaseResponse(BaseModel):
 
 class ReleaseNoteCreate(BaseModel):
     system_name: str = Field(min_length=1, max_length=255)
-    description: str = Field(min_length=1, max_length=1000)
+    description: str = Field(min_length=1, max_length=4000)
 
 
 class ReleaseCreate(BaseModel):

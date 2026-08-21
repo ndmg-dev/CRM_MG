@@ -117,8 +117,10 @@ export default function ReleasesTable() {
                     value={nota.description}
                     onChange={(e) => updateNota(i, 'description', e.target.value)}
                     rows={3}
+                    maxLength={4000}
                     className="w-full resize-y rounded-lg border border-border bg-surface-raised px-3 py-2 text-sm text-text-primary outline-none"
                   />
+                  <p className="-mt-1 text-right text-[11px] text-text-muted">{nota.description.length}/4000</p>
                 </div>
                 <button
                   onClick={() => removeNota(i)}

@@ -29,7 +29,7 @@ class ReleaseNote(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     release_id = Column(UUID(as_uuid=True), ForeignKey("releases.id", ondelete="CASCADE"), nullable=False)
     system_name = Column(String(255), nullable=False)
-    description = Column(String(1000), nullable=False)
+    description = Column(String(4000), nullable=False)
     sort_order = Column(Integer, default=0, nullable=False)
 
     release = relationship("Release", back_populates="notes")
