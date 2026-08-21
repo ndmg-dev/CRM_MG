@@ -38,7 +38,10 @@ function formatTime(dateStr: string): string {
 // texto. Viram um separador central, não uma bolha de conversa.
 const SYSTEM_NOTE_PATTERN = /^(transferido de .+ para .+|categoria alterada|status alterado|prioridade alterada)/i
 function isSystemNote(content: string): boolean {
-  return SYSTEM_NOTE_PATTERN.test((content || '').trim())
+  // Esses comentários costumam vir com um emoji/ícone na frente (🔄 etc.) —
+  // tira qualquer coisa que não seja letra antes de testar o padrão.
+  const stripped = (content || '').trim().replace(/^[^\p{L}]+/u, '')
+  return SYSTEM_NOTE_PATTERN.test(stripped)
 }
 
 /** Chat rápido de um chamado, flutuante no canto inferior direito — pra
@@ -246,10 +249,12 @@ export function FloatingTicketChat() {
                   </div>
                 )}
                 {isSystemNote(c.content) ? (
-                  <div className="flex justify-center py-1">
-                    <span className="rounded-full bg-surface px-3 py-1 text-center text-[11px] text-text-muted">
+                  <div className="my-3 flex items-center gap-2">
+                    <div className="h-px flex-1 bg-border" />
+                    <span className="shrink-0 text-center text-[10px] font-medium uppercase tracking-wide text-text-muted">
                       {c.content} · {formatTime(c.created_at)}
                     </span>
+                    <div className="h-px flex-1 bg-border" />
                   </div>
                 ) : (
                   <div className={`flex items-end gap-2 ${isMine ? 'flex-row-reverse' : ''}`}>
