@@ -41,6 +41,9 @@ export async function showBrowserNotification(title: string, body?: string) {
     new Notification(title, {
       body: body || undefined,
       icon: "/favicon.ico",
+      // Já tocamos um som customizado via playNotificationSound() — sem
+      // isto, o SO/navegador toca o próprio "ding" de notificação em cima.
+      silent: true,
     });
   } catch (e) {
     console.warn("Could not show browser notification:", e);
