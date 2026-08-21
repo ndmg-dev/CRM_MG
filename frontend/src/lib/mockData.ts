@@ -11,6 +11,7 @@ import type {
   Sistema,
   AuditLog,
   DashboardSummary,
+  PersonalDashboardSummary,
   PaginatedResponse,
   TaskFilters,
   AuditFilters,
@@ -21,6 +22,8 @@ import type {
   SystemUsageSummary,
   SystemAccessLog,
   Notificacao,
+  Release,
+  ReleaseCreate,
   SearchResponse,
   SearchResultItem,
 } from '@/types'
@@ -473,6 +476,20 @@ export const mockApi = {
         recentAuditLogs: mockAuditLogs.slice(0, 5),
       }
     },
+    getPersonalSummary: async (): Promise<PersonalDashboardSummary> => {
+      await sleep(500)
+      const pendentes = tarefas.filter((t) => t.status !== 'CONCLUIDO')
+      const deadlines = pendentes.slice(0, 3).map((t, i) => ({
+        id: t.id,
+        name: t.titulo,
+        dueLabel: i === 0 ? 'Hoje' : i === 1 ? 'Amanhã' : '3 dias',
+      }))
+      return {
+        pendingTasks: pendentes.length,
+        nextDeadlineLabel: deadlines[0]?.dueLabel ?? null,
+        deadlines,
+      }
+    },
   },
 
   documentos: {
@@ -557,6 +574,33 @@ export const mockApi = {
       if (!notif) throw new Error('Notificação não encontrada')
       notif.lida = true
       return notif
+    },
+  },
+
+  releases: {
+    getLatestUnread: async (): Promise<Release | null> => {
+      await sleep(200)
+      return null
+    },
+    getAll: async (): Promise<Release[]> => {
+      await sleep(200)
+      return []
+    },
+    marcarComoLida: async (): Promise<void> => {
+      await sleep(150)
+    },
+    create: async (data: ReleaseCreate): Promise<Release> => {
+      await sleep(300)
+      return {
+        id: 'mock-release',
+        version: data.version,
+        released_at: new Date().toISOString(),
+        is_read: false,
+        notes: data.notes.map((n, i) => ({ id: `mock-note-${i}`, sort_order: i, ...n })),
+      }
+    },
+    delete: async (): Promise<void> => {
+      await sleep(150)
     },
   },
 

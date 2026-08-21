@@ -18,3 +18,13 @@ class DashboardSummary(BaseModel):
     tarefasAbertas: int
     tarefasVencidas: int
     recentAuditLogs: List[AuditLogSchema]
+
+class DeadlineItem(BaseModel):
+    id: UUID
+    name: str
+    dueLabel: str
+
+class PersonalDashboardSummary(BaseModel):
+    pendingTasks: int
+    nextDeadlineLabel: str | None
+    deadlines: List[DeadlineItem]

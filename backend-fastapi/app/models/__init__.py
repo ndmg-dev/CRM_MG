@@ -11,6 +11,7 @@ from app.models.document import Documento
 from app.models.client_token import ClientToken
 from app.models.user_session import UserSession
 from app.models.system_access_log import SystemAccessLog
+from app.models.release import Release, ReleaseNote, ReleaseRead
 
 # Expose models to Alembic and other parts of the application
 __all__ = [
@@ -26,4 +27,7 @@ __all__ = [
     "ClientToken",
     "UserSession",
     "SystemAccessLog",
+    "Release",
+    "ReleaseNote",
+    "ReleaseRead",
 ]

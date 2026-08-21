@@ -15,12 +15,15 @@ import type {
   Sistema,
   AuditLog,
   DashboardSummary,
+  PersonalDashboardSummary,
   PaginatedResponse,
   TaskFilters,
   AuditFilters,
   StatusTarefa,
   Documento,
   Notificacao,
+  Release,
+  ReleaseCreate,
   SearchResultItem,
   SearchResponse,
   UserSession,
@@ -266,6 +269,7 @@ const realApi = {
 
   dashboard: {
     getSummary: () => request<DashboardSummary>('/dashboard/summary'),
+    getPersonalSummary: () => request<PersonalDashboardSummary>('/dashboard/personal'),
   },
 
   documentos: {
@@ -310,6 +314,14 @@ const realApi = {
   notificacoes: {
     getAll: () => request<Notificacao[]>('/notificacoes'),
     marcarComoLida: (id: string) => request<Notificacao>(`/notificacoes/${id}/ler`, { method: 'PUT' }),
+  },
+  releases: {
+    getLatestUnread: () => request<Release | null>('/releases/latest-unread'),
+    getAll: () => request<Release[]>('/releases'),
+    marcarComoLida: (id: string) => request<void>(`/releases/${id}/ler`, { method: 'POST' }),
+    create: (data: ReleaseCreate) =>
+      request<Release>('/releases', { method: 'POST', body: JSON.stringify(data) }),
+    delete: (id: string) => request<void>(`/releases/${id}`, { method: 'DELETE' }),
   },
   search: {
     query: (q: string) => request<SearchResponse>(`/search?q=${encodeURIComponent(q)}`)
