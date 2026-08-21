@@ -44,4 +44,5 @@ postgres_data/
 
 # === Changelog de releases (dados internos, não versionados) ===
 CHANGELOG_v*.md
+CHANGELOG_TODAS_ATUALIZACOES.md
 cadastro_release_v*.sql
