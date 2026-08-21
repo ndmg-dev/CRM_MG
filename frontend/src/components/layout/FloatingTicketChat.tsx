@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { X, Send } from 'lucide-react'
+import { X, Send, Minus } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useChatWidgetStore } from '@/stores/chatWidgetStore'
 import { supabase } from '@/systems/central-suporte/integrations/supabase/client'
@@ -19,6 +19,9 @@ function Avatar({ name }: { name: string }) {
 export function FloatingTicketChat() {
   const ticketId = useChatWidgetStore((s) => s.openChatTicketId)
   const closeChat = useChatWidgetStore((s) => s.closeChat)
+  const isMinimized = useChatWidgetStore((s) => s.isMinimized)
+  const minimizeChat = useChatWidgetStore((s) => s.minimizeChat)
+  const restoreChat = useChatWidgetStore((s) => s.restoreChat)
   const queryClient = useQueryClient()
   const [text, setText] = useState('')
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
@@ -96,6 +99,32 @@ export function FloatingTicketChat() {
 
   if (!ticketId) return null
 
+  if (isMinimized) {
+    return (
+      <button
+        onClick={restoreChat}
+        className="fixed bottom-4 right-4 z-[110] flex w-[260px] items-center justify-between gap-2 rounded-xl border border-border bg-card px-3 py-2.5 text-left shadow-2xl transition-colors hover:border-gold-border"
+      >
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="rounded border border-gold-border-soft px-1.5 py-0.5 text-[10px] font-bold text-gold">
+              #{String(ticket?.ticket_code ?? '').padStart(3, '0')}
+            </span>
+            <span className="truncate text-sm font-semibold text-text-primary">{ticket?.title || 'Carregando...'}</span>
+          </div>
+        </div>
+        <span
+          role="button"
+          aria-label="Fechar chat"
+          onClick={(e) => { e.stopPropagation(); closeChat() }}
+          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-text-secondary hover:bg-surface hover:text-text-primary"
+        >
+          <X className="h-3.5 w-3.5" />
+        </span>
+      </button>
+    )
+  }
+
   return (
     <div className="fixed bottom-4 right-4 z-[110] flex h-[480px] w-[360px] flex-col overflow-hidden rounded-xl border border-border bg-card shadow-2xl">
       {/* Header */}
@@ -111,13 +140,22 @@ export function FloatingTicketChat() {
             Responsável: {(ticket?.assignee as any)?.full_name || 'Sem responsável'}
           </p>
         </div>
-        <button
-          onClick={closeChat}
-          aria-label="Fechar chat"
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-text-secondary hover:bg-surface hover:text-text-primary"
-        >
-          <X className="h-4 w-4" />
-        </button>
+        <div className="flex shrink-0 items-center gap-1">
+          <button
+            onClick={minimizeChat}
+            aria-label="Minimizar chat"
+            className="flex h-7 w-7 items-center justify-center rounded-md text-text-secondary hover:bg-surface hover:text-text-primary"
+          >
+            <Minus className="h-4 w-4" />
+          </button>
+          <button
+            onClick={closeChat}
+            aria-label="Fechar chat"
+            className="flex h-7 w-7 items-center justify-center rounded-md text-text-secondary hover:bg-surface hover:text-text-primary"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
       {/* Messages */}

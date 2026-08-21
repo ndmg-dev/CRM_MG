@@ -181,6 +181,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
               queryClient.invalidateQueries({ queryKey: ['suporte-mensagens'] })
               queryClient.invalidateQueries({ queryKey: ['unread-comment-counts'] })
               playNotificationSound('comment_received')
+              if (record?.ticket_id) openChat(record.ticket_id)
             } else {
               queryClient.invalidateQueries({ queryKey: ['suporte-notificacoes'] })
               const isClosing = record?.title?.includes('Encerrado')
