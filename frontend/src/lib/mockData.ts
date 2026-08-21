@@ -594,9 +594,9 @@ export const mockApi = {
       return {
         id: 'mock-release',
         version: data.version,
-        released_at: new Date().toISOString(),
-        is_read: false,
-        notes: data.notes.map((n, i) => ({ id: `mock-note-${i}`, sort_order: i, ...n })),
+        releasedAt: new Date().toISOString(),
+        isRead: false,
+        notes: data.notes.map((n, i) => ({ id: `mock-note-${i}`, sortOrder: i, systemName: n.system_name, description: n.description })),
       }
     },
     delete: async (): Promise<void> => {

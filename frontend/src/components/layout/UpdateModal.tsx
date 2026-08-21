@@ -64,7 +64,7 @@ export function UpdateModal() {
               ) : (
                 release.notes.map((note) => (
                   <div key={note.id}>
-                    <p className="text-sm font-semibold text-gold">{note.system_name}</p>
+                    <p className="text-sm font-semibold text-gold">{note.systemName}</p>
                     <p className="mt-0.5 whitespace-pre-line text-sm text-text-secondary">{note.description}</p>
                   </div>
                 ))

@@ -170,7 +170,7 @@ export default function ReleasesTable() {
             <div className="flex items-start justify-between">
               <div>
                 <span className="text-sm font-bold text-gold">v{r.version}</span>
-                <span className="ml-2 text-xs text-text-muted">{formatDateTime(r.released_at)}</span>
+                <span className="ml-2 text-xs text-text-muted">{formatDateTime(r.releasedAt)}</span>
               </div>
               <Button variant="danger" size="sm" onClick={() => handleDelete(r.id, r.version)}>
                 <Trash2 className="h-4 w-4" />
@@ -179,7 +179,7 @@ export default function ReleasesTable() {
             <ul className="mt-2 space-y-1">
               {r.notes.map((n) => (
                 <li key={n.id} className="whitespace-pre-line text-sm text-text-secondary">
-                  <span className="font-medium text-text-primary">{n.system_name}:</span> {n.description}
+                  <span className="font-medium text-text-primary">{n.systemName}:</span> {n.description}
                 </li>
               ))}
             </ul>

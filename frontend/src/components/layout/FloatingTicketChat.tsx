@@ -13,6 +13,34 @@ function Avatar({ name }: { name: string }) {
   )
 }
 
+function dayKey(dateStr: string): string {
+  const d = new Date(dateStr)
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
+}
+
+function formatDayLabel(dateStr: string): string {
+  const date = new Date(dateStr)
+  const now = new Date()
+  const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+  const diffDays = Math.round((startOfDay(now) - startOfDay(date)) / 86400000)
+  if (diffDays === 0) return 'Hoje'
+  if (diffDays === 1) return 'Ontem'
+  const sameYear = date.getFullYear() === now.getFullYear()
+  return date.toLocaleDateString('pt-BR', sameYear ? { day: 'numeric', month: 'long' } : { day: 'numeric', month: 'long', year: 'numeric' })
+}
+
+function formatTime(dateStr: string): string {
+  return new Date(dateStr).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+}
+
+// Comentários automáticos de evento (transferência, mudança de status etc.)
+// não têm uma coluna própria pra marcar isso — só dá pra reconhecer pelo
+// texto. Viram um separador central, não uma bolha de conversa.
+const SYSTEM_NOTE_PATTERN = /^(transferido de .+ para .+|categoria alterada|status alterado|prioridade alterada)/i
+function isSystemNote(content: string): boolean {
+  return SYSTEM_NOTE_PATTERN.test((content || '').trim())
+}
+
 /** Chat rápido de um chamado, flutuante no canto inferior direito — pra
  * responder uma mensagem sem sair da tela em que a pessoa está. Aberto a
  * partir do dropdown "Mensagens" do Header (useChatWidgetStore). */
@@ -25,7 +53,11 @@ export function FloatingTicketChat() {
   const queryClient = useQueryClient()
   const [text, setText] = useState('')
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [newDividerIndex, setNewDividerIndex] = useState<number | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const seenCounts = useRef<Map<string, number>>(new Map())
+  const dividerComputedFor = useRef<string | null>(null)
+  const commentsLenRef = useRef(0)
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id ?? null))
@@ -77,6 +109,30 @@ export function FloatingTicketChat() {
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
   }, [comments.length])
+
+  useEffect(() => {
+    commentsLenRef.current = comments.length
+  }, [comments])
+
+  // Reseta a barra de "novas mensagens" ao trocar de ticket, e marca o
+  // ticket anterior como visto (próxima vez que abrir, nada aparece como novo).
+  useEffect(() => {
+    dividerComputedFor.current = null
+    setNewDividerIndex(null)
+    return () => {
+      if (ticketId) seenCounts.current.set(ticketId, commentsLenRef.current)
+    }
+  }, [ticketId])
+
+  // Calcula, uma vez por abertura, a partir de qual mensagem é "nova" desde
+  // a última vez que esse ticket foi visto no widget.
+  useEffect(() => {
+    if (!ticketId || comments.length === 0) return
+    if (dividerComputedFor.current === ticketId) return
+    dividerComputedFor.current = ticketId
+    const prevSeen = seenCounts.current.get(ticketId)
+    setNewDividerIndex(prevSeen !== undefined && prevSeen < comments.length ? prevSeen : null)
+  }, [ticketId, comments])
 
   const sendComment = useMutation({
     mutationFn: async () => {
@@ -163,24 +219,56 @@ export function FloatingTicketChat() {
         {comments.length === 0 ? (
           <p className="pt-8 text-center text-xs text-text-muted">Nenhuma mensagem ainda.</p>
         ) : (
-          comments.map((c: any) => {
+          comments.map((c: any, idx: number) => {
             const isMine = c.author_id === currentUserId
             const authorName = c.author?.full_name || 'Usuário'
+            const prev = comments[idx - 1] as any
+            const showDayHeader = !prev || dayKey(prev.created_at) !== dayKey(c.created_at)
+            const showNewDivider = newDividerIndex !== null && idx === newDividerIndex
             return (
-              <div key={c.id} className={`flex items-end gap-2 ${isMine ? 'flex-row-reverse' : ''}`}>
-                <Avatar name={authorName} />
-                <div className={`flex max-w-[75%] flex-col ${isMine ? 'items-end' : 'items-start'}`}>
-                  <span className="mb-0.5 px-1 text-[10px] text-text-muted">{authorName}</span>
-                  <div
-                    className={`rounded-2xl px-3 py-2 text-sm ${
-                      isMine
-                        ? 'rounded-br-sm bg-gold text-background'
-                        : 'rounded-bl-sm bg-surface text-text-primary'
-                    }`}
-                  >
-                    {c.content}
+              <div key={c.id}>
+                {showDayHeader && (
+                  <div className="mb-3 flex items-center gap-2">
+                    <div className="h-px flex-1 bg-border" />
+                    <span className="text-[10px] font-medium uppercase tracking-wide text-text-muted">
+                      {formatDayLabel(c.created_at)}
+                    </span>
+                    <div className="h-px flex-1 bg-border" />
                   </div>
-                </div>
+                )}
+                {showNewDivider && (
+                  <div className="mb-3 flex items-center gap-2">
+                    <div className="h-px flex-1 bg-gold/40" />
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-gold">
+                      Novas mensagens
+                    </span>
+                    <div className="h-px flex-1 bg-gold/40" />
+                  </div>
+                )}
+                {isSystemNote(c.content) ? (
+                  <div className="flex justify-center py-1">
+                    <span className="rounded-full bg-surface px-3 py-1 text-center text-[11px] text-text-muted">
+                      {c.content} · {formatTime(c.created_at)}
+                    </span>
+                  </div>
+                ) : (
+                  <div className={`flex items-end gap-2 ${isMine ? 'flex-row-reverse' : ''}`}>
+                    <Avatar name={authorName} />
+                    <div className={`flex max-w-[75%] flex-col ${isMine ? 'items-end' : 'items-start'}`}>
+                      <span className="mb-0.5 px-1 text-[10px] text-text-muted">{authorName}</span>
+                      <div
+                        className={`rounded-2xl px-3 py-2 text-sm ${
+                          isMine
+                            ? 'rounded-br-sm bg-gold text-background'
+                            : 'rounded-bl-sm bg-surface text-text-primary'
+                        }`}
+                      >
+                        {c.content}
+                      </div>
+                      <span className="mt-0.5 px-1 text-[9px] text-text-muted">{formatTime(c.created_at)}</span>
+                    </div>
+                  </div>
+                )}
               </div>
             )
           })
