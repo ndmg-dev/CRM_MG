@@ -153,6 +153,21 @@ export default function Header({ onMenuClick }: HeaderProps) {
     queryClient.invalidateQueries({ queryKey: ['unread-comment-counts'] })
   }
 
+  const markAllNotifRead = async () => {
+    const unread = merged.filter((n) => !n.lida)
+    if (!unread.length) return
+    const suporteIds = unread.filter((n) => n.source === 'suporte').map((n) => n.id)
+    await Promise.all([
+      ...unread.filter((n) => n.source === 'crm').map((n) => api.notificacoes.marcarComoLida(n.id)),
+      ...unread.filter((n) => n.source === 'release').map((n) => markReleaseRead(n.id)),
+      suporteIds.length
+        ? suporteSupabase.from('notifications').update({ is_read: true }).in('id', suporteIds)
+        : Promise.resolve(),
+    ])
+    queryClient.invalidateQueries({ queryKey: ['notificacoes'] })
+    queryClient.invalidateQueries({ queryKey: ['suporte-notificacoes'] })
+  }
+
   const markAllMessagesRead = async () => {
     const unread = messageNotifs.filter((n) => !n.is_read)
     if (!unread.length) return
@@ -181,6 +196,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
               queryClient.invalidateQueries({ queryKey: ['suporte-mensagens'] })
               queryClient.invalidateQueries({ queryKey: ['unread-comment-counts'] })
               playNotificationSound('comment_received')
+              if (record?.ticket_id) openChat(record.ticket_id)
             } else {
               queryClient.invalidateQueries({ queryKey: ['suporte-notificacoes'] })
               const isClosing = record?.title?.includes('Encerrado')
@@ -427,9 +443,14 @@ export default function Header({ onMenuClick }: HeaderProps) {
                 <div className="flex items-center justify-between border-b border-border bg-surface-raised px-4 py-3">
                   <h3 className="text-sm font-semibold text-text-primary">Notificações</h3>
                   {unreadCount > 0 && (
-                    <span className="rounded-full bg-gold/10 px-2 py-0.5 text-xs font-medium text-gold">
-                      {unreadCount} novas
-                    </span>
+                    <div className="flex items-center gap-3">
+                      <span className="rounded-full bg-gold/10 px-2 py-0.5 text-xs font-medium text-gold">
+                        {unreadCount} novas
+                      </span>
+                      <button className="text-xs text-gold hover:underline" onClick={markAllNotifRead}>
+                        Marcar tudo como lido
+                      </button>
+                    </div>
                   )}
                 </div>
 
