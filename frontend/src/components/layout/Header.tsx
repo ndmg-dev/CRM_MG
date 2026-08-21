@@ -113,8 +113,8 @@ export default function Header({ onMenuClick }: HeaderProps) {
     ...releases.map((r) => ({
       id: r.id, source: 'release' as const,
       titulo: `Seu CRM foi atualizado — v${r.version} 🎉`,
-      mensagem: r.notes.map((n) => `${n.system_name}: ${n.description}`).join(' · '),
-      lida: r.is_read, data_criacao: r.released_at,
+      mensagem: r.notes.map((n) => `${n.systemName}: ${n.description}`).join(' · '),
+      lida: r.isRead, data_criacao: r.releasedAt,
     })),
   ].sort((a, b) => new Date(b.data_criacao).getTime() - new Date(a.data_criacao).getTime())
 

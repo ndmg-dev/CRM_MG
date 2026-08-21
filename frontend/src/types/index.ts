@@ -54,18 +54,20 @@ export interface Notificacao {
   data_criacao: string
 }
 
+// Respostas do backend passam por convertKeysToCamel() em api.ts — os
+// campos aqui são camelCase mesmo o Pydantic/Postgres usando snake_case.
 export interface ReleaseNote {
   id: string
-  system_name: string
+  systemName: string
   description: string
-  sort_order: number
+  sortOrder: number
 }
 
 export interface Release {
   id: string
   version: string
-  released_at: string
-  is_read: boolean
+  releasedAt: string
+  isRead: boolean
   notes: ReleaseNote[]
 }
 
