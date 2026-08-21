@@ -249,10 +249,12 @@ export function FloatingTicketChat() {
                   </div>
                 )}
                 {isSystemNote(c.content) ? (
-                  <div className="flex justify-center py-1">
-                    <span className="rounded-full bg-surface px-3 py-1 text-center text-[11px] text-text-muted">
+                  <div className="my-3 flex items-center gap-2">
+                    <div className="h-px flex-1 bg-border" />
+                    <span className="shrink-0 text-center text-[10px] font-medium uppercase tracking-wide text-text-muted">
                       {c.content} · {formatTime(c.created_at)}
                     </span>
+                    <div className="h-px flex-1 bg-border" />
                   </div>
                 ) : (
                   <div className={`flex items-end gap-2 ${isMine ? 'flex-row-reverse' : ''}`}>
