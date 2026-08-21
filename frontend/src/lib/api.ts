@@ -91,7 +91,14 @@ async function request<T>(
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
-    throw new Error(body.detail || body.message || `Erro ${res.status}`)
+    let detail = body.detail
+    if (Array.isArray(detail)) {
+      // Erro de validação do FastAPI/Pydantic: lista de {msg, loc, ...}.
+      detail = detail.map((d: any) => (typeof d === 'string' ? d : d?.msg)).filter(Boolean).join('; ')
+    } else if (detail && typeof detail === 'object') {
+      detail = detail.msg || JSON.stringify(detail)
+    }
+    throw new Error(detail || body.message || `Erro ${res.status}`)
   }
 
   if (res.status === 204) return {} as T
