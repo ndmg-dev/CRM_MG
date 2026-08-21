@@ -38,7 +38,10 @@ function formatTime(dateStr: string): string {
 // texto. Viram um separador central, não uma bolha de conversa.
 const SYSTEM_NOTE_PATTERN = /^(transferido de .+ para .+|categoria alterada|status alterado|prioridade alterada)/i
 function isSystemNote(content: string): boolean {
-  return SYSTEM_NOTE_PATTERN.test((content || '').trim())
+  // Esses comentários costumam vir com um emoji/ícone na frente (🔄 etc.) —
+  // tira qualquer coisa que não seja letra antes de testar o padrão.
+  const stripped = (content || '').trim().replace(/^[^\p{L}]+/u, '')
+  return SYSTEM_NOTE_PATTERN.test(stripped)
 }
 
 /** Chat rápido de um chamado, flutuante no canto inferior direito — pra
