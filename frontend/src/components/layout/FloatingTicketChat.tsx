@@ -33,6 +33,14 @@ function formatTime(dateStr: string): string {
   return new Date(dateStr).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 }
 
+// Comentários automáticos de evento (transferência, mudança de status etc.)
+// não têm uma coluna própria pra marcar isso — só dá pra reconhecer pelo
+// texto. Viram um separador central, não uma bolha de conversa.
+const SYSTEM_NOTE_PATTERN = /^(transferido de .+ para .+|categoria alterada|status alterado|prioridade alterada)/i
+function isSystemNote(content: string): boolean {
+  return SYSTEM_NOTE_PATTERN.test((content || '').trim())
+}
+
 /** Chat rápido de um chamado, flutuante no canto inferior direito — pra
  * responder uma mensagem sem sair da tela em que a pessoa está. Aberto a
  * partir do dropdown "Mensagens" do Header (useChatWidgetStore). */
@@ -237,22 +245,30 @@ export function FloatingTicketChat() {
                     <div className="h-px flex-1 bg-gold/40" />
                   </div>
                 )}
-                <div className={`flex items-end gap-2 ${isMine ? 'flex-row-reverse' : ''}`}>
-                  <Avatar name={authorName} />
-                  <div className={`flex max-w-[75%] flex-col ${isMine ? 'items-end' : 'items-start'}`}>
-                    <span className="mb-0.5 px-1 text-[10px] text-text-muted">{authorName}</span>
-                    <div
-                      className={`rounded-2xl px-3 py-2 text-sm ${
-                        isMine
-                          ? 'rounded-br-sm bg-gold text-background'
-                          : 'rounded-bl-sm bg-surface text-text-primary'
-                      }`}
-                    >
-                      {c.content}
-                    </div>
-                    <span className="mt-0.5 px-1 text-[9px] text-text-muted">{formatTime(c.created_at)}</span>
+                {isSystemNote(c.content) ? (
+                  <div className="flex justify-center py-1">
+                    <span className="rounded-full bg-surface px-3 py-1 text-center text-[11px] text-text-muted">
+                      {c.content} · {formatTime(c.created_at)}
+                    </span>
                   </div>
-                </div>
+                ) : (
+                  <div className={`flex items-end gap-2 ${isMine ? 'flex-row-reverse' : ''}`}>
+                    <Avatar name={authorName} />
+                    <div className={`flex max-w-[75%] flex-col ${isMine ? 'items-end' : 'items-start'}`}>
+                      <span className="mb-0.5 px-1 text-[10px] text-text-muted">{authorName}</span>
+                      <div
+                        className={`rounded-2xl px-3 py-2 text-sm ${
+                          isMine
+                            ? 'rounded-br-sm bg-gold text-background'
+                            : 'rounded-bl-sm bg-surface text-text-primary'
+                        }`}
+                      >
+                        {c.content}
+                      </div>
+                      <span className="mt-0.5 px-1 text-[9px] text-text-muted">{formatTime(c.created_at)}</span>
+                    </div>
+                  </div>
+                )}
               </div>
             )
           })
