@@ -176,7 +176,7 @@ export default function ReleasesTable() {
             </div>
             <ul className="mt-2 space-y-1">
               {r.notes.map((n) => (
-                <li key={n.id} className="text-sm text-text-secondary">
+                <li key={n.id} className="whitespace-pre-line text-sm text-text-secondary">
                   <span className="font-medium text-text-primary">{n.system_name}:</span> {n.description}
                 </li>
               ))}
