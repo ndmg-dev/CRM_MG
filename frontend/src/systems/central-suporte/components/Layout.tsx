@@ -5,6 +5,8 @@ import { useUserSector } from "@suporte/hooks/useUserSector";
 import { supabase } from "@suporte/integrations/supabase/client";
 import { playNotificationSound } from "@suporte/lib/notification-sound";
 
+const CLOSED_TICKET_STATUSES = ["resolved", "closed", "canceled"];
+
 const Layout = () => {
   const { isViewer, roles } = useUserSector();
   const navigate = useNavigate();
@@ -32,6 +34,19 @@ const Layout = () => {
           }
           if ((window as any).__viewerCarouselReset) {
             (window as any).__viewerCarouselReset();
+          }
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "tickets" },
+        (payload: any) => {
+          // Mesmo motivo do INSERT acima: som direto, sem depender de
+          // `notifications` (viewer não é alvo de linha nenhuma lá).
+          const wasClosed = CLOSED_TICKET_STATUSES.includes(payload.old?.status);
+          const isClosed = CLOSED_TICKET_STATUSES.includes(payload.new?.status);
+          if (!wasClosed && isClosed) {
+            playNotificationSound("ticket_closed");
           }
         }
       )
