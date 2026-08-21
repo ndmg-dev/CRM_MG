@@ -101,27 +101,29 @@ export default function ReleasesTable() {
             className="mb-4 w-full max-w-xs rounded-lg border border-border bg-surface-raised px-3 py-2 text-sm text-text-primary outline-none"
           />
 
-          <div className="space-y-2">
+          <div className="space-y-3">
             {form.notes.map((nota, i) => (
-              <div key={i} className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Sistema (ex: Central de Suporte)"
-                  value={nota.system_name}
-                  onChange={(e) => updateNota(i, 'system_name', e.target.value)}
-                  className="w-56 rounded-lg border border-border bg-surface-raised px-3 py-2 text-sm text-text-primary outline-none"
-                />
-                <input
-                  type="text"
-                  placeholder="O que mudou..."
-                  value={nota.description}
-                  onChange={(e) => updateNota(i, 'description', e.target.value)}
-                  className="flex-1 rounded-lg border border-border bg-surface-raised px-3 py-2 text-sm text-text-primary outline-none"
-                />
+              <div key={i} className="flex gap-2 rounded-lg border border-border bg-surface/40 p-2">
+                <div className="flex flex-1 flex-col gap-2">
+                  <input
+                    type="text"
+                    placeholder="Sistema (ex: Central de Suporte)"
+                    value={nota.system_name}
+                    onChange={(e) => updateNota(i, 'system_name', e.target.value)}
+                    className="w-full rounded-lg border border-border bg-surface-raised px-3 py-2 text-sm text-text-primary outline-none"
+                  />
+                  <textarea
+                    placeholder="O que mudou..."
+                    value={nota.description}
+                    onChange={(e) => updateNota(i, 'description', e.target.value)}
+                    rows={3}
+                    className="w-full resize-y rounded-lg border border-border bg-surface-raised px-3 py-2 text-sm text-text-primary outline-none"
+                  />
+                </div>
                 <button
                   onClick={() => removeNota(i)}
                   disabled={form.notes.length === 1}
-                  className="rounded-lg bg-surface-hover p-2 text-text-secondary transition-colors hover:bg-card hover:text-error disabled:opacity-30"
+                  className="h-8 shrink-0 rounded-lg bg-surface-hover p-2 text-text-secondary transition-colors hover:bg-card hover:text-error disabled:opacity-30"
                   aria-label="Remover nota"
                 >
                   <X className="h-4 w-4" />
