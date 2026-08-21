@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Bell, Search, CheckCircle2, Menu } from 'lucide-react'
+import { Bell, Search, CheckCircle2, Menu, MessageSquare } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/authStore'
 import { api } from '@/lib/api'
@@ -8,21 +8,44 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { Link, useNavigate } from 'react-router-dom'
 import { useDebounce } from '@/hooks/useDebounce'
 import { ICON_MAP } from '@/lib/icons'
+import { supabase as suporteSupabase } from '@/systems/central-suporte/integrations/supabase/client'
+import { playNotificationSound } from '@/systems/central-suporte/lib/notification-sound'
+import { showBrowserNotification } from '@/systems/central-suporte/hooks/useBrowserNotifications'
+import { useChatWidgetStore } from '@/stores/chatWidgetStore'
+import { useUIStore } from '@/stores/uiStore'
 
 interface HeaderProps {
   /** Abre o drawer de navegação em telas < lg. */
   onMenuClick?: () => void
 }
 
+const MESSAGE_TITLE = 'Novo comentário'
+
+/** Notificação normalizada, venha ela do CRM (`notificacoes`) ou da Central
+ * de Suporte (`notifications`) — o dropdown de Notificações mistura as duas. */
+interface MergedNotification {
+  id: string
+  source: 'crm' | 'suporte' | 'release'
+  titulo: string
+  mensagem: string
+  lida: boolean
+  data_criacao: string
+  ticketId?: string | null
+}
+
 export default function Header({ onMenuClick }: HeaderProps) {
   const user = useAuthStore((s) => s.user)
   const queryClient = useQueryClient()
   const navigate = useNavigate()
+  const openChat = useChatWidgetStore((s) => s.openChat)
+  const fullBleedSystem = useUIStore((s) => s.fullBleedSystem)
   const [showNotif, setShowNotif] = useState(false)
+  const [showMessages, setShowMessages] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [isSearchFocused, setIsSearchFocused] = useState(false)
 
   const notifRef = useRef<HTMLDivElement>(null)
+  const messagesRef = useRef<HTMLDivElement>(null)
   const searchRef = useRef<HTMLDivElement>(null)
 
   const debouncedSearch = useDebounce(searchQuery, 300)
@@ -33,12 +56,78 @@ export default function Header({ onMenuClick }: HeaderProps) {
     enabled: debouncedSearch.length >= 2,
   })
 
+  // --- Notificações nativas do CRM ---
   const { data: notificacoes = [] } = useQuery({
     queryKey: ['notificacoes'],
     queryFn: () => api.notificacoes.getAll(),
     enabled: !!user,
-    refetchInterval: 30000, // poll every 30s
+    refetchInterval: 30000,
   })
+
+  // --- Notificações de chamado (Central de Suporte, sem comentários) ---
+  const { data: suporteNotifs = [] } = useQuery({
+    queryKey: ['suporte-notificacoes'],
+    queryFn: async () => {
+      const { data, error } = await suporteSupabase
+        .from('notifications')
+        .select('*')
+        .neq('title', MESSAGE_TITLE)
+        .order('created_at', { ascending: false })
+        .limit(20)
+      if (error) throw error
+      return data
+    },
+  })
+
+  // --- Mensagens (comentários de chamado) ---
+  const { data: messageNotifs = [] } = useQuery({
+    queryKey: ['suporte-mensagens'],
+    queryFn: async () => {
+      const { data, error } = await suporteSupabase
+        .from('notifications')
+        .select('*')
+        .eq('title', MESSAGE_TITLE)
+        .order('created_at', { ascending: false })
+        .limit(20)
+      if (error) throw error
+      return data
+    },
+  })
+
+  // --- Atualizações do CRM (releases) ---
+  const { data: releases = [] } = useQuery({
+    queryKey: ['releases'],
+    queryFn: () => api.releases.getAll(),
+    enabled: !!user,
+  })
+
+  const merged: MergedNotification[] = [
+    ...notificacoes.map((n) => ({
+      id: n.id, source: 'crm' as const, titulo: n.titulo, mensagem: n.mensagem,
+      lida: n.lida, data_criacao: n.data_criacao,
+    })),
+    ...suporteNotifs.map((n) => ({
+      id: n.id, source: 'suporte' as const, titulo: n.title, mensagem: n.message || '',
+      lida: n.is_read, data_criacao: n.created_at, ticketId: n.ticket_id,
+    })),
+    ...releases.map((r) => ({
+      id: r.id, source: 'release' as const,
+      titulo: `Seu CRM foi atualizado — v${r.version} 🎉`,
+      mensagem: r.notes.map((n) => `${n.system_name}: ${n.description}`).join(' · '),
+      lida: r.is_read, data_criacao: r.released_at,
+    })),
+  ].sort((a, b) => new Date(b.data_criacao).getTime() - new Date(a.data_criacao).getTime())
+
+  const unreadCount = merged.filter((n) => !n.lida).length
+  const unreadMessages = messageNotifs.filter((n) => !n.is_read).length
+
+  const { data: sistemas } = useQuery({
+    queryKey: ['sistemas'],
+    queryFn: () => api.sistemas.getAll(),
+  })
+  const centralSuporteId = sistemas?.find(
+    (s) => s.slug === 'central-de-suporte' || s.slug === 'central-suporte'
+  )?.id
 
   const readMutation = useMutation({
     mutationFn: (id: string) => api.notificacoes.marcarComoLida(id),
@@ -47,10 +136,82 @@ export default function Header({ onMenuClick }: HeaderProps) {
     }
   })
 
+  const markSuporteRead = async (id: string) => {
+    await suporteSupabase.from('notifications').update({ is_read: true }).eq('id', id)
+    queryClient.invalidateQueries({ queryKey: ['suporte-notificacoes'] })
+  }
+
+  const markReleaseRead = async (id: string) => {
+    await api.releases.marcarComoLida(id)
+    queryClient.invalidateQueries({ queryKey: ['releases'] })
+    queryClient.invalidateQueries({ queryKey: ['latest-unread-release'] })
+  }
+
+  const markMessageRead = async (id: string) => {
+    await suporteSupabase.from('notifications').update({ is_read: true }).eq('id', id)
+    queryClient.invalidateQueries({ queryKey: ['suporte-mensagens'] })
+    queryClient.invalidateQueries({ queryKey: ['unread-comment-counts'] })
+  }
+
+  const markAllMessagesRead = async () => {
+    const unread = messageNotifs.filter((n) => !n.is_read)
+    if (!unread.length) return
+    await suporteSupabase.from('notifications').update({ is_read: true }).in('id', unread.map((n) => n.id))
+    queryClient.invalidateQueries({ queryKey: ['suporte-mensagens'] })
+    queryClient.invalidateQueries({ queryKey: ['unread-comment-counts'] })
+  }
+
+  // Realtime: chamados + mensagens da Central de Suporte
+  useEffect(() => {
+    let cleanup: (() => void) | undefined
+    const setup = async () => {
+      const { data: { user: suporteUser } } = await suporteSupabase.auth.getUser()
+      if (!suporteUser) return
+
+      const channel = suporteSupabase
+        .channel('header-suporte-notifications')
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${suporteUser.id}` },
+          (payload: any) => {
+            const record = payload?.new
+            const isMessage = !!record?.title?.includes(MESSAGE_TITLE)
+
+            if (isMessage) {
+              queryClient.invalidateQueries({ queryKey: ['suporte-mensagens'] })
+              queryClient.invalidateQueries({ queryKey: ['unread-comment-counts'] })
+              playNotificationSound('comment_received')
+            } else {
+              queryClient.invalidateQueries({ queryKey: ['suporte-notificacoes'] })
+              const isClosing = record?.title?.includes('Encerrado')
+              if (record?.ticket_id && !isClosing) {
+                suporteSupabase.from('tickets').select('assignee_id').eq('id', record.ticket_id).single().then(({ data: ticket }) => {
+                  playNotificationSound('ticket_opened', ticket?.assignee_id)
+                })
+              } else {
+                playNotificationSound(isClosing ? 'ticket_closed' : 'ticket_opened')
+              }
+            }
+            if (record) {
+              showBrowserNotification(record.title || 'Nova notificação', record.message || '')
+            }
+          }
+        )
+        .subscribe()
+
+      cleanup = () => { suporteSupabase.removeChannel(channel) }
+    }
+    setup()
+    return () => cleanup?.()
+  }, [queryClient])
+
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
         setShowNotif(false)
+      }
+      if (messagesRef.current && !messagesRef.current.contains(e.target as Node)) {
+        setShowMessages(false)
       }
       if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
         setIsSearchFocused(false)
@@ -60,14 +221,28 @@ export default function Header({ onMenuClick }: HeaderProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const unreadCount = notificacoes.filter(n => !n.lida).length
+  const goToChamados = () => {
+    if (centralSuporteId) navigate(`/sistemas/${centralSuporteId}`)
+  }
+
+  const handleNotifClick = (n: MergedNotification) => {
+    if (n.source === 'crm') {
+      readMutation.mutate(n.id)
+    } else if (n.source === 'release') {
+      markReleaseRead(n.id)
+    } else {
+      markSuporteRead(n.id)
+      setShowNotif(false)
+      if (n.ticketId) goToChamados()
+    }
+  }
 
   return (
     <header className="sticky top-0 z-20 flex h-[52px] items-center justify-between border-b border-border bg-header-gradient px-4 shadow-header backdrop-blur-md lg:px-5">
       {/* Menu (drawer). O título da página não vive aqui: toda página já tem o
           seu — PageHeader, ou um `h1` próprio em Dashboard e ClientDetail —
           e repeti-lo na barra deixava o mesmo texto duas vezes na tela. */}
-      <div className="flex min-w-0 items-center gap-2">
+      <div className="flex min-w-0 flex-1 items-center gap-2">
         <button
           onClick={onMenuClick}
           aria-label="Abrir menu de navegação"
@@ -75,11 +250,17 @@ export default function Header({ onMenuClick }: HeaderProps) {
         >
           <Menu className="h-[18px] w-[18px]" />
         </button>
+        {/* Menu do sistema aberto (Central de Suporte, etc.) — portalizado
+            aqui de dentro do próprio sistema, pra virar uma barra só com o
+            resto do Header em vez de duas empilhadas. */}
+        <div id="system-menu-slot" className="flex min-w-0 flex-1 items-center justify-center" />
       </div>
 
       {/* Right side */}
       <div className="flex items-center gap-2">
-        {/* Search */}
+        {/* Search — só faz sentido navegando o CRM; some com um sistema
+            nativo aberto pra abrir espaço pro menu dele. */}
+        {!fullBleedSystem && (
         <div className="relative hidden sm:block" ref={searchRef}>
           <div className={`flex h-9 items-center gap-2 rounded-lg border bg-search-field px-3 shadow-search-field transition-colors ${isSearchFocused ? 'border-gold-border' : 'border-gold-border-soft'
             }`}>
@@ -143,11 +324,81 @@ export default function Header({ onMenuClick }: HeaderProps) {
             )}
           </AnimatePresence>
         </div>
+        )}
 
-        {/* Notifications */}
+        {/* Mensagens (comentários de chamado) */}
+        <div className="relative" ref={messagesRef}>
+          <button
+            onClick={() => { setShowMessages(!showMessages); setShowNotif(false) }}
+            aria-label={unreadMessages > 0 ? `Mensagens (${unreadMessages} não lidas)` : 'Mensagens'}
+            aria-expanded={showMessages}
+            className="relative flex h-9 w-9 items-center justify-center rounded-lg text-text-secondary transition-colors hover:bg-surface hover:text-text-primary"
+          >
+            <MessageSquare className="h-[18px] w-[18px]" />
+            {unreadMessages > 0 && (
+              <span className="absolute right-1 top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-error px-1 text-[9px] font-bold text-background">
+                {unreadMessages}
+              </span>
+            )}
+          </button>
+
+          <AnimatePresence>
+            {showMessages && (
+              <motion.div
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                transition={{ duration: 0.15 }}
+                className="absolute right-0 mt-2 w-80 overflow-hidden rounded-xl border border-border bg-card shadow-2xl"
+              >
+                <div className="flex items-center justify-between border-b border-border bg-surface-raised px-4 py-3">
+                  <h3 className="text-sm font-semibold text-text-primary">Mensagens</h3>
+                  {unreadMessages > 0 && (
+                    <button className="text-xs text-gold hover:underline" onClick={markAllMessagesRead}>
+                      Marcar tudo como lido
+                    </button>
+                  )}
+                </div>
+                <div className="max-h-[400px] overflow-y-auto">
+                  {messageNotifs.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center px-4 py-8 text-center">
+                      <MessageSquare className="mb-2 h-8 w-8 text-border-light" />
+                      <p className="text-sm text-text-muted">Nenhuma mensagem por enquanto.</p>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-divider">
+                      {messageNotifs.map((n) => (
+                        <div
+                          key={n.id}
+                          className={`relative flex items-start gap-3 p-4 transition-colors hover:bg-surface-hover cursor-pointer ${!n.is_read ? 'bg-surface-raised/50' : ''}`}
+                          onClick={() => {
+                            markMessageRead(n.id)
+                            setShowMessages(false)
+                            if (n.ticket_id) openChat(n.ticket_id)
+                          }}
+                        >
+                          {!n.is_read && <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-gold" />}
+                          <div className={`flex-1 space-y-1 ${!n.is_read ? 'ml-0' : 'ml-5'}`}>
+                            <p className={`text-sm ${!n.is_read ? 'font-medium text-text-primary' : 'text-text-secondary'}`}>
+                              {n.title}
+                            </p>
+                            {n.message && <p className="text-xs text-text-muted line-clamp-2">{n.message}</p>}
+                            <p className="text-[10px] text-border-emphasis">{formatDateTime(n.created_at)}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Notificações (CRM + chamados) */}
         <div className="relative" ref={notifRef}>
           <button
-            onClick={() => setShowNotif(!showNotif)}
+            onClick={() => { setShowNotif(!showNotif); setShowMessages(false) }}
             aria-label={
               unreadCount > 0
                 ? `Notificações (${unreadCount} não lidas)`
@@ -183,18 +434,19 @@ export default function Header({ onMenuClick }: HeaderProps) {
                 </div>
 
                 <div className="max-h-[400px] overflow-y-auto">
-                  {notificacoes.length === 0 ? (
+                  {merged.length === 0 ? (
                     <div className="flex flex-col items-center justify-center px-4 py-8 text-center">
                       <Bell className="mb-2 h-8 w-8 text-border-light" />
                       <p className="text-sm text-text-muted">Nenhuma notificação por enquanto.</p>
                     </div>
                   ) : (
                     <div className="divide-y divide-divider">
-                      {notificacoes.map((notif) => (
+                      {merged.map((notif) => (
                         <div
-                          key={notif.id}
-                          className={`relative flex items-start gap-3 p-4 transition-colors hover:bg-surface-hover ${!notif.lida ? 'bg-surface-raised/50' : ''
+                          key={`${notif.source}-${notif.id}`}
+                          className={`relative flex items-start gap-3 p-4 transition-colors hover:bg-surface-hover ${notif.source !== 'crm' ? 'cursor-pointer' : ''} ${!notif.lida ? 'bg-surface-raised/50' : ''
                             }`}
+                          onClick={() => notif.source !== 'crm' && handleNotifClick(notif)}
                         >
                           {!notif.lida && (
                             <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-gold" />
@@ -210,9 +462,9 @@ export default function Header({ onMenuClick }: HeaderProps) {
                               {formatDateTime(notif.data_criacao)}
                             </p>
                           </div>
-                          {!notif.lida && (
+                          {!notif.lida && notif.source === 'crm' && (
                             <button
-                              onClick={() => readMutation.mutate(notif.id)}
+                              onClick={(e) => { e.stopPropagation(); readMutation.mutate(notif.id) }}
                               className="text-text-muted hover:text-gold"
                               title="Marcar como lida"
                             >

@@ -7,6 +7,7 @@ import { Tabs } from '@mg/ui'
 import UsersTable from './UsersTable'
 import SectorsTable from './SectorsTable'
 import AuditLogViewer from './AuditLogViewer'
+import ReleasesTable from './ReleasesTable'
 
 export default function AdminPage() {
   const user = useAuthStore((s) => s.user)
@@ -26,7 +27,8 @@ export default function AdminPage() {
         items={[
           { value: 'users', label: 'Usuários', content: <UsersTable /> },
           { value: 'sectors', label: 'Setores', content: <SectorsTable /> },
-          { value: 'audit', label: 'Logs de Auditoria', content: <AuditLogViewer /> }
+          { value: 'audit', label: 'Logs de Auditoria', content: <AuditLogViewer /> },
+          { value: 'releases', label: 'Atualizações', content: <ReleasesTable /> }
         ]}
       />
     </div>

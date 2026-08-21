@@ -54,6 +54,31 @@ export interface Notificacao {
   data_criacao: string
 }
 
+export interface ReleaseNote {
+  id: string
+  system_name: string
+  description: string
+  sort_order: number
+}
+
+export interface Release {
+  id: string
+  version: string
+  released_at: string
+  is_read: boolean
+  notes: ReleaseNote[]
+}
+
+export interface ReleaseNoteCreate {
+  system_name: string
+  description: string
+}
+
+export interface ReleaseCreate {
+  version: string
+  notes: ReleaseNoteCreate[]
+}
+
 export interface Cliente {
   id: string
   razaoSocial: string
@@ -127,6 +152,18 @@ export interface DashboardSummary {
   tarefasAbertas: number
   tarefasVencidas: number
   recentAuditLogs: AuditLog[]
+}
+
+export interface DeadlineItem {
+  id: string
+  name: string
+  dueLabel: string
+}
+
+export interface PersonalDashboardSummary {
+  pendingTasks: number
+  nextDeadlineLabel: string | null
+  deadlines: DeadlineItem[]
 }
 
 export interface AuthResponse {

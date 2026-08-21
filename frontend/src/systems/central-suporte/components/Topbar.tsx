@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   Home,
   List,
@@ -13,13 +14,11 @@ import {
   Menu,
   X,
   ChevronDown,
-  LogOut,
   Maximize,
 } from "lucide-react";
 import { useNavigate, useLocation } from "@suporte/lib/router-shim";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@suporte/integrations/supabase/client";
-import { endUnifiedSession } from "@/lib/unifiedAuth";
 import { useAuthStore } from "@/stores/authStore";
 import { useUIStore } from "@/stores/uiStore";
 import { cn } from "@suporte/lib/utils";
@@ -65,6 +64,12 @@ export function Topbar() {
   const navRef = useRef<HTMLElement>(null);
   const setKioskMode = useUIStore((s) => s.setKioskMode);
 
+  // Portaliza pra dentro do Header do CRM (uma barra só, não duas empilhadas).
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    setPortalTarget(document.getElementById("system-menu-slot"));
+  }, []);
+
   const { data: userRoles } = useQuery({
     queryKey: ["user-roles"],
     queryFn: async () => {
@@ -89,11 +94,6 @@ export function Topbar() {
   const visibleManagementItems = isViewerOnly
     ? managementItems.filter((item) => ["/admin/kanban", "/admin/reports", "/admin/tasks"].includes(item.url))
     : managementItems;
-
-  const handleLogout = async () => {
-    await endUnifiedSession();
-    window.location.href = "/login";
-  };
 
   const enterTvMode = async () => {
     try {
@@ -156,34 +156,33 @@ export function Topbar() {
 
   const itemClasses = (active: boolean) =>
     cn(
-      "flex items-center gap-2 rounded-md px-3 h-11 text-sm whitespace-nowrap shrink-0 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400",
+      "flex items-center gap-2 rounded-md px-3 h-9 text-sm whitespace-nowrap shrink-0 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400",
       active ? "text-amber-400 bg-neutral-800" : "text-neutral-300 hover:text-neutral-100 hover:bg-neutral-800/60"
     );
 
-  if (hidden) return null;
+  if (hidden || !portalTarget) return null;
 
-  return (
+  return createPortal(
     <nav
       ref={navRef}
       aria-label="Navegação do Sistema de Chamados"
-      className="sticky top-0 z-30 w-full bg-neutral-950/95 backdrop-blur border-b border-neutral-800"
+      className="relative flex w-full items-center gap-1"
     >
-      <div className="grid grid-cols-[auto_1fr_auto] lg:grid-cols-[1fr_auto_1fr] items-center gap-1 px-3 h-14">
-        {/* Mobile hamburger */}
-        <button
-          type="button"
-          className="lg:hidden flex items-center justify-center h-11 w-11 rounded-md text-neutral-300 hover:bg-neutral-800/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400"
-          aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"}
-          aria-expanded={mobileOpen}
-          aria-controls="chamados-mobile-menu"
-          onClick={() => setMobileOpen((v) => !v)}
-        >
-          {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </button>
-        <div className="hidden lg:block" />
+      {/* Mobile hamburger */}
+      <button
+        type="button"
+        className="lg:hidden flex items-center justify-center h-9 w-9 shrink-0 rounded-md text-neutral-300 hover:bg-neutral-800/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400"
+        aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"}
+        aria-expanded={mobileOpen}
+        aria-controls="chamados-mobile-menu"
+        onClick={() => setMobileOpen((v) => !v)}
+      >
+        {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+      </button>
 
+      <div className="flex w-full items-center justify-between gap-1">
         {/* Desktop nav (centralizado) */}
-        <div className="hidden lg:flex items-center justify-center gap-1 min-w-0">
+        <div className="hidden lg:flex items-center justify-center gap-1 min-w-0 flex-1">
           {directItems.map((item) => (
             <button
               key={item.url}
@@ -218,7 +217,7 @@ export function Topbar() {
                     key={item.url}
                     type="button"
                     className={cn(
-                      "flex w-full items-center gap-2 px-3 h-11 text-sm text-left whitespace-nowrap focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400",
+                      "flex w-full items-center gap-2 px-3 h-9 text-sm text-left whitespace-nowrap focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400",
                       isItemActive(location.pathname, item.url)
                         ? "text-amber-400 bg-neutral-800"
                         : "text-neutral-300 hover:text-neutral-100 hover:bg-neutral-800/60"
@@ -258,7 +257,7 @@ export function Topbar() {
                       key={item.url}
                       type="button"
                       className={cn(
-                        "flex w-full items-center gap-2 px-3 h-11 text-sm text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400",
+                        "flex w-full items-center gap-2 px-3 h-9 text-sm text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400",
                         isItemActive(location.pathname, item.url)
                           ? "text-amber-400 bg-neutral-800"
                           : "text-neutral-300 hover:text-neutral-100 hover:bg-neutral-800/60"
@@ -275,13 +274,11 @@ export function Topbar() {
           )}
         </div>
 
-        <div className="lg:hidden" />
-
-        <div className="flex items-center justify-end gap-1">
+        <div className="flex items-center justify-end gap-1 shrink-0">
           {isViewerOnly && (
             <button
               type="button"
-              className="flex items-center justify-center h-11 w-11 rounded-md text-neutral-300 hover:text-neutral-100 hover:bg-neutral-800/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400"
+              className="flex items-center justify-center h-9 w-9 rounded-md text-neutral-300 hover:text-neutral-100 hover:bg-neutral-800/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400"
               onClick={enterTvMode}
               aria-label="Modo TV (tela cheia, sem menus)"
               title="Modo TV (tela cheia, sem menus)"
@@ -292,27 +289,21 @@ export function Topbar() {
           )}
           <button
             type="button"
-            className="hidden lg:flex items-center justify-center h-11 w-11 rounded-md text-neutral-300 hover:text-neutral-100 hover:bg-neutral-800/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400"
+            className="hidden lg:flex items-center justify-center h-9 w-9 rounded-md text-neutral-300 hover:text-neutral-100 hover:bg-neutral-800/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400"
             onClick={() => navigate("/admin/settings")}
           >
             <Settings className="h-4 w-4" />
             <span className="sr-only">Configurações</span>
           </button>
-          <button
-            type="button"
-            className="flex items-center justify-center h-11 w-11 rounded-md text-neutral-300 hover:text-neutral-100 hover:bg-neutral-800/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400"
-            onClick={handleLogout}
-            aria-label="Sair"
-          >
-            <LogOut className="h-4 w-4" />
-            <span className="sr-only">Sair</span>
-          </button>
         </div>
       </div>
 
-      {/* Mobile flat menu */}
+      {/* Mobile flat menu — absoluto pra não empurrar a altura do Header */}
       {mobileOpen && (
-        <div id="chamados-mobile-menu" className="lg:hidden border-t border-neutral-800 px-2 py-2 space-y-1">
+        <div
+          id="chamados-mobile-menu"
+          className="lg:hidden absolute left-0 right-0 top-full mt-1 rounded-lg border border-neutral-800 bg-neutral-950 shadow-xl px-2 py-2 space-y-1 z-40"
+        >
           {directItems.map((item) => (
             <button
               key={item.url}
@@ -369,6 +360,7 @@ export function Topbar() {
           </button>
         </div>
       )}
-    </nav>
+    </nav>,
+    portalTarget
   );
 }

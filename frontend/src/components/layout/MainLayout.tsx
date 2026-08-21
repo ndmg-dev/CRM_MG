@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import Header from './Header'
-import { GlobalTicketNotifications } from './GlobalTicketNotifications'
+import { FloatingTicketChat } from './FloatingTicketChat'
+import { UpdateModal } from './UpdateModal'
 import { useUIStore } from '@/stores/uiStore'
 import { useHeartbeat } from '@/hooks/useHeartbeat'
 
@@ -46,15 +47,22 @@ export default function MainLayout() {
           kioskMode ? '' : 'lg:ml-16'
         }`}
       >
-        {!fullBleedSystem && !kioskMode && <Header onMenuClick={() => setMobileNavOpen(true)} />}
-        {/* Sinos de chamados/mensagens: fixos em qualquer tela do CRM, mesmo
-            com um sistema nativo (Férias, Obrigações etc.) aberto em tela
-            cheia e o Header sumido. Só some no modo TV (kiosk). */}
-        {!kioskMode && <GlobalTicketNotifications />}
+        {/* Header fica sempre visível (pesquisa, mensagens, notificações,
+            avatar) mesmo com um sistema nativo aberto em tela cheia — só o
+            menu específico do sistema (ex: Portal/Meus Chamados) muda por
+            baixo dele. Some inteiro só no modo TV (kiosk). */}
+        {!kioskMode && <Header onMenuClick={() => setMobileNavOpen(true)} />}
         <div className={fullBleedSystem || kioskMode ? '' : 'p-4 lg:p-5'}>
           <Outlet />
         </div>
       </main>
+
+      {/* Chat rápido de chamado — abre por cima de qualquer tela, sem
+          navegar pra fora do que a pessoa está fazendo. Some no modo TV. */}
+      {!kioskMode && <FloatingTicketChat />}
+
+      {/* Modal "seu CRM foi atualizado" — uma vez por versão, por usuário. */}
+      {!kioskMode && <UpdateModal />}
     </div>
   )
 }
