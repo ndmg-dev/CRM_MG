@@ -50,6 +50,14 @@ export default function Header({ onMenuClick }: HeaderProps) {
 
   const debouncedSearch = useDebounce(searchQuery, 300)
 
+  // Usuário da Central de Suporte (Supabase separado, sessão unificada no
+  // login) — precisa pra filtrar notificações só das minhas, sem depender
+  // só da RLS pra não misturar chamado de outra pessoa no badge.
+  const [suporteUserId, setSuporteUserId] = useState<string | null>(null)
+  useEffect(() => {
+    suporteSupabase.auth.getUser().then(({ data }) => setSuporteUserId(data.user?.id ?? null))
+  }, [])
+
   const { data: searchResults, isLoading: isSearching } = useQuery({
     queryKey: ['search', debouncedSearch],
     queryFn: () => api.search.query(debouncedSearch),
@@ -66,32 +74,36 @@ export default function Header({ onMenuClick }: HeaderProps) {
 
   // --- Notificações de chamado (Central de Suporte, sem comentários) ---
   const { data: suporteNotifs = [] } = useQuery({
-    queryKey: ['suporte-notificacoes'],
+    queryKey: ['suporte-notificacoes', suporteUserId],
     queryFn: async () => {
       const { data, error } = await suporteSupabase
         .from('notifications')
         .select('*')
+        .eq('user_id', suporteUserId as string)
         .neq('title', MESSAGE_TITLE)
         .order('created_at', { ascending: false })
         .limit(20)
       if (error) throw error
       return data
     },
+    enabled: !!suporteUserId,
   })
 
   // --- Mensagens (comentários de chamado) ---
   const { data: messageNotifs = [] } = useQuery({
-    queryKey: ['suporte-mensagens'],
+    queryKey: ['suporte-mensagens', suporteUserId],
     queryFn: async () => {
       const { data, error } = await suporteSupabase
         .from('notifications')
         .select('*')
+        .eq('user_id', suporteUserId as string)
         .eq('title', MESSAGE_TITLE)
         .order('created_at', { ascending: false })
         .limit(20)
       if (error) throw error
       return data
     },
+    enabled: !!suporteUserId,
   })
 
   // --- Atualizações do CRM (releases) ---
@@ -199,7 +211,8 @@ export default function Header({ onMenuClick }: HeaderProps) {
               if (record?.ticket_id) openChat(record.ticket_id)
             } else {
               queryClient.invalidateQueries({ queryKey: ['suporte-notificacoes'] })
-              const isClosing = record?.title?.includes('Encerrado')
+              const title: string = record?.title || ''
+              const isClosing = /encerrad|fechad|resolvid|cancelad/i.test(title)
               if (record?.ticket_id && !isClosing) {
                 suporteSupabase.from('tickets').select('assignee_id').eq('id', record.ticket_id).single().then(({ data: ticket }) => {
                   playNotificationSound('ticket_opened', ticket?.assignee_id)
