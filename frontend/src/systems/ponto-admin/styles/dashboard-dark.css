@@ -1,0 +1,275 @@
+/*
+ * Tema escuro (âmbar ambiente) — exclusivo do Dashboard.
+ *
+ * Tudo aqui vive sob [data-theme="dark"] .dashboard-page: o toggle seta
+ * data-theme="dark" no <html> (global, persistido em localStorage), mas o
+ * skin em si só é "ligado" dentro do container do Dashboard. Outras telas
+ * usam as mesmas classes (.card, .badge, .avatar...) fora desse escopo,
+ * então não mudam de aparência com o tema ativo.
+ *
+ * A estrutura dos cartões, do ranking e da tooltip de localização é comum aos
+ * dois temas e vive em dashboard.css — aqui ficam só as trocas de paleta e os
+ * acabamentos específicos do âmbar.
+ */
+
+.pontoadmin-root [data-theme='dark'] .dashboard-page {
+  --pg: #0b0b0c;
+  --card: #111113;
+  --panel: #0f0f11;
+  --hair: rgba(255, 255, 255, 0.07);
+  --gold: #d8b866;
+  --gold-2: #c19a3e;
+  --txt: #e8e6e0;
+  --txt-mute: #77746c;
+  --stat-ok: #5dcaa5;
+  --stat-warn: #ef9f27;
+  --stat-err: #e2726f;
+
+  /* Tokens consumidos por dashboard.css (chips, valores, deltas do ranking). */
+  --kpi-ok: var(--stat-ok);
+  --kpi-ok-dim: rgba(93, 202, 165, 0.14);
+  --kpi-err: var(--stat-err);
+  --kpi-err-dim: rgba(226, 114, 111, 0.14);
+  --kpi-gold: var(--gold);
+  --kpi-gold-dim: rgba(216, 184, 102, 0.14);
+  --kpi-warn: var(--stat-warn);
+  --kpi-warn-dim: rgba(239, 159, 39, 0.14);
+  --kpi-neutral: var(--txt-mute);
+  --kpi-neutral-dim: rgba(255, 255, 255, 0.06);
+
+  --surface: var(--card);
+  --surface-hair: var(--hair);
+
+  position: relative;
+  background: var(--pg);
+  color: var(--txt);
+  border-radius: 20px;
+  padding: 24px;
+  overflow: hidden;
+  isolation: isolate; /* novo contexto de empilhamento — o z-index:1 do conteúdo só precisa vencer o ::before/::after locais */
+}
+
+/* ── Camada de iluminação ──────────────────────────────────────────────── */
+
+.pontoadmin-root [data-theme='dark'] .dashboard-page::before,
+.pontoadmin-root [data-theme='dark'] .dashboard-page::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.pontoadmin-root [data-theme='dark'] .dashboard-page::before {
+  top: -180px;
+  left: -140px;
+  width: 640px;
+  height: 520px;
+  background: radial-gradient(circle at 30% 30%, rgba(201, 164, 76, 0.22), rgba(201, 164, 76, 0) 62%);
+}
+
+.pontoadmin-root [data-theme='dark'] .dashboard-page::after {
+  bottom: -260px;
+  left: 35%;
+  width: 720px;
+  height: 620px;
+  background: radial-gradient(circle, rgba(201, 164, 76, 0.1), rgba(201, 164, 76, 0) 60%);
+}
+
+.pontoadmin-root [data-theme='dark'] .dashboard-page > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Reafirma o z-index da grade de KPIs: a regra `> *` acima tem a mesma
+   especificidade da de dashboard.css e vence por ordem de importação, o que
+   deixaria o painel de presenças atrás do card "Pontos do dia". */
+.pontoadmin-root [data-theme='dark'] .dashboard-page > .grid-kpi { z-index: 5; }
+
+/* ── Cabeçalho ─────────────────────────────────────────────────────────── */
+
+.pontoadmin-root [data-theme='dark'] .dashboard-page .page-title { color: var(--txt); }
+
+/* ── Cartões de métrica ────────────────────────────────────────────────── */
+
+.pontoadmin-root [data-theme='dark'] .dashboard-page .kpi-card {
+  background: var(--card);
+  border: 0.5px solid var(--hair);
+}
+
+.pontoadmin-root [data-theme='dark'] .dashboard-page .kpi-label { color: var(--txt-mute); }
+.pontoadmin-root [data-theme='dark'] .dashboard-page .kpi-value { color: var(--txt); }
+.pontoadmin-root [data-theme='dark'] .dashboard-page .kpi-sub   { color: var(--txt-mute); }
+
+.pontoadmin-root [data-theme='dark'] .dashboard-page .kpi-card-expandable:hover,
+.pontoadmin-root [data-theme='dark'] .dashboard-page .kpi-card-expandable:focus-visible {
+  border-color: rgba(216, 184, 102, 0.4);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 24px rgba(201, 164, 76, 0.08);
+}
+.pontoadmin-root [data-theme='dark'] .dashboard-page .kpi-card-expandable .kpi-label::after { background: var(--gold); }
+.pontoadmin-root [data-theme='dark'] .dashboard-page .kpi-card-expandable:focus-visible { outline-color: var(--gold); }
+
+/* ── Ranking de presenças ──────────────────────────────────────────────── */
+
+.pontoadmin-root [data-theme='dark'] .dashboard-page .rank-title      { color: var(--gold); }
+/* Precisa vir depois (e com a mesma especificidade) da regra dourada acima,
+   senão o título de Ausentes perde a cor de exceção no tema âmbar. */
+.pontoadmin-root [data-theme='dark'] .dashboard-page .rank-title-err  { color: var(--stat-err); }
+.pontoadmin-root [data-theme='dark'] .dashboard-page .rank-meta       { color: var(--txt-mute); }
+.pontoadmin-root [data-theme='dark'] .dashboard-page .rank-caption    { color: var(--txt-mute); }
+.pontoadmin-root [data-theme='dark'] .dashboard-page .rank-count      { color: var(--txt); }
+.pontoadmin-root [data-theme='dark'] .dashboard-page .rank-window     { color: var(--txt); }
+.pontoadmin-root [data-theme='dark'] .dashboard-page .rank-window-key { color: var(--txt-mute); }
+.pontoadmin-root [data-theme='dark'] .dashboard-page .rank-window-sep {
+  background: linear-gradient(90deg, rgba(216, 184, 102, 0.45), rgba(255, 255, 255, 0.05));
+}
+.pontoadmin-root [data-theme='dark'] .dashboard-page .rank-name  { color: var(--txt); }
+.pontoadmin-root [data-theme='dark'] .dashboard-page .rank-time  { color: var(--txt); }
+.pontoadmin-root [data-theme='dark'] .dashboard-page .rank-empty { color: var(--txt-mute); }
+.pontoadmin-root [data-theme='dark'] .dashboard-page .rank-row-top .rank-pos { color: var(--gold); }
+
+/* ── Botão de destaque ─────────────────────────────────────────────────── */
+
+.pontoadmin-root [data-theme='dark'] .dashboard-page .btn-primary {
+  background: linear-gradient(180deg, var(--gold), var(--gold-2));
+  color: #2a2109;
+  border: none;
+  border-radius: 9px;
+  padding: 9px 16px;
+  font-weight: 500;
+  box-shadow: 0 0 18px rgba(201, 164, 76, 0.28);
+}
+.pontoadmin-root [data-theme='dark'] .dashboard-page .btn-primary:hover  { filter: brightness(1.06); }
+.pontoadmin-root [data-theme='dark'] .dashboard-page .btn-primary:active { filter: brightness(0.96); transform: scale(0.98); }
+.pontoadmin-root [data-theme='dark'] .dashboard-page .btn-primary:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+/* ── Painéis (pontos do dia / locais) ──────────────────────────────────── */
+
+.pontoadmin-root [data-theme='dark'] .dashboard-page .card {
+  background: var(--panel);
+  border: 0.5px solid var(--hair);
+  border-radius: 14px;
+}
+
+.pontoadmin-root [data-theme='dark'] .dashboard-page .section-title { color: var(--txt-mute); }
+
+.pontoadmin-root [data-theme='dark'] .dashboard-page .form-input {
+  background: rgba(255, 255, 255, 0.04);
+  border: 0.5px solid var(--hair);
+  color: var(--txt);
+}
+.pontoadmin-root [data-theme='dark'] .dashboard-page .form-input:focus-visible {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(216, 184, 102, 0.22);
+}
+
+.pontoadmin-root [data-theme='dark'] .dashboard-page .table th {
+  color: var(--txt-mute);
+  border-bottom: 0.5px solid rgba(255, 255, 255, 0.05);
+}
+.pontoadmin-root [data-theme='dark'] .dashboard-page .table td {
+  color: var(--txt);
+  border-bottom: 0.5px solid rgba(255, 255, 255, 0.05);
+}
+.pontoadmin-root [data-theme='dark'] .dashboard-page .table tr:hover td { background: rgba(255, 255, 255, 0.025); }
+
+/* Avatar de iniciais */
+.pontoadmin-root [data-theme='dark'] .dashboard-page .avatar {
+  background: rgba(201, 164, 76, 0.14);
+  border-color: rgba(201, 164, 76, 0.3);
+  color: var(--gold);
+}
+
+/* Status como bolinha colorida + label na cor de status, em vez do badge
+   "pill" do tema padrão — reskin puro via CSS, o componente Badge e o JSX
+   do Dashboard continuam os mesmos. */
+.pontoadmin-root [data-theme='dark'] .dashboard-page .badge {
+  background: transparent;
+  padding: 0 0 0 13px;
+  position: relative;
+  font-weight: 500;
+  font-size: 11px;
+}
+.pontoadmin-root [data-theme='dark'] .dashboard-page .badge::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.pontoadmin-root [data-theme='dark'] .dashboard-page .badge-ok      { color: var(--stat-ok); }
+.pontoadmin-root [data-theme='dark'] .dashboard-page .badge-warn    { color: var(--stat-warn); }
+.pontoadmin-root [data-theme='dark'] .dashboard-page .badge-err     { color: var(--stat-err); }
+.pontoadmin-root [data-theme='dark'] .dashboard-page .badge-neutral { color: var(--txt-mute); }
+
+/* Links discretos (ex.: "Ver todos →"), prontos para uso mesmo sem nenhum
+   presente no Dashboard hoje. */
+.pontoadmin-root [data-theme='dark'] .dashboard-page a {
+  color: var(--gold);
+  text-decoration: none;
+}
+.pontoadmin-root [data-theme='dark'] .dashboard-page a:hover { filter: brightness(1.1); }
+.pontoadmin-root [data-theme='dark'] .dashboard-page a:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; border-radius: 2px; }
+
+/* ── Gráfico de locais ─────────────────────────────────────────────────── */
+
+/* Barra (recharts) — ver LocationsBarChart.tsx: o fill do <Bar> referencia um
+   <linearGradient> cujos stops usam var(--gold-2)/var(--gold) com fallback pro
+   dourado atual, então o gradiente só aparece aqui dentro; no tema padrão os
+   dois stops caem no mesmo fallback = cor sólida igual à de hoje. */
+.pontoadmin-root [data-theme='dark'] .dashboard-page .bar-value-label   { fill: var(--txt); }
+.pontoadmin-root [data-theme='dark'] .dashboard-page .chart-caption     { color: var(--txt-mute); }
+.pontoadmin-root [data-theme='dark'] .dashboard-page .chart-caption-unit { color: rgba(255, 255, 255, 0.28); }
+.pontoadmin-root [data-theme='dark'] .dashboard-page .chart-empty       { color: var(--txt-mute); border-color: var(--hair); }
+
+.pontoadmin-root [data-theme='dark'] .dashboard-page .chart-tip {
+  background: var(--card);
+  border-color: var(--hair);
+}
+.pontoadmin-root [data-theme='dark'] .dashboard-page .chart-tip-title      { color: var(--txt); }
+.pontoadmin-root [data-theme='dark'] .dashboard-page .chart-tip-value      { color: var(--gold); }
+.pontoadmin-root [data-theme='dark'] .dashboard-page .chart-tip-value span { color: var(--txt-mute); }
+
+.pontoadmin-root [data-theme='dark'] .dashboard-page .heatmap-wrap   { border-color: var(--hair); }
+.pontoadmin-root [data-theme='dark'] .dashboard-page .heatmap-legend {
+  background: var(--card);
+  border-top-color: var(--hair);
+  color: var(--txt-mute);
+}
+.pontoadmin-root [data-theme='dark'] .dashboard-page .heatmap-tip {
+  background: var(--card);
+  border-color: var(--hair);
+}
+.pontoadmin-root [data-theme='dark'] .dashboard-page .heatmap-tip-count { color: var(--gold); }
+.pontoadmin-root [data-theme='dark'] .dashboard-page .heatmap-tip-names { color: var(--txt); }
+.pontoadmin-root [data-theme='dark'] .dashboard-page .heatmap-tip-more  { color: var(--txt-mute); }
+
+/* ── Localização ───────────────────────────────────────────────────────── */
+
+.pontoadmin-root [data-theme='dark'] .dashboard-page .loc-trigger { color: var(--txt-mute); }
+.pontoadmin-root [data-theme='dark'] .dashboard-page .loc-trigger:hover,
+.pontoadmin-root [data-theme='dark'] .dashboard-page .loc-trigger:focus-visible { color: var(--txt); }
+.pontoadmin-root [data-theme='dark'] .dashboard-page .loc-pin { color: var(--gold); }
+
+/* Única exceção ao escopo .dashboard-page: o painel do mapa é renderizado num
+   portal no <body>, fora da árvore do Dashboard — só o [data-theme] do <html>
+   continua sendo ancestral dele. */
+.pontoadmin-root [data-theme='dark'] .loc-panel {
+  background: #111113;
+  border-color: rgba(255, 255, 255, 0.07);
+}
+.pontoadmin-root [data-theme='dark'] .loc-panel-head    { color: #d8b866; }
+.pontoadmin-root [data-theme='dark'] .loc-panel-address { color: #e8e6e0; }
+.pontoadmin-root [data-theme='dark'] .loc-panel-coords  { color: #77746c; }
+.pontoadmin-root [data-theme='dark'] .loc-panel-fallback {
+  color: #77746c;
+  background: #0f0f11;
+}
+.pontoadmin-root [data-theme='dark'] .mapcn-root { background: #0f0f11; }
+.pontoadmin-root [data-theme='dark'] .mapcn-marker {
+  background: #d8b866;
+  box-shadow: 0 0 0 5px rgba(216, 184, 102, 0.25);
+}

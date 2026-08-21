@@ -16,7 +16,8 @@
       "@obrigacoes/*": ["./src/systems/obrigacoes/*"],
       "@adiantamento/*": ["./src/systems/calculo-adiantamento/*"],
       "@aeronord/*": ["./src/systems/aeronord/*"],
-      "@comissao/*": ["./src/systems/calculo-comissao/*"]
+      "@comissao/*": ["./src/systems/calculo-comissao/*"],
+      "@pontoadmin/*": ["./src/systems/ponto-admin/*"]
     },
 
     /* Bundler mode */

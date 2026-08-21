@@ -25,6 +25,10 @@ export const systemRegistry: Record<string, LazyExoticComponent<ComponentType>> 
   'calculo-adiantamento': lazy(() => import('@adiantamento/CalculoAdiantamentoApp')),
   'aeronord-convocacoes-recibos': lazy(() => import('@aeronord/AeronordApp')),
   'calculo-comissao': lazy(() => import('@comissao/CalculoComissaoApp')),
+  // Slug já cadastrado em sistemas_seed.sql (id 6f9c8d11-...) apontando pro
+  // iframe de https://pontoadmin.mendoncagalvao.com.br/ — passa a renderizar
+  // nativo automaticamente, sem precisar mudar nada no banco.
+  'ponto-admin': lazy(() => import('@pontoadmin/PontoAdminApp')),
 }
 
 /**
