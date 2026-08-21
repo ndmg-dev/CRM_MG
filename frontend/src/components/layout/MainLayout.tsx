@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import Header from './Header'
+import { GlobalTicketNotifications } from './GlobalTicketNotifications'
 import { useUIStore } from '@/stores/uiStore'
 import { useHeartbeat } from '@/hooks/useHeartbeat'
 
@@ -46,6 +47,10 @@ export default function MainLayout() {
         }`}
       >
         {!fullBleedSystem && !kioskMode && <Header onMenuClick={() => setMobileNavOpen(true)} />}
+        {/* Sinos de chamados/mensagens: fixos em qualquer tela do CRM, mesmo
+            com um sistema nativo (Férias, Obrigações etc.) aberto em tela
+            cheia e o Header sumido. Só some no modo TV (kiosk). */}
+        {!kioskMode && <GlobalTicketNotifications />}
         <div className={fullBleedSystem || kioskMode ? '' : 'p-4 lg:p-5'}>
           <Outlet />
         </div>
