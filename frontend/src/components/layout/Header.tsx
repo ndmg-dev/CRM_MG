@@ -453,15 +453,18 @@ export default function Header({ onMenuClick }: HeaderProps) {
                 transition={{ duration: 0.15 }}
                 className="absolute right-0 mt-2 w-80 overflow-hidden rounded-xl border border-border bg-card shadow-2xl"
               >
-                <div className="flex items-center justify-between border-b border-border bg-surface-raised px-4 py-3">
-                  <h3 className="text-sm font-semibold text-text-primary">Notificações</h3>
+                <div className="flex items-center justify-between gap-2 border-b border-border bg-surface-raised px-4 py-3">
+                  <h3 className="shrink-0 text-sm font-semibold text-text-primary">Notificações</h3>
                   {unreadCount > 0 && (
-                    <div className="flex items-center gap-3">
-                      <span className="rounded-full bg-gold/10 px-2 py-0.5 text-xs font-medium text-gold">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span className="shrink-0 whitespace-nowrap rounded-full bg-gold/10 px-2 py-0.5 text-xs font-medium text-gold">
                         {unreadCount} novas
                       </span>
-                      <button className="text-xs text-gold hover:underline" onClick={markAllNotifRead}>
-                        Marcar tudo como lido
+                      <button
+                        className="shrink-0 whitespace-nowrap text-xs text-gold hover:underline"
+                        onClick={markAllNotifRead}
+                      >
+                        Marcar tudo
                       </button>
                     </div>
                   )}
