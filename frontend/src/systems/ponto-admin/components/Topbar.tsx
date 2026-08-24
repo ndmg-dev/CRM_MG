@@ -164,8 +164,14 @@ export function Topbar() {
                 Gestão
                 <ChevronDown className="h-3.5 w-3.5" />
               </button>
+              {/* z-[100]: como nenhum ancestral entre este dropdown e a raiz
+                  cria contexto de empilhamento próprio, seu z-index compete
+                  direto com o da Header do CRM (z-20) — e com o de qualquer
+                  elemento posicionado dentro das páginas do Ponto Admin
+                  (ex: ReportFilters.tsx usa até z-index:50). Precisa ficar
+                  acima de ambos sempre, senão a página cobre o dropdown. */}
               {openDropdown && (
-                <div className="absolute left-0 top-full mt-1 min-w-[220px] rounded-md border border-[#262626] bg-[#0a0a0a] shadow-xl py-1 z-40">
+                <div className="absolute left-0 top-full mt-1 min-w-[220px] rounded-md border border-[#262626] bg-[#0a0a0a] shadow-xl py-1 z-[100]">
                   {visibleManagement.map((item) => (
                     <NavLink
                       key={item.to}
@@ -228,7 +234,7 @@ export function Topbar() {
       </div>
 
       {mobileOpen && (
-        <div className="lg:hidden absolute left-0 right-0 top-full mt-1 rounded-lg border border-[#262626] bg-[#0a0a0a] shadow-xl px-2 py-2 space-y-1 z-40">
+        <div className="lg:hidden absolute left-0 right-0 top-full mt-1 rounded-lg border border-[#262626] bg-[#0a0a0a] shadow-xl px-2 py-2 space-y-1 z-[100]">
           {visibleDirect.map((item) => (
             <NavLink
               key={item.to}
