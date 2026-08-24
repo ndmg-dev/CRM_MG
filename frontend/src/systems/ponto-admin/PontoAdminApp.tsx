@@ -16,6 +16,7 @@ import Register from './pages/Register'
 import BiometricCapture from './pages/BiometricCapture'
 import { api } from './lib/api'
 import { useAuth, type Permission } from './hooks/useAuth'
+import { usePontoBase, usePontoPath } from './hooks/usePontoBase'
 import { CronosSplash } from './components/CronosSplash'
 
 import './styles/globals.css'
@@ -28,23 +29,27 @@ import './styles/dashboard.css'
 // visual padrão (já escuro) de dashboard.css.
 import './styles/cronos-loader.css'
 
-// relative="path" faz o alvo resolver como uma URL relativa normal — ver o
-// comentário em components/Topbar.tsx.
+// Ver comentário em hooks/usePontoBase.ts: navegação aqui é sempre por
+// caminho absoluto, nunca relativo — react-router-dom não resolve "to"
+// relativo como um <a href> faria (nem com relative="path", nem ".").
 function RequireAuth({ children }: { children: React.ReactNode }) {
+  const toAbs = usePontoPath()
   const token = localStorage.getItem('mg_token')
-  if (!token) return <Navigate to="login" relative="path" replace />
+  if (!token) return <Navigate to={toAbs('login')} replace />
   return <>{children}</>
 }
 
 function RequirePermission({ permission, children }: { permission: Permission; children: React.ReactNode }) {
+  const base = usePontoBase()
   const { can } = useAuth()
-  if (!can(permission)) return <Navigate to="." relative="path" replace />
+  if (!can(permission)) return <Navigate to={base} replace />
   return <>{children}</>
 }
 
 function RequireAdmin({ children }: { children: React.ReactNode }) {
+  const base = usePontoBase()
   const { isAdmin } = useAuth()
-  if (!isAdmin) return <Navigate to="." relative="path" replace />
+  if (!isAdmin) return <Navigate to={base} replace />
   return <>{children}</>
 }
 
@@ -73,6 +78,11 @@ function Layout({ children }: { children: React.ReactNode }) {
   )
 }
 
+function NotFoundRedirect() {
+  const base = usePontoBase()
+  return <Navigate to={base} replace />
+}
+
 export default function PontoAdminApp() {
   return (
     <div className="pontoadmin-root">
@@ -91,7 +101,7 @@ export default function PontoAdminApp() {
         <Route path="audit" element={<RequireAuth><RequirePermission permission="audit"><Layout><AuditLog /></Layout></RequirePermission></RequireAuth>} />
         <Route path="calendar" element={<RequireAuth><RequirePermission permission="calendar"><Layout><Calendar /></Layout></RequirePermission></RequireAuth>} />
         <Route path="users" element={<RequireAuth><RequireAdmin><Layout><Users /></Layout></RequireAdmin></RequireAuth>} />
-        <Route path="*" element={<Navigate to="." replace />} />
+        <Route path="*" element={<NotFoundRedirect />} />
       </Routes>
     </div>
   )

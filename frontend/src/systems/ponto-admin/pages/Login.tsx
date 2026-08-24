@@ -1,19 +1,19 @@
 import { useState } from 'react'
 import { useNavigate, Navigate } from 'react-router-dom'
 import { api } from '../lib/api'
+import { usePontoBase } from '../hooks/usePontoBase'
 
 export default function Login() {
   const navigate = useNavigate()
+  const base = usePontoBase()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
   if (localStorage.getItem('mg_token')) {
-    // "." (não "..") porque relative="path" trata "login" (sem barra final)
-    // como um arquivo — "." já resolve pro diretório que o contém, que é a
-    // base do sistema (a rota índice). Ver comentário em components/Topbar.tsx.
-    return <Navigate to="." relative="path" replace />
+    // Caminho absoluto (rota índice) — ver comentário em hooks/usePontoBase.ts.
+    return <Navigate to={base} replace />
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -26,7 +26,7 @@ export default function Login() {
         { email, password }
       )
       localStorage.setItem('mg_token', data.access_token)
-      navigate('.', { replace: true, relative: 'path' })
+      navigate(base, { replace: true })
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Erro ao conectar com o servidor')
     } finally {

@@ -4,6 +4,7 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { useAuth, type Permission } from '../hooks/useAuth'
+import { usePontoPath } from '../hooks/usePontoBase'
 import { Modal } from './Modal'
 import {
   Home,
@@ -24,12 +25,10 @@ import {
 } from 'lucide-react'
 
 // O Topbar fica montado o tempo todo (portalizado no Header do CRM),
-// independente de qual página do sistema está ativa. `relative="path"` (em
-// todo NavLink/navigate abaixo) faz o alvo resolver como uma URL relativa
-// normal — igual um <a href> — em vez de pela árvore de rotas do React
-// Router: como só a rota índice ("/sistemas/:id/") tem barra final, "login"
-// a partir de "employees" vira ".../login" (troca o "arquivo", como um href
-// relativo faria), nunca ".../employees/login".
+// independente de qual página do sistema está ativa. Os `to` abaixo são
+// sufixos relativos à base ("/sistemas/:id") — resolvidos manualmente com
+// usePontoBase() em vez de navegação relativa do React Router, que não se
+// comporta como um <a href> nessa versão (ver hooks/usePontoBase.ts).
 const directItems: { to: string; label: string; icon: typeof Home; end?: boolean; permission: Permission }[] = [
   { to: '.', label: 'Dashboard', icon: Home, end: true, permission: 'dashboard' },
   { to: 'employees', label: 'Funcionários', icon: Users, permission: 'employees' },
@@ -49,6 +48,7 @@ export function Topbar() {
   const location = useLocation()
   const qc = useQueryClient()
   const { isAdmin, can } = useAuth()
+  const toAbs = usePontoPath()
 
   const [openDropdown, setOpenDropdown] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -97,7 +97,7 @@ export function Topbar() {
   function handleLogout() {
     localStorage.removeItem('mg_token')
     qc.clear()
-    navigate('login', { relative: 'path' })
+    navigate(toAbs('login'))
   }
 
   async function handleChangePass(e: React.FormEvent) {
@@ -142,9 +142,8 @@ export function Topbar() {
           {visibleDirect.map((item) => (
             <NavLink
               key={item.to}
-              to={item.to}
+              to={toAbs(item.to)}
               end={item.end}
-              relative="path"
               className={({ isActive }) => itemClasses(isActive)}
             >
               <item.icon className="h-4 w-4" />
@@ -170,8 +169,7 @@ export function Topbar() {
                   {visibleManagement.map((item) => (
                     <NavLink
                       key={item.to}
-                      to={item.to}
-                      relative="path"
+                      to={toAbs(item.to)}
                       className={({ isActive }) =>
                         `flex items-center gap-2 px-3 h-9 text-sm whitespace-nowrap ${
                           isActive ? 'text-gold bg-[#1a1a1a]' : 'text-gray-400 hover:text-white hover:bg-[#1a1a1a]'
@@ -191,8 +189,7 @@ export function Topbar() {
         <div className="flex items-center justify-end gap-1 shrink-0">
           {isAdmin && (
             <NavLink
-              to="users"
-              relative="path"
+              to={toAbs('users')}
               className={({ isActive }) => itemClasses(isActive)}
               title="Usuários"
             >
@@ -203,7 +200,7 @@ export function Topbar() {
           <button
             type="button"
             className="hidden lg:flex items-center justify-center h-9 w-9 rounded-md text-gray-400 hover:text-white hover:bg-[#1a1a1a]"
-            onClick={() => navigate('settings', { relative: 'path' })}
+            onClick={() => navigate(toAbs('settings'))}
             aria-label="Configurações"
             title="Configurações"
           >
@@ -235,9 +232,8 @@ export function Topbar() {
           {visibleDirect.map((item) => (
             <NavLink
               key={item.to}
-              to={item.to}
+              to={toAbs(item.to)}
               end={item.end}
-              relative="path"
               className={({ isActive }) => `${itemClasses(isActive)} w-full justify-start`}
             >
               <item.icon className="h-4 w-4" />
@@ -250,8 +246,7 @@ export function Topbar() {
               {visibleManagement.map((item) => (
                 <NavLink
                   key={item.to}
-                  to={item.to}
-                  relative="path"
+                  to={toAbs(item.to)}
                   className={({ isActive }) => `${itemClasses(isActive)} w-full justify-start`}
                 >
                   <item.icon className="h-4 w-4" />
@@ -261,7 +256,7 @@ export function Topbar() {
             </>
           )}
           {isAdmin && (
-            <NavLink to="users" relative="path" className={({ isActive }) => `${itemClasses(isActive)} w-full justify-start`}>
+            <NavLink to={toAbs('users')} className={({ isActive }) => `${itemClasses(isActive)} w-full justify-start`}>
               <UserCog className="h-4 w-4" />
               Usuários
             </NavLink>
@@ -269,7 +264,7 @@ export function Topbar() {
           <button
             type="button"
             className={`${itemClasses(location.pathname.includes('/settings'))} w-full justify-start`}
-            onClick={() => navigate('settings', { relative: 'path' })}
+            onClick={() => navigate(toAbs('settings'))}
           >
             <Settings className="h-4 w-4" />
             Configurações
