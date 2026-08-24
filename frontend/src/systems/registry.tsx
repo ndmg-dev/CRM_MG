@@ -31,6 +31,7 @@ export const systemRegistry: Record<string, LazyExoticComponent<ComponentType>> 
   'ponto-admin': lazy(() => import('@pontoadmin/PontoAdminApp')),
   'guia-dp': lazy(() => import('@guiadp/GuiaDpApp')),
   'conciliacao-fiscal': lazy(() => import('@fiscal/ConciliacaoFiscalApp')),
+  'abertura-de-empresa': lazy(() => import('@abertura/AberturaEmpresaApp')),
 }
 
 /**
