@@ -1,0 +1,47 @@
+/*
+ * Loader da ampulheta do Cronos — animações + tela de splash.
+ * Anima apenas transform/opacity (composto em GPU).
+ */
+
+@keyframes cr-drain  { 0% { transform: translateY(0) }    62%, 100% { transform: translateY(28px) } }
+@keyframes cr-fill   { 0% { transform: translateY(28px) } 62%, 100% { transform: translateY(0) } }
+@keyframes cr-flip   { 0%, 70% { transform: rotate(0deg) } 92%, 100% { transform: rotate(180deg) } }
+@keyframes cr-appear { 0%, 5% { opacity: 0 } 10%, 56% { opacity: 1 } 62%, 100% { opacity: 0 } }
+@keyframes cr-fall   { from { transform: translateY(-4px) } to { transform: translateY(4px) } }
+
+.cr-top    { animation: cr-drain 5.5s cubic-bezier(.35, 0, .65, 1) infinite; }
+.cr-bottom { animation: cr-fill  5.5s cubic-bezier(.35, 0, .65, 1) infinite; }
+.cr-glass  { transform-origin: 48px 48px; animation: cr-flip 5.5s cubic-bezier(.7, 0, .3, 1) infinite; }
+.cr-stream { animation: cr-appear 5.5s linear infinite; }
+.cr-stream rect { animation: cr-fall .5s linear infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cr-top, .cr-bottom, .cr-glass, .cr-stream, .cr-stream rect { animation: none; }
+  .cr-top    { transform: translateY(14px); }
+  .cr-bottom { transform: translateY(14px); }
+}
+
+/* ── Tela de splash ──────────────────────────────────────────────────────── */
+
+.cronos-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #0a0a0a;
+}
+
+.cronos-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

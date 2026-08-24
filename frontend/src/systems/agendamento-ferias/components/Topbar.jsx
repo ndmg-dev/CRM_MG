@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate, useLocation } from "../lib/router-shim";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../lib/supabase";
@@ -35,6 +36,12 @@ export default function Topbar() {
   const { usuarioLogado } = useAuth();
   const permissions = getFeriasPermissions(usuarioLogado);
   const navRef = useRef(null);
+
+  // Portaliza pra dentro do Header do CRM (uma barra só, não duas empilhadas).
+  const [portalTarget, setPortalTarget] = useState(null);
+  useEffect(() => {
+    setPortalTarget(document.getElementById("system-menu-slot"));
+  }, []);
 
   useEffect(() => {
     const atualizarContagem = async () => {
@@ -99,57 +106,56 @@ export default function Topbar() {
   }, []);
 
   const itemClasses = (active) =>
-    `flex items-center gap-2 rounded-md px-3 h-11 text-sm whitespace-nowrap shrink-0 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold ${
+    `flex items-center gap-2 rounded-md px-3 h-9 text-sm whitespace-nowrap shrink-0 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold ${
       active ? "text-gold bg-[#1a1a1a] font-medium" : "text-gray-400 hover:text-white hover:bg-[#1a1a1a]"
     }`;
 
-  return (
+  if (!portalTarget) return null;
+
+  return createPortal(
     <nav
       ref={navRef}
       aria-label="Navegação do Agendamento de Férias"
-      className="sticky top-0 z-30 w-full bg-[#0a0a0a]/95 backdrop-blur border-b border-[#262626]"
+      className="relative flex w-full items-center gap-1"
     >
-      <div className="grid grid-cols-[auto_1fr_auto] lg:grid-cols-[1fr_auto_1fr] items-center gap-1 px-3 h-14">
-        <button
-          type="button"
-          className="lg:hidden flex items-center justify-center h-11 w-11 rounded-md text-gray-400 hover:bg-[#1a1a1a] focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold"
-          aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"}
-          aria-expanded={mobileOpen}
-          aria-controls="ferias-mobile-menu"
-          onClick={() => setMobileOpen((v) => !v)}
-        >
-          {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </button>
-        <div className="hidden lg:block" />
+      <button
+        type="button"
+        className="lg:hidden flex items-center justify-center h-9 w-9 shrink-0 rounded-md text-gray-400 hover:bg-[#1a1a1a] focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold"
+        aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"}
+        aria-expanded={mobileOpen}
+        aria-controls="ferias-mobile-menu"
+        onClick={() => setMobileOpen((v) => !v)}
+      >
+        {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+      </button>
 
-        <div className="hidden lg:flex items-center justify-center gap-1 min-w-0">
-          {menusPermitidos.map((item) => {
-            const active = isItemActive(location.pathname, item.path, item.end);
-            return (
-              <button
-                key={item.name}
-                type="button"
-                className={itemClasses(active)}
-                onClick={() => navigate(item.path)}
-              >
-                <item.icon className="h-4 w-4" />
-                {item.name}
-                {item.badge && contagem > 0 && (
-                  <span className="bg-gold text-[#0a0a0a] text-[10px] font-bold px-1.5 py-0.5 rounded-full animate-pulse">
-                    {contagem}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="lg:hidden" />
-        <div className="hidden lg:block" />
+      <div className="hidden lg:flex items-center justify-center gap-1 min-w-0 flex-1">
+        {menusPermitidos.map((item) => {
+          const active = isItemActive(location.pathname, item.path, item.end);
+          return (
+            <button
+              key={item.name}
+              type="button"
+              className={itemClasses(active)}
+              onClick={() => navigate(item.path)}
+            >
+              <item.icon className="h-4 w-4" />
+              {item.name}
+              {item.badge && contagem > 0 && (
+                <span className="bg-gold text-[#0a0a0a] text-[10px] font-bold px-1.5 py-0.5 rounded-full animate-pulse">
+                  {contagem}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {mobileOpen && (
-        <div id="ferias-mobile-menu" className="lg:hidden border-t border-[#262626] px-2 py-2 space-y-1">
+        <div
+          id="ferias-mobile-menu"
+          className="lg:hidden absolute left-0 right-0 top-full mt-1 rounded-lg border border-[#262626] bg-[#0a0a0a] shadow-xl px-2 py-2 space-y-1 z-40"
+        >
           {menusPermitidos.map((item) => {
             const active = isItemActive(location.pathname, item.path, item.end);
             return (
@@ -171,6 +177,7 @@ export default function Topbar() {
           })}
         </div>
       )}
-    </nav>
+    </nav>,
+    portalTarget
   );
 }
