@@ -31,6 +31,12 @@ export default function LocationCell({ address, latitude, longitude }: Props) {
   const timerRef = useRef<number | undefined>(undefined)
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null)
   const [tilesFailed, setTilesFailed] = useState(false)
+  // O CSS de .loc-panel é escopado sob .pontoadmin-root (ver Modal.tsx) —
+  // portar pra document.body faria o painel renderizar sem estilo nenhum.
+  const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null)
+  useEffect(() => {
+    setPortalRoot(document.querySelector<HTMLElement>('.pontoadmin-root'))
+  }, [])
 
   const hasCoords = hasMeasuredLocation({ latitude, longitude })
 
@@ -93,7 +99,7 @@ export default function LocationCell({ address, latitude, longitude }: Props) {
         <span className="loc-text">{address ?? `${latitude!.toFixed(5)}, ${longitude!.toFixed(5)}`}</span>
       </span>
 
-      {pos && createPortal(
+      {pos && portalRoot && createPortal(
         <div className="loc-panel" style={{ top: pos.top, left: pos.left, width: PANEL_W }} role="tooltip">
           <div className="loc-panel-head">
             <span className="loc-panel-icon"><MapPinIcon size={12} /></span>
@@ -117,7 +123,7 @@ export default function LocationCell({ address, latitude, longitude }: Props) {
             </div>
           </div>
         </div>,
-        document.body,
+        portalRoot,
       )}
     </>
   )
