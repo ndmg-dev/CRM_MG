@@ -53,7 +53,12 @@ export default function ReportFilters({
   }
 
   return (
-    <div className="card" style={{ marginBottom: 20, padding: '14px 16px', position: 'relative', zIndex: 30 }}>
+    // z-index baixo de propósito: a Header do CRM (sticky, z-20) cria seu
+    // próprio contexto de empilhamento, então qualquer z-index >= 20 usado
+    // aqui dentro passa a competir com a Header INTEIRA (dropdowns dela
+    // incluídos) na raiz do documento — e vence, cobrindo a Header mesmo com
+    // menus dela abertos por cima. Ver comentário em Topbar.tsx.
+    <div className="card" style={{ marginBottom: 20, padding: '14px 16px', position: 'relative', zIndex: 2 }}>
       <div style={{ display: 'flex', borderRadius: 8, overflow: 'hidden', border: 'var(--mg-border)', width: 'fit-content', marginBottom: 14 }}>
         {(['employee', 'sector', 'team'] as const).map(s => (
           <button key={s} onClick={() => onChangeScope(s)}
@@ -89,7 +94,7 @@ export default function ReportFilters({
 
           {dropOpen && (
             <div style={{
-              position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 50,
+              position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 3,
               background: 'var(--mg-bg3)', border: 'var(--mg-border)', borderRadius: 8,
               boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
             }}>

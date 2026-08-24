@@ -67,10 +67,13 @@ function ExportDropdown({ label, variant, items }: {
         ↓ {label} <span style={{ fontSize: 9, opacity: 0.8 }}>▼</span>
       </button>
       {open && (
+        // z-index baixo de propósito — ver comentário em ReportFilters.tsx
+        // (a Header do CRM, sticky z-20, cria seu próprio contexto de
+        // empilhamento; qualquer z-index >= 20 aqui compete com ela inteira).
         <div style={{
           position: 'absolute', top: '100%', right: 0, marginTop: 4, minWidth: 190,
           background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8,
-          boxShadow: '0 8px 24px rgba(0,0,0,0.45)', zIndex: 50, overflow: 'hidden', padding: '4px 0',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.45)', zIndex: 3, overflow: 'hidden', padding: '4px 0',
         }}>
           {items.map((it, i) => (
             <button key={i} onClick={() => { it.onClick(); setOpen(false) }}
