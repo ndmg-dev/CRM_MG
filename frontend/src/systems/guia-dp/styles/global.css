@@ -1,0 +1,43 @@
+@import './tokens.css';
+
+/* Escopado sob .guiadp-root — ver comentário em tokens.css. O reset universal
+   e o estilo de body do projeto original afetariam o CRM inteiro se não
+   fossem restritos ao container deste sistema. */
+.guiadp-root,
+.guiadp-root *,
+.guiadp-root *::before,
+.guiadp-root *::after {
+  box-sizing: border-box;
+}
+
+.guiadp-root {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.guiadp-root a {
+  color: var(--accent-gold);
+  text-decoration: none;
+}
+
+.guiadp-root a:hover {
+  color: var(--accent-gold-strong);
+}
+
+.guiadp-root button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.guiadp-root ::selection {
+  background: var(--accent-gold);
+  color: var(--bg-primary);
+}

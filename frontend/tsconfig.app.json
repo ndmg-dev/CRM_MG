@@ -17,7 +17,8 @@
       "@adiantamento/*": ["./src/systems/calculo-adiantamento/*"],
       "@aeronord/*": ["./src/systems/aeronord/*"],
       "@comissao/*": ["./src/systems/calculo-comissao/*"],
-      "@pontoadmin/*": ["./src/systems/ponto-admin/*"]
+      "@pontoadmin/*": ["./src/systems/ponto-admin/*"],
+      "@guiadp/*": ["./src/systems/guia-dp/*"]
     },
 
     /* Bundler mode */

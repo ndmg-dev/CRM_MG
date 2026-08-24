@@ -20,6 +20,7 @@ export default defineConfig(({ mode }) => {
         '@aeronord': path.resolve(__dirname, './src/systems/aeronord'),
         '@comissao': path.resolve(__dirname, './src/systems/calculo-comissao'),
         '@pontoadmin': path.resolve(__dirname, './src/systems/ponto-admin'),
+        '@guiadp': path.resolve(__dirname, './src/systems/guia-dp'),
       },
     },
     server: {

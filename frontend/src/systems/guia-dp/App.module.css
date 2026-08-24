@@ -1,0 +1,38 @@
+.main {
+  flex: 1;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 3rem;
+}
+
+.hero {
+  margin-bottom: 1.75rem;
+}
+
+.title {
+  color: var(--accent-gold);
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.25;
+  margin-bottom: 0.6rem;
+}
+
+.lead {
+  color: var(--text-secondary);
+  font-size: 0.98rem;
+  max-width: 640px;
+}
+
+.sectionTitle {
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 560px) {
+  .title {
+    font-size: 1.45rem;
+  }
+}
