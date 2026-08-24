@@ -21,6 +21,7 @@ export default defineConfig(({ mode }) => {
         '@comissao': path.resolve(__dirname, './src/systems/calculo-comissao'),
         '@pontoadmin': path.resolve(__dirname, './src/systems/ponto-admin'),
         '@guiadp': path.resolve(__dirname, './src/systems/guia-dp'),
+        '@fiscal': path.resolve(__dirname, './src/systems/conciliacao-fiscal'),
       },
     },
     server: {
