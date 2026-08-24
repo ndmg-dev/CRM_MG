@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 
 interface ModalProps {
@@ -11,9 +12,18 @@ interface ModalProps {
 }
 
 export function Modal({ open, onClose, title, children, maxWidth, hideTitle }: ModalProps) {
+  // Por padrão o Dialog.Portal do Radix renderiza direto em document.body,
+  // fora da .pontoadmin-root — e o CSS do modal (.pontoadmin-root .modal...)
+  // é escopado sob essa classe pra não vazar tema pro resto do CRM. Sem
+  // apontar o portal pra dentro dela, o modal renderiza sem nenhum estilo.
+  const [container, setContainer] = useState<HTMLElement | null>(null)
+  useEffect(() => {
+    setContainer(document.querySelector<HTMLElement>('.pontoadmin-root'))
+  }, [])
+
   return (
     <Dialog.Root open={open} onOpenChange={open => !open && onClose()}>
-      <Dialog.Portal>
+      <Dialog.Portal container={container ?? undefined}>
         <Dialog.Overlay className="modal-overlay" />
         <Dialog.Content
           className="modal"

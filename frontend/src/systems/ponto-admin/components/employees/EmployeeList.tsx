@@ -9,6 +9,14 @@ import { ROLES } from './constants'
 type SortBy = 'name' | 'sector' | 'role' | 'bio'
 const PAGE_SIZE = 20
 
+// Fora do componente (não redefinida a cada render): definir um componente
+// dentro do corpo de outro faz a identidade da função mudar a cada render,
+// e o React desmonta/remonta a subárvore inteira em vez de só atualizá-la.
+function SortArrow({ col, sortBy, sortDir }: { col: SortBy; sortBy: SortBy; sortDir: 'asc' | 'desc' }) {
+  if (sortBy !== col) return <span style={{ color: 'rgba(255,255,255,0.2)', marginLeft: 4 }}>⇅</span>
+  return <span style={{ color: 'var(--mg-gold)', marginLeft: 4 }}>{sortDir === 'asc' ? '↑' : '↓'}</span>
+}
+
 interface EmployeeListProps {
   employees: Employee[]
   sectors: Sector[]
@@ -55,11 +63,6 @@ export default function EmployeeList({
     setPage(1)
   }
 
-  function SortArrow({ col }: { col: SortBy }) {
-    if (sortBy !== col) return <span style={{ color: 'rgba(255,255,255,0.2)', marginLeft: 4 }}>⇅</span>
-    return <span style={{ color: 'var(--mg-gold)', marginLeft: 4 }}>{sortDir === 'asc' ? '↑' : '↓'}</span>
-  }
-
   return (
     <>
       {/* ── Barra de busca e filtros ─────────────────────────── */}
@@ -92,17 +95,17 @@ export default function EmployeeList({
           <thead>
             <tr>
               <th style={{ cursor: 'pointer' }} onClick={() => toggleSort('name')}>
-                Nome <SortArrow col="name" />
+                Nome <SortArrow col="name" sortBy={sortBy} sortDir={sortDir} />
               </th>
               <th>Cargo</th>
               <th style={{ cursor: 'pointer' }} onClick={() => toggleSort('sector')}>
-                Setor <SortArrow col="sector" />
+                Setor <SortArrow col="sector" sortBy={sortBy} sortDir={sortDir} />
               </th>
               <th style={{ cursor: 'pointer' }} onClick={() => toggleSort('role')}>
-                Nível <SortArrow col="role" />
+                Nível <SortArrow col="role" sortBy={sortBy} sortDir={sortDir} />
               </th>
               <th style={{ cursor: 'pointer' }} onClick={() => toggleSort('bio')}>
-                Biometria <SortArrow col="bio" />
+                Biometria <SortArrow col="bio" sortBy={sortBy} sortDir={sortDir} />
               </th>
               <th>Externo</th>
               <th>Ações</th>
