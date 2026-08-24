@@ -30,6 +30,7 @@ export const systemRegistry: Record<string, LazyExoticComponent<ComponentType>> 
   // nativo automaticamente, sem precisar mudar nada no banco.
   'ponto-admin': lazy(() => import('@pontoadmin/PontoAdminApp')),
   'guia-dp': lazy(() => import('@guiadp/GuiaDpApp')),
+  'conciliacao-fiscal': lazy(() => import('@fiscal/ConciliacaoFiscalApp')),
 }
 
 /**

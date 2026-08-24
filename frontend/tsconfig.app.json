@@ -18,7 +18,8 @@
       "@aeronord/*": ["./src/systems/aeronord/*"],
       "@comissao/*": ["./src/systems/calculo-comissao/*"],
       "@pontoadmin/*": ["./src/systems/ponto-admin/*"],
-      "@guiadp/*": ["./src/systems/guia-dp/*"]
+      "@guiadp/*": ["./src/systems/guia-dp/*"],
+      "@fiscal/*": ["./src/systems/conciliacao-fiscal/*"]
     },
 
     /* Bundler mode */
