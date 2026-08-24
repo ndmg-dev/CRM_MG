@@ -1,0 +1,621 @@
+/* Escopado sob .abertura-root — não :root nem body — pra não vazar tema pro
+   resto do CRM. Mesmo cuidado do Ponto Admin / Guia DP / Conciliação
+   Fiscal. Portado de ndmg-dev/ABRIR_EMPRESA (static/css/style.css). */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Inter:wght@300;400;500;600&display=swap');
+
+.abertura-root {
+  --gold: #b9985a;
+  --gold-light: #d4b483;
+  --gold-dark: #8a6d35;
+  --silver: #c8cdd6;
+  --silver-light: #e8eaed;
+  --charcoal: #111316;
+  --charcoal-2: #1a1d22;
+  --charcoal-3: #22262e;
+  --glass-bg: rgba(255, 255, 255, 0.04);
+  --glass-border: rgba(185, 152, 90, 0.18);
+  --glass-hover: rgba(255, 255, 255, 0.07);
+  --glass-strong: rgba(255, 255, 255, 0.08);
+  --success: #4caf7d;
+  --error: #e06060;
+  --font-serif: 'Playfair Display', Georgia, serif;
+  --font-sans: 'Inter', system-ui, sans-serif;
+
+  font-family: var(--font-sans);
+  font-weight: 400;
+  background: var(--charcoal);
+  color: var(--silver-light);
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 48px 16px 24px;
+  position: relative;
+  overflow-x: hidden;
+}
+
+.abertura-root *,
+.abertura-root *::before,
+.abertura-root *::after {
+  box-sizing: border-box;
+}
+
+/* Ambient glow orbs */
+.abertura-root::before,
+.abertura-root::after {
+  content: '';
+  position: fixed;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(120px);
+  opacity: 0.15;
+}
+
+.abertura-root::before {
+  width: 600px;
+  height: 600px;
+  top: -200px;
+  left: -200px;
+  background: radial-gradient(circle, #b9985a 0%, transparent 70%);
+}
+
+.abertura-root::after {
+  width: 400px;
+  height: 400px;
+  bottom: -150px;
+  right: -100px;
+  background: radial-gradient(circle, #6a7a8a 0%, transparent 70%);
+}
+
+/* ─── WIZARD CARD ────────────────────────────────────────────────── */
+.abertura-root #wizard-container {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 720px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  box-shadow:
+    0 0 0 1px rgba(185, 152, 90, 0.08),
+    0 20px 60px rgba(0, 0, 0, 0.65),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+  animation: abertura-cardEntrance 0.6s ease both;
+}
+
+@keyframes abertura-cardEntrance {
+  from { opacity: 0; transform: translateY(24px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ─── HEADER ─────────────────────────────────────────────────────── */
+.abertura-root header {
+  padding: 32px 40px 24px;
+  text-align: center;
+  border-bottom: 1px solid rgba(185, 152, 90, 0.15);
+  background: linear-gradient(180deg, rgba(185, 152, 90, 0.06) 0%, rgba(185, 152, 90, 0.02) 100%);
+  position: relative;
+}
+
+.abertura-root .header-logo {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+
+.abertura-root .header-logo img {
+  height: 90px;
+  width: auto;
+  filter: drop-shadow(0 2px 12px rgba(185, 152, 90, 0.35));
+}
+
+.abertura-root header h1 {
+  font-family: var(--font-serif);
+  font-size: 1.75rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 50%, var(--gold-dark) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: 0.5px;
+}
+
+.abertura-root header p {
+  margin-top: 4px;
+  font-size: 0.85rem;
+  font-weight: 300;
+  color: var(--silver);
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+.abertura-root .step-indicator {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 20px;
+}
+
+.abertura-root .step-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  transition: all 0.35s ease;
+}
+
+.abertura-root .step-dot.active {
+  background: var(--gold);
+  box-shadow: 0 0 8px var(--gold);
+  width: 20px;
+  border-radius: 4px;
+}
+
+.abertura-root .step-dot.done {
+  background: var(--gold-dark);
+}
+
+.abertura-root .step-meta {
+  margin-top: 16px;
+  margin-bottom: 4px;
+}
+
+.abertura-root .step-label {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--gold);
+  background: rgba(185, 152, 90, 0.1);
+  border: 1px solid rgba(185, 152, 90, 0.2);
+  border-radius: 20px;
+  padding: 4px 14px;
+}
+
+/* ─── PROGRESS BAR ───────────────────────────────────────────────── */
+.abertura-root .progress-bar {
+  height: 3px;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.abertura-root .progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold-dark), var(--gold-light));
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 10px var(--gold);
+}
+
+/* ─── STEPS ──────────────────────────────────────────────────────── */
+.abertura-root .step {
+  padding: 36px 40px 28px;
+}
+
+.abertura-root .step.active {
+  animation: abertura-stepIn 0.45s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+@keyframes abertura-stepIn {
+  from { opacity: 0; transform: translateX(16px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.abertura-root .step h2 {
+  font-family: var(--font-serif);
+  font-size: 1.35rem;
+  font-weight: 500;
+  color: var(--silver-light);
+  margin-bottom: 24px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(185, 152, 90, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.abertura-root .step-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);
+  color: var(--charcoal);
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* ─── INFO BOX ───────────────────────────────────────────────────── */
+.abertura-root .info-box {
+  background: rgba(185, 152, 90, 0.07);
+  border: 1px solid rgba(185, 152, 90, 0.2);
+  border-left: 3px solid var(--gold);
+  border-radius: 0 10px 10px 0;
+  padding: 14px 18px;
+  margin-bottom: 24px;
+  font-size: 0.875rem;
+  color: var(--silver);
+  line-height: 1.6;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.abertura-root .info-icon {
+  font-size: 1.15rem;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.abertura-root .field-hint {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.775rem;
+  color: rgba(185, 152, 90, 0.6);
+  line-height: 1.5;
+}
+
+.abertura-root .optional-tag {
+  font-size: 0.68rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: rgba(200, 205, 214, 0.4);
+  border: 1px solid rgba(200, 205, 214, 0.15);
+  border-radius: 4px;
+  padding: 1px 6px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+/* ─── FORM ELEMENTS ──────────────────────────────────────────────── */
+.abertura-root .form-group {
+  margin-bottom: 20px;
+}
+
+.abertura-root label {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--gold-light);
+}
+
+.abertura-root input[type="text"],
+.abertura-root input[type="number"],
+.abertura-root input[type="email"],
+.abertura-root input[type="tel"],
+.abertura-root input[type="date"],
+.abertura-root select,
+.abertura-root textarea {
+  width: 100%;
+  padding: 13px 16px;
+  background: var(--glass-strong);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  font-weight: 400;
+  color: var(--silver-light);
+  transition: border-color 0.25s, box-shadow 0.25s, background 0.25s;
+  -webkit-appearance: none;
+}
+
+.abertura-root input::placeholder {
+  color: rgba(200, 205, 214, 0.35);
+}
+
+.abertura-root input[type="text"]:focus,
+.abertura-root input[type="number"]:focus,
+.abertura-root input[type="email"]:focus,
+.abertura-root input[type="tel"]:focus,
+.abertura-root input[type="date"]:focus,
+.abertura-root select:focus,
+.abertura-root textarea:focus {
+  outline: none;
+  border-color: var(--gold);
+  background: rgba(185, 152, 90, 0.06);
+  box-shadow: 0 0 0 3px rgba(185, 152, 90, 0.12), 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.abertura-root input[readonly] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.abertura-root select option {
+  background: var(--charcoal-2);
+  color: var(--silver-light);
+}
+
+.abertura-root textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.abertura-root input[type="checkbox"] {
+  accent-color: var(--gold);
+  width: 16px;
+  height: 16px;
+  vertical-align: middle;
+  margin-right: 8px;
+}
+
+.abertura-root input[type="file"] {
+  padding: 10px 12px;
+  background: var(--glass-strong);
+  border: 1.5px dashed rgba(185, 152, 90, 0.3);
+  border-radius: 10px;
+  color: var(--silver);
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: border-color 0.25s, background 0.25s;
+  width: 100%;
+}
+
+.abertura-root input[type="file"]:hover {
+  border-color: var(--gold);
+  background: rgba(185, 152, 90, 0.05);
+}
+
+/* ─── BUTTONS ────────────────────────────────────────────────────── */
+.abertura-root .button-group {
+  padding: 20px 40px 28px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.abertura-root button {
+  padding: 13px 30px;
+  border-radius: 10px;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  cursor: pointer;
+  border: none;
+  transition: all 0.25s ease;
+}
+
+.abertura-root .btn-prev {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--silver);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.abertura-root .btn-prev:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--silver-light);
+}
+
+.abertura-root .btn-prev:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.abertura-root .btn-next {
+  background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 50%, var(--gold-dark) 100%);
+  color: var(--charcoal);
+  box-shadow: 0 4px 20px rgba(185, 152, 90, 0.35);
+  position: relative;
+  overflow: hidden;
+}
+
+.abertura-root .btn-next:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 28px rgba(185, 152, 90, 0.5);
+}
+
+.abertura-root .btn-next:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.abertura-root .btn-next:disabled {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.25);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* ─── FOOTER ─────────────────────────────────────────────────────── */
+.abertura-root footer {
+  text-align: center;
+  padding: 14px 20px;
+  font-size: 0.75rem;
+  font-weight: 300;
+  letter-spacing: 0.5px;
+  color: rgba(200, 205, 214, 0.35);
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.abertura-root footer span {
+  color: var(--gold-dark);
+  font-weight: 500;
+}
+
+/* ─── SUCCESS SCREEN ─────────────────────────────────────────────── */
+.abertura-root .success-screen {
+  padding: 60px 40px;
+  text-align: center;
+  animation: abertura-stepIn 0.5s ease both;
+}
+
+.abertura-root .success-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: rgba(76, 175, 125, 0.12);
+  border: 1.5px solid rgba(76, 175, 125, 0.3);
+  margin-bottom: 24px;
+  font-size: 2rem;
+}
+
+.abertura-root .success-screen h2 {
+  font-family: var(--font-serif);
+  font-size: 1.8rem;
+  background: linear-gradient(135deg, var(--gold-light), var(--gold));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 12px;
+  border: none;
+}
+
+.abertura-root .success-screen p {
+  color: var(--silver);
+  margin-bottom: 8px;
+  font-size: 0.95rem;
+  line-height: 1.65;
+}
+
+.abertura-root .success-id {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 6px 14px;
+  background: rgba(185, 152, 90, 0.1);
+  border: 1px solid rgba(185, 152, 90, 0.2);
+  border-radius: 6px;
+  font-family: monospace;
+  font-size: 0.8rem;
+  color: var(--gold-light);
+  letter-spacing: 0.5px;
+}
+
+/* ─── RESPONSIVE ─────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .abertura-root header { padding: 24px 20px 18px; }
+  .abertura-root .step { padding: 28px 20px 20px; }
+  .abertura-root .button-group { padding: 16px 20px 22px; }
+  .abertura-root header h1 { font-size: 1.4rem; }
+}
+
+/* ─── PREVIEW / REVIEW STEP ─────────────────────────────────────── */
+.abertura-root .preview-section {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(185, 152, 90, 0.18);
+  border-left: 3px solid var(--gold);
+  border-radius: 0 12px 12px 0;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.abertura-root .preview-section-title {
+  background: rgba(185, 152, 90, 0.08);
+  padding: 10px 18px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--gold);
+  border-bottom: 1px solid rgba(185, 152, 90, 0.12);
+}
+
+.abertura-root .preview-row {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.abertura-root .preview-row:last-child {
+  border-bottom: none;
+}
+
+.abertura-root .preview-label {
+  padding: 10px 18px;
+  font-size: 0.9rem;
+  color: var(--silver);
+  background: rgba(255, 255, 255, 0.01);
+  border-right: 1px solid rgba(255, 255, 255, 0.04);
+  display: flex;
+  align-items: center;
+}
+
+.abertura-root .preview-value {
+  padding: 10px 18px;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--silver-light);
+  display: flex;
+  align-items: center;
+  word-break: break-word;
+  text-transform: capitalize;
+}
+
+@media (max-width: 500px) {
+  .abertura-root .preview-row { grid-template-columns: 1fr; }
+  .abertura-root .preview-label {
+    padding-bottom: 4px;
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  }
+}
+
+/* ─── BOTÃO FLUTUANTE: COPIAR LINK ───────────────────────────────── */
+.abertura-root .btn-share-link {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 18px;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--gold);
+  background: rgba(26, 29, 34, 0.75);
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  transition: all 0.25s ease;
+}
+
+.abertura-root .btn-share-link:hover {
+  background: rgba(185, 152, 90, 0.18);
+  border-color: rgba(185, 152, 90, 0.55);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(185, 152, 90, 0.22);
+}
+
+.abertura-root .btn-share-link:active {
+  transform: translateY(0);
+}
+
+.abertura-root .btn-share-link.copied {
+  color: var(--success);
+  border-color: rgba(76, 175, 125, 0.55);
+  background: rgba(76, 175, 125, 0.15);
+}
+
+@media (max-width: 600px) {
+  .abertura-root .btn-share-link {
+    top: 12px;
+    right: 12px;
+    padding: 10px;
+  }
+  .abertura-root .btn-share-link span {
+    display: none;
+  }
+}

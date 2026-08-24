@@ -22,6 +22,7 @@ export default defineConfig(({ mode }) => {
         '@pontoadmin': path.resolve(__dirname, './src/systems/ponto-admin'),
         '@guiadp': path.resolve(__dirname, './src/systems/guia-dp'),
         '@fiscal': path.resolve(__dirname, './src/systems/conciliacao-fiscal'),
+        '@abertura': path.resolve(__dirname, './src/systems/abertura-empresa'),
       },
     },
     server: {
