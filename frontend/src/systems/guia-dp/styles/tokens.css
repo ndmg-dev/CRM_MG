@@ -1,0 +1,39 @@
+/*
+ * Design System — Guia de DP (seção 2.1 da spec)
+ * Baseado na referência visual do sistema "Cálculo Adiantamento".
+ */
+/* Escopado sob .guiadp-root (não :root) para não vazar pro resto do CRM —
+   ver comentário em global.css. */
+.guiadp-root {
+  /* Fundos */
+  --bg-primary: #0a0a0a;
+  --bg-surface: #141414;
+  --bg-surface-hover: #1c1c1c;
+
+  /* Bordas */
+  --border-subtle: #2a2a2a;
+  --border-gold: #3a3220;
+
+  /* Acentos dourados */
+  --accent-gold: #c9a227;
+  --accent-gold-strong: #e4c34e;
+
+  /* Textos */
+  --text-primary: #f5f5f5;
+  --text-secondary: #9a9a9a;
+  --text-muted: #6b6b6b;
+
+  /* Estados */
+  --success: #3fa55e;
+
+  /* Blocos de fórmula / código */
+  --code-bg: #0f0f0f;
+
+  /* Tipografia */
+  --font-sans: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+
+  /* Raio / espaçamento */
+  --radius-card: 12px;
+  --radius-sm: 8px;
+}

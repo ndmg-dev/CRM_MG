@@ -29,6 +29,7 @@ export const systemRegistry: Record<string, LazyExoticComponent<ComponentType>> 
   // iframe de https://pontoadmin.mendoncagalvao.com.br/ — passa a renderizar
   // nativo automaticamente, sem precisar mudar nada no banco.
   'ponto-admin': lazy(() => import('@pontoadmin/PontoAdminApp')),
+  'guia-dp': lazy(() => import('@guiadp/GuiaDpApp')),
 }
 
 /**
