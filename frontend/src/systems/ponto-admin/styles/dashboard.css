@@ -138,11 +138,15 @@
   height: 12px;
 }
 
+/* z-index baixo de propósito — ver comentário em components/Topbar.tsx
+   sobre o dropdown "Gestão" (a Header do CRM cria seu próprio contexto de
+   empilhamento; qualquer z-index >= 20 usado numa página compete com ela
+   inteira, não só com o conteúdo ao redor). */
 .pontoadmin-root .kpi-panel {
   position: absolute;
   top: calc(100% + 10px);
   left: 0;
-  z-index: 60;
+  z-index: 5;
   width: max(100%, 320px);
   padding: 14px;
   border-radius: var(--radius-lg);

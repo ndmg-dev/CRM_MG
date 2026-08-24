@@ -164,12 +164,15 @@ export function Topbar() {
                 Gestão
                 <ChevronDown className="h-3.5 w-3.5" />
               </button>
-              {/* z-[100]: como nenhum ancestral entre este dropdown e a raiz
-                  cria contexto de empilhamento próprio, seu z-index compete
-                  direto com o da Header do CRM (z-20) — e com o de qualquer
-                  elemento posicionado dentro das páginas do Ponto Admin
-                  (ex: ReportFilters.tsx usa até z-index:50). Precisa ficar
-                  acima de ambos sempre, senão a página cobre o dropdown. */}
+              {/* A Header do CRM (sticky, z-20) cria seu próprio contexto de
+                  empilhamento — este dropdown, portalizado dentro dela, só
+                  compete de verdade com o z-index da Header quando algo FORA
+                  dela (uma página do Ponto Admin) também declara z-index
+                  próprio. Por isso todo z-index usado dentro das páginas do
+                  Ponto Admin tem que ficar bem abaixo de 20 (ver comentário
+                  em ReportFilters.tsx) — não adianta só subir o valor aqui:
+                  a comparação real acontece um nível acima, entre a Header
+                  inteira e esse elemento da página. */}
               {openDropdown && (
                 <div className="absolute left-0 top-full mt-1 min-w-[220px] rounded-md border border-[#262626] bg-[#0a0a0a] shadow-xl py-1 z-[100]">
                   {visibleManagement.map((item) => (
