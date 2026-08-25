@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { X, Send, Minus } from 'lucide-react'
+import { X, Send, Minus, Check, CheckCheck } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useChatWidgetStore } from '@/stores/chatWidgetStore'
 import { supabase } from '@/systems/central-suporte/integrations/supabase/client'
@@ -116,6 +116,36 @@ export function FloatingTicketChat() {
   useEffect(() => {
     commentsLenRef.current = comments.length
   }, [comments])
+
+  // Marca como lido — tanto o comentário (pro tick/horário de leitura) quanto
+  // a notificação correspondente (pra sumir do dropdown "Mensagens" do
+  // Header) — sempre que o chat está com este ticket aberto e NÃO
+  // minimizado. Sem isso, ler a mensagem aqui não impedia que ela
+  // continuasse aparecendo como não lida na notificação (duplicado/confuso).
+  useEffect(() => {
+    if (!ticketId || isMinimized || !currentUserId) return
+
+    const unreadFromOthers = comments.filter((c: any) => c.author_id !== currentUserId && !c.read_at)
+    if (unreadFromOthers.length > 0) {
+      supabase.from('comments')
+        .update({ read_at: new Date().toISOString() })
+        .in('id', unreadFromOthers.map((c: any) => c.id))
+        .then(() => queryClient.invalidateQueries({ queryKey: ['chat-widget-comments', ticketId] }))
+    }
+
+    // Mesmo título usado pelo trigger de notificação de comentário (ver
+    // Header.tsx MESSAGE_TITLE / migration 202608200001_comment_notifications.sql).
+    supabase.from('notifications')
+      .update({ is_read: true })
+      .eq('ticket_id', ticketId)
+      .eq('user_id', currentUserId)
+      .eq('title', 'Novo comentário')
+      .eq('is_read', false)
+      .then(() => {
+        queryClient.invalidateQueries({ queryKey: ['suporte-mensagens'] })
+        queryClient.invalidateQueries({ queryKey: ['suporte-notificacoes'] })
+      })
+  }, [ticketId, isMinimized, currentUserId, comments, queryClient])
 
   // Reseta a barra de "novas mensagens" ao trocar de ticket, e marca o
   // ticket anterior como visto (próxima vez que abrir, nada aparece como novo).
@@ -288,7 +318,14 @@ export function FloatingTicketChat() {
                         {c.content}
                       </div>
                       {isLastInGroup && (
-                        <span className="mt-0.5 px-1 text-[9px] text-text-muted">{formatTime(c.created_at)}</span>
+                        <span className="mt-0.5 flex items-center gap-1 px-1 text-[9px] text-text-muted">
+                          {isMine && (
+                            c.read_at
+                              ? <CheckCheck className="h-3 w-3 shrink-0 text-gold" />
+                              : <Check className="h-3 w-3 shrink-0" />
+                          )}
+                          {isMine && c.read_at ? `Lido às ${formatTime(c.read_at)}` : formatTime(c.created_at)}
+                        </span>
                       )}
                     </div>
                   </div>
