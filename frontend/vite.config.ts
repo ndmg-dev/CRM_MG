@@ -29,6 +29,16 @@ export default defineConfig(({ mode }) => {
         '@contai': path.resolve(__dirname, './src/systems/contai'),
         '@mgprospect': path.resolve(__dirname, './src/systems/mg-prospect'),
         '@ouvidoria': path.resolve(__dirname, './src/systems/ouvidoria'),
+        '@fronteira': path.resolve(__dirname, './src/systems/fronteira'),
+        // Nomes distintos de propósito: o CRM já tem @mg/ui e @mg/tokens
+        // como pacotes npm de verdade (packages/@mg/ui, packages/@mg/tokens,
+        // ver package.json "workspaces") usados por outra funcionalidade
+        // (UsersTable). O design system vendorizado do Fronteira v8 é uma
+        // cópia própria dele (mesma origem — ESPECIFICACOES_MG — mas talvez
+        // não a mesma versão), então usa um alias que nunca colide com o
+        // pacote real.
+        '@fronteira-tokens': path.resolve(__dirname, './src/systems/fronteira/packages/@mg-tokens'),
+        '@fronteira-ui': path.resolve(__dirname, './src/systems/fronteira/packages/@mg-ui'),
       },
     },
     server: {

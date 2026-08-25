@@ -44,6 +44,14 @@ class Settings(BaseSettings):
     OUVIDORIA_N8N_KNOWLEDGE_WEBHOOK_URL: str = ""
     OUVIDORIA_N8N_WEBHOOK_TIMEOUT: int = 30
 
+    # Sistema Fronteira v8 (tnunes8/sistema-fronteira-v8, backend próprio
+    # FastAPI+cookies httpOnly). Vazio até o v8 ter um ambiente publicado —
+    # o proxy em app/api/v1/endpoints/fronteira_proxy.py responde 503
+    # enquanto isso. NÃO é um segredo (é só a URL base do serviço), mas fica
+    # em settings pelo mesmo motivo dos outros proxies: nunca vai pro
+    # navegador, só o backend do CRM fala com ela.
+    FRONTEIRA_V8_API_URL: str = ""
+
     EVOLUTION_API_URL: str = "http://evolution-api:8080"
     EVOLUTION_API_KEY: str = "dev_evolution_key_123"
     EVOLUTION_INSTANCE: str = "default"

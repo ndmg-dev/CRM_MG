@@ -56,6 +56,13 @@ export const systemRegistry: Record<string, LazyExoticComponent<ComponentType>> 
   // interesse, unsubscribe) continuam no site original (ver
   // src/systems/mg-prospect/MgProspectApp.tsx).
   'prospect-nucleodigital': lazy(() => import('@mgprospect/MgProspectApp')),
+  // Slug já cadastrado em sistemas_seed.sql (setor FISCAL) apontando pro
+  // iframe de https://fronteira.mendoncagalvao.com.br — passa a renderizar
+  // nativo automaticamente, sem precisar mudar nada no banco. É a versão
+  // v8 (tnunes8/sistema-fronteira-v8, ainda pendente de homologação fiscal
+  // contra o v7 Django em produção) — ver src/systems/fronteira/FronteiraApp.tsx
+  // pro aviso completo sobre não alterar o código original.
+  'icms-fronteira': lazy(() => import('@fronteira/FronteiraApp')),
 }
 
 /**
