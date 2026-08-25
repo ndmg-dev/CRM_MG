@@ -218,7 +218,7 @@ export function FloatingTicketChat() {
       </div>
 
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-3 py-3">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-3">
         {comments.length === 0 ? (
           <p className="pt-8 text-center text-xs text-text-muted">Nenhuma mensagem ainda.</p>
         ) : (
@@ -226,8 +226,23 @@ export function FloatingTicketChat() {
             const isMine = c.author_id === currentUserId
             const authorName = c.author?.full_name || 'Usuário'
             const prev = comments[idx - 1] as any
+            const next = comments[idx + 1] as any
             const showDayHeader = !prev || dayKey(prev.created_at) !== dayKey(c.created_at)
             const showNewDivider = newDividerIndex !== null && idx === newDividerIndex
+
+            // Mensagens seguidas da mesma pessoa viram um grupo só (sem
+            // repetir avatar/nome a cada balão) — quebra o grupo quando troca
+            // quem fala, passa muito tempo entre uma mensagem e outra, ou tem
+            // um divisor (dia/"novas mensagens") no meio.
+            const GROUP_GAP_MS = 5 * 60 * 1000
+            const sameAuthor = (a: any, b: any) => a && b && a.author_id === b.author_id && !isSystemNote(a.content) && !isSystemNote(b.content)
+            const gapTooBig = (a: any, b: any) => !a || !b || Math.abs(new Date(b.created_at).getTime() - new Date(a.created_at).getTime()) > GROUP_GAP_MS
+            const isFirstInGroup =
+              !prev || showDayHeader || showNewDivider || !sameAuthor(prev, c) || gapTooBig(prev, c)
+            const isLastInGroup =
+              !next || (newDividerIndex !== null && idx + 1 === newDividerIndex) ||
+              dayKey(c.created_at) !== dayKey(next.created_at) ||
+              !sameAuthor(c, next) || gapTooBig(c, next)
             return (
               <div key={c.id}>
                 {showDayHeader && (
@@ -257,20 +272,24 @@ export function FloatingTicketChat() {
                     <div className="h-px flex-1 bg-border" />
                   </div>
                 ) : (
-                  <div className={`flex items-end gap-2 ${isMine ? 'flex-row-reverse' : ''}`}>
-                    <Avatar name={authorName} />
+                  <div className={`flex items-end gap-2 ${isMine ? 'flex-row-reverse' : ''} ${isFirstInGroup ? 'mt-3' : 'mt-0.5'}`}>
+                    {isLastInGroup ? <Avatar name={authorName} /> : <div className="h-7 w-7 shrink-0" />}
                     <div className={`flex max-w-[75%] flex-col ${isMine ? 'items-end' : 'items-start'}`}>
-                      <span className="mb-0.5 px-1 text-[10px] text-text-muted">{authorName}</span>
+                      {isFirstInGroup && (
+                        <span className="mb-0.5 px-1 text-[10px] text-text-muted">{authorName}</span>
+                      )}
                       <div
                         className={`rounded-2xl px-3 py-2 text-sm ${
                           isMine
-                            ? 'rounded-br-sm bg-gold text-background'
-                            : 'rounded-bl-sm bg-surface text-text-primary'
+                            ? `bg-gold text-background ${isLastInGroup ? 'rounded-br-sm' : ''}`
+                            : `bg-surface text-text-primary ${isLastInGroup ? 'rounded-bl-sm' : ''}`
                         }`}
                       >
                         {c.content}
                       </div>
-                      <span className="mt-0.5 px-1 text-[9px] text-text-muted">{formatTime(c.created_at)}</span>
+                      {isLastInGroup && (
+                        <span className="mt-0.5 px-1 text-[9px] text-text-muted">{formatTime(c.created_at)}</span>
+                      )}
                     </div>
                   </div>
                 )}

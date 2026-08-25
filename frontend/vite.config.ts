@@ -23,6 +23,7 @@ export default defineConfig(({ mode }) => {
         '@guiadp': path.resolve(__dirname, './src/systems/guia-dp'),
         '@fiscal': path.resolve(__dirname, './src/systems/conciliacao-fiscal'),
         '@abertura': path.resolve(__dirname, './src/systems/abertura-empresa'),
+        '@copilot': path.resolve(__dirname, './src/systems/copilot-contabil'),
       },
     },
     server: {
