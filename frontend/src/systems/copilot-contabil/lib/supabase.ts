@@ -16,4 +16,11 @@ if (!supabaseUrl || !supabaseAnonKey) {
   )
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const isCopilotSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey)
+
+// Fallback evita createClient() lançar "supabaseUrl is required" e derrubar
+// a aplicação inteira quando a variável não está configurada no ambiente.
+export const supabase = createClient(
+  supabaseUrl || 'https://placeholder.supabase.co',
+  supabaseAnonKey || 'placeholder'
+)

@@ -12,6 +12,10 @@ import {
   isObrigacoesSupabaseConfigured,
   supabase as obrigacoesSupabase,
 } from '@obrigacoes/integrations/supabase/client'
+import {
+  isCopilotSupabaseConfigured,
+  supabase as copilotSupabase,
+} from '@copilot/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 
 /**
@@ -88,6 +92,25 @@ export async function establishUnifiedSession(googleIdToken: string): Promise<Au
     }
   }
 
+  // Copilot Contábil. Mesmo esquema das Férias: signInWithIdToken usando o
+  // idToken do Google já validado pelo CRM, sem redirecionamento de página —
+  // a conta do Supabase do Copilot precisa ter o Client ID do Google do CRM
+  // liberado em Authentication > Providers > Google > Authorized Client IDs.
+  if (isCopilotSupabaseConfigured) {
+    try {
+      const { error: copilotError } = await copilotSupabase.auth.signInWithIdToken({
+        provider: 'google',
+        token: googleIdToken,
+      })
+      if (copilotError) {
+        throw new Error(copilotError.message)
+      }
+    } catch (error) {
+      // Fail-soft: falha no Copilot nunca bloqueia o login do CRM.
+      console.warn('[unifiedAuth] Copilot Contábil não autenticado (CRM segue normal):', error)
+    }
+  }
+
   return crmSession
 }
 
@@ -102,6 +125,9 @@ export async function endUnifiedSession(): Promise<void> {
         : Promise.resolve(),
       isObrigacoesSupabaseConfigured
         ? obrigacoesSupabase.auth.signOut({ scope: 'local' })
+        : Promise.resolve(),
+      isCopilotSupabaseConfigured
+        ? copilotSupabase.auth.signOut({ scope: 'local' })
         : Promise.resolve(),
     ])
   } finally {
