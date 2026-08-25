@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Toaster as SonnerToaster, toast } from 'sonner'
 import {
   Lightbulb, MapPin, FileText, Building2, PencilLine, Coins,
@@ -139,6 +140,11 @@ export default function AberturaEmpresaApp() {
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState<{ id: string } | null>(null)
   const [linkCopiado, setLinkCopiado] = useState(false)
+  const [menuSlot, setMenuSlot] = useState<HTMLElement | null>(null)
+
+  useEffect(() => {
+    setMenuSlot(document.getElementById('system-menu-slot'))
+  }, [])
 
   const setField = (name: keyof FormData) => (value: string) => setData((d) => ({ ...d, [name]: value }))
 
@@ -278,10 +284,13 @@ export default function AberturaEmpresaApp() {
     <div className="abertura-root">
       <SonnerToaster theme="dark" position="bottom-right" richColors />
 
-      <button type="button" className={`btn-share-link ${linkCopiado ? 'copied' : ''}`} onClick={copiarLink}
-        title="Copiar link do formulário público para enviar aos clientes">
-        <Link2 size={16} /><span>{linkCopiado ? 'Link copiado!' : 'Copiar link'}</span>
-      </button>
+      {menuSlot && createPortal(
+        <button type="button" className={`btn-share-link ${linkCopiado ? 'copied' : ''}`} onClick={copiarLink}
+          title="Copiar link do formulário público para enviar aos clientes">
+          <Link2 size={16} /><span>{linkCopiado ? 'Link copiado!' : 'Copiar link'}</span>
+        </button>,
+        menuSlot,
+      )}
 
       <div id="wizard-container">
         <header>
