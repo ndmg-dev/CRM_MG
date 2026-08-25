@@ -24,7 +24,8 @@
       "@copilot/*": ["./src/systems/copilot-contabil/*"],
       "@bimg/*": ["./src/systems/bimg/*"],
       "@contai/*": ["./src/systems/contai/*"],
-      "@carneleao/*": ["./src/systems/carne-leao/*"]
+      "@carneleao/*": ["./src/systems/carne-leao/*"],
+      "@doccontabil/*": ["./src/systems/documentacao-contabil/*"]
     },
 
     /* Bundler mode */

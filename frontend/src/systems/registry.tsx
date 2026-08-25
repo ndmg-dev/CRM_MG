@@ -48,6 +48,12 @@ export const systemRegistry: Record<string, LazyExoticComponent<ComponentType>> 
   // confirmar antes de cadastrar (ver PROJETO-CARNE-LEAO, branch
   // feat/google-drive-integration).
   'carne-leao': lazy(() => import('@carneleao/CarneLeaoApp')),
+  // Migração do iframe de https://doccontabil.mendoncagalvao.com.br
+  // (repo GERADOR_DE_NOTAS) para código nativo, exibido no CRM como
+  // "Documentação Contábil". Slug ainda não existe em `sistemas_seed.sql`
+  // — cadastrar o sistema no CRM com este slug antes de abrir (ver relatório
+  // de migração para o INSERT sugerido).
+  'documentacao-contabil': lazy(() => import('@doccontabil/DocumentacaoContabilApp')),
 }
 
 /**
