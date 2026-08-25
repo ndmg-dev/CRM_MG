@@ -35,14 +35,17 @@ type ContaiEnvelope<T> =
   | { ok: false; message: string; code?: string }
 
 /** fetch() com a base da API do ContAI e o Bearer token do CRM já anexados. */
-async function contaiGet<T>(path: string, params?: Record<string, string | undefined>): Promise<T> {
+async function contaiRequest<T>(
+  path: string,
+  options?: { method?: string; params?: Record<string, string | undefined> }
+): Promise<T> {
   const token = localStorage.getItem('crm_token')
   const headers = new Headers()
   if (token) headers.set('Authorization', `Bearer ${token}`)
 
   const query = new URLSearchParams()
-  if (params) {
-    Object.entries(params).forEach(([k, v]) => {
+  if (options?.params) {
+    Object.entries(options.params).forEach(([k, v]) => {
       if (v !== undefined && v !== null && v !== '') query.set(k, v)
     })
   }
@@ -51,7 +54,7 @@ async function contaiGet<T>(path: string, params?: Record<string, string | undef
 
   let res: Response
   try {
-    res = await fetch(url, { headers })
+    res = await fetch(url, { method: options?.method ?? 'GET', headers })
   } catch (e) {
     throw new ContaiApiError('Falha de rede ao contatar a API do ContAI.', 0)
   }
@@ -156,28 +159,39 @@ export interface ContaiConciliacao {
   periodo_ativo: string | null
 }
 
+export interface ContaiEmpresa {
+  id: string
+  nome: string
+}
+
 // ---------------------------------------------------------------------------
-// Funções tipadas para os 7 endpoints
+// Funções tipadas para os 7 endpoints + seletor de empresa
 // ---------------------------------------------------------------------------
 export const contaiApi = {
   getDashboard: (empresaId?: string) =>
-    contaiGet<ContaiDashboard>('/api/dashboard', { empresa_id: empresaId }),
+    contaiRequest<ContaiDashboard>('/api/dashboard', { params: { empresa_id: empresaId } }),
 
   getPlanoContas: (empresaId?: string) =>
-    contaiGet<ContaiPlanoContaItem[]>('/api/plano-contas', { empresa_id: empresaId }),
+    contaiRequest<ContaiPlanoContaItem[]>('/api/plano-contas', { params: { empresa_id: empresaId } }),
 
   getDocumentos: (empresaId?: string) =>
-    contaiGet<ContaiDocumento[]>('/api/documentos', { empresa_id: empresaId }),
+    contaiRequest<ContaiDocumento[]>('/api/documentos', { params: { empresa_id: empresaId } }),
 
   getRegras: (empresaId?: string) =>
-    contaiGet<ContaiRegrasResponse>('/api/regras', { empresa_id: empresaId }),
+    contaiRequest<ContaiRegrasResponse>('/api/regras', { params: { empresa_id: empresaId } }),
 
   getIntegracoes: (empresaId?: string) =>
-    contaiGet<ContaiIntegracoes>('/api/integracoes', { empresa_id: empresaId }),
+    contaiRequest<ContaiIntegracoes>('/api/integracoes', { params: { empresa_id: empresaId } }),
 
   getConfiguracoes: (empresaId?: string) =>
-    contaiGet<ContaiConfiguracoes>('/api/configuracoes', { empresa_id: empresaId }),
+    contaiRequest<ContaiConfiguracoes>('/api/configuracoes', { params: { empresa_id: empresaId } }),
 
   getConciliacao: (empresaId?: string, periodo?: string) =>
-    contaiGet<ContaiConciliacao>('/api/conciliacao', { empresa_id: empresaId, periodo }),
+    contaiRequest<ContaiConciliacao>('/api/conciliacao', { params: { empresa_id: empresaId, periodo } }),
+
+  // Não fica sob /api/* (rota antiga, pré-migração) mas já usa o mesmo
+  // login_required com suporte a Bearer, então funciona sem mudança no
+  // backend. Não depende de sessão — é só uma consulta, então não precisa
+  // de empresa_id nenhum.
+  listEmpresas: () => contaiRequest<ContaiEmpresa[]>('/empresas/lista'),
 }

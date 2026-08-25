@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { NavLink } from 'react-router-dom'
 import { Home, RefreshCw, FileText, List, Sliders, Link2, Settings } from 'react-feather'
 import { useNativeSystemPath } from '@/hooks/useNativeSystemBase'
+import { useEmpresa } from '../context/EmpresaContext'
 
 // Portalizado pro Header do CRM, mesmo padrão do FiscalMatch/Ponto Admin/
 // Guia DP (ver conciliacao-fiscal/components/Topbar.tsx) — evita empilhar a
@@ -21,6 +22,7 @@ const navItems = [
 export function Topbar() {
   const toAbs = useNativeSystemPath()
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null)
+  const { empresaId, empresas, setEmpresa } = useEmpresa()
 
   useEffect(() => {
     setPortalTarget(document.getElementById('system-menu-slot'))
@@ -45,6 +47,26 @@ export function Topbar() {
           {item.label}
         </NavLink>
       ))}
+      {empresas.length > 0 && (
+        <select
+          aria-label="Empresa ativa"
+          className="ml-auto h-9 shrink-0 rounded-md border border-[#2a2a2a] bg-[#1a1a1a] px-2 text-sm text-gray-200"
+          value={empresaId ?? ''}
+          onChange={(e) => {
+            const empresa = empresas.find((emp) => emp.id === e.target.value)
+            if (empresa) setEmpresa(empresa)
+          }}
+        >
+          <option value="" disabled>
+            Selecione a empresa…
+          </option>
+          {empresas.map((empresa) => (
+            <option key={empresa.id} value={empresa.id}>
+              {empresa.nome}
+            </option>
+          ))}
+        </select>
+      )}
     </nav>,
     portalTarget,
   )
