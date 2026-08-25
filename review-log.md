@@ -372,3 +372,172 @@ This confirms the bug: an image-only comment now gets `content: ''`, which falls
 
 - `Avatar` is duplicated verbatim in `ConversationList.tsx` and `ConversationView.tsx` (already existed pre-commit, but this commit touched `ConversationList`'s copy) — could be extracted to a shared component instead of maintaining two copies of the sizing.
 - Fix the `content` fallback in `ConversationView.tsx:239` to match `TicketDetailDialog.tsx:326`'s `commentText.trim() || (pendingImage ? \`📎 ${pendingImage.name}\` : '')` pattern.
+
+## 2026-08-25 17:19:20 — `PR #62 — fix(chat): dropdown de relatorios, anexos e widget de chat flutuante`
+
+**Bugs**
+
+1. `ConversationView.tsx` — `sendComment`: `content = text.trim()` (removido o fallback `📎 ${pendingImage.name}`). Se o usuário só anexa uma imagem sem texto, `content` fica `''` e o comentário é inserido com conteúdo vazio — antes disso pelo menos mostrava o nome do arquivo. Provável regressão na visualização de mensagens só-com-imagem.
+
+2. `Header.tsx` — a nova lógica usa `isMessage` fora do trecho mostrado no diff; confirme que essa variável já está em escopo no bloco (não é declarada no diff). Se vier de um `const isMessage = ...` mais acima sem long-form, revisar se cobre corretamente o tipo de notificação de comentário.
+
+3. `Header.tsx` — comparação `chatState.activeTicketId === record?.ticket_id`: garantir que os dois têm o mesmo tipo (string vs number/uuid). Se um vier como string e outro como number, a checagem de "mesma conversa aberta" falha silenciosamente e volta a mostrar notificação nativa indevidamente.
+
+**Melhorias**
+
+- `ConversationView.tsx`: o texto do bloco quando `isClosed` ("Mova-o para outra seção e reabra...") pressupõe que o usuário sabe onde fazer isso — poderia linkar/abrir o ticket direto do widget.
+- `CLOSED_STATUSES` duplica a lista de status "encerrado" que já existe em `Header.tsx` (comentário reconhece isso) — vale extrair para um util compartilhado em vez de manter duas listas sincronizadas manualmente.
+
+## 2026-08-25 17:26:04 — `frontend/src/systems/central-suporte/hooks/useUnreadComments.ts`
+
+Sem observações.
+
+## 2026-08-25 17:26:13 — `frontend/src/systems/central-suporte/hooks/useUnreadComments.ts`
+
+useId gera um ID por render, mas nunca é usado em lugar nenhum do código mostrado — a variável `instanceId` fica declarada e não referenciada.
+
+**Bugs/riscos:** nenhum bug funcional introduzido (ainda não é usado em query key nem em lugar nenhum visível).
+
+**Melhorias:**
+- Se `instanceId` não for utilizado em nenhuma outra parte da hook, remover a importação e a variável — código morto.
+- Se a intenção era escopar a queryKey por instância (`["unread-comment-counts", instanceId]`), isso ainda não foi feito no diff — verificar se falta essa alteração.
+
+## 2026-08-25 17:26:18 — `frontend/src/systems/central-suporte/hooks/useUnreadComments.ts`
+
+Sem observações.
+
+## 2026-08-25 17:27:19 — `frontend/src/systems/ouvidoria/lib/supabase.ts`
+
+Sem observacoes.
+
+## 2026-08-25 17:27:24 — `frontend/src/systems/bimg/lib/supabase.ts`
+
+Sem observacoes.
+
+## 2026-08-25 17:27:28 — `frontend/src/systems/copilot-contabil/lib/supabase.ts`
+
+Sem observacoes.
+
+## 2026-08-25 17:27:45 — `frontend/src/systems/central-suporte/integrations/supabase/client.ts`
+
+Sem observacoes.
+
+## 2026-08-25 17:27:51 — `frontend/src/systems/obrigacoes/integrations/supabase/client.ts`
+
+Sem observações.
+
+## 2026-08-25 17:27:59 — `frontend/src/systems/agendamento-ferias/lib/supabase.js`
+
+Sem observacoes.
+
+## 2026-08-25 17:31:42 — `frontend/src/components/layout/Header.tsx`
+
+Sem observações.
+
+## 2026-08-25 17:31:59 — `frontend/src/components/layout/chat/ConversationView.tsx`
+
+Sem observações.
+
+## 2026-08-25 17:32:12 — `frontend/src/components/layout/chat/ConversationView.tsx`
+
+Sem observações. A extração para `isTicketClosed` é equivalente à lógica anterior (`!!status && set.has(status)`) e a nova função está corretamente compartilhada em `ticketStatus.ts`.
+
+## 2026-08-25 17:32:21 — `frontend/src/components/layout/chat/ConversationList.tsx`
+
+Sem observações.
+
+## 2026-08-25 17:32:33 — `frontend/src/components/layout/chat/ConversationList.tsx`
+
+This part looks fine. No real bugs.
+
+Sem observações.
+
+## 2026-08-25 17:32:43 — `frontend/src/components/layout/chat/ConversationList.tsx`
+
+Sem observações.
+
+## 2026-08-25 17:32:47 — `frontend/src/components/layout/chat/ConversationView.tsx`
+
+Sem observações.
+
+## 2026-08-25 17:35:12 — `frontend/src/components/layout/chat/ConversationList.tsx`
+
+Bugs:
+
+- `c.isClosed` (linha 156) nunca existe — o objeto retornado tem `statusBucket`, não `isClosed`. O badge "Encerrado" nunca aparece. Correto seria `c.statusBucket === 'closed'`.
+- `useMemo`, `useState` e `TABS` foram importados/criados mas não são usados em lugar nenhum — as abas (Abertos/Encerrados/Outros) não foram implementadas na UI, a lista continua mostrando tudo junto.
+
+Sugestão de melhoria:
+- Se as abas não vão ser implementadas nesta mudança, remover `TABS`, `useMemo`, `useState` para não deixar código morto; caso contrário, implementar o filtro por `statusBucket` usando essas abas.
+
+## 2026-08-25 17:35:30 — `frontend/src/components/layout/chat/ConversationList.tsx`
+
+Bugs:
+
+1. **`c.isClosed` inexistente no diff (linha 168)**: `ConversationRow` só tem `statusBucket`, nunca `isClosed`. O badge "Encerrado" nunca aparece (código morto/quebrado). Já que a listagem é filtrada por aba, esse badge é redundante mesmo — mas o `if (c.isClosed)` deveria ser `if (c.statusBucket === 'closed')` ou ser removido, já que na aba "Encerrados" todos os itens são fechados (label repetido sem valor) e na aba "Abertos"/"Outros" nunca aparece.
+
+2. **Reset de aba ao trocar de lista**: se o usuário está na aba "Encerrados" e todos os tickets fecham/reabrem via realtime, a aba pode ficar vazia sem indicar que há itens em outra aba além do contador pequeno — comportamento aceitável, só atenção de UX.
+
+3. **`ticket_code` como `number | string | null` vira string vazia com `padStart` se `null`** — já preexistente, não é desta mudança.
+
+Melhorias:
+
+- Remover o bloco `c.isClosed` (linhas 168-172) já que não faz sentido com o sistema de abas, ou trocar por `c.statusBucket === 'closed'` se a intenção é mostrar o badge mesmo dentro da aba "Encerrados" (redundante) ou em outro contexto futuro (ex.: busca global sem filtro de aba).
+- `tabCounts` conta contra a lista completa (antes do filtro dos 30 ids), o que é ok, mas vale confirmar se contagem "30 mais recentes" é a intenção ao mostrar números nas abas (ex.: pode haver mais "closed" reais no banco que não aparecem, dando impressão de contagem completa quando é só da amostra truncada em `ticketIds.slice(0,30)`).
+
+## 2026-08-25 17:35:45 — `frontend/src/components/layout/chat/ConversationList.tsx`
+
+**Bugs / casos de borda:**
+- Sem indicação de mensagens não lidas nas abas "Encerrados"/"Outros": `unreadCounts` é calculado sobre todos os tickets, mas como a lista é filtrada por `tab`, um chamado não lido fora da aba ativa fica invisível — usuário pode não perceber notificação nova.
+- Ao trocar de aba (`setTab`) o scroll do container não é resetado; se a lista anterior estava rolada, a nova aba abre no meio.
+- `TABS` está fixo com `open` como padrão; se todos os chamados do usuário estiverem em `closed`/`other`, a tela abre vazia ("Nenhuma conversa aqui.") mesmo havendo conversas — sem sinalizar que existem chamados em outras abas (o contador ajuda, mas é pouco visível).
+
+**Melhorias:**
+- Adicionar `aria-selected`/`role="tab"` nos botões de aba para acessibilidade.
+- Mostrar um badge de não lidos por aba (soma de `unreadCounts` dos tickets daquela bucket), reaproveitando `tabCounts`, para resolver o ponto acima.
+- `tabCounts` e `visibleConversations` percorrem `conversations` duas vezes a cada render; pode ser unificado num único `useMemo` que agrupa por bucket.
+
+## 2026-08-25 17:36:00 — `frontend/src/components/layout/chat/ConversationList.tsx`
+
+**Bugs / casos de borda:**
+- Se o chamado atualmente aberto na conversa (ex.: em `ConversationView`) mudar de bucket (ex.: for encerrado) enquanto o usuário está na aba "Abertos", ele desaparece da lista sem nenhum aviso — pode confundir quem está no meio de um atendimento.
+- Não há tratamento para `status` nulo/desconhecido vindo do banco além do que `ticketStatusBucket` decidir internamente (arquivo não incluso no diff) — vale confirmar que ela sempre retorna um dos três buckets e nunca `undefined`, já que `counts[c.statusBucket]++` quebra silenciosamente (`NaN`) se vier um valor fora do enum.
+- Ao trocar de aba, o scroll da lista (`overflow-y-auto`) não é resetado — se o usuário rolou a lista de "Abertos", ao trocar para "Encerrados" a posição de scroll é mantida, podendo abrir já rolado.
+
+**Melhorias:**
+- Botões de aba não têm `role="tab"`/`aria-selected`, prejudicando acessibilidade.
+- `TABS` é constante estática — poderia ficar fora do componente em módulo separado ou já está bem (ok, é módulo-level, sem problema).
+- Mensagem "Nenhuma conversa aqui." é genérica; poderia citar a aba atual (ex.: "Nenhuma conversa encerrada.") para melhor UX.
+
+## 2026-08-25 17:36:14 — `frontend/src/components/layout/chat/ConversationList.tsx`
+
+Bugs:
+
+1. **Reset de aba ao trocar de contexto**: `tab` inicia sempre em `'open'` e não é resetado nem persistido — se o usuário abrir o widget, ir pra aba "Encerrados" e o componente permanecer montado enquanto novas conversas chegam, tudo bem; mas não há problema real aqui. Ignorar.
+
+2. **`t.status` sem tipagem/validação**: o select agora traz `status`, mas não há garantia do tipo retornado pelo Supabase (pode ser `null`/string desconhecida). Depende de `ticketStatusBucket` tratar esses casos — vale conferir a implementação em `utils/ticketStatus.ts` (arquivo novo, não incluído no diff) para garantir que valores inesperados caem em `'other'` e não quebram.
+
+3. **Badge de contagem oculta em zero**: `tabCounts[t.key] > 0 && ...` esconde o número quando é 0, o que é aceitável, mas também esconde quando a aba ativa está vazia — sem problema funcional, só UX menor.
+
+Melhorias:
+
+1. **Aba ativa sem contagem real-time garantida**: como o filtro é só client-side sobre `conversations`, ok — mas nenhum bug aqui, é o esperado.
+
+2. **`TABS` array poderia usar `as const`** para tipagem mais estrita do `key`, evitando que `TicketStatusBucket` divirja do array no futuro.
+
+3. **Duplicação de `Record<TicketStatusBucket, number>` inicial**: pequeno, mas se `TicketStatusBucket` ganhar um novo valor, o objeto `{ open: 0, closed: 0, other: 0 }` precisa ser atualizado manualmente em dois lugares (aqui e em `TABS`) — sem type-safety que force isso. Poderia derivar de `TABS.map(t => t.key)` para reduzir risco de esquecimento.
+
+Sem outras observações relevantes no restante do diff.
+
+## 2026-08-25 17:36:29 — `frontend/src/components/layout/chat/ConversationView.tsx`
+
+**Bugs / riscos**
+
+1. **Badge "Encerrado" removido sem motivo aparente.** O diff apaga o bloco `{isClosed && (...)}` que exibia o badge visual, mas mantém a variável `isClosed` (usada em outro lugar, provavelmente para desabilitar o input). Isso parece uma remoção acidental de UI — o usuário perde a indicação visual de que o chamado está encerrado, mesmo que o comportamento de bloqueio continue funcionando.
+
+2. **`unreadFromOthers.map((c: any) => c.id))` é recalculado logo depois no `.length` da comparação.** Não é bug funcional, mas o array `unreadFromOthers` é referenciado múltiplas vezes dentro de uma closure assíncrona — se ele puder mudar entre o `.update()` disparar e o `.then()` resolver (não muda, é const no escopo do efeito), não há problema real. Ignorável.
+
+**Melhorias**
+
+1. O comentário sobre RLS é longo dentro do `.then()`; poderia virar um comentário de uma linha ou ser movido para perto da definição da policy, mas não é bloqueante.
+2. Ao reintroduzir o badge, considere usar `isClosed` do util já centralizado — nesse ponto está tudo certo, só falta o JSX de volta.

@@ -24,6 +24,7 @@ export const supabase = createClient<Database>(
   {
   auth: {
     storage: localStorage,
+    storageKey: 'sb-suporte-auth-token',
     persistSession: true,
     autoRefreshToken: true,
   }
