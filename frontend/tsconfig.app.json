@@ -25,7 +25,8 @@
       "@dashdre/*": ["./src/systems/dashboard-dre/*"],
       "@bimg/*": ["./src/systems/bimg/*"],
       "@contai/*": ["./src/systems/contai/*"],
-      "@mgprospect/*": ["./src/systems/mg-prospect/*"]
+      "@mgprospect/*": ["./src/systems/mg-prospect/*"],
+      "@ouvidoria/*": ["./src/systems/ouvidoria/*"]
     },
 
     /* Bundler mode */

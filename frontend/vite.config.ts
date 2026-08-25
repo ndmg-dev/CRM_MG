@@ -28,6 +28,7 @@ export default defineConfig(({ mode }) => {
         '@bimg': path.resolve(__dirname, './src/systems/bimg'),
         '@contai': path.resolve(__dirname, './src/systems/contai'),
         '@mgprospect': path.resolve(__dirname, './src/systems/mg-prospect'),
+        '@ouvidoria': path.resolve(__dirname, './src/systems/ouvidoria'),
       },
     },
     server: {

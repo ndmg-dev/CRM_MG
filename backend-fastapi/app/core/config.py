@@ -29,7 +29,21 @@ class Settings(BaseSettings):
     # Senha do Dashboard DRE (ndmg-dev/DASH_RAZAO), repassada só server-side
     # pelo proxy em app/api/v1/endpoints/dre_proxy.py — nunca chega no browser.
     DASHBOARD_DRE_SENHA: str = ""
-    
+
+    # Ouvidoria Corporativa (ndmg-dev/ouvidoria-mg). O CRUD de manifestações
+    # fala direto com o Supabase próprio da Ouvidoria (RLS via SSO, ver
+    # frontend/src/systems/ouvidoria/lib/supabase.ts) — estas variáveis são
+    # só pras operações que o repo original também mantinha 100% server-side
+    # (webhooks do n8n e embeddings da OpenAI), proxiadas em
+    # app/api/v1/endpoints/ouvidoria_proxy.py e nunca expostas ao navegador.
+    OUVIDORIA_SUPABASE_URL: str = ""
+    OUVIDORIA_SUPABASE_SERVICE_ROLE_KEY: str = ""
+    OUVIDORIA_N8N_TRIAGE_WEBHOOK_URL: str = ""
+    OUVIDORIA_N8N_SUMMARY_WEBHOOK_URL: str = ""
+    OUVIDORIA_N8N_CHAT_WEBHOOK_URL: str = ""
+    OUVIDORIA_N8N_KNOWLEDGE_WEBHOOK_URL: str = ""
+    OUVIDORIA_N8N_WEBHOOK_TIMEOUT: int = 30
+
     EVOLUTION_API_URL: str = "http://evolution-api:8080"
     EVOLUTION_API_KEY: str = "dev_evolution_key_123"
     EVOLUTION_INSTANCE: str = "default"
