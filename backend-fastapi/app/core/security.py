@@ -13,7 +13,9 @@ from app.models.user import Usuario
 
 security = HTTPBearer()
 
-def create_access_token(subject: str | Any, expires_delta: timedelta = None) -> str:
+def create_access_token(
+    subject: str | Any, expires_delta: timedelta = None, extra_claims: dict | None = None
+) -> str:
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
@@ -21,6 +23,8 @@ def create_access_token(subject: str | Any, expires_delta: timedelta = None) -> 
             seconds=settings.JWT_EXPIRATION_SECONDS
         )
     to_encode = {"exp": expire, "sub": str(subject)}
+    if extra_claims:
+        to_encode.update(extra_claims)
     encoded_jwt = jwt.encode(to_encode, settings.JWT_SECRET, algorithm="HS256")
     return encoded_jwt
 
