@@ -77,6 +77,7 @@ services:
         - VITE_BIMG_SUPABASE_URL=${VITE_BIMG_SUPABASE_URL:-}
         - VITE_BIMG_SUPABASE_ANON_KEY=${VITE_BIMG_SUPABASE_ANON_KEY:-}
         - VITE_BIMG_API_URL=${VITE_BIMG_API_URL:-}
+        - VITE_CONTAI_API_URL=${VITE_CONTAI_API_URL:-}
     container_name: crm-mg-frontend
     ports:
       - "${HOST_FRONTEND_PORT:-3009}:80"
