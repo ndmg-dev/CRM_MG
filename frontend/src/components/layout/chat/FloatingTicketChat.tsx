@@ -28,8 +28,9 @@ function LauncherButton() {
 /** Elemento flutuante único do chat rápido de chamados: alterna entre o
  * ícone de lançamento (canto inferior direito), a lista de conversas e uma
  * conversa aberta — nunca mais de um ao mesmo tempo (ver chatWidgetStore).
- * Minimizar sempre volta pro ícone; clicar no ícone sempre abre a lista;
- * uma mensagem nova pula direto pra conversa correspondente. */
+ * Minimizar sempre volta pro ícone; clicar no ícone sempre abre a lista.
+ * Uma mensagem nova só soma na badge do ícone — quem decide abrir a
+ * conversa é o usuário, clicando nela na lista. */
 export function FloatingTicketChat() {
   const panelState = useChatWidgetStore((s) => s.panelState)
   const activeTicketId = useChatWidgetStore((s) => s.activeTicketId)

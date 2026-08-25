@@ -7,6 +7,11 @@ import { supabase } from '@/systems/central-suporte/integrations/supabase/client
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024 // 10MB — mesmo limite do TicketDetailDialog
 
+// Mesmos status considerados "encerrado" usados no resto da Central de
+// Suporte (ver isClosing em Header.tsx) — chamado só volta a aceitar
+// mensagem se for movido de novo pra um status fora desta lista.
+const CLOSED_STATUSES = new Set(['resolved', 'closed', 'canceled'])
+
 function Avatar({ name }: { name: string }) {
   const letter = (name || '?').trim().charAt(0).toUpperCase()
   return (
@@ -78,13 +83,15 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('tickets')
-        .select('id, ticket_code, title, assignee:profiles!assignee_id(full_name)')
+        .select('id, ticket_code, title, status, assignee:profiles!assignee_id(full_name)')
         .eq('id', ticketId)
         .single()
       if (error) throw error
       return data
     },
   })
+
+  const isClosed = !!ticket?.status && CLOSED_STATUSES.has(ticket.status)
 
   const { data: comments = [] } = useQuery({
     queryKey: ['chat-widget-comments', ticketId],
@@ -224,11 +231,12 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
 
   const sendComment = useMutation({
     mutationFn: async () => {
+      if (isClosed) throw new Error('Chamado encerrado')
       if (!text.trim() && !pendingImage) return
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Não autenticado')
 
-      const content = text.trim() || (pendingImage ? `📎 ${pendingImage.name}` : '')
+      const content = text.trim()
       const { data: commentData, error } = await supabase.from('comments').insert({
         ticket_id: ticketId,
         content,
@@ -284,6 +292,11 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
                 #{String(ticket?.ticket_code ?? '').padStart(3, '0')}
               </span>
               <span className="truncate text-sm font-semibold text-text-primary">{ticket?.title || 'Carregando...'}</span>
+              {isClosed && (
+                <span className="shrink-0 rounded border border-red-500/40 bg-red-500/10 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-red-500">
+                  Encerrado
+                </span>
+              )}
             </div>
             <p className="mt-0.5 truncate text-[11px] text-text-muted">
               Responsável: {(ticket?.assignee as any)?.full_name || 'Sem responsável'}
@@ -421,6 +434,11 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
       )}
 
       {/* Input */}
+      {isClosed ? (
+        <div className="border-t border-border p-3 text-center text-xs text-text-muted">
+          Este chamado está encerrado. Mova-o para outra seção e reabra pra continuar a conversa.
+        </div>
+      ) : (
       <div className="flex items-center gap-2 border-t border-border p-2.5">
         <input
           type="file"
@@ -463,6 +481,7 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
           <Send className="h-4 w-4" />
         </button>
       </div>
+      )}
     </div>
   )
 }
