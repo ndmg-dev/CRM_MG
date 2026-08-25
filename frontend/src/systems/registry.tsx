@@ -44,15 +44,15 @@ export const systemRegistry: Record<string, LazyExoticComponent<ComponentType>> 
   // iframe de https://contai.mendoncagalvao.com.br — passa a renderizar
   // nativo automaticamente, sem precisar mudar nada no banco.
   'cont-ai': lazy(() => import('@contai/ContaiApp')),
-  // Slug ainda não existe em `sistemas_seed.sql` — sugestão 'carne-leao' a
-  // confirmar antes de cadastrar (ver PROJETO-CARNE-LEAO, branch
-  // feat/google-drive-integration).
-  'carne-leao': lazy(() => import('@carneleao/CarneLeaoApp')),
-  // Migração do iframe de https://doccontabil.mendoncagalvao.com.br
-  // (repo GERADOR_DE_NOTAS) para código nativo, exibido no CRM como
-  // "Documentação Contábil". Slug ainda não existe em `sistemas_seed.sql`
-  // — cadastrar o sistema no CRM com este slug antes de abrir (ver relatório
-  // de migração para o INSERT sugerido).
+  // Slug real já cadastrado no banco é 'contabil-script-estatico' (nome
+  // exibido: "Contábil Script"), apontando pro iframe de
+  // https://contabilscript.vercel.app/ — passa a renderizar nativo
+  // automaticamente, sem precisar mudar nada no banco. O backend (repo
+  // PROJETO-CARNE-LEAO) continua hospedado na Vercel, não no Coolify.
+  'contabil-script-estatico': lazy(() => import('@carneleao/CarneLeaoApp')),
+  // Slug já cadastrado no banco (setor CONTABIL) apontando pro iframe de
+  // https://doccontabil.mendoncagalvao.com.br — passa a renderizar nativo
+  // automaticamente, sem precisar mudar nada no banco.
   'documentacao-contabil': lazy(() => import('@doccontabil/DocumentacaoContabilApp')),
 }
 
