@@ -29,7 +29,9 @@
       "@ouvidoria/*": ["./src/systems/ouvidoria/*"],
       "@fronteira/*": ["./src/systems/fronteira/*"],
       "@fronteira-tokens": ["./src/systems/fronteira/packages/@mg-tokens"],
-      "@fronteira-ui": ["./src/systems/fronteira/packages/@mg-ui"]
+      "@fronteira-ui": ["./src/systems/fronteira/packages/@mg-ui"],
+      "@carneleao/*": ["./src/systems/carne-leao/*"],
+      "@doccontabil/*": ["./src/systems/documentacao-contabil/*"]
     },
 
     /* Bundler mode */

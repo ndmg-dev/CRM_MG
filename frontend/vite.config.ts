@@ -39,6 +39,8 @@ export default defineConfig(({ mode }) => {
         // pacote real.
         '@fronteira-tokens': path.resolve(__dirname, './src/systems/fronteira/packages/@mg-tokens'),
         '@fronteira-ui': path.resolve(__dirname, './src/systems/fronteira/packages/@mg-ui'),
+        '@carneleao': path.resolve(__dirname, './src/systems/carne-leao'),
+        '@doccontabil': path.resolve(__dirname, './src/systems/documentacao-contabil'),
       },
     },
     server: {
