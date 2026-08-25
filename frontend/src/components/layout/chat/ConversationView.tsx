@@ -4,13 +4,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { useChatWidgetStore } from '@/stores/chatWidgetStore'
 import { supabase } from '@/systems/central-suporte/integrations/supabase/client'
+import { isTicketClosed } from '@/systems/central-suporte/utils/ticketStatus'
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024 // 10MB — mesmo limite do TicketDetailDialog
-
-// Mesmos status considerados "encerrado" usados no resto da Central de
-// Suporte (ver isClosing em Header.tsx) — chamado só volta a aceitar
-// mensagem se for movido de novo pra um status fora desta lista.
-const CLOSED_STATUSES = new Set(['resolved', 'closed', 'canceled'])
 
 function Avatar({ name }: { name: string }) {
   const letter = (name || '?').trim().charAt(0).toUpperCase()
@@ -91,7 +87,7 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
     },
   })
 
-  const isClosed = !!ticket?.status && CLOSED_STATUSES.has(ticket.status)
+  const isClosed = isTicketClosed(ticket?.status)
 
   const { data: comments = [] } = useQuery({
     queryKey: ['chat-widget-comments', ticketId],
@@ -164,7 +160,19 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
       supabase.from('comments')
         .update({ read_at: new Date().toISOString() })
         .in('id', unreadFromOthers.map((c: any) => c.id))
-        .then(() => queryClient.invalidateQueries({ queryKey: ['chat-widget-comments', ticketId] }))
+        .select('id')
+        .then(({ data, error }) => {
+          // Se a RLS de `comments` só permitir UPDATE pelo próprio autor, este
+          // update falha silenciosamente (0 linhas, sem erro) e o tick nunca
+          // vira "lido" pro remetente — sinaliza isso no console pra facilitar
+          // o diagnóstico em vez de mascarar o problema.
+          if (error) {
+            console.error('[chat] Falha ao marcar comentários como lidos:', error)
+          } else if ((data?.length ?? 0) < unreadFromOthers.length) {
+            console.warn(`[chat] Só ${data?.length ?? 0} de ${unreadFromOthers.length} comentários foram marcados como lidos — verifique a policy de UPDATE em comments.`)
+          }
+          queryClient.invalidateQueries({ queryKey: ['chat-widget-comments', ticketId] })
+        })
     }
 
     supabase.from('notifications')
@@ -292,11 +300,6 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
                 #{String(ticket?.ticket_code ?? '').padStart(3, '0')}
               </span>
               <span className="truncate text-sm font-semibold text-text-primary">{ticket?.title || 'Carregando...'}</span>
-              {isClosed && (
-                <span className="shrink-0 rounded border border-red-500/40 bg-red-500/10 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-red-500">
-                  Encerrado
-                </span>
-              )}
             </div>
             <p className="mt-0.5 truncate text-[11px] text-text-muted">
               Responsável: {(ticket?.assignee as any)?.full_name || 'Sem responsável'}

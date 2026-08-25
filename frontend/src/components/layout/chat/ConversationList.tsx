@@ -1,9 +1,10 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { X } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useChatWidgetStore } from '@/stores/chatWidgetStore'
 import { supabase } from '@/systems/central-suporte/integrations/supabase/client'
 import { useUnreadComments } from '@/systems/central-suporte/hooks/useUnreadComments'
+import { ticketStatusBucket, type TicketStatusBucket } from '@/systems/central-suporte/utils/ticketStatus'
 
 interface ConversationRow {
   ticketId: string
@@ -12,7 +13,14 @@ interface ConversationRow {
   requesterName: string
   lastMessage: string
   lastMessageAt: string | null
+  statusBucket: TicketStatusBucket
 }
+
+const TABS: { key: TicketStatusBucket; label: string }[] = [
+  { key: 'open', label: 'Abertos' },
+  { key: 'closed', label: 'Encerrados' },
+  { key: 'other', label: 'Outros' },
+]
 
 /** Lista de conversas do chat flutuante: um chamado por linha, ordenado pela
  * mensagem mais recente. Não depende de "sou responsável/abri esse chamado"
@@ -43,7 +51,7 @@ function useConversations() {
       // 2) Dados do chamado (título, código, quem abriu) pros ids acima.
       const { data: tickets, error: tErr } = await supabase
         .from('tickets')
-        .select('id, ticket_code, title, requester:profiles!requester_id(full_name)')
+        .select('id, ticket_code, title, status, requester:profiles!requester_id(full_name)')
         .in('id', ticketIds)
         .is('archived_at', null)
       if (tErr) throw tErr
@@ -61,6 +69,7 @@ function useConversations() {
             requesterName: t.requester?.full_name || 'Desconhecido',
             lastMessage: last.content,
             lastMessageAt: last.created_at,
+            statusBucket: ticketStatusBucket(t.status),
           }
         })
     },
@@ -93,6 +102,18 @@ export function ConversationList() {
   const queryClient = useQueryClient()
   const { data: conversations = [], isLoading } = useConversations()
   const unreadCounts = useUnreadComments()
+  const [tab, setTab] = useState<TicketStatusBucket>('open')
+
+  const tabCounts = useMemo(() => {
+    const counts: Record<TicketStatusBucket, number> = { open: 0, closed: 0, other: 0 }
+    for (const c of conversations) counts[c.statusBucket]++
+    return counts
+  }, [conversations])
+
+  const visibleConversations = useMemo(
+    () => conversations.filter((c) => c.statusBucket === tab),
+    [conversations, tab]
+  )
 
   // Realtime: qualquer comentário novo em qualquer chamado pode mudar a
   // ordem/prévia da lista — invalida em vez de tentar reconciliar campo a
@@ -122,13 +143,32 @@ export function ConversationList() {
         </button>
       </div>
 
+      <div className="flex items-center gap-1 border-b border-border px-2 pt-2">
+        {TABS.map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setTab(t.key)}
+            className={`flex items-center gap-1.5 rounded-t-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
+              tab === t.key
+                ? 'border-b-2 border-gold text-text-primary'
+                : 'border-b-2 border-transparent text-text-muted hover:text-text-secondary'
+            }`}
+          >
+            {t.label}
+            {tabCounts[t.key] > 0 && (
+              <span className="text-[10px] text-text-muted">{tabCounts[t.key]}</span>
+            )}
+          </button>
+        ))}
+      </div>
+
       <div className="flex-1 overflow-y-auto">
         {isLoading ? (
           <p className="pt-8 text-center text-xs text-text-muted">Carregando...</p>
-        ) : conversations.length === 0 ? (
-          <p className="pt-8 text-center text-xs text-text-muted">Nenhuma conversa ainda.</p>
+        ) : visibleConversations.length === 0 ? (
+          <p className="pt-8 text-center text-xs text-text-muted">Nenhuma conversa aqui.</p>
         ) : (
-          conversations.map((c) => {
+          visibleConversations.map((c) => {
             const unread = unreadCounts[c.ticketId] || 0
             return (
               <button

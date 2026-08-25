@@ -228,14 +228,11 @@ export default function Header({ onMenuClick }: HeaderProps) {
                 playNotificationSound(isClosing ? 'ticket_closed' : 'ticket_opened')
               }
             }
-            // Sem isto, mandar uma mensagem com o chat já aberto na mesma
-            // conversa dispara uma notificação nativa por cima do widget,
-            // que precisa ser fechada na mão antes de responder de novo.
-            const chatState = useChatWidgetStore.getState()
-            const isSameOpenConversation =
-              isMessage && document.hasFocus() &&
-              chatState.panelState === 'conversation' && chatState.activeTicketId === record?.ticket_id
-            if (record && !isSameOpenConversation) {
+            // Mensagem nova NUNCA dispara notificação nativa do navegador —
+            // já tem som + badge no ícone flutuante pra isso, e a notificação
+            // do SO cobria o widget e atrapalhava responder. Só eventos de
+            // chamado (aberto/encerrado) continuam gerando notificação nativa.
+            if (record && !isMessage) {
               showBrowserNotification(record.title || 'Nova notificação', record.message || '')
             }
           }

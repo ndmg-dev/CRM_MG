@@ -21,7 +21,11 @@ export const isBimgSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey)
 
 // Fallback evita createClient() lançar "supabaseUrl is required" e derrubar
 // a aplicação inteira quando a variável não está configurada no ambiente.
+// storageKey própria: sem ela, todo sistema sem .env configurado cai na
+// mesma URL placeholder e os GoTrueClient derivam a mesma chave de storage,
+// disparando "Multiple GoTrueClient instances detected" no console.
 export const supabase = createClient(
   supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'placeholder'
+  supabaseAnonKey || 'placeholder',
+  { auth: { storageKey: 'sb-bimg-auth-token' } }
 )
