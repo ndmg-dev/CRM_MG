@@ -353,3 +353,22 @@ Confirmado: `content` agora fica string vazia quando só há imagem (sem `pendin
 
 ## Sem outros pontos relevantes
 A remoção do fallback `📎 {nome}` no `content` está correta, já que o anexo já é registrado separadamente na tabela `attachments`.
+
+## 2026-08-25 17:15:39 — `frontend/src/components/layout/chat/ConversationList.tsx`
+
+Sem observações.
+
+## 2026-08-25 17:16:21 — `commit 5677bc6 (Features-Edu)`
+
+This confirms the bug: an image-only comment now gets `content: ''`, which falls through to "Sem mensagens de texto" in the conversation list preview and likely renders as a blank bubble in the timeline — losing the previous `📎 filename` indicator that `TicketDetailDialog.tsx:326` still uses. Real regression with a concrete repro.
+
+## Bugs
+
+- **`ConversationView.tsx:239`** — `content = text.trim()` drops the previous `📎 ${pendingImage.name}` fallback for image-only messages. Sending just an image now inserts `content: ''`. Result: the conversation list preview shows "Sem mensagens de texto" (`ConversationList.tsx:152`) and the message bubble itself likely renders with no text, while the sibling `TicketDetailDialog.tsx:326` still uses the `📎 filename` fallback — same product feature, now inconsistent behavior between the two chat UIs.
+
+- **`Header.tsx` `isSameOpenConversation`** — suppresses the native browser notification when the same conversation is already open and focused, but doesn't skip `queryClient.invalidateQueries`/`playNotificationSound` calls higher up, so a sound still plays for a message the user is actively looking at (may be intentional, but worth confirming — previously this path also auto-opened the conversation, so the "already open" state was reachable only via manual click; now it's also reachable if the widget was left open from before, which is the new case this branch targets, but note it depends on `document.hasFocus()` which is false when the window is unfocused-but-visible on a second monitor, e.g. widget open, user reading another app — that will now show a native notification even though the conversation *is* open, since `!isSameOpenConversation` becomes true only from the focus check, not visibility. Minor, likely acceptable given the comment's stated intent).
+
+## Melhorias
+
+- `Avatar` is duplicated verbatim in `ConversationList.tsx` and `ConversationView.tsx` (already existed pre-commit, but this commit touched `ConversationList`'s copy) — could be extracted to a shared component instead of maintaining two copies of the sizing.
+- Fix the `content` fallback in `ConversationView.tsx:239` to match `TicketDetailDialog.tsx:326`'s `commentText.trim() || (pendingImage ? \`📎 ${pendingImage.name}\` : '')` pattern.
