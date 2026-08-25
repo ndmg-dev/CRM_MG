@@ -44,6 +44,10 @@ export const systemRegistry: Record<string, LazyExoticComponent<ComponentType>> 
   // iframe de https://contai.mendoncagalvao.com.br — passa a renderizar
   // nativo automaticamente, sem precisar mudar nada no banco.
   'cont-ai': lazy(() => import('@contai/ContaiApp')),
+  // Slug ainda não existe em `sistemas_seed.sql` — sugestão 'carne-leao' a
+  // confirmar antes de cadastrar (ver PROJETO-CARNE-LEAO, branch
+  // feat/google-drive-integration).
+  'carne-leao': lazy(() => import('@carneleao/CarneLeaoApp')),
 }
 
 /**

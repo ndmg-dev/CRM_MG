@@ -26,6 +26,7 @@ export default defineConfig(({ mode }) => {
         '@copilot': path.resolve(__dirname, './src/systems/copilot-contabil'),
         '@bimg': path.resolve(__dirname, './src/systems/bimg'),
         '@contai': path.resolve(__dirname, './src/systems/contai'),
+        '@carneleao': path.resolve(__dirname, './src/systems/carne-leao'),
       },
     },
     server: {

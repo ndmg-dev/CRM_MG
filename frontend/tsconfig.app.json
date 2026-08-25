@@ -23,7 +23,8 @@
       "@abertura/*": ["./src/systems/abertura-empresa/*"],
       "@copilot/*": ["./src/systems/copilot-contabil/*"],
       "@bimg/*": ["./src/systems/bimg/*"],
-      "@contai/*": ["./src/systems/contai/*"]
+      "@contai/*": ["./src/systems/contai/*"],
+      "@carneleao/*": ["./src/systems/carne-leao/*"]
     },
 
     /* Bundler mode */
