@@ -20,7 +20,8 @@
       "@pontoadmin/*": ["./src/systems/ponto-admin/*"],
       "@guiadp/*": ["./src/systems/guia-dp/*"],
       "@fiscal/*": ["./src/systems/conciliacao-fiscal/*"],
-      "@abertura/*": ["./src/systems/abertura-empresa/*"]
+      "@abertura/*": ["./src/systems/abertura-empresa/*"],
+      "@copilot/*": ["./src/systems/copilot-contabil/*"]
     },
 
     /* Bundler mode */

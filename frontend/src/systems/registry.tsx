@@ -32,6 +32,10 @@ export const systemRegistry: Record<string, LazyExoticComponent<ComponentType>> 
   'guia-dp': lazy(() => import('@guiadp/GuiaDpApp')),
   'conciliacao-fiscal': lazy(() => import('@fiscal/ConciliacaoFiscalApp')),
   'abertura-de-empresa': lazy(() => import('@abertura/AberturaEmpresaApp')),
+  // Slug já cadastrado em sistemas_seed.sql (setor CONTABIL) apontando pro
+  // iframe de https://copilot.mendoncagalvao.com.br/ — passa a renderizar
+  // nativo automaticamente, sem precisar mudar nada no banco.
+  'copilot-contabil': lazy(() => import('@copilot/CopilotContabilApp')),
 }
 
 /**
