@@ -25,6 +25,8 @@ export default defineConfig(({ mode }) => {
         '@abertura': path.resolve(__dirname, './src/systems/abertura-empresa'),
         '@copilot': path.resolve(__dirname, './src/systems/copilot-contabil'),
         '@dashdre': path.resolve(__dirname, './src/systems/dashboard-dre'),
+        '@bimg': path.resolve(__dirname, './src/systems/bimg'),
+        '@contai': path.resolve(__dirname, './src/systems/contai'),
       },
     },
     server: {

@@ -18,7 +18,10 @@ async def login_with_google(
 ):
     # body.id_token actually contains the Google access_token due to frontend implicit grant
     user = await authenticate_google_user(db, body.id_token)
-    token = create_access_token(subject=user.id)
+    # Claim adicional (email) além do `sub` padrão: permite que backends de
+    # sistemas satélite (ex: ContAI) validem o JWT do CRM sem precisar
+    # consultar o Postgres do CRM — só decodificam com o JWT_SECRET compartilhado.
+    token = create_access_token(subject=user.id, extra_claims={"email": user.email})
 
     # Create a session record for audit tracking
     forwarded_for = http_request.headers.get("x-forwarded-for")

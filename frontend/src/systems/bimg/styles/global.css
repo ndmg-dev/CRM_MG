@@ -1,0 +1,12 @@
+/* Estilos globais do BIMG, escopados sob .bimg-root para não vazar para o
+   resto do CRM (o original em globals.css aplicava direto no <body>, o que
+   não é seguro dentro do shell do CRM que hospeda vários sistemas). */
+.bimg-root {
+  --bimg-color-brand-gold: #d4af37;
+  --bimg-color-brand-black: #0c0c0c;
+  --bimg-color-brand-silver: #27272a;
+
+  background-color: var(--bimg-color-brand-black);
+  color: #ffffff;
+  min-height: 100%;
+}

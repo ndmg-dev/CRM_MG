@@ -37,6 +37,14 @@ export const systemRegistry: Record<string, LazyExoticComponent<ComponentType>> 
   // nativo automaticamente, sem precisar mudar nada no banco.
   'copilot-contabil': lazy(() => import('@copilot/CopilotContabilApp')),
   'dashboard-dre': lazy(() => import('@dashdre/DashboardDreApp')),
+  // Slug já cadastrado em sistemas_seed.sql (setor CONTABIL) apontando pro
+  // iframe de https://bimg.nucleodigital.cloud — passa a renderizar nativo
+  // automaticamente, sem precisar mudar nada no banco.
+  'bimg-business-intelligence': lazy(() => import('@bimg/BimgApp')),
+  // Slug já cadastrado em sistemas_seed.sql (setor CONTABIL) apontando pro
+  // iframe de https://contai.mendoncagalvao.com.br — passa a renderizar
+  // nativo automaticamente, sem precisar mudar nada no banco.
+  'cont-ai': lazy(() => import('@contai/ContaiApp')),
 }
 
 /**
