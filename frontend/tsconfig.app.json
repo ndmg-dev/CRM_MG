@@ -24,7 +24,8 @@
       "@copilot/*": ["./src/systems/copilot-contabil/*"],
       "@dashdre/*": ["./src/systems/dashboard-dre/*"],
       "@bimg/*": ["./src/systems/bimg/*"],
-      "@contai/*": ["./src/systems/contai/*"]
+      "@contai/*": ["./src/systems/contai/*"],
+      "@mgprospect/*": ["./src/systems/mg-prospect/*"]
     },
 
     /* Bundler mode */

@@ -45,6 +45,13 @@ export const systemRegistry: Record<string, LazyExoticComponent<ComponentType>> 
   // iframe de https://contai.mendoncagalvao.com.br — passa a renderizar
   // nativo automaticamente, sem precisar mudar nada no banco.
   'cont-ai': lazy(() => import('@contai/ContaiApp')),
+  // Slug já cadastrado em sistemas_seed.sql apontando pro iframe de
+  // https://prospect.nucleodigital.cloud — passa a renderizar nativo
+  // automaticamente, sem precisar mudar nada no banco. Só as páginas
+  // internas (staff) foram portadas; as páginas públicas (formulário de
+  // interesse, unsubscribe) continuam no site original (ver
+  // src/systems/mg-prospect/MgProspectApp.tsx).
+  'prospect-nucleodigital': lazy(() => import('@mgprospect/MgProspectApp')),
 }
 
 /**

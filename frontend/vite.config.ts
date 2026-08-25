@@ -27,6 +27,7 @@ export default defineConfig(({ mode }) => {
         '@dashdre': path.resolve(__dirname, './src/systems/dashboard-dre'),
         '@bimg': path.resolve(__dirname, './src/systems/bimg'),
         '@contai': path.resolve(__dirname, './src/systems/contai'),
+        '@mgprospect': path.resolve(__dirname, './src/systems/mg-prospect'),
       },
     },
     server: {
