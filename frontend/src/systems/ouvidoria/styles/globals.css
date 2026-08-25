@@ -1,0 +1,2333 @@
+/* Gerado a partir do CSS vanilla original (ndmg-dev/ouvidoria-mg,
+   app/static/css/*.css) concatenado nesta ordem — theme, components, layout,
+   dashboard, admin, chat, login (mesma ordem do <link> em base.html, mais
+   chat.css/login.css que o base.html não linkava diretamente) — e escopado
+   sob .ouvidoria-root via postcss-prefix-selector (mesmo processo do
+   Dashboard DRE, MG Prospect, etc.). Não editar à mão: gerar de novo a
+   partir dos originais se precisar mudar algo.
+
+   postcss-prefix-selector já trata :root/body/html substituindo o seletor
+   INTEIRO por .ouvidoria-root (em vez de .ouvidoria-root body, que nunca
+   casaria — a raiz é descendente do body, não ancestral) e pula seletores
+   internos de @keyframes automaticamente. Variáveis CSS do :root original
+   (--bg-main, --text-main, --accent-gold, --success, --warning, --danger,
+   --info, --primary, etc.) foram conferidas contra as vars globais do CRM
+   (--mg-*, --color-*, todas definidas em src/index.css) e não colidem em
+   nome — mas mesmo se colidissem, por estarem escopadas em .ouvidoria-root
+   (não em :root global) elas só valem para elementos dentro da raiz deste
+   sistema. */
+
+/* ===== theme.css ===== */
+/* ============================================================
+   Ouvidoria Corporativa — Design System
+   Mendonça Galvão Contadores Associados
+   
+   Paleta extraída da logo.png:
+   - Preto profundo do fundo da logo → bg-main
+   - Curvas metálicas prateadas → silver-gradient, text-secondary
+   - Linhas douradas decorativas → accent-gold
+   - Tipografia branca da logo → text-main (off-white quente)
+   ============================================================ */
+
+/* ── Google Fonts ──────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap');
+
+/* ── CSS Custom Properties ─────────────────────────────────── */
+.ouvidoria-root {
+    /* Primary palette */
+    --primary: #1A1A1E;
+    --primary-hover: #252529;
+    --primary-active: #2D2D33;
+
+    /* Gold accent */
+    --accent-gold: #C9A84C;
+    --accent-gold-hover: #D4B85E;
+    --accent-gold-muted: rgba(201, 168, 76, 0.15);
+    --accent-gold-border: rgba(201, 168, 76, 0.3);
+
+    /* Backgrounds */
+    --bg-main: #0F0F12;
+    --bg-surface: #1A1A1E;
+    --bg-elevated: #24242A;
+    --bg-input: #1E1E23;
+
+    /* Text */
+    --text-main: #F0EDE6;
+    --text-secondary: #8A8A94;
+    --text-tertiary: #5C5C66;
+    --text-gold: #C9A84C;
+
+    /* Borders */
+    --border-subtle: #2E2E35;
+    --border-medium: #3A3A42;
+    --border-gold: rgba(201, 168, 76, 0.3);
+
+    /* Silver gradient (from logo curves) */
+    --silver-light: #C0C0C6;
+    --silver-medium: #8A8A94;
+
+    /* Semantic colors */
+    --success: #2ECC71;
+    --success-bg: rgba(46, 204, 113, 0.1);
+    --success-border: rgba(46, 204, 113, 0.3);
+    --warning: #F39C12;
+    --warning-bg: rgba(243, 156, 18, 0.1);
+    --warning-border: rgba(243, 156, 18, 0.3);
+    --danger: #E74C3C;
+    --danger-bg: rgba(231, 76, 60, 0.1);
+    --danger-border: rgba(231, 76, 60, 0.3);
+    --info: #5DADE2;
+    --info-bg: rgba(93, 173, 226, 0.1);
+    --info-border: rgba(93, 173, 226, 0.3);
+
+    /* Shadows */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+    --shadow-gold: 0 0 20px rgba(201, 168, 76, 0.1);
+
+    /* Border radius */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --radius-xl: 20px;
+    --radius-full: 9999px;
+
+    /* Typography */
+    --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-display: 'Outfit', 'Inter', sans-serif;
+
+    /* Transitions */
+    --transition-fast: 150ms ease;
+    --transition-base: 250ms ease;
+    --transition-slow: 400ms ease;
+
+    /* Layout */
+    --sidebar-width: 260px;
+    --topbar-height: 64px;
+}
+
+/* ── Reset & Base ──────────────────────────────────────────── */
+.ouvidoria-root *, .ouvidoria-root *::before, .ouvidoria-root *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.ouvidoria-root {
+    font-size: 15px;
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.ouvidoria-root {
+    font-family: var(--font-primary);
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    line-height: 1.6;
+    min-height: 100vh;
+}
+
+.ouvidoria-root a {
+    color: var(--accent-gold);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+}
+
+.ouvidoria-root a:hover {
+    color: var(--accent-gold-hover);
+}
+
+/* ── Scrollbar ─────────────────────────────────────────────── */
+.ouvidoria-root ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.ouvidoria-root ::-webkit-scrollbar-track {
+    background: var(--bg-main);
+}
+
+.ouvidoria-root ::-webkit-scrollbar-thumb {
+    background: var(--border-medium);
+    border-radius: var(--radius-full);
+}
+
+.ouvidoria-root ::-webkit-scrollbar-thumb:hover {
+    background: var(--text-tertiary);
+}
+
+/* ── Typography ────────────────────────────────────────────── */
+.ouvidoria-root h1, .ouvidoria-root h2, .ouvidoria-root h3, .ouvidoria-root h4, .ouvidoria-root h5, .ouvidoria-root h6 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--text-main);
+}
+
+.ouvidoria-root h1 { font-size: 1.75rem; }
+.ouvidoria-root h2 { font-size: 1.4rem; }
+.ouvidoria-root h3 { font-size: 1.15rem; }
+.ouvidoria-root h4 { font-size: 1rem; }
+
+.ouvidoria-root .text-gold { color: var(--accent-gold); }
+.ouvidoria-root .text-secondary { color: var(--text-secondary); }
+.ouvidoria-root .text-success { color: var(--success); }
+.ouvidoria-root .text-warning { color: var(--warning); }
+.ouvidoria-root .text-danger { color: var(--danger); }
+.ouvidoria-root .text-info { color: var(--info); }
+
+/* ── Animations ────────────────────────────────────────────── */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideInLeft {
+    from { opacity: 0; transform: translateX(-16px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInRight {
+    from { opacity: 0; transform: translateX(16px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+@keyframes goldGlow {
+    0%, 100% { box-shadow: 0 0 5px rgba(201, 168, 76, 0.2); }
+    50% { box-shadow: 0 0 15px rgba(201, 168, 76, 0.4); }
+}
+
+.ouvidoria-root .animate-fade {
+    opacity: 0;
+    animation: fadeIn 0.35s ease forwards;
+}
+
+/* Stagger via nth-child — no inline animation-delay needed */
+.ouvidoria-root .animate-fade:nth-child(1) { animation-delay: 0.0s; }
+.ouvidoria-root .animate-fade:nth-child(2) { animation-delay: 0.05s; }
+.ouvidoria-root .animate-fade:nth-child(3) { animation-delay: 0.10s; }
+.ouvidoria-root .animate-fade:nth-child(4) { animation-delay: 0.15s; }
+.ouvidoria-root .animate-fade:nth-child(5) { animation-delay: 0.20s; }
+.ouvidoria-root .animate-fade:nth-child(6) { animation-delay: 0.25s; }
+.ouvidoria-root .animate-fade:nth-child(7) { animation-delay: 0.30s; }
+.ouvidoria-root .animate-fade:nth-child(8) { animation-delay: 0.35s; }
+
+/* Once animated, lock permanently — !important prevents any inline style override */
+.ouvidoria-root .animate-fade.animated {
+    animation: none !important;
+    animation-delay: 0s !important;
+    opacity: 1 !important;
+    transform: none !important;
+}
+
+.ouvidoria-root .animate-slide-left {
+    animation: slideInLeft 0.4s ease forwards;
+}
+
+.ouvidoria-root .animate-slide-right {
+    animation: slideInRight 0.4s ease forwards;
+}
+
+/* ── Utilities ─────────────────────────────────────────────── */
+.ouvidoria-root .mt-1 { margin-top: 0.5rem; }
+.ouvidoria-root .mt-2 { margin-top: 1rem; }
+.ouvidoria-root .mt-3 { margin-top: 1.5rem; }
+.ouvidoria-root .mt-4 { margin-top: 2rem; }
+.ouvidoria-root .mb-1 { margin-bottom: 0.5rem; }
+.ouvidoria-root .mb-2 { margin-bottom: 1rem; }
+.ouvidoria-root .mb-3 { margin-bottom: 1.5rem; }
+.ouvidoria-root .mb-4 { margin-bottom: 2rem; }
+.ouvidoria-root .gap-1 { gap: 0.5rem; }
+.ouvidoria-root .gap-2 { gap: 1rem; }
+.ouvidoria-root .gap-3 { gap: 1.5rem; }
+
+.ouvidoria-root .d-flex { display: flex; }
+.ouvidoria-root .d-grid { display: grid; }
+.ouvidoria-root .align-center { align-items: center; }
+.ouvidoria-root .justify-between { justify-content: space-between; }
+.ouvidoria-root .justify-center { justify-content: center; }
+.ouvidoria-root .flex-wrap { flex-wrap: wrap; }
+.ouvidoria-root .flex-column { flex-direction: column; }
+.ouvidoria-root .flex-1 { flex: 1; }
+
+.ouvidoria-root .text-center { text-align: center; }
+.ouvidoria-root .text-right { text-align: right; }
+.ouvidoria-root .font-medium { font-weight: 500; }
+.ouvidoria-root .font-semibold { font-weight: 600; }
+.ouvidoria-root .font-bold { font-weight: 700; }
+
+.ouvidoria-root .truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ouvidoria-root .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+}
+
+
+/* ===== components.css ===== */
+/* ============================================================
+   Components — Reusable UI Elements
+   ============================================================ */
+
+/* ── Cards ─────────────────────────────────────────────────── */
+.ouvidoria-root .card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    transition: all var(--transition-base);
+    animation: fadeIn 0.4s ease forwards;
+}
+
+.ouvidoria-root .card:hover {
+    border-color: var(--border-medium);
+    box-shadow: var(--shadow-md);
+}
+
+.ouvidoria-root .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.ouvidoria-root .card-header h3 {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.ouvidoria-root .card-gold {
+    border-color: var(--accent-gold-border);
+}
+
+.ouvidoria-root .card-gold:hover {
+    box-shadow: var(--shadow-gold);
+}
+
+/* ── Metric Cards ──────────────────────────────────────────── */
+.ouvidoria-root .metric-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: all var(--transition-base);
+    position: relative;
+    overflow: hidden;
+}
+
+.ouvidoria-root .metric-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--accent-gold);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.ouvidoria-root .metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--accent-gold-border);
+}
+
+.ouvidoria-root .metric-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    flex-shrink: 0;
+}
+
+.ouvidoria-root .metric-icon.gold {
+    background: var(--accent-gold-muted);
+    color: var(--accent-gold);
+}
+
+.ouvidoria-root .metric-icon.info {
+    background: var(--info-bg);
+    color: var(--info);
+}
+
+.ouvidoria-root .metric-icon.success {
+    background: var(--success-bg);
+    color: var(--success);
+}
+
+.ouvidoria-root .metric-icon.warning {
+    background: var(--warning-bg);
+    color: var(--warning);
+}
+
+.ouvidoria-root .metric-icon.danger {
+    background: var(--danger-bg);
+    color: var(--danger);
+}
+
+.ouvidoria-root .metric-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.ouvidoria-root .metric-value {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--text-main);
+    line-height: 1.2;
+}
+
+.ouvidoria-root .metric-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+
+/* ── Buttons ───────────────────────────────────────────────── */
+.ouvidoria-root .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.25rem;
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    font-family: var(--font-primary);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    text-decoration: none;
+    line-height: 1.4;
+    white-space: nowrap;
+}
+
+.ouvidoria-root .btn:hover {
+    transform: translateY(-1px);
+}
+
+.ouvidoria-root .btn:active {
+    transform: translateY(0);
+}
+
+.ouvidoria-root .btn-primary {
+    background: var(--accent-gold);
+    color: #0F0F12;
+    border-color: var(--accent-gold);
+}
+
+.ouvidoria-root .btn-primary:hover {
+    background: var(--accent-gold-hover);
+    border-color: var(--accent-gold-hover);
+    box-shadow: 0 4px 12px rgba(201, 168, 76, 0.3);
+    color: #0F0F12;
+}
+
+.ouvidoria-root .btn-secondary {
+    background: var(--bg-elevated);
+    color: var(--text-main);
+    border-color: var(--border-medium);
+}
+
+.ouvidoria-root .btn-secondary:hover {
+    background: var(--primary-active);
+    border-color: var(--text-tertiary);
+    color: var(--text-main);
+}
+
+.ouvidoria-root .btn-outline {
+    background: transparent;
+    color: var(--accent-gold);
+    border-color: var(--accent-gold-border);
+}
+
+.ouvidoria-root .btn-outline:hover {
+    background: var(--accent-gold-muted);
+    border-color: var(--accent-gold);
+    color: var(--accent-gold);
+}
+
+.ouvidoria-root .btn-danger {
+    background: var(--danger-bg);
+    color: var(--danger);
+    border-color: var(--danger-border);
+}
+
+.ouvidoria-root .btn-danger:hover {
+    background: var(--danger);
+    color: white;
+}
+
+.ouvidoria-root .btn-success {
+    background: var(--success-bg);
+    color: var(--success);
+    border-color: var(--success-border);
+}
+
+.ouvidoria-root .btn-success:hover {
+    background: var(--success);
+    color: white;
+}
+
+.ouvidoria-root .btn-sm {
+    padding: 0.4rem 0.85rem;
+    font-size: 0.8rem;
+}
+
+.ouvidoria-root .btn-lg {
+    padding: 0.8rem 1.75rem;
+    font-size: 1rem;
+}
+
+.ouvidoria-root .btn-block {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+}
+
+.ouvidoria-root .btn-icon {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-md);
+}
+
+/* ── Badges ────────────────────────────────────────────────── */
+.ouvidoria-root .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.25rem 0.7rem;
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+}
+
+.ouvidoria-root .badge-gold {
+    background: var(--accent-gold-muted);
+    color: var(--accent-gold);
+    border: 1px solid var(--accent-gold-border);
+}
+
+.ouvidoria-root .badge-info {
+    background: var(--info-bg);
+    color: var(--info);
+    border: 1px solid var(--info-border);
+}
+
+.ouvidoria-root .badge-success {
+    background: var(--success-bg);
+    color: var(--success);
+    border: 1px solid var(--success-border);
+}
+
+.ouvidoria-root .badge-warning {
+    background: var(--warning-bg);
+    color: var(--warning);
+    border: 1px solid var(--warning-border);
+}
+
+.ouvidoria-root .badge-danger {
+    background: var(--danger-bg);
+    color: var(--danger);
+    border: 1px solid var(--danger-border);
+}
+
+.ouvidoria-root .badge-secondary {
+    background: rgba(138, 138, 148, 0.15);
+    color: var(--text-secondary);
+    border: 1px solid rgba(138, 138, 148, 0.3);
+}
+
+.ouvidoria-root .badge-accent {
+    background: var(--accent-gold-muted);
+    color: var(--accent-gold);
+    border: 1px solid var(--accent-gold-border);
+}
+
+/* ── Forms ─────────────────────────────────────────────────── */
+.ouvidoria-root .form-group {
+    margin-bottom: 1.25rem;
+}
+
+.ouvidoria-root .form-label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 0.4rem;
+}
+
+.ouvidoria-root .form-control {
+    width: 100%;
+    padding: 0.65rem 0.9rem;
+    background: var(--bg-input);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    color: var(--text-main);
+    font-family: var(--font-primary);
+    font-size: 0.9rem;
+    transition: all var(--transition-fast);
+    outline: none;
+}
+
+.ouvidoria-root .form-control:focus {
+    border-color: var(--accent-gold);
+    box-shadow: 0 0 0 3px var(--accent-gold-muted);
+}
+
+.ouvidoria-root .form-control::placeholder {
+    color: var(--text-tertiary);
+}
+
+.ouvidoria-root textarea.form-control {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.ouvidoria-root select.form-control {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%238A8A94' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    padding-right: 2.25rem;
+}
+
+.ouvidoria-root .form-check {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.ouvidoria-root .form-check input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--accent-gold);
+    cursor: pointer;
+}
+
+.ouvidoria-root .form-hint {
+    font-size: 0.78rem;
+    color: var(--text-tertiary);
+    margin-top: 0.3rem;
+}
+
+/* ── Tables ────────────────────────────────────────────────── */
+.ouvidoria-root .table-container {
+    overflow-x: auto;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-subtle);
+}
+
+.ouvidoria-root .table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.ouvidoria-root .table th {
+    background: var(--bg-elevated);
+    padding: 0.85rem 1rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-secondary);
+    text-align: left;
+    border-bottom: 1px solid var(--border-subtle);
+    white-space: nowrap;
+}
+
+.ouvidoria-root .table td {
+    padding: 0.85rem 1rem;
+    font-size: 0.875rem;
+    border-bottom: 1px solid var(--border-subtle);
+    vertical-align: middle;
+}
+
+.ouvidoria-root .table tr:last-child td {
+    border-bottom: none;
+}
+
+.ouvidoria-root .table tr:hover td {
+    background: rgba(201, 168, 76, 0.03);
+}
+
+/* ── Alerts / Flash Messages ──────────────────────────────── */
+.ouvidoria-root .alert {
+    padding: 0.85rem 1.25rem;
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    animation: fadeIn 0.3s ease;
+    border: 1px solid transparent;
+}
+
+.ouvidoria-root .alert-success {
+    background: var(--success-bg);
+    color: var(--success);
+    border-color: var(--success-border);
+}
+
+.ouvidoria-root .alert-danger {
+    background: var(--danger-bg);
+    color: var(--danger);
+    border-color: var(--danger-border);
+}
+
+.ouvidoria-root .alert-warning {
+    background: var(--warning-bg);
+    color: var(--warning);
+    border-color: var(--warning-border);
+}
+
+.ouvidoria-root .alert-info {
+    background: var(--info-bg);
+    color: var(--info);
+    border-color: var(--info-border);
+}
+
+.ouvidoria-root .alert-close {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    font-size: 1.1rem;
+    opacity: 0.7;
+}
+
+.ouvidoria-root .alert-close:hover {
+    opacity: 1;
+}
+
+/* ── Avatar ────────────────────────────────────────────────── */
+.ouvidoria-root .avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-full);
+    object-fit: cover;
+    border: 2px solid var(--border-subtle);
+}
+
+.ouvidoria-root .avatar-sm {
+    width: 28px;
+    height: 28px;
+}
+
+.ouvidoria-root .avatar-lg {
+    width: 56px;
+    height: 56px;
+}
+
+.ouvidoria-root .avatar-xl {
+    width: 80px;
+    height: 80px;
+    border-width: 3px;
+    border-color: var(--accent-gold-border);
+}
+
+.ouvidoria-root .avatar-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    background: var(--accent-gold-muted);
+    color: var(--accent-gold);
+}
+
+/* ── Empty State ───────────────────────────────────────────── */
+.ouvidoria-root .empty-state {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: var(--text-tertiary);
+}
+
+.ouvidoria-root .empty-state-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.ouvidoria-root .empty-state h3 {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.ouvidoria-root .empty-state p {
+    font-size: 0.875rem;
+    max-width: 320px;
+    margin: 0 auto 1.5rem;
+    line-height: 1.5;
+}
+
+/* ── Divider ───────────────────────────────────────────────── */
+.ouvidoria-root .divider {
+    height: 1px;
+    background: var(--border-subtle);
+    margin: 1.5rem 0;
+    border: none;
+}
+
+.ouvidoria-root .divider-gold {
+    background: linear-gradient(
+        90deg,
+        transparent,
+        var(--accent-gold-border),
+        transparent
+    );
+}
+
+/* ── Pagination ────────────────────────────────────────────── */
+.ouvidoria-root .pagination {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    justify-content: center;
+    margin-top: 1.5rem;
+}
+
+.ouvidoria-root .pagination a, .ouvidoria-root .pagination span {
+    padding: 0.4rem 0.75rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all var(--transition-fast);
+}
+
+.ouvidoria-root .pagination a {
+    color: var(--text-secondary);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+}
+
+.ouvidoria-root .pagination a:hover {
+    background: var(--bg-elevated);
+    border-color: var(--accent-gold-border);
+    color: var(--accent-gold);
+}
+
+.ouvidoria-root .pagination .active {
+    background: var(--accent-gold);
+    color: #0F0F12;
+    border: 1px solid var(--accent-gold);
+}
+
+/* ── Loading Spinner ───────────────────────────────────────── */
+.ouvidoria-root .spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border-subtle);
+    border-top-color: var(--accent-gold);
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.ouvidoria-root .spinner-lg {
+    width: 36px;
+    height: 36px;
+    border-width: 3px;
+}
+
+/* ── Tooltip ───────────────────────────────────────────────── */
+.ouvidoria-root [data-tooltip] {
+    position: relative;
+}
+
+.ouvidoria-root [data-tooltip]::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 0.35rem 0.7rem;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-medium);
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    color: var(--text-main);
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--transition-fast);
+    z-index: 100;
+}
+
+.ouvidoria-root [data-tooltip]:hover::after {
+    opacity: 1;
+}
+
+/* ── Status Timeline ───────────────────────────────────────── */
+.ouvidoria-root .timeline {
+    position: relative;
+    padding-left: 2rem;
+}
+
+.ouvidoria-root .timeline::before {
+    content: '';
+    position: absolute;
+    left: 0.5rem;
+    top: 0.5rem;
+    bottom: 0.5rem;
+    width: 2px;
+    background: var(--border-subtle);
+}
+
+.ouvidoria-root .timeline-item {
+    position: relative;
+    padding-bottom: 1.5rem;
+    animation: fadeIn 0.3s ease forwards;
+}
+
+.ouvidoria-root .timeline-item:last-child {
+    padding-bottom: 0;
+}
+
+.ouvidoria-root .timeline-dot {
+    position: absolute;
+    left: -1.65rem;
+    top: 0.35rem;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--accent-gold);
+    border: 2px solid var(--bg-surface);
+}
+
+.ouvidoria-root .timeline-dot.user {
+    background: var(--info);
+}
+
+.ouvidoria-root .timeline-dot.admin {
+    background: var(--accent-gold);
+}
+
+.ouvidoria-root .timeline-dot.system {
+    background: var(--text-tertiary);
+}
+
+.ouvidoria-root .timeline-content {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 0.85rem 1rem;
+}
+
+.ouvidoria-root .timeline-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.4rem;
+}
+
+.ouvidoria-root .timeline-text {
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+/* ── Filter Bar ────────────────────────────────────────────── */
+.ouvidoria-root .filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+}
+
+.ouvidoria-root .filter-bar .form-control {
+    max-width: 200px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+}
+
+.ouvidoria-root .filter-bar .form-control:first-child {
+    flex: 1;
+    max-width: 300px;
+}
+
+
+/* ===== layout.css ===== */
+/* ============================================================
+   Layout — Sidebar, Topbar, Content Grid
+   ============================================================ */
+
+/* ── App Layout ────────────────────────────────────────────── */
+.ouvidoria-root .app-layout {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* ── Sidebar ───────────────────────────────────────────────── */
+.ouvidoria-root .sidebar {
+    width: var(--sidebar-width);
+    background: var(--bg-surface);
+    border-right: 1px solid var(--border-subtle);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 50;
+    transition: transform var(--transition-base);
+}
+
+.ouvidoria-root .sidebar-brand {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--border-subtle);
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+}
+
+.ouvidoria-root .sidebar-logo {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+    border-radius: var(--radius-sm);
+}
+
+.ouvidoria-root .sidebar-brand-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.ouvidoria-root .sidebar-brand-name {
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-main);
+    line-height: 1.3;
+}
+
+.ouvidoria-root .sidebar-brand-sub {
+    font-size: 0.68rem;
+    color: var(--accent-gold);
+    font-weight: 500;
+    letter-spacing: 0.03em;
+}
+
+.ouvidoria-root .sidebar-nav {
+    flex: 1;
+    padding: 1rem 0.75rem;
+    overflow-y: auto;
+}
+
+.ouvidoria-root .sidebar-section {
+    margin-bottom: 1.5rem;
+}
+
+.ouvidoria-root .sidebar-section-title {
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-tertiary);
+    padding: 0 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.ouvidoria-root .sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0.75rem;
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-weight: 450;
+    text-decoration: none;
+    transition: all var(--transition-fast);
+    position: relative;
+}
+
+.ouvidoria-root .sidebar-link:hover {
+    background: var(--bg-elevated);
+    color: var(--text-main);
+}
+
+.ouvidoria-root .sidebar-link.active {
+    background: var(--accent-gold-muted);
+    color: var(--accent-gold);
+}
+
+.ouvidoria-root .sidebar-link.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 60%;
+    background: var(--accent-gold);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.ouvidoria-root .sidebar-link i, .ouvidoria-root .sidebar-link svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    opacity: 0.85;
+}
+
+.ouvidoria-root .sidebar-link.active i, .ouvidoria-root .sidebar-link.active svg {
+    opacity: 1;
+}
+
+.ouvidoria-root .sidebar-badge {
+    margin-left: auto;
+    background: var(--danger);
+    color: white;
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 0.15rem 0.45rem;
+    border-radius: var(--radius-full);
+    min-width: 18px;
+    text-align: center;
+}
+
+.ouvidoria-root .sidebar-footer {
+    padding: 1rem 1.25rem;
+    border-top: 1px solid var(--border-subtle);
+}
+
+.ouvidoria-root .sidebar-user {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.ouvidoria-root .sidebar-user-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.ouvidoria-root .sidebar-user-name {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-main);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ouvidoria-root .sidebar-user-role {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+}
+
+/* ── Topbar ────────────────────────────────────────────────── */
+.ouvidoria-root .topbar {
+    height: var(--topbar-height);
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 2rem;
+    position: sticky;
+    top: 0;
+    z-index: 40;
+}
+
+.ouvidoria-root .topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.ouvidoria-root .topbar-title {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.ouvidoria-root .topbar-subtitle {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+}
+
+.ouvidoria-root .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.ouvidoria-root .topbar-menu-btn {
+    display: none;
+    width: 40px;
+    height: 40px;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    color: var(--text-main);
+    cursor: pointer;
+    font-size: 1.2rem;
+}
+
+/* ── Main Content ──────────────────────────────────────────── */
+.ouvidoria-root .main-content {
+    flex: 1;
+    margin-left: var(--sidebar-width);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.ouvidoria-root .page-content {
+    flex: 1;
+    padding: 2rem;
+    max-width: 1400px;
+    width: 100%;
+}
+
+/* ── Page Header ───────────────────────────────────────────── */
+.ouvidoria-root .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.ouvidoria-root .page-header h1 {
+    font-size: 1.5rem;
+}
+
+.ouvidoria-root .page-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* ── Grid Layouts ──────────────────────────────────────────── */
+.ouvidoria-root .grid-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.ouvidoria-root .grid-2col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+}
+
+.ouvidoria-root .grid-3col {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+}
+
+/* ── Sidebar Overlay (Mobile) ──────────────────────────────── */
+.ouvidoria-root .sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 45;
+}
+
+/* ── Responsive ────────────────────────────────────────────── */
+@media (max-width: 992px) {
+    .ouvidoria-root .sidebar {
+        transform: translateX(-100%);
+    }
+
+    .ouvidoria-root .sidebar.open {
+        transform: translateX(0);
+    }
+
+    .ouvidoria-root .sidebar-overlay.open {
+        display: block;
+    }
+
+    .ouvidoria-root .main-content {
+        margin-left: 0;
+    }
+
+    .ouvidoria-root .topbar-menu-btn {
+        display: flex;
+    }
+
+    .ouvidoria-root .grid-2col,
+    .ouvidoria-root .grid-3col {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .ouvidoria-root .page-content {
+        padding: 1.25rem;
+    }
+
+    .ouvidoria-root .topbar {
+        padding: 0 1.25rem;
+    }
+
+    .ouvidoria-root .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .ouvidoria-root .grid-metrics {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .ouvidoria-root .filter-bar {
+        flex-direction: column;
+    }
+
+    .ouvidoria-root .filter-bar .form-control {
+        max-width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .ouvidoria-root .grid-metrics {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+/* ===== dashboard.css ===== */
+/* ============================================================
+   Dashboard & Ouvidoria Page Styles
+   ============================================================ */
+
+/* ── Dashboard ─────────────────────────────────────────────── */
+.ouvidoria-root .welcome-banner {
+    background: linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-elevated) 100%);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 1.75rem 2rem;
+    margin-bottom: 1.5rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.ouvidoria-root .welcome-banner::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent-gold), transparent 60%);
+}
+
+.ouvidoria-root .welcome-banner h2 {
+    font-size: 1.3rem;
+    margin-bottom: 0.3rem;
+}
+
+.ouvidoria-root .welcome-banner p {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+/* ── Complaint List Item ───────────────────────────────────── */
+.ouvidoria-root .complaint-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.ouvidoria-root .complaint-item {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 1.15rem 1.5rem;
+    text-decoration: none;
+    color: var(--text-main);
+    display: block;
+    transition: all var(--transition-base);
+    animation: fadeIn 0.3s ease forwards;
+}
+
+.ouvidoria-root .complaint-item:hover {
+    border-color: var(--accent-gold-border);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+    color: var(--text-main);
+}
+
+.ouvidoria-root .complaint-item-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.ouvidoria-root .complaint-item-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.ouvidoria-root .complaint-item-protocol {
+    font-size: 0.75rem;
+    color: var(--accent-gold);
+    font-weight: 500;
+    flex-shrink: 0;
+}
+
+.ouvidoria-root .complaint-item-meta {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    flex-wrap: wrap;
+}
+
+.ouvidoria-root .complaint-item-meta span {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+/* ── Complaint Detail ──────────────────────────────────────── */
+.ouvidoria-root .detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 1.5rem;
+}
+
+.ouvidoria-root .detail-main {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.ouvidoria-root .detail-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.ouvidoria-root .detail-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+}
+
+.ouvidoria-root .detail-info-item {
+    padding: 0.75rem;
+    background: var(--bg-elevated);
+    border-radius: var(--radius-md);
+}
+
+.ouvidoria-root .detail-info-label {
+    font-size: 0.72rem;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.2rem;
+}
+
+.ouvidoria-root .detail-info-value {
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.ouvidoria-root .detail-description {
+    font-size: 0.9rem;
+    line-height: 1.7;
+    color: var(--text-main);
+    white-space: pre-wrap;
+}
+
+/* ── Form Page ─────────────────────────────────────────────── */
+.ouvidoria-root .form-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+    max-width: 720px;
+}
+
+.ouvidoria-root .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.ouvidoria-root .form-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-subtle);
+}
+
+/* ── Profile Page ──────────────────────────────────────────── */
+.ouvidoria-root .profile-header {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.ouvidoria-root .profile-info h2 {
+    font-size: 1.3rem;
+    margin-bottom: 0.2rem;
+}
+
+.ouvidoria-root .profile-info p {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.ouvidoria-root .profile-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+}
+
+.ouvidoria-root .profile-detail-item {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 1rem 1.25rem;
+}
+
+.ouvidoria-root .profile-detail-label {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.3rem;
+}
+
+.ouvidoria-root .profile-detail-value {
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+/* ── Responsive Detail ─────────────────────────────────────── */
+@media (max-width: 992px) {
+    .ouvidoria-root .detail-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .ouvidoria-root .form-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+/* ===== admin.css ===== */
+/* ============================================================
+   Admin Panel Styles
+   ============================================================ */
+
+/* Admin-specific overrides */
+.ouvidoria-root .admin-stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.ouvidoria-root .admin-stat-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+    text-align: center;
+    transition: all var(--transition-base);
+}
+
+.ouvidoria-root .admin-stat-card:hover {
+    border-color: var(--accent-gold-border);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.ouvidoria-root .admin-stat-value {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.ouvidoria-root .admin-stat-label {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    margin-top: 0.25rem;
+}
+
+/* Knowledge base */
+.ouvidoria-root .knowledge-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+}
+
+.ouvidoria-root .knowledge-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    transition: all var(--transition-base);
+}
+
+.ouvidoria-root .knowledge-card:hover {
+    border-color: var(--accent-gold-border);
+    box-shadow: var(--shadow-md);
+}
+
+.ouvidoria-root .knowledge-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.ouvidoria-root .knowledge-card-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.ouvidoria-root .knowledge-card-desc {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-bottom: 1rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.ouvidoria-root .knowledge-card-actions {
+    display: flex;
+    gap: 0.5rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-subtle);
+}
+
+/* Internal notes styling */
+.ouvidoria-root .internal-note {
+    background: rgba(243, 156, 18, 0.05);
+    border: 1px solid rgba(243, 156, 18, 0.15);
+    border-radius: var(--radius-md);
+    padding: 0.85rem 1rem;
+    margin-bottom: 0.75rem;
+    border-left: 3px solid var(--warning);
+}
+
+.ouvidoria-root .internal-note-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.4rem;
+}
+
+.ouvidoria-root .internal-note-content {
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+/* Chart placeholder */
+.ouvidoria-root .chart-container {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* admin document form modal */
+.ouvidoria-root .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+}
+
+.ouvidoria-root .modal-overlay.active {
+    display: flex;
+}
+
+.ouvidoria-root .modal-content {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-xl);
+    padding: 2rem;
+    width: 100%;
+    max-width: 560px;
+    max-height: 85vh;
+    overflow-y: auto;
+    animation: fadeIn 0.3s ease;
+}
+
+.ouvidoria-root .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.ouvidoria-root .modal-close {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    transition: all var(--transition-fast);
+}
+
+.ouvidoria-root .modal-close:hover {
+    background: var(--danger-bg);
+    border-color: var(--danger-border);
+    color: var(--danger);
+}
+
+
+/* ===== chat.css ===== */
+/* ============================================================
+   Chat Interface Styles
+   ============================================================ */
+
+.ouvidoria-root .chat-layout {
+    display: flex;
+    height: calc(100vh - var(--topbar-height));
+    overflow: hidden;
+}
+
+.ouvidoria-root .chat-sidebar {
+    width: 260px;
+    background: var(--bg-surface);
+    border-right: 1px solid var(--border-subtle);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+}
+
+.ouvidoria-root .chat-sidebar-header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.ouvidoria-root .chat-sidebar-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.5rem;
+}
+
+.ouvidoria-root .chat-session-item {
+    padding: 0.65rem 0.85rem;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    margin-bottom: 2px;
+}
+
+.ouvidoria-root .chat-session-item:hover {
+    background: var(--bg-elevated);
+}
+
+.ouvidoria-root .chat-session-item.active {
+    background: var(--accent-gold-muted);
+    border: 1px solid var(--accent-gold-border);
+}
+
+.ouvidoria-root .chat-session-title {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-main);
+    margin-bottom: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ouvidoria-root .chat-session-date {
+    font-size: 0.72rem;
+    color: var(--text-tertiary);
+}
+
+/* Chat Main Area */
+.ouvidoria-root .chat-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.ouvidoria-root .chat-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.ouvidoria-root .chat-header-info h3 {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.ouvidoria-root .chat-header-info p {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+}
+
+/* Messages Area */
+.ouvidoria-root .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.ouvidoria-root .chat-message {
+    display: flex;
+    gap: 0.75rem;
+    max-width: 75%;
+    animation: fadeIn 0.3s ease;
+}
+
+.ouvidoria-root .chat-message.user {
+    align-self: flex-end;
+    flex-direction: row-reverse;
+}
+
+.ouvidoria-root .chat-message.assistant {
+    align-self: flex-start;
+}
+
+.ouvidoria-root .chat-message-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-full);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.ouvidoria-root .chat-message.user .chat-message-avatar {
+    background: var(--accent-gold-muted);
+    color: var(--accent-gold);
+}
+
+.ouvidoria-root .chat-message.assistant .chat-message-avatar {
+    background: var(--info-bg);
+    color: var(--info);
+}
+
+.ouvidoria-root .chat-message-bubble {
+    padding: 0.85rem 1.15rem;
+    border-radius: var(--radius-lg);
+    font-size: 0.9rem;
+    line-height: 1.55;
+    position: relative;
+}
+
+.ouvidoria-root .chat-message.user .chat-message-bubble {
+    background: var(--accent-gold);
+    color: #0F0F12;
+    border-bottom-right-radius: var(--radius-sm);
+}
+
+.ouvidoria-root .chat-message.assistant .chat-message-bubble {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-main);
+    border-bottom-left-radius: var(--radius-sm);
+}
+
+.ouvidoria-root .chat-message-time {
+    font-size: 0.68rem;
+    color: var(--text-tertiary);
+    margin-top: 0.35rem;
+    text-align: right;
+}
+
+.ouvidoria-root .chat-message.user .chat-message-time {
+    color: rgba(15, 15, 18, 0.6);
+}
+
+/* Loading indicator */
+.ouvidoria-root .chat-typing {
+    display: flex;
+    gap: 5px;
+    padding: 0.7rem 1rem;
+    align-self: flex-start;
+}
+
+.ouvidoria-root .chat-typing-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--text-tertiary);
+    border-radius: 50%;
+    animation: pulse 1.4s infinite;
+}
+
+.ouvidoria-root .chat-typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.ouvidoria-root .chat-typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+/* Chat Input */
+.ouvidoria-root .chat-input-area {
+    padding: 1rem 1.5rem 1.25rem;
+    border-top: 1px solid var(--border-subtle);
+    background: var(--bg-surface);
+}
+
+.ouvidoria-root .chat-input-wrapper {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.75rem;
+    background: var(--bg-input);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 0.5rem;
+    transition: border-color var(--transition-fast);
+}
+
+.ouvidoria-root .chat-input-wrapper:focus-within {
+    border-color: var(--accent-gold);
+    box-shadow: 0 0 0 3px var(--accent-gold-muted);
+}
+
+.ouvidoria-root .chat-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text-main);
+    font-family: var(--font-primary);
+    font-size: 0.9rem;
+    padding: 0.5rem 0.75rem;
+    resize: none;
+    outline: none;
+    max-height: 120px;
+    line-height: 1.5;
+}
+
+.ouvidoria-root .chat-input::placeholder {
+    color: var(--text-tertiary);
+}
+
+.ouvidoria-root .chat-send-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-md);
+    background: var(--accent-gold);
+    border: none;
+    color: #0F0F12;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-fast);
+    flex-shrink: 0;
+}
+
+.ouvidoria-root .chat-send-btn:hover {
+    background: var(--accent-gold-hover);
+    box-shadow: 0 2px 8px rgba(201, 168, 76, 0.3);
+}
+
+.ouvidoria-root .chat-send-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Welcome message */
+.ouvidoria-root .chat-welcome {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 2rem;
+}
+
+.ouvidoria-root .chat-welcome-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.ouvidoria-root .chat-welcome h3 {
+    font-size: 1.15rem;
+    margin-bottom: 0.5rem;
+}
+
+.ouvidoria-root .chat-welcome p {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    max-width: 380px;
+    line-height: 1.5;
+}
+
+/* Error message in chat */
+.ouvidoria-root .chat-error {
+    padding: 0.65rem 1rem;
+    background: var(--danger-bg);
+    border: 1px solid var(--danger-border);
+    border-radius: var(--radius-md);
+    color: var(--danger);
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 1.5rem;
+}
+
+.ouvidoria-root .chat-error-retry {
+    margin-left: auto;
+    cursor: pointer;
+    text-decoration: underline;
+    font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .ouvidoria-root .chat-sidebar {
+        display: none;
+    }
+
+    .ouvidoria-root .chat-message {
+        max-width: 90%;
+    }
+}
+
+/* ── Markdown rendering inside assistant bubbles ── */
+.ouvidoria-root .chat-bubble-assistant p {
+    margin: 0 0 0.6rem 0;
+}
+.ouvidoria-root .chat-bubble-assistant p:last-child {
+    margin-bottom: 0;
+}
+.ouvidoria-root .chat-bubble-assistant ul,
+.ouvidoria-root .chat-bubble-assistant ol {
+    margin: 0.4rem 0 0.6rem 1.2rem;
+    padding: 0;
+}
+.ouvidoria-root .chat-bubble-assistant li {
+    margin-bottom: 0.25rem;
+}
+.ouvidoria-root .chat-bubble-assistant strong {
+    color: var(--accent-gold);
+    font-weight: 600;
+}
+.ouvidoria-root .chat-bubble-assistant em {
+    font-style: italic;
+    color: var(--text-secondary);
+}
+.ouvidoria-root .chat-bubble-assistant code {
+    background: var(--bg-surface);
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-size: 0.82rem;
+    color: var(--accent-gold);
+}
+.ouvidoria-root .chat-bubble-assistant hr {
+    border: none;
+    border-top: 1px solid var(--border-subtle);
+    margin: 0.75rem 0;
+}
+
+
+/* ===== login.css ===== */
+/* ============================================================
+   Login Page Styles
+   ============================================================ */
+
+.ouvidoria-root .login-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-main);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Subtle background pattern */
+.ouvidoria-root .login-page::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(
+        circle at 30% 40%,
+        rgba(201, 168, 76, 0.03) 0%,
+        transparent 50%
+    ),
+    radial-gradient(
+        circle at 70% 60%,
+        rgba(138, 138, 148, 0.02) 0%,
+        transparent 50%
+    );
+    pointer-events: none;
+}
+
+.ouvidoria-root .login-container {
+    width: 100%;
+    max-width: 420px;
+    padding: 2rem;
+    position: relative;
+    z-index: 1;
+    animation: fadeIn 0.6s ease;
+}
+
+.ouvidoria-root .login-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-xl);
+    padding: 2.5rem 2rem;
+    box-shadow: var(--shadow-lg);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Top gold accent line */
+.ouvidoria-root .login-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 10%;
+    right: 10%;
+    height: 2px;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        var(--accent-gold),
+        transparent
+    );
+}
+
+.ouvidoria-root .login-logo {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.ouvidoria-root .login-logo img {
+    width: 140px;
+    height: auto;
+    margin-bottom: 1.25rem;
+}
+
+.ouvidoria-root .login-logo h1 {
+    font-family: var(--font-display);
+    font-size: 1.35rem;
+    font-weight: 600;
+    color: var(--text-main);
+    margin-bottom: 0.35rem;
+}
+
+.ouvidoria-root .login-logo p {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.ouvidoria-root .login-divider {
+    height: 1px;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        var(--border-subtle),
+        transparent
+    );
+    margin: 1.75rem 0;
+}
+
+.ouvidoria-root .login-google-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.85rem 1.5rem;
+    background: var(--accent-gold);
+    color: #0F0F12;
+    border: none;
+    border-radius: var(--radius-md);
+    font-family: var(--font-primary);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all var(--transition-base);
+}
+
+.ouvidoria-root .login-google-btn:hover {
+    background: var(--accent-gold-hover);
+    box-shadow: 0 6px 20px rgba(201, 168, 76, 0.3);
+    transform: translateY(-2px);
+    color: #0F0F12;
+}
+
+.ouvidoria-root .login-google-btn:active {
+    transform: translateY(0);
+}
+
+.ouvidoria-root .login-google-btn svg {
+    width: 20px;
+    height: 20px;
+}
+
+.ouvidoria-root .login-security-note {
+    text-align: center;
+    margin-top: 1.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border-subtle);
+}
+
+.ouvidoria-root .login-security-note p {
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+    line-height: 1.5;
+}
+
+.ouvidoria-root .login-security-note svg {
+    width: 14px;
+    height: 14px;
+    vertical-align: middle;
+    margin-right: 0.25rem;
+    color: var(--success);
+}
+
+.ouvidoria-root .login-footer {
+    text-align: center;
+    margin-top: 1.5rem;
+    font-size: 0.72rem;
+    color: var(--text-tertiary);
+}
+
+/* Flash messages on login */
+.ouvidoria-root .login-alerts {
+    margin-bottom: 1rem;
+}
+
+/* ============================================================
+   Ajuste de encaixe no shell do CRM — NÃO é mudança de design, é uma
+   correção estrutural necessária pra rodar dentro do CRM em vez de como
+   página própria.
+
+   O layout.css original assume uma aba do navegador só pra si: .sidebar é
+   `position: fixed` ancorada no viewport (top:0/left:0/bottom:0) e
+   .main-content compensa com margin-left fixo. Isso quebra dentro do CRM
+   porque, mesmo com um sistema nativo aberto em "tela cheia", o Header
+   (sticky, 52px, z-20) e a barra de ícones (fixed, z-40) do PRÓPRIO CRM
+   continuam sempre visíveis por cima/ao lado (ver comentário em
+   src/components/layout/MainLayout.tsx: "Header fica sempre visível...").
+   `position: fixed` usa o VIEWPORT como containing block, não o container
+   flex pai — então a sidebar da Ouvidoria (z-index:50 no CSS original,
+   maior que o z-40 da barra de ícones do CRM) se ancoraria em left:0 por
+   cima da barra de ícones do CRM, cobrindo-a. Mesma classe de bug corrigida
+   em fix(ponto-admin): corrige navegação relativa quebrada e espaçamento
+   fantasma.
+
+   Fix: sidebar e topbar viram `position: sticky` (participam do fluxo flex
+   normal — o próprio flex do .app-layout já reserva o espaço horizontal
+   certo, à direita da barra de ícones do CRM) com `top` deslocado pelos
+   52px do Header do CRM, em vez de tentar ocupar o viewport inteiro. */
+.ouvidoria-root .sidebar {
+    position: sticky;
+    top: 52px;
+    height: calc(100vh - 52px);
+}
+
+.ouvidoria-root .topbar {
+    top: 52px;
+}
+
+.ouvidoria-root .main-content {
+    margin-left: 0;
+    min-height: calc(100vh - 52px);
+}
+
+.ouvidoria-root .app-layout {
+    min-height: calc(100vh - 52px);
+}
+
+@media (max-width: 992px) {
+    .ouvidoria-root .sidebar {
+        position: fixed;
+        top: 52px;
+        height: calc(100vh - 52px);
+    }
+}

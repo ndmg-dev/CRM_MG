@@ -1,0 +1,248 @@
+/* Escopado sob .fronteira-root via postcss-prefix-selector ao portar pro CRM. */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap");
+
+/* ─── Design tokens ────────────────────────────────────────────────────────
+   Design system @mg (Style Dictionary → Radix → Vanilla Extract), dark-only
+   — ver README, seção "Design system @mg". Os nomes abaixo (--ink, --primary,
+   etc.) são só ALIASES locais para as variáveis reais --mg-color-* (geradas
+   em packages/@mg-tokens/tokens.css, importado uma vez em main.tsx): nenhum
+   valor é reinventado aqui, só reaproveitado — evita reescrever de uma vez
+   todo `var(--ink)` etc. espalhado pelas telas ainda não migradas para os
+   componentes do @mg/ui. Cada alias que perder todo consumidor durante a
+   migração é removido (ver "Fase 4 — Limpeza" no README). */
+.fronteira-root {
+  --ink: var(--mg-color-text-primary);
+  --ink-soft: var(--mg-color-text-secondary);
+  --muted: var(--mg-color-text-muted);
+  --line: var(--mg-color-border-default);
+  --line-strong: var(--mg-color-border-strong);
+  --surface: var(--mg-color-bg-base);
+  --card: var(--mg-color-bg-card);
+
+  --primary: var(--mg-color-gold-base);
+  --primary-strong: var(--mg-color-gold-hover);
+  --primary-tint: var(--mg-color-gold-dim);
+  --accent: var(--mg-color-gold-base);
+
+  --ok: var(--mg-color-status-success);
+  --ok-tint: rgba(34, 197, 94, 0.12);
+  --warn: var(--mg-color-status-warning);
+  --warn-tint: rgba(245, 158, 11, 0.12);
+  --danger: var(--mg-color-status-error);
+  --danger-tint: rgba(239, 68, 68, 0.12);
+  --info: var(--mg-color-status-info);
+  --info-tint: rgba(59, 130, 246, 0.12);
+
+  --radius: var(--mg-radius-md);
+  --radius-sm: var(--mg-radius-sm);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.24);
+  --shadow: 0 4px 16px rgba(0, 0, 0, 0.32);
+
+  --font-ui: var(--mg-font-family-base);
+  --font-num: "IBM Plex Mono", ui-monospace, monospace;
+
+  --sidebar-w: 236px;
+  --topbar-h: 58px;
+}
+
+.fronteira-root * { box-sizing: border-box; }
+
+.fronteira-root html, .fronteira-root body, .fronteira-root #root { height: 100%; }
+
+.fronteira-root body {
+  margin: 0;
+  font-family: var(--font-ui);
+  color: var(--ink);
+  background: var(--surface);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.fronteira-root a { color: var(--primary); text-decoration: none; }
+.fronteira-root a:hover { text-decoration: underline; }
+
+.fronteira-root h1, .fronteira-root h2, .fronteira-root h3 { margin: 0; font-weight: 600; letter-spacing: -0.01em; }
+
+/* Números fiscais — assinatura tabular. Sem equivalente no @mg (tokens.json
+   só define a fonte-base Inter) — fica como residual do domínio fiscal. */
+.fronteira-root .num { font-family: var(--font-num); font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+
+/* ─── Form ────────────────────────────────────────────────────────────────
+   Botões, badges, selects, checkboxes, inputs e labels viraram
+   Button/Badge/Select/Checkbox/Input/Label do @mg/ui (ver components/@mg-ui)
+   — inclusive os `<input type="file">`, que usam <Input type="file"> (o
+   componente repassa todas as props HTML nativas). .field fica só como
+   wrapper de layout (empilha label + campo + hint); o input[inputmode]
+   abaixo é resíduo de domínio: aplica a fonte monoespaçada nos campos
+   numéricos do @mg/Input, que não tem esse conceito. */
+.fronteira-root .field { display: flex; flex-direction: column; gap: 6px; }
+.fronteira-root input[inputmode="decimal"] { font-family: var(--font-num); }
+.fronteira-root .field-hint { font-size: 12px; color: var(--muted); }
+
+/* ─── Card ────────────────────────────────────────────────────────────────*/
+.fronteira-root .card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+.fronteira-root .card-head {
+  padding: 15px 18px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.fronteira-root .card-body { padding: 18px; }
+
+/* ─── Tabela ──────────────────────────────────────────────────────────────*/
+.fronteira-root .table { width: 100%; border-collapse: collapse; }
+.fronteira-root .table th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.fronteira-root .table td { padding: 11px 14px; border-bottom: 1px solid var(--line); }
+.fronteira-root .table tbody tr:hover { background: var(--mg-color-bg-hover); }
+.fronteira-root .table .right { text-align: right; }
+
+/* ─── Utilidades ──────────────────────────────────────────────────────────*/
+.fronteira-root .stack { display: flex; flex-direction: column; }
+.fronteira-root .row { display: flex; align-items: center; }
+.fronteira-root .gap-8 { gap: 8px; } .fronteira-root .gap-12 { gap: 12px; } .fronteira-root .gap-16 { gap: 16px; } .fronteira-root .gap-24 { gap: 24px; }
+.fronteira-root .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.fronteira-root .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.fronteira-root .mt-4 { margin-top: 4px; } .fronteira-root .mt-8 { margin-top: 8px; } .fronteira-root .mt-16 { margin-top: 16px; } .fronteira-root .mt-24 { margin-top: 24px; }
+.fronteira-root .spacer { flex: 1; }
+.fronteira-root .muted { color: var(--muted); }
+.fronteira-root .page-title { font-size: 20px; }
+.fronteira-root .page-sub { color: var(--muted); font-size: 13.5px; margin-top: 2px; }
+
+/* Regra "fronteira" — filete duplo sutil como assinatura de seção */
+.fronteira-root .frontier-rule { height: 3px; border-top: 1px solid var(--accent); border-bottom: 1px solid var(--line-strong); }
+
+/* Estado vazio */
+.fronteira-root .empty {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--muted);
+}
+.fronteira-root .empty strong { display: block; color: var(--ink-soft); margin-bottom: 4px; font-size: 15px; }
+
+/* Alerta inline */
+.fronteira-root .alert { padding: 10px 14px; border-radius: var(--radius-sm); font-size: 13px; }
+.fronteira-root .alert-danger { background: var(--danger-tint); color: var(--danger); border: 1px solid var(--danger); }
+.fronteira-root .alert-warn { background: var(--warn-tint); color: var(--warn); border: 1px solid var(--warn); }
+.fronteira-root .alert-ok { background: var(--ok-tint); color: var(--ok); border: 1px solid var(--ok); }
+.fronteira-root .alert-accent { background: var(--primary-tint); color: var(--primary-strong); border: 1px solid var(--primary); }
+
+/* ─── Wizard: abas de conferência ────────────────────────────────────────── */
+.fronteira-root .wizard-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); padding: 0 6px; }
+.fronteira-root .wizard-tab {
+  appearance: none; background: none; border: none; cursor: pointer;
+  font-family: var(--font-ui); font-size: 13px; font-weight: 600; color: var(--muted);
+  padding: 12px 14px; border-bottom: 2px solid transparent; margin-bottom: -1px;
+  display: inline-flex; align-items: center; gap: 7px;
+}
+.fronteira-root .wizard-tab:hover { color: var(--ink-soft); }
+.fronteira-root .wizard-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+.fronteira-root .wizard-tab .count {
+  font-family: var(--font-num); font-size: 11px; padding: 0 6px; border-radius: 999px;
+  background: var(--mg-color-bg-hover); color: inherit;
+}
+
+/* ─── Wizard: linha de nota colapsável ───────────────────────────────────── */
+.fronteira-root .note-row { border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--card); }
+.fronteira-root .note-row + .note-row { margin-top: 8px; }
+.fronteira-root .note-head {
+  display: flex; align-items: center; gap: 12px; padding: 13px 16px; cursor: pointer; width: 100%;
+  background: none; border: none; text-align: left; font: inherit; color: inherit;
+  border-radius: var(--radius-sm);
+}
+.fronteira-root .note-head:hover { background: var(--mg-color-bg-hover); }
+.fronteira-root .note-head .chev { color: var(--muted); transition: transform 120ms ease; display: inline-flex; }
+.fronteira-root .note-head[aria-expanded="true"] .chev { transform: rotate(180deg); }
+.fronteira-root .note-body { border-top: 1px solid var(--line); }
+
+/* pílula de UF (origem da nota) */
+.fronteira-root .uf-pill {
+  display: inline-flex; align-items: center; font-family: var(--font-num);
+  font-size: 11px; font-weight: 600; letter-spacing: .02em;
+  padding: 2px 7px; border-radius: 999px;
+  color: var(--primary-strong); background: var(--primary-tint); border: 1px solid var(--primary);
+}
+
+/* ─── Wizard: chips de filtro ────────────────────────────────────────────── */
+.fronteira-root .chip-group { display: inline-flex; gap: 6px; align-items: center; }
+.fronteira-root .chip {
+  appearance: none; cursor: pointer; font: inherit; font-size: 12.5px; font-weight: 600;
+  padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line);
+  background: var(--surface); color: var(--muted);
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.fronteira-root .chip:hover { border-color: var(--line-strong); color: var(--ink-soft); }
+.fronteira-root .chip.active { border-color: var(--primary); color: var(--primary); background: var(--primary-tint); }
+.fronteira-root .chip .count {
+  font-family: var(--font-num); font-size: 11px; padding: 0 6px; border-radius: 999px;
+  background: var(--mg-color-bg-hover); color: inherit;
+}
+
+/* ─── Wizard: barra "aplicar a todos" ────────────────────────────────────── */
+.fronteira-root .bulk-bar {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 12px 18px; border-bottom: 1px solid var(--line);
+}
+.fronteira-root .bulk-bar .lbl { font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+
+/* ─── Wizard: tabela densa (planilha de classificação/resultado) ─────────── */
+.fronteira-root .table-scroll { overflow-x: auto; }
+.fronteira-root .table.grid-table td { padding: 7px 9px; vertical-align: middle; }
+.fronteira-root .table.grid-table th { padding: 8px 9px; white-space: nowrap; }
+.fronteira-root .cell-num-input { width: 84px; }
+
+/* ─── Wizard: cartão de nota do resultado ────────────────────────────────── */
+.fronteira-root .nf-card { border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); overflow: hidden; }
+.fronteira-root .nf-card + .nf-card { margin-top: 16px; }
+.fronteira-root .nf-card-head {
+  display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--line);
+  flex-wrap: wrap;
+}
+.fronteira-root .mini-pill {
+  display: inline-flex; align-items: baseline; gap: 6px; font-size: 12px;
+  padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted);
+}
+.fronteira-root .mini-pill strong { font-family: var(--font-num); color: var(--ink); }
+.fronteira-root .mini-pill.accent { border-color: var(--primary); color: var(--primary-strong); background: var(--primary-tint); }
+.fronteira-root .mini-pill.accent strong { color: var(--primary-strong); }
+.fronteira-root .mini-pill.info { border-color: var(--info); color: var(--info); background: var(--info-tint); }
+.fronteira-root .mini-pill.info strong { color: var(--info); }
+
+/* painel de detalhamento do cálculo (linha expandida no resultado) */
+.fronteira-root .detail-panel { padding: 16px; background: var(--surface); display: grid; grid-template-columns: 1fr 1fr; gap: 12px; max-width: 1100px; }
+.fronteira-root .detail-section { border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--card); padding: 12px 14px; }
+.fronteira-root .detail-section.full { grid-column: 1 / -1; }
+.fronteira-root .detail-section h4 {
+  margin: 0 0 8px; font-size: 11px; font-weight: 700; letter-spacing: .05em;
+  text-transform: uppercase; color: var(--muted);
+}
+.fronteira-root .detail-line { display: flex; justify-content: space-between; gap: 12px; padding: 5px 0; font-size: 13px; }
+.fronteira-root .detail-line + .detail-line { border-top: 1px solid var(--line); }
+.fronteira-root .detail-line .k { color: var(--ink-soft); }
+.fronteira-root .detail-line .v { font-family: var(--font-num); }
+.fronteira-root .formula-block {
+  font-family: var(--font-num); font-size: 12.5px; line-height: 1.7; color: var(--ink-soft);
+  white-space: pre-wrap; word-break: break-word;
+}
+.fronteira-root .imposto-cell { font-family: var(--font-num); color: var(--primary-strong); font-weight: 600; }
+@media (max-width: 760px) { .fronteira-root .detail-panel { grid-template-columns: 1fr; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .fronteira-root * { transition: none !important; animation: none !important; }
+}

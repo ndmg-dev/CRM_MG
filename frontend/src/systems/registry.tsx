@@ -37,6 +37,10 @@ export const systemRegistry: Record<string, LazyExoticComponent<ComponentType>> 
   // nativo automaticamente, sem precisar mudar nada no banco.
   'copilot-contabil': lazy(() => import('@copilot/CopilotContabilApp')),
   'dashboard-dre': lazy(() => import('@dashdre/DashboardDreApp')),
+  // Slug já cadastrado em sistemas_seed.sql (setor GERAL) apontando pro
+  // iframe de https://ouvidoria.mendoncagalvao.com.br — passa a renderizar
+  // nativo automaticamente, sem precisar mudar nada no banco.
+  'ouvidoria-interna-rh': lazy(() => import('@ouvidoria/OuvidoriaApp')),
   // Slug já cadastrado em sistemas_seed.sql (setor CONTABIL) apontando pro
   // iframe de https://bimg.nucleodigital.cloud — passa a renderizar nativo
   // automaticamente, sem precisar mudar nada no banco.
@@ -45,6 +49,20 @@ export const systemRegistry: Record<string, LazyExoticComponent<ComponentType>> 
   // iframe de https://contai.mendoncagalvao.com.br — passa a renderizar
   // nativo automaticamente, sem precisar mudar nada no banco.
   'cont-ai': lazy(() => import('@contai/ContaiApp')),
+  // Slug já cadastrado em sistemas_seed.sql apontando pro iframe de
+  // https://prospect.nucleodigital.cloud — passa a renderizar nativo
+  // automaticamente, sem precisar mudar nada no banco. Só as páginas
+  // internas (staff) foram portadas; as páginas públicas (formulário de
+  // interesse, unsubscribe) continuam no site original (ver
+  // src/systems/mg-prospect/MgProspectApp.tsx).
+  'prospect-nucleodigital': lazy(() => import('@mgprospect/MgProspectApp')),
+  // Slug já cadastrado em sistemas_seed.sql (setor FISCAL) apontando pro
+  // iframe de https://fronteira.mendoncagalvao.com.br — passa a renderizar
+  // nativo automaticamente, sem precisar mudar nada no banco. É a versão
+  // v8 (tnunes8/sistema-fronteira-v8, ainda pendente de homologação fiscal
+  // contra o v7 Django em produção) — ver src/systems/fronteira/FronteiraApp.tsx
+  // pro aviso completo sobre não alterar o código original.
+  'icms-fronteira': lazy(() => import('@fronteira/FronteiraApp')),
   // Slug real já cadastrado no banco é 'contabil-script-estatico' (nome
   // exibido: "Contábil Script"), apontando pro iframe de
   // https://contabilscript.vercel.app/ — passa a renderizar nativo
