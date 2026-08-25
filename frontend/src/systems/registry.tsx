@@ -36,6 +36,10 @@ export const systemRegistry: Record<string, LazyExoticComponent<ComponentType>> 
   // iframe de https://copilot.mendoncagalvao.com.br/ — passa a renderizar
   // nativo automaticamente, sem precisar mudar nada no banco.
   'copilot-contabil': lazy(() => import('@copilot/CopilotContabilApp')),
+  // Slug já cadastrado em sistemas_seed.sql (setor CONTABIL) apontando pro
+  // iframe de https://bimg.nucleodigital.cloud — passa a renderizar nativo
+  // automaticamente, sem precisar mudar nada no banco.
+  'bimg-business-intelligence': lazy(() => import('@bimg/BimgApp')),
 }
 
 /**

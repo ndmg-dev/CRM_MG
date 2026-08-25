@@ -21,7 +21,8 @@
       "@guiadp/*": ["./src/systems/guia-dp/*"],
       "@fiscal/*": ["./src/systems/conciliacao-fiscal/*"],
       "@abertura/*": ["./src/systems/abertura-empresa/*"],
-      "@copilot/*": ["./src/systems/copilot-contabil/*"]
+      "@copilot/*": ["./src/systems/copilot-contabil/*"],
+      "@bimg/*": ["./src/systems/bimg/*"]
     },
 
     /* Bundler mode */

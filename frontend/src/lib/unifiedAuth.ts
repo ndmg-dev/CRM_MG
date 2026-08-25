@@ -16,6 +16,10 @@ import {
   isCopilotSupabaseConfigured,
   supabase as copilotSupabase,
 } from '@copilot/lib/supabase'
+import {
+  isBimgSupabaseConfigured,
+  supabase as bimgSupabase,
+} from '@bimg/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 
 /**
@@ -111,6 +115,26 @@ export async function establishUnifiedSession(googleIdToken: string): Promise<Au
     }
   }
 
+  // BIMG (Business Intelligence / Dashboard DRE). Mesmo esquema do Copilot:
+  // signInWithIdToken usando o idToken do Google já validado pelo CRM, sem
+  // redirecionamento de página — a conta do Supabase do BIMG precisa ter o
+  // Client ID do Google do CRM liberado em Authentication > Providers >
+  // Google > Authorized Client IDs.
+  if (isBimgSupabaseConfigured) {
+    try {
+      const { error: bimgError } = await bimgSupabase.auth.signInWithIdToken({
+        provider: 'google',
+        token: googleIdToken,
+      })
+      if (bimgError) {
+        throw new Error(bimgError.message)
+      }
+    } catch (error) {
+      // Fail-soft: falha no BIMG nunca bloqueia o login do CRM.
+      console.warn('[unifiedAuth] BIMG não autenticado (CRM segue normal):', error)
+    }
+  }
+
   return crmSession
 }
 
@@ -128,6 +152,9 @@ export async function endUnifiedSession(): Promise<void> {
         : Promise.resolve(),
       isCopilotSupabaseConfigured
         ? copilotSupabase.auth.signOut({ scope: 'local' })
+        : Promise.resolve(),
+      isBimgSupabaseConfigured
+        ? bimgSupabase.auth.signOut({ scope: 'local' })
         : Promise.resolve(),
     ])
   } finally {
