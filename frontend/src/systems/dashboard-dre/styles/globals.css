@@ -1,0 +1,77 @@
+/* Escopado sob .dashboard-dre-root — mesmo cuidado dos outros sistemas
+   nativos (Ponto Admin, Guia DP, etc.), mas por um motivo um pouco
+   diferente aqui: o original usa `@theme inline` do Tailwind v4
+   (SPECS/design-system.md) pra registrar cores como `bg-panel`, `text-gold`,
+   `border-line` etc. como classes utilitárias do Tailwind — e no Tailwind v4
+   isso é sempre GLOBAL, não dá pra escopar `@theme` a uma classe. Usado como
+   está aqui, vazaria pro resto do CRM (que já tem seu próprio "gold").
+   Por isso: nada de `@theme`, só CSS puro reproduzindo as mesmas classes,
+   escopado. Os componentes (portados sem alteração do original) continuam
+   usando exatamente os mesmos nomes de classe. */
+.dashboard-dre-root {
+  --bg: #0f0f11;
+  --sidebar: #141414;
+  --panel: #1b1b1d;
+  --panel-2: #161618;
+  --border: rgba(255, 255, 255, 0.06);
+  --border-strong: rgba(255, 255, 255, 0.1);
+
+  --gold: #c9960c;
+  --gold-soft: #cba74f;
+  --gold-deep: #be8711;
+  --gold-tint: #2a2413;
+  --gold-dim: rgba(190, 135, 17, 0.45);
+
+  --text: #e8e8ea;
+  --text-muted: #a1a1a1;
+  --text-faint: #77746c;
+
+  --pos: #3fb98a;
+  --neg: #e5605e;
+
+  background: var(--bg);
+  color: var(--text);
+  color-scheme: dark;
+  font-family: var(--font-inter, Inter), system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100%;
+}
+
+.dashboard-dre-root .bg-bg { background: var(--bg); }
+.dashboard-dre-root .bg-sidebar { background: var(--sidebar); }
+.dashboard-dre-root .bg-panel { background: var(--panel); }
+.dashboard-dre-root .bg-panel-2 { background: var(--panel-2); }
+.dashboard-dre-root .bg-gold-tint { background: var(--gold-tint); }
+.dashboard-dre-root .bg-line-strong { background: var(--border-strong); }
+.dashboard-dre-root .hover\:bg-panel-2:hover { background: var(--panel-2); }
+.dashboard-dre-root .hover\:bg-gold-tint:hover { background: var(--gold-tint); }
+
+.dashboard-dre-root .border-line { border-color: var(--border); }
+.dashboard-dre-root .border-line-strong { border-color: var(--border-strong); }
+.dashboard-dre-root .border-gold-dim { border-color: var(--gold-dim); }
+.dashboard-dre-root .hover\:border-line-strong:hover { border-color: var(--border-strong); }
+.dashboard-dre-root .hover\:border-gold-dim:hover { border-color: var(--gold-dim); }
+
+.dashboard-dre-root .text-gold { color: var(--gold); }
+.dashboard-dre-root .text-gold-soft { color: var(--gold-soft); }
+.dashboard-dre-root .text-neg { color: var(--neg); }
+.dashboard-dre-root .text-pos { color: var(--pos); }
+.dashboard-dre-root .text-text { color: var(--text); }
+.dashboard-dre-root .text-text-muted { color: var(--text-muted); }
+.dashboard-dre-root .text-text-faint { color: var(--text-faint); }
+.dashboard-dre-root .hover\:text-gold:hover { color: var(--gold); }
+.dashboard-dre-root .hover\:text-text:hover { color: var(--text); }
+
+/* Números sempre tabulares, pra alinhar coluna financeira (design-system §3) */
+.dashboard-dre-root .num,
+.dashboard-dre-root table,
+.dashboard-dre-root .kpi-value {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+.dashboard-dre-root :focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+  border-radius: 4px;
+}

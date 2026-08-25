@@ -36,6 +36,7 @@ export const systemRegistry: Record<string, LazyExoticComponent<ComponentType>> 
   // iframe de https://copilot.mendoncagalvao.com.br/ — passa a renderizar
   // nativo automaticamente, sem precisar mudar nada no banco.
   'copilot-contabil': lazy(() => import('@copilot/CopilotContabilApp')),
+  'dashboard-dre': lazy(() => import('@dashdre/DashboardDreApp')),
 }
 
 /**

@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     GOOGLE_ALLOWED_DOMAIN: str = "mendoncagalvao.com.br"
     GOOGLE_ALLOWED_EMAILS: List[str] = Field(default_factory=list)
     OPENAI_API_KEY: str = ""
+    # Senha do Dashboard DRE (ndmg-dev/DASH_RAZAO), repassada só server-side
+    # pelo proxy em app/api/v1/endpoints/dre_proxy.py — nunca chega no browser.
+    DASHBOARD_DRE_SENHA: str = ""
     
     EVOLUTION_API_URL: str = "http://evolution-api:8080"
     EVOLUTION_API_KEY: str = "dev_evolution_key_123"
