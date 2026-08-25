@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { NavLink } from 'react-router-dom'
-import { Home, RefreshCw, FileText, List, Sliders, Link2, Settings } from 'react-feather'
+import { Home, RefreshCw, FileText, List, Sliders, Link2, Settings, ChevronDown, Briefcase } from 'react-feather'
 import { useNativeSystemPath } from '@/hooks/useNativeSystemBase'
 import { useEmpresa } from '../context/EmpresaContext'
 
@@ -48,24 +48,34 @@ export function Topbar() {
         </NavLink>
       ))}
       {empresas.length > 0 && (
-        <select
-          aria-label="Empresa ativa"
-          className="ml-auto h-9 shrink-0 rounded-md border border-[#2a2a2a] bg-[#1a1a1a] px-2 text-sm text-gray-200"
-          value={empresaId ?? ''}
-          onChange={(e) => {
-            const empresa = empresas.find((emp) => emp.id === e.target.value)
-            if (empresa) setEmpresa(empresa)
-          }}
-        >
-          <option value="" disabled>
-            Selecione a empresa…
-          </option>
-          {empresas.map((empresa) => (
-            <option key={empresa.id} value={empresa.id}>
-              {empresa.nome}
+        <div className="relative ml-auto shrink-0">
+          <Briefcase
+            size={14}
+            className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-gold"
+          />
+          <select
+            aria-label="Empresa ativa"
+            className="h-9 max-w-[220px] appearance-none truncate rounded-full border border-[#2a2a2a] bg-[#1a1a1a] py-0 pl-8 pr-7 text-sm font-medium text-gray-200 transition-colors hover:border-gold/40 hover:text-white focus:border-gold/60 focus:outline-none"
+            value={empresaId ?? ''}
+            onChange={(e) => {
+              const empresa = empresas.find((emp) => emp.id === e.target.value)
+              if (empresa) setEmpresa(empresa)
+            }}
+          >
+            <option value="" disabled style={{ background: '#1a1a1a', color: '#e5e7eb' }}>
+              Selecione a empresa…
             </option>
-          ))}
-        </select>
+            {empresas.map((empresa) => (
+              <option key={empresa.id} value={empresa.id} style={{ background: '#1a1a1a', color: '#e5e7eb' }}>
+                {empresa.nome}
+              </option>
+            ))}
+          </select>
+          <ChevronDown
+            size={14}
+            className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500"
+          />
+        </div>
       )}
     </nav>,
     portalTarget,
