@@ -10,7 +10,7 @@ import { useDebounce } from '@/hooks/useDebounce'
 import { ICON_MAP } from '@/lib/icons'
 import { supabase as suporteSupabase } from '@/systems/central-suporte/integrations/supabase/client'
 import { playNotificationSound } from '@/systems/central-suporte/lib/notification-sound'
-import { showBrowserNotification } from '@/systems/central-suporte/hooks/useBrowserNotifications'
+import { showBrowserNotification, requestBrowserNotificationPermission } from '@/systems/central-suporte/hooks/useBrowserNotifications'
 import { useChatWidgetStore } from '@/stores/chatWidgetStore'
 import { useUIStore } from '@/stores/uiStore'
 
@@ -57,6 +57,14 @@ export default function Header({ onMenuClick }: HeaderProps) {
   useEffect(() => {
     suporteSupabase.auth.getUser().then(({ data }) => setSuporteUserId(data.user?.id ?? null))
   }, [])
+
+  // Pede a permissão de notificação do navegador aqui (Header é global, monta
+  // em toda página do CRM) — pedir só dentro do sistema Central de Suporte
+  // (central-suporte/App.tsx) deixava sem notificação do SO quem recebe
+  // chamado mas nunca abriu aquele sistema diretamente.
+  useEffect(() => {
+    if (suporteUserId) requestBrowserNotificationPermission()
+  }, [suporteUserId])
 
   const { data: searchResults, isLoading: isSearching } = useQuery({
     queryKey: ['search', debouncedSearch],
