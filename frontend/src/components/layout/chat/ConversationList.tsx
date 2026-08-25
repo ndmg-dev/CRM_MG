@@ -81,7 +81,7 @@ function formatPreviewTime(dateStr: string | null): string {
 function Avatar({ name }: { name: string }) {
   const letter = (name || '?').trim().charAt(0).toUpperCase()
   return (
-    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gold-muted border border-gold-border text-xs font-bold text-gold">
+    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gold-muted border border-gold-border text-sm font-bold text-gold">
       {letter}
     </div>
   )
@@ -134,24 +134,24 @@ export function ConversationList() {
               <button
                 key={c.ticketId}
                 onClick={() => openConversation(c.ticketId)}
-                className="flex w-full items-start gap-2.5 border-b border-border/60 px-3 py-2.5 text-left transition-colors hover:bg-surface"
+                className="flex w-full items-start gap-3 border-b border-border/60 px-3.5 py-3.5 text-left transition-colors hover:bg-surface"
               >
                 <Avatar name={c.requesterName} />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex min-w-0 items-center gap-1.5">
-                      <span className="shrink-0 rounded border border-gold-border-soft px-1 py-0.5 text-[9px] font-bold text-gold">
+                      <span className="shrink-0 rounded border border-gold-border-soft px-1 py-0.5 text-[10px] font-bold text-gold">
                         #{String(c.ticketCode ?? '').padStart(3, '0')}
                       </span>
-                      <span className="truncate text-[13px] font-semibold text-text-primary">{c.title}</span>
+                      <span className="truncate text-sm font-semibold text-text-primary">{c.title}</span>
                     </div>
-                    <span className="shrink-0 text-[10px] text-text-muted">{formatPreviewTime(c.lastMessageAt)}</span>
+                    <span className="shrink-0 text-[11px] text-text-muted">{formatPreviewTime(c.lastMessageAt)}</span>
                   </div>
-                  <p className="mt-0.5 truncate text-[11px] text-text-muted">{c.requesterName}</p>
-                  <div className="mt-0.5 flex items-center justify-between gap-2">
-                    <p className="truncate text-xs text-text-secondary">{c.lastMessage || 'Sem mensagens de texto'}</p>
+                  <p className="mt-0.5 truncate text-xs text-text-muted">{c.requesterName}</p>
+                  <div className="mt-1 flex items-center justify-between gap-2">
+                    <p className="truncate text-[13px] text-text-secondary">{c.lastMessage || 'Sem mensagens de texto'}</p>
                     {unread > 0 && (
-                      <span className="flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full bg-gold px-1 text-[10px] font-bold text-background">
+                      <span className="flex h-5 min-w-[20px] shrink-0 items-center justify-center rounded-full bg-gold px-1 text-[10px] font-bold text-background">
                         {unread > 99 ? '99+' : unread}
                       </span>
                     )}

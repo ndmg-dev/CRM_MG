@@ -58,7 +58,11 @@ export default function ReportFilters({
     // aqui dentro passa a competir com a Header INTEIRA (dropdowns dela
     // incluídos) na raiz do documento — e vence, cobrindo a Header mesmo com
     // menus dela abertos por cima. Ver comentário em Topbar.tsx.
-    <div className="card" style={{ marginBottom: 20, padding: '14px 16px', position: 'relative', zIndex: 2 }}>
+    // zIndex 6 (não 2): irmão direto de `.dashboard-page`, assim como o
+    // `.grid-kpi` logo abaixo — que dashboard-dark.css força para z-index 5
+    // (ver comentário lá). Sem isto o dropdown de colaborador fica atrás
+    // dos cards de métricas.
+    <div className="card" style={{ marginBottom: 20, padding: '14px 16px', position: 'relative', zIndex: 6 }}>
       <div style={{ display: 'flex', borderRadius: 8, overflow: 'hidden', border: 'var(--mg-border)', width: 'fit-content', marginBottom: 14 }}>
         {(['employee', 'sector', 'team'] as const).map(s => (
           <button key={s} onClick={() => onChangeScope(s)}

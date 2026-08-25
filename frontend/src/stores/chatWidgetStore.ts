@@ -7,7 +7,8 @@ import { create } from 'zustand'
 //   'conversation' — uma conversa aberta (clicou numa da lista, ou chegou
 //                    mensagem nova e abriu direto nela).
 // Minimizar sempre volta pro ícone ('closed'); clicar no ícone de novo
-// sempre abre a LISTA (nunca retoma a conversa anterior direto).
+// sempre abre a LISTA (nunca retoma a conversa anterior direto). Uma
+// mensagem nova NÃO abre nada sozinha — só soma na badge do ícone.
 export type ChatPanelState = 'closed' | 'list' | 'conversation'
 
 interface ChatWidgetState {

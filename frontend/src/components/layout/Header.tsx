@@ -216,7 +216,6 @@ export default function Header({ onMenuClick }: HeaderProps) {
               queryClient.invalidateQueries({ queryKey: ['suporte-mensagens'] })
               queryClient.invalidateQueries({ queryKey: ['unread-comment-counts'] })
               playNotificationSound('comment_received')
-              if (record?.ticket_id) openConversation(record.ticket_id)
             } else {
               queryClient.invalidateQueries({ queryKey: ['suporte-notificacoes'] })
               const title: string = record?.title || ''
@@ -229,7 +228,14 @@ export default function Header({ onMenuClick }: HeaderProps) {
                 playNotificationSound(isClosing ? 'ticket_closed' : 'ticket_opened')
               }
             }
-            if (record) {
+            // Sem isto, mandar uma mensagem com o chat já aberto na mesma
+            // conversa dispara uma notificação nativa por cima do widget,
+            // que precisa ser fechada na mão antes de responder de novo.
+            const chatState = useChatWidgetStore.getState()
+            const isSameOpenConversation =
+              isMessage && document.hasFocus() &&
+              chatState.panelState === 'conversation' && chatState.activeTicketId === record?.ticket_id
+            if (record && !isSameOpenConversation) {
               showBrowserNotification(record.title || 'Nova notificação', record.message || '')
             }
           }

@@ -232,3 +232,143 @@ Sem observações.
 ## 2026-08-25 16:41:23 — `frontend/src/components/layout/MainLayout.tsx`
 
 Sem observacoes.
+
+## 2026-08-25 17:02:38 — `frontend/src/systems/ponto-admin/components/reports/ReportFilters.tsx`
+
+Sem observações.
+
+## 2026-08-25 17:06:45 — `frontend/src/components/layout/chat/ConversationView.tsx`
+
+Sem observações.
+
+## 2026-08-25 17:09:40 — `frontend/src/components/layout/Header.tsx`
+
+Bugs / riscos:
+
+1. `chatState.activeTicketId === record?.ticket_id` — se `record` for `undefined`, `record?.ticket_id` é `undefined`. Caso `activeTicketId` também seja `undefined`/`null` no estado inicial, a comparação bate incorretamente e pode suprimir notificação sem `record` associado. Vale checar `record` explicitamente antes de comparar (ex.: `!!record && chatState.activeTicketId === record.ticket_id`).
+
+2. Uso de `document.hasFocus()` não cobre o caso do widget aberto em outra aba/janela com foco — usuário pode não ver a notificação nativa nem a mensagem no widget dessa aba, ficando sem alerta algum.
+
+3. Dependência de `isMessage` — não está no diff visível se essa variável já existe/é confiável no escopo; confirmar que reflete corretamente "é uma notificação de mensagem" e não outro tipo de evento (ex. abertura/fechamento de ticket), já que a lógica de som logo acima trata esses casos separadamente.
+
+Melhorias:
+
+1. `useChatWidgetStore.getState()` é chamado a cada notificação recebida — leve, mas dá pra extrair a variável antes do bloco (não muda comportamento, só clareza) se este handler for chamado com alta frequência.
+
+2. Considerar extrair a condição `isSameOpenConversation` para nome mais explícito tipo `shouldSuppressNativeNotification`, já que o comentário explica o "porquê" mas o nome da variável não deixa óbvio que é usada pra suprimir.
+
+## 2026-08-25 17:11:13 — `frontend/src/components/layout/Header.tsx`
+
+**Bugs:**
+
+1. **Regressão real**: a linha `if (record?.ticket_id) openConversation(record.ticket_id)` foi removida por completo, não apenas condicionada. Antes, receber um comentário abria a conversa automaticamente; agora isso nunca mais acontece, mesmo quando o chat está fechado. Se a intenção era só suprimir a notificação nativa quando a conversa já está aberta, a chamada a `openConversation` deveria ter sido mantida (e não misturada com a lógica de notificação).
+
+2. **Falso positivo quando `ticket_id` é undefined**: `isSameOpenConversation` compara `chatState.activeTicketId === record?.ticket_id`. Se `record.ticket_id` for `undefined` e `chatState.activeTicketId` também estiver `undefined` (painel fechado ou em outro estado), a comparação é `true`, suprimindo indevidamente a notificação mesmo sem conversa igual aberta. Vale validar `record?.ticket_id != null` na condição.
+
+3. **`isMessage` não está no diff**: presumindo que já existia antes, mas confirme que ela reflete exatamente o branch que tratava comentários (mesmo bloco `if`), senão a supressão pode se aplicar ao caso errado (ex.: notificação de ticket sendo suprimida por engano).
+
+**Melhorias:**
+
+- `chatState` é obtido só para 2 campos; poderia desestruturar direto (`const { panelState, activeTicketId } = useChatWidgetStore.getState()`) para leitura mais clara.
+- O comentário explica bem o "porquê", mas seria bom também comentar que a chamada de `openConversation` foi removida propositalmente (se foi) — do jeito que está, parece esquecimento acidental.
+
+## 2026-08-25 17:11:17 — `frontend/src/stores/chatWidgetStore.ts`
+
+Sem observações.
+
+## 2026-08-25 17:11:23 — `frontend/src/components/layout/chat/FloatingTicketChat.tsx`
+
+Sem observações.
+
+## 2026-08-25 17:13:58 — `frontend/src/components/layout/chat/ConversationView.tsx`
+
+Bugs:
+
+- Se `text.trim()` estiver vazio e houver `pendingImage`, `content` agora fica `''`. Se a coluna `comments.content` for NOT NULL (ou houver validação equivalente), o insert vai falhar ao enviar só uma imagem. Antes o placeholder `📎 nome` garantia conteúdo não-vazio.
+- `CLOSED_STATUSES` foi adicionado mas não é usado em nenhum lugar neste diff — comentário referencia uso que não existe no arquivo (dead code / possivelmente incompleto).
+
+Sugestões:
+
+- Se a intenção é remover texto redundante quando há imagem, confirmar que o backend/schema aceita `content` vazio quando `image_url` (ou similar) está presente; senão, usar `null` explícito em vez de string vazia, ou manter fallback mínimo.
+- Remover `CLOSED_STATUSES` deste arquivo se não for utilizado aqui, ou completar a integração que o comentário promete (bloquear envio de mensagem quando `status` do ticket estiver em `CLOSED_STATUSES`).
+
+## 2026-08-25 17:14:21 — `frontend/src/components/layout/chat/ConversationView.tsx`
+
+## Bugs
+
+1. **`ConversationView.tsx:234`** — quando `isClosed`, `mutationFn` retorna `undefined` sem lançar erro. Como não há exceção, o React Query trata como sucesso e `onSuccess` (linha 267) roda normalmente: limpa `text`, `pendingImage` e invalida queries — dando a impressão de que a mensagem foi enviada quando na verdade nada foi persistido. O usuário perde o texto digitado sem feedback nenhum.
+
+2. Input de texto (linha 456) e botão de enviar (linha 470) não são desabilitados quando `isClosed` — só existe o badge "Encerrado" visual. Nada impede o usuário de digitar e tentar enviar, caindo no bug #1.
+
+## Melhorias
+
+- Em vez de `return` silencioso no `mutationFn`, lançar um erro (ex: `throw new Error('Chamado encerrado')`) para cair em `onError` e mostrar toast, ou desabilitar input/botão quando `isClosed` (mais direto).
+- Comentário na linha 10-12 promete "chamado só volta a aceitar mensagem se for movido..." mas isso não é de fato aplicado na UI — o comentário descreve um comportamento que o código não implementa.
+
+## 2026-08-25 17:14:41 — `frontend/src/components/layout/chat/ConversationView.tsx`
+
+Confirmado: `content` agora fica string vazia quando só há imagem (sem `pendingImage.name` como fallback). Se a coluna `content` for NOT NULL sem default, ou se a UI de listagem depender de `content` não-vazio para renderizar algo, isso é uma regressão real.
+
+**Bugs**
+- `frontend/src/components/layout/chat/ConversationView.tsx:239` — ao enviar só imagem (sem texto), `content` agora é `''` em vez do fallback `📎 nome-do-arquivo`. Se a linha do comment for exibida em algum lugar que mostra `content` como preview (lista de conversas, notificações), vai aparecer vazio. Verificar se `content` é `NOT NULL` no schema do Supabase — se for, o insert falha silenciosamente até isso ser tratado.
+- `isClosed` é derivado só do primeiro fetch do ticket (`useQuery` sem realtime/subscription visível no trecho). Se o ticket for fechado enquanto o chat está aberto, a UI só reflete isso após um refetch/invalidate — o usuário pode continuar mandando mensagens para um chamado já encerrado até a tela atualizar.
+- O guard `if (isClosed) return` dentro do `mutationFn` silencia a tentativa sem feedback ao usuário (sem toast, sem erro). Minor, mas se algum outro caminho ainda disparar `sendComment.mutate()` num ticket fechado, o usuário não terá pista do porquê nada aconteceu.
+
+**Melhorias**
+- Extrair `CLOSED_STATUSES`/`isClosed` para um hook ou util compartilhado com `Header.tsx` (o comentário já reconhece a duplicação com `isClosing`), evitando duas fontes de verdade que podem divergir se a lista de status mudar num lugar só.
+- Preferir desabilitar o botão de enviar/input (já é feito via bloco condicional) e também impedir a seleção de imagem quando `isClosed`, já que o `<input type="file">` continua fora desse bloco condicional (não verificado no diff, mas vale conferir se o upload de anexo ainda é acessível por outro caminho quando fechado).
+
+## 2026-08-25 17:14:58 — `frontend/src/components/layout/chat/ConversationView.tsx`
+
+**Bugs**
+
+- `frontend/src/components/layout/chat/ConversationView.tsx:238`: `content = text.trim()` removeu o fallback `📎 ${pendingImage.name}` que existia antes. Se o usuário só anexar imagem (sem texto), `content` vai vazio para o insert. Se a coluna `comments.content` for NOT NULL/tiver validação de string vazia no banco ou em outro lugar que renderiza `comments`, o envio quebra ou a mensagem aparece em branco na lista.
+- `sendComment.mutationFn` retorna cedo com `if (isClosed) return`, mas isso só evita o insert — não impede a UI de tentar disparar `mutate()` a partir de outros lugares (ex.: Enter no textarea) sem feedback ao usuário. Não há tratamento de erro/toast avisando "chamado encerrado" quando isso acontece por corrida (ticket fecha enquanto o usuário está digitando).
+
+**Melhorias**
+
+- `CLOSED_STATUSES` está duplicado do `isClosing` em `Header.tsx` (conforme o próprio comentário admite). Vale extrair para um util compartilhado (ex. `src/systems/central-suporte/utils/ticketStatus.ts`) para não divergir no futuro.
+- Quando `isClosed` for true, o input de arquivo/imagem pendente (`pendingImage`) não é limpo — se o usuário anexou uma imagem antes do chamado fechar, ela fica "presa" em estado sem forma de descartar, já que o bloco de input inteiro é substituído pela mensagem de encerrado.
+
+## 2026-08-25 17:15:12 — `frontend/src/components/layout/chat/ConversationView.tsx`
+
+**Bugs / edge cases:**
+
+1. `content = text.trim()` — quando só há imagem anexada (sem texto), o comentário é inserido com `content` vazio, perdendo a referência visual anterior (`📎 nome`). Se `content` não puder ser vazio no schema/validação de UI, isso pode gerar um comentário sem texto nem indicação do anexo no histórico.
+2. `sendComment` retorna cedo se `isClosed`, mas o botão de envio / input não parecem ser desabilitados condicionalmente além do bloco de UI trocado — se `isClosed` mudar via realtime enquanto o usuário já tinha texto digitado e pendingImage carregada, o clique simplesmente não faz nada e não limpa o estado nem avisa o usuário (silencioso).
+3. `isClosed` depende de `ticket?.status` vindo da query — se a query falhar ou ainda estiver carregando, `isClosed` é `false` por padrão, permitindo envio em chamados possivelmente encerrados até a query resolver (race condition benigna, mas vale checar se é aceitável).
+
+**Melhorias:**
+
+- Duplicação da lista de status "encerrado" (`CLOSED_STATUSES`) comentada como espelho de `isClosing` em `Header.tsx` — seria mais seguro extrair para um util compartilhado (`src/systems/central-suporte/utils/ticketStatus.ts`), evitando desalinhamento futuro entre os dois arquivos.
+- A mensagem de chamado encerrado poderia usar o mesmo texto/estilo do restante do sistema, se já existir um componente de "banner de estado" reutilizável.
+
+## 2026-08-25 17:15:31 — `frontend/src/components/layout/chat/ConversationView.tsx`
+
+## Bugs / riscos
+
+1. **`sendComment.mutationFn` retorna silenciosamente quando `isClosed`, mas `onSuccess` roda mesmo assim** — `if (isClosed) return` faz a mutation resolver com sucesso (não lança erro), então `onSuccess` dispara e limpa `text`/`pendingImage` e invalida queries sem enviar nada. Se esse caminho for atingido (ex.: status muda para fechado entre o usuário digitar e clicar enviar, via realtime), o usuário perde o texto digitado sem feedback nenhum. Prefira lançar erro ou simplesmente desabilitar o botão/input com base em `isClosed` (o que já é feito visualmente) e remover esse guard silencioso, ou mostrar um toast explicando.
+
+2. **Duplicação da lista de status "encerrado"** — `CLOSED_STATUSES` replica o que já existe em `Header.tsx` (`isClosing`). Se a lista mudar num lugar e não no outro, o comportamento diverge (ex.: chat aceita mensagem em chamado que o resto da UI já trata como encerrado). Vale extrair para um helper compartilhado (`isTicketClosed(status)`).
+
+## Sem outros pontos relevantes
+A remoção do fallback `📎 {nome}` no `content` está correta, já que o anexo já é registrado separadamente na tabela `attachments`.
+
+## 2026-08-25 17:15:39 — `frontend/src/components/layout/chat/ConversationList.tsx`
+
+Sem observações.
+
+## 2026-08-25 17:16:21 — `commit 5677bc6 (Features-Edu)`
+
+This confirms the bug: an image-only comment now gets `content: ''`, which falls through to "Sem mensagens de texto" in the conversation list preview and likely renders as a blank bubble in the timeline — losing the previous `📎 filename` indicator that `TicketDetailDialog.tsx:326` still uses. Real regression with a concrete repro.
+
+## Bugs
+
+- **`ConversationView.tsx:239`** — `content = text.trim()` drops the previous `📎 ${pendingImage.name}` fallback for image-only messages. Sending just an image now inserts `content: ''`. Result: the conversation list preview shows "Sem mensagens de texto" (`ConversationList.tsx:152`) and the message bubble itself likely renders with no text, while the sibling `TicketDetailDialog.tsx:326` still uses the `📎 filename` fallback — same product feature, now inconsistent behavior between the two chat UIs.
+
+- **`Header.tsx` `isSameOpenConversation`** — suppresses the native browser notification when the same conversation is already open and focused, but doesn't skip `queryClient.invalidateQueries`/`playNotificationSound` calls higher up, so a sound still plays for a message the user is actively looking at (may be intentional, but worth confirming — previously this path also auto-opened the conversation, so the "already open" state was reachable only via manual click; now it's also reachable if the widget was left open from before, which is the new case this branch targets, but note it depends on `document.hasFocus()` which is false when the window is unfocused-but-visible on a second monitor, e.g. widget open, user reading another app — that will now show a native notification even though the conversation *is* open, since `!isSameOpenConversation` becomes true only from the focus check, not visibility. Minor, likely acceptable given the comment's stated intent).
+
+## Melhorias
+
+- `Avatar` is duplicated verbatim in `ConversationList.tsx` and `ConversationView.tsx` (already existed pre-commit, but this commit touched `ConversationList`'s copy) — could be extracted to a shared component instead of maintaining two copies of the sizing.
+- Fix the `content` fallback in `ConversationView.tsx:239` to match `TicketDetailDialog.tsx:326`'s `commentText.trim() || (pendingImage ? \`📎 ${pendingImage.name}\` : '')` pattern.
