@@ -22,6 +22,7 @@
       "@fiscal/*": ["./src/systems/conciliacao-fiscal/*"],
       "@abertura/*": ["./src/systems/abertura-empresa/*"],
       "@copilot/*": ["./src/systems/copilot-contabil/*"],
+      "@dashdre/*": ["./src/systems/dashboard-dre/*"],
       "@bimg/*": ["./src/systems/bimg/*"],
       "@contai/*": ["./src/systems/contai/*"]
     },
