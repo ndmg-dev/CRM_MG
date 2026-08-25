@@ -1,0 +1,180 @@
+/* Documentação Contábil (ex-"Gerador de Notas Explicativas") — paleta e
+   componentes escopados sob .doccontabil-root, para não vazar pro resto do
+   CRM (o original em index.css/tailwind.config.js aplicava direto no
+   <body> e via tema Tailwind global — não é seguro dentro do shell que
+   hospeda vários sistemas). Mesmo cuidado do BIMG/Copilot Contábil
+   (ver bimg/styles/global.css, copilot-contabil/styles/global.css).
+
+   O CRM já carrega Tailwind v4 globalmente via @tailwindcss/vite, mas os
+   tokens de cor customizados do original (ouro, fundo, texto, borda, ...)
+   não existem no tema do CRM — por isso as classes utilitárias que os
+   componentes usam (bg-ouro, text-texto-suave, border-borda/60 etc.) são
+   recriadas aqui como CSS puro, escopadas, em vez de estendidas no tema
+   Tailwind global (que afetaria todos os outros sistemas). */
+
+.doccontabil-root {
+  --dc-fundo: #0f0c09;
+  --dc-fundo-alt: #0a0806;
+  --dc-superficie: #17120d;
+  --dc-superficie-alt: #1e1811;
+  --dc-borda: #2a2119;
+  --dc-borda-clara: #3d3124;
+  --dc-ouro: #c9a961;
+  --dc-ouro-claro: #e2cd93;
+  --dc-ouro-escuro: #a1823f;
+  --dc-ouro-tenue: rgba(201, 169, 97, 0.12);
+  --dc-texto: #f2ece1;
+  --dc-texto-suave: #a89a86;
+  --dc-texto-fraco: #6f6558;
+  --dc-sucesso: #4ade80;
+  --dc-erro: #f87171;
+
+  background-color: var(--dc-fundo);
+  background-image: radial-gradient(
+    70rem 28rem at 50% -8rem,
+    rgba(201, 169, 97, 0.1),
+    transparent 70%
+  );
+  background-attachment: fixed;
+  color: var(--dc-texto);
+  min-height: 100%;
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+}
+
+.doccontabil-root option {
+  background-color: var(--dc-superficie-alt);
+  color: var(--dc-texto);
+}
+
+.doccontabil-root ::selection {
+  background-color: rgba(201, 169, 97, 0.3);
+  color: var(--dc-texto);
+}
+
+/* ─── Componentes (equivalentes aos @layer components do index.css original) ─── */
+
+.doccontabil-root .cartao {
+  border-radius: 0.5rem;
+  border: 1px solid var(--dc-borda);
+  background-color: var(--dc-superficie);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.doccontabil-root .cartao-destaque {
+  border-radius: 0.5rem;
+  border: 1px solid rgba(201, 169, 97, 0.4);
+  background-color: var(--dc-superficie);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.doccontabil-root .btn-ouro {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.375rem;
+  background-color: var(--dc-ouro);
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--dc-fundo-alt);
+  transition: background-color 0.15s ease;
+}
+.doccontabil-root .btn-ouro:hover:not(:disabled) {
+  background-color: var(--dc-ouro-claro);
+}
+.doccontabil-root .btn-ouro:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.doccontabil-root .btn-neutro {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.375rem;
+  border: 1px solid var(--dc-borda);
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  color: var(--dc-texto-suave);
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.doccontabil-root .btn-neutro:hover:not(:disabled) {
+  border-color: var(--dc-borda-clara);
+  color: var(--dc-texto);
+}
+.doccontabil-root .btn-neutro:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.doccontabil-root .campo {
+  width: 100%;
+  border-radius: 0.375rem;
+  border: 1px solid var(--dc-borda);
+  background-color: var(--dc-fundo-alt);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  color: var(--dc-texto);
+}
+.doccontabil-root .campo::placeholder {
+  color: var(--dc-texto-fraco);
+}
+.doccontabil-root .campo:focus {
+  border-color: var(--dc-ouro);
+  outline: none;
+}
+
+.doccontabil-root .rotulo {
+  margin-bottom: 0.25rem;
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--dc-texto-suave);
+}
+
+.doccontabil-root .rotulo-mini {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--dc-texto-fraco);
+}
+
+/* ─── Utilitários de cor usados nas páginas/componentes portados ─── */
+
+.doccontabil-root .bg-fundo-alt { background-color: var(--dc-fundo-alt); }
+.doccontabil-root .bg-superficie { background-color: var(--dc-superficie); }
+.doccontabil-root .bg-superficie-alt { background-color: var(--dc-superficie-alt); }
+.doccontabil-root .bg-ouro { background-color: var(--dc-ouro); }
+.doccontabil-root .bg-ouro-tenue { background-color: var(--dc-ouro-tenue); }
+.doccontabil-root .bg-erro\/10 { background-color: rgba(248, 113, 113, 0.1); }
+.doccontabil-root .bg-sucesso\/10 { background-color: rgba(74, 222, 128, 0.1); }
+
+.doccontabil-root .hover\:bg-superficie-alt:hover { background-color: var(--dc-superficie-alt); }
+.doccontabil-root .hover\:bg-superficie-alt\/60:hover { background-color: rgba(30, 24, 17, 0.6); }
+
+.doccontabil-root .border-borda { border-color: var(--dc-borda); }
+.doccontabil-root .border-borda-clara { border-color: var(--dc-borda-clara); }
+.doccontabil-root .border-borda\/60 { border-color: rgba(42, 33, 25, 0.6); }
+.doccontabil-root .border-ouro { border-color: var(--dc-ouro); }
+.doccontabil-root .border-ouro\/30 { border-color: rgba(201, 169, 97, 0.3); }
+.doccontabil-root .border-ouro\/50 { border-color: rgba(201, 169, 97, 0.5); }
+.doccontabil-root .border-erro\/30 { border-color: rgba(248, 113, 113, 0.3); }
+.doccontabil-root .border-sucesso\/30 { border-color: rgba(74, 222, 128, 0.3); }
+
+.doccontabil-root .hover\:border-borda-clara:hover { border-color: var(--dc-borda-clara); }
+.doccontabil-root .hover\:border-erro\/40:hover { border-color: rgba(248, 113, 113, 0.4); }
+
+.doccontabil-root .text-texto { color: var(--dc-texto); }
+.doccontabil-root .text-texto-suave { color: var(--dc-texto-suave); }
+.doccontabil-root .text-texto-fraco { color: var(--dc-texto-fraco); }
+.doccontabil-root .text-fundo-alt { color: var(--dc-fundo-alt); }
+.doccontabil-root .text-ouro { color: var(--dc-ouro); }
+.doccontabil-root .text-erro { color: var(--dc-erro); }
+.doccontabil-root .text-sucesso { color: var(--dc-sucesso); }
+
+.doccontabil-root .hover\:text-texto:hover { color: var(--dc-texto); }
+.doccontabil-root .hover\:text-texto-suave:hover { color: var(--dc-texto-suave); }
+.doccontabil-root .hover\:text-erro:hover { color: var(--dc-erro); }
+.doccontabil-root .hover\:text-ouro-claro:hover { color: var(--dc-ouro-claro); }

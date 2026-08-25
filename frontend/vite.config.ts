@@ -28,6 +28,7 @@ export default defineConfig(({ mode }) => {
         '@bimg': path.resolve(__dirname, './src/systems/bimg'),
         '@contai': path.resolve(__dirname, './src/systems/contai'),
         '@carneleao': path.resolve(__dirname, './src/systems/carne-leao'),
+        '@doccontabil': path.resolve(__dirname, './src/systems/documentacao-contabil'),
       },
     },
     server: {
