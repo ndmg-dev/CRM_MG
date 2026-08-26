@@ -1,0 +1,47 @@
+/**
+ * Do not edit directly, this file was auto-generated.
+ * (Escopado manualmente para .fronteira-root ao portar pro CRM — original
+ * definia essas variáveis em :root, que é sempre global; :root vira
+ * .fronteira-root aqui. Nenhum valor de variável foi alterado.)
+ */
+
+.fronteira-root {
+  --mg-color-gold-base: #d4a843;
+  --mg-color-gold-hover: #c9952b;
+  --mg-color-gold-dim: rgba(212, 168, 67, 0.12);
+  --mg-color-bg-base: #0a0a0a;
+  --mg-color-bg-surface: #141414;
+  --mg-color-bg-card: #1a1a1a;
+  --mg-color-bg-hover: #202020;
+  --mg-color-bg-active: #262626;
+  --mg-color-text-primary: #f5f5f5;
+  --mg-color-text-secondary: #a0a0a0;
+  --mg-color-text-muted: #6b6b6b;
+  --mg-color-border-default: #262626;
+  --mg-color-border-strong: #333333;
+  --mg-color-status-success: #22c55e;
+  --mg-color-status-warning: #f59e0b;
+  --mg-color-status-error: #ef4444;
+  --mg-color-status-info: #3b82f6;
+  --mg-radius-xs: 4px;
+  --mg-radius-sm: 6px;
+  --mg-radius-md: 8px;
+  --mg-radius-lg: 12px;
+  --mg-radius-xl: 16px;
+  --mg-space-1: 4px;
+  --mg-space-2: 8px;
+  --mg-space-3: 12px;
+  --mg-space-4: 16px;
+  --mg-space-5: 20px;
+  --mg-space-6: 24px;
+  --mg-space-8: 32px;
+  --mg-font-family-base: 'Inter', system-ui, -apple-system, sans-serif;
+  --mg-font-size-xs: 11px;
+  --mg-font-size-sm: 12px;
+  --mg-font-size-base: 13px;
+  --mg-font-size-md: 15px;
+  --mg-font-size-lg: 16px;
+  --mg-font-size-xl: 18px;
+  --mg-font-size-2xl: 24px;
+  --mg-font-size-3xl: 28px;
+}

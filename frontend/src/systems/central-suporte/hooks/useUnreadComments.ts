@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useId } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@suporte/integrations/supabase/client";
 
@@ -6,6 +6,7 @@ import { supabase } from "@suporte/integrations/supabase/client";
  * de "Novo comentário" ainda não lidas, agrupadas por ticket. */
 export function useUnreadComments() {
   const queryClient = useQueryClient();
+  const instanceId = useId();
 
   const { data: counts } = useQuery({
     queryKey: ["unread-comment-counts"],
@@ -32,8 +33,13 @@ export function useUnreadComments() {
   });
 
   useEffect(() => {
+    // Nome de canal único por instância: este hook roda em mais de um
+    // componente ao mesmo tempo (ícone flutuante + lista de conversas), e
+    // um nome fixo faz a segunda instância reaproveitar o canal já
+    // inscrito da primeira — daí o erro "cannot add postgres_changes
+    // callbacks... after subscribe()".
     const channel = supabase
-      .channel("unread-comments-realtime")
+      .channel(`unread-comments-realtime-${instanceId}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "notifications" },
@@ -44,7 +50,7 @@ export function useUnreadComments() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [queryClient]);
+  }, [queryClient, instanceId]);
 
   return counts || {};
 }

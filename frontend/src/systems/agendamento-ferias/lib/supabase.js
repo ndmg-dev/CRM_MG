@@ -10,6 +10,7 @@ export const supabase = createClient(
   supabaseAnonKey || "dev-anon-key",
   {
     auth: {
+      storageKey: "sb-ferias-auth-token",
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,

@@ -24,6 +24,10 @@ import {
   isTaskflowSupabaseConfigured,
   supabase as taskflowSupabase,
 } from '@taskflow/lib/supabase'
+import {
+  isOuvidoriaSupabaseConfigured,
+  supabase as ouvidoriaSupabase,
+} from '@ouvidoria/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 
 /**
@@ -159,6 +163,34 @@ export async function establishUnifiedSession(googleIdToken: string): Promise<Au
     }
   }
 
+  // Ouvidoria Corporativa. Mesmo esquema do BIMG: signInWithIdToken usando o
+  // idToken do Google já validado pelo CRM, sem redirecionamento de página —
+  // a conta do Supabase da Ouvidoria precisa ter o Client ID do Google do
+  // CRM liberado em Authentication > Providers > Google > Authorized Client
+  // IDs. Depois de autenticado, provisiona/linka o perfil em public.users
+  // via RPC (ensure_ouvidoria_user_profile) — mesmo papel do
+  // ensure_support_user_profile da Central de Suporte.
+  if (isOuvidoriaSupabaseConfigured) {
+    try {
+      const { error: ouvidoriaError } = await ouvidoriaSupabase.auth.signInWithIdToken({
+        provider: 'google',
+        token: googleIdToken,
+      })
+      if (ouvidoriaError) {
+        throw new Error(ouvidoriaError.message)
+      }
+
+      const { error: provisioningError } = await ouvidoriaSupabase.rpc('ensure_ouvidoria_user_profile')
+      if (provisioningError) {
+        await ouvidoriaSupabase.auth.signOut({ scope: 'local' }).catch(() => {})
+        throw new Error(provisioningError.message)
+      }
+    } catch (error) {
+      // Fail-soft: falha na Ouvidoria nunca bloqueia o login do CRM.
+      console.warn('[unifiedAuth] Ouvidoria Corporativa não autenticada (CRM segue normal):', error)
+    }
+  }
+
   return crmSession
 }
 
@@ -182,6 +214,9 @@ export async function endUnifiedSession(): Promise<void> {
         : Promise.resolve(),
       isTaskflowSupabaseConfigured
         ? taskflowSupabase.auth.signOut({ scope: 'local' })
+        : Promise.resolve(),
+      isOuvidoriaSupabaseConfigured
+        ? ouvidoriaSupabase.auth.signOut({ scope: 'local' })
         : Promise.resolve(),
     ])
   } finally {

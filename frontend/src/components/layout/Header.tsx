@@ -37,7 +37,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
   const user = useAuthStore((s) => s.user)
   const queryClient = useQueryClient()
   const navigate = useNavigate()
-  const openChat = useChatWidgetStore((s) => s.openChat)
+  const openConversation = useChatWidgetStore((s) => s.openConversation)
   const fullBleedSystem = useUIStore((s) => s.fullBleedSystem)
   const [showNotif, setShowNotif] = useState(false)
   const [showMessages, setShowMessages] = useState(false)
@@ -216,7 +216,6 @@ export default function Header({ onMenuClick }: HeaderProps) {
               queryClient.invalidateQueries({ queryKey: ['suporte-mensagens'] })
               queryClient.invalidateQueries({ queryKey: ['unread-comment-counts'] })
               playNotificationSound('comment_received')
-              if (record?.ticket_id) openChat(record.ticket_id)
             } else {
               queryClient.invalidateQueries({ queryKey: ['suporte-notificacoes'] })
               const title: string = record?.title || ''
@@ -229,7 +228,11 @@ export default function Header({ onMenuClick }: HeaderProps) {
                 playNotificationSound(isClosing ? 'ticket_closed' : 'ticket_opened')
               }
             }
-            if (record) {
+            // Mensagem nova NUNCA dispara notificação nativa do navegador —
+            // já tem som + badge no ícone flutuante pra isso, e a notificação
+            // do SO cobria o widget e atrapalhava responder. Só eventos de
+            // chamado (aberto/encerrado) continuam gerando notificação nativa.
+            if (record && !isMessage) {
               showBrowserNotification(record.title || 'Nova notificação', record.message || '')
             }
           }
@@ -411,7 +414,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
                           onClick={() => {
                             markMessageRead(n.id)
                             setShowMessages(false)
-                            if (n.ticket_id) openChat(n.ticket_id)
+                            if (n.ticket_id) openConversation(n.ticket_id)
                           }}
                         >
                           {!n.is_read && <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-gold" />}

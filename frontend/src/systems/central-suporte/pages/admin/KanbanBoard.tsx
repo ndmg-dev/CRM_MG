@@ -294,7 +294,7 @@ const KanbanBoard = () => {
   }
 
   return (
-    <div className="h-[calc(100vh-10rem)] flex flex-col gap-4">
+    <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Painel de Chamados</h2>
@@ -303,9 +303,17 @@ const KanbanBoard = () => {
         <KanbanFilters filters={filters} onChange={setFilters} isCoordinator={isCoordinator} isCoordinatorTI={isCoordinatorTI} isDirection={sector.isDirection} isAdmin={isAdminTI} />
       </div>
 
+      {/* Antes esta div usava h-[calc(100vh-10rem)]: um "chute" de quanto
+          espaço de chrome (Header do CRM + Topbar da Central + paddings +
+          este título) já estava ocupado acima. Na prática esse total passa
+          de 10rem, então a página inteira ganhava scroll vertical por cima
+          do board com altura fixa — visualmente parecia "cortado" embaixo
+          e na lateral. Sem altura fixa aqui, quem rola verticalmente volta
+          a ser só o <main> do Layout (como o resto do CRM); cada coluna
+          rola por conta própria via max-h no ScrollArea abaixo. */}
       <DragDropContext onDragEnd={onDragEnd}>
-        <div className="flex-1 overflow-x-auto">
-          <div className="flex gap-4 h-full min-w-[1200px]">
+        <div className="overflow-x-auto">
+          <div className="flex gap-4 min-w-[1200px]">
             {columnConfig.map((col) => {
               const items = getOrderedItems(col.id);
               return (
@@ -318,7 +326,7 @@ const KanbanBoard = () => {
                   </div>
                   <Droppable droppableId={col.id}>
                     {(provided, snapshot) => (
-                      <ScrollArea className="h-full">
+                      <ScrollArea className="max-h-[65vh]">
                         <div
                           ref={provided.innerRef}
                           {...provided.droppableProps}
