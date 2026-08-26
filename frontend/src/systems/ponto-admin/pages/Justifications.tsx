@@ -489,7 +489,10 @@ export default function Justifications() {
 
       {showCreate && (
         <CreateModal
-          employees={employees.filter(e => e.is_active).map(e => ({ id: e.id, name: e.name }))}
+          employees={employees
+            .filter(e => e.is_active)
+            .map(e => ({ id: e.id, name: e.name }))
+            .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))}
           onClose={() => setShowCreate(false)}
         />
       )}

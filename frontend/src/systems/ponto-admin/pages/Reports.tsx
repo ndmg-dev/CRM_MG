@@ -700,8 +700,8 @@ export default function Reports() {
       {editLog && (
         <EditLogModal
           log={editLog === 'new' ? null : editLog}
-          employeeId={selectedEmployee || employees[0]?.id || ''}
-          employees={employees.filter(e => e.is_active)}
+          employeeId={selectedEmployee || sortedEmployees[0]?.id || ''}
+          employees={sortedEmployees}
           onClose={() => setEditLog(undefined)}
         />
       )}
