@@ -6,13 +6,14 @@
  * PASSO_A_PASSO_IMPLEMENTACAO.md.
  */
 
-.esp-page {
+.pontoadmin-root .esp-page,
+.pontoadmin-root .esp-tab {
   font-variant-numeric: tabular-nums;
 }
 
 /* ── Header ────────────────────────────────────────────────────────────── */
 
-.esp-header {
+.pontoadmin-root .esp-header {
   display: flex;
   align-items: center;
   gap: 14px;
@@ -20,7 +21,7 @@
   margin-bottom: 4px;
 }
 
-.esp-icon {
+.pontoadmin-root .esp-icon {
   width: 38px;
   height: 38px;
   border-radius: 10px;
@@ -34,14 +35,14 @@
   flex-shrink: 0;
 }
 
-.esp-title {
+.pontoadmin-root .esp-title {
   font-size: 22px;
   font-weight: 700;
   color: var(--mg-white);
   letter-spacing: -0.01em;
 }
 
-.esp-chip {
+.pontoadmin-root .esp-chip {
   display: inline-flex;
   align-items: center;
   height: 24px;
@@ -51,16 +52,16 @@
   font-weight: 600;
   white-space: nowrap;
 }
-.esp-chip-aberto     { background: rgba(212, 168, 67, 0.12); color: var(--mg-gold); border: 0.5px solid rgba(212, 168, 67, 0.32); }
-.esp-chip-homologado { background: rgba(74, 222, 128, 0.12); color: #4ade80; border: 0.5px solid rgba(74, 222, 128, 0.32); }
+.pontoadmin-root .esp-chip-aberto     { background: rgba(212, 168, 67, 0.12); color: var(--mg-gold); border: 0.5px solid rgba(212, 168, 67, 0.32); }
+.pontoadmin-root .esp-chip-homologado { background: rgba(74, 222, 128, 0.12); color: #4ade80; border: 0.5px solid rgba(74, 222, 128, 0.32); }
 
-.esp-sub {
+.pontoadmin-root .esp-sub {
   color: var(--mg-muted);
   font-size: 13px;
   margin: 4px 0 18px;
 }
 
-.esp-toolbar {
+.pontoadmin-root .esp-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -69,12 +70,12 @@
   margin-bottom: 20px;
 }
 
-.esp-monthnav {
+.pontoadmin-root .esp-monthnav {
   display: flex;
   align-items: center;
   gap: 10px;
 }
-.esp-monthnav-btn {
+.pontoadmin-root .esp-monthnav-btn {
   width: 30px;
   height: 30px;
   border-radius: 8px;
@@ -86,9 +87,9 @@
   justify-content: center;
   cursor: pointer;
 }
-.esp-monthnav-btn:hover { background: rgba(255,255,255,0.08); }
-.esp-monthnav-btn:disabled { opacity: 0.35; cursor: default; }
-.esp-monthnav-label {
+.pontoadmin-root .esp-monthnav-btn:hover { background: rgba(255,255,255,0.08); }
+.pontoadmin-root .esp-monthnav-btn:disabled { opacity: 0.35; cursor: default; }
+.pontoadmin-root .esp-monthnav-label {
   font-size: 14px;
   font-weight: 600;
   color: var(--mg-white);
@@ -96,81 +97,27 @@
   text-align: center;
 }
 
-.esp-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.pontoadmin-root .esp-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
-/* ── Faixa de resumo ───────────────────────────────────────────────────── */
-
-.esp-summary {
-  display: flex;
-  gap: 10px;
-  overflow-x: auto;
-  padding-bottom: 6px;
-  margin-bottom: 20px;
-  scrollbar-width: thin;
-}
-.esp-summary-card {
-  flex: 0 0 auto;
-  min-width: 120px;
-  background: var(--mg-bg2);
-  border: var(--mg-border);
-  border-radius: 10px;
-  padding: 12px 14px;
-}
-.esp-summary-card.is-zero { opacity: 0.45; }
-.esp-summary-value {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--mg-white);
-  line-height: 1.15;
-}
-.esp-summary-value.tone-green { color: #4ade80; }
-.esp-summary-value.tone-red   { color: #f87171; }
-.esp-summary-label {
-  font-size: 11px;
-  color: var(--mg-muted);
-  margin-top: 2px;
-}
-
-/* ── Filtros ───────────────────────────────────────────────────────────── */
-
-.esp-filters {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-bottom: 16px;
-}
-.esp-filter-chip {
-  padding: 6px 12px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 500;
-  border: 0.5px solid var(--mg-border-color, #262626);
-  background: var(--mg-bg2);
-  color: var(--mg-muted);
-  cursor: pointer;
-  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
-}
-.esp-filter-chip:hover { color: var(--mg-white); }
-.esp-filter-chip.active {
-  background: rgba(212, 168, 67, 0.14);
-  border-color: rgba(212, 168, 67, 0.45);
-  color: var(--mg-gold);
-}
 
 /* ── Tabela (desktop) ──────────────────────────────────────────────────── */
 
-.esp-table-wrap { overflow-x: auto; }
+/* max-height + overflow-y explícitos são necessários pro cabeçalho sticky
+   funcionar: com só overflow-x, o navegador cria um "scroll container"
+   vertical implícito sem altura fixa — ele nunca chega a rolar de verdade,
+   então o position:sticky do cabeçalho nunca é acionado. */
+.pontoadmin-root .esp-table-wrap { overflow-x: auto; overflow-y: auto; max-height: 65vh; }
 
-.esp-grid {
+.pontoadmin-root .esp-grid {
   display: grid;
-  grid-template-columns: 72px 44px minmax(104px,1fr) minmax(104px,1fr) minmax(104px,1fr) minmax(104px,1fr) 92px 82px 78px 250px;
-  min-width: 1180px;
+  grid-template-columns: 72px 44px minmax(104px,1fr) minmax(104px,1fr) minmax(104px,1fr) minmax(104px,1fr) 92px 92px 92px 82px 78px 250px;
+  min-width: 1360px;
 }
 
-.esp-grid-head {
+.pontoadmin-root .esp-grid-head {
   display: contents;
 }
-.esp-grid-head > div {
+.pontoadmin-root .esp-grid-head > div {
   font-size: 11px;
   color: var(--mg-muted);
   padding: 8px 10px;
@@ -181,10 +128,10 @@
   z-index: 1;
 }
 
-.esp-row {
+.pontoadmin-root .esp-row {
   display: contents;
 }
-.esp-row > div {
+.pontoadmin-root .esp-row > div {
   padding: 9px 10px;
   border-bottom: 0.5px solid rgba(255,255,255,0.06);
   font-size: 13px;
@@ -193,46 +140,46 @@
   align-items: center;
   min-height: 38px;
 }
-.esp-row > div:first-child {
+.pontoadmin-root .esp-row > div:first-child {
   border-left: 3px solid transparent;
 }
 
-.esp-row.st-ok         > div:first-child { }
-.esp-row.st-incomplete > div:first-child { border-left-color: #f59e0b; }
-.esp-row.st-absent     > div:first-child { border-left-color: #f87171; }
-.esp-row.st-justified  > div:first-child { border-left-color: #f59e0b; }
-.esp-row.st-weekend    { opacity: 0.55; }
-.esp-row.st-holiday    { opacity: 0.7; }
-.esp-row.st-holiday    > div:first-child { border-left-color: #60a5fa; }
-.esp-row.st-ferias     { opacity: 0.7; }
-.esp-row.st-ferias     > div:first-child { border-left-color: #60a5fa; }
+.pontoadmin-root .esp-row.st-ok         > div:first-child { }
+.pontoadmin-root .esp-row.st-incomplete > div:first-child { border-left-color: #f59e0b; }
+.pontoadmin-root .esp-row.st-absent     > div:first-child { border-left-color: #f87171; }
+.pontoadmin-root .esp-row.st-justified  > div:first-child { border-left-color: #f59e0b; }
+.pontoadmin-root .esp-row.st-weekend    { opacity: 0.55; }
+.pontoadmin-root .esp-row.st-holiday    { opacity: 0.7; }
+.pontoadmin-root .esp-row.st-holiday    > div:first-child { border-left-color: #60a5fa; }
+.pontoadmin-root .esp-row.st-ferias     { opacity: 0.7; }
+.pontoadmin-root .esp-row.st-ferias     > div:first-child { border-left-color: #60a5fa; }
 
-.esp-row.st-absent { background: rgba(248,113,113,0.03); }
+.pontoadmin-root .esp-row.st-absent { background: rgba(248,113,113,0.03); }
 
-.esp-cell-day   { color: var(--mg-white); }
-.esp-cell-day.is-absent { color: #f87171; font-weight: 600; }
-.esp-cell-weekday { color: var(--mg-muted); font-size: 11px; }
+.pontoadmin-root .esp-cell-day   { color: var(--mg-white); }
+.pontoadmin-root .esp-cell-day.is-absent { color: #f87171; font-weight: 600; }
+.pontoadmin-root .esp-cell-weekday { color: var(--mg-muted); font-size: 11px; }
 
-.esp-cell-merged {
+.pontoadmin-root .esp-cell-merged {
   grid-column: 3 / 7;
   font-style: italic;
   color: var(--mg-muted);
   font-size: 12px;
 }
-.esp-cell-merged.is-absent { color: #f87171; font-style: italic; }
-.esp-cell-merged.is-ferias { color: var(--mg-gold); }
+.pontoadmin-root .esp-cell-merged.is-absent { color: #f87171; font-style: italic; }
+.pontoadmin-root .esp-cell-merged.is-ferias { color: var(--mg-gold); }
 
-.esp-time { color: var(--mg-white); }
-.esp-time-empty { color: var(--mg-muted2, rgba(255,255,255,0.3)); }
+.pontoadmin-root .esp-time { color: var(--mg-white); }
+.pontoadmin-root .esp-time-empty { color: var(--mg-muted2, rgba(255,255,255,0.3)); }
 
-.esp-time-corrected {
+.pontoadmin-root .esp-time-corrected {
   text-decoration: underline dotted var(--mg-gold);
   text-decoration-thickness: 1px;
   text-underline-offset: 3px;
   cursor: help;
   position: relative;
 }
-.esp-time-corrected::after {
+.pontoadmin-root .esp-time-corrected::after {
   content: '✎';
   font-size: 9px;
   vertical-align: super;
@@ -240,13 +187,13 @@
   margin-left: 2px;
 }
 
-.esp-worked { color: #4ade80; font-weight: 600; }
-.esp-worked-empty { color: var(--mg-muted); }
+.pontoadmin-root .esp-worked { color: #4ade80; font-weight: 600; }
+.pontoadmin-root .esp-worked-empty { color: var(--mg-muted); }
 
-.esp-status-cell { flex-wrap: wrap; gap: 4px; row-gap: 4px; }
+.pontoadmin-root .esp-status-cell { flex-wrap: wrap; gap: 4px; row-gap: 4px; }
 
 /* Badges de status / justificativa */
-.esp-badge {
+.pontoadmin-root .esp-badge {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -258,28 +205,28 @@
   white-space: nowrap;
   border: 0.5px solid transparent;
 }
-.esp-badge-ok         { background: rgba(74,222,128,0.10);  color: #4ade80; border-color: rgba(74,222,128,0.28); }
-.esp-badge-incomplete { background: rgba(245,158,11,0.10);  color: #f59e0b; border-color: rgba(245,158,11,0.28); }
-.esp-badge-absent     { background: rgba(248,113,113,0.10); color: #f87171; border-color: rgba(248,113,113,0.28); }
-.esp-badge-neutral    { background: rgba(255,255,255,0.06); color: var(--mg-muted); border-color: rgba(255,255,255,0.10); }
-.esp-badge-info       { background: rgba(96,165,250,0.10);  color: #60a5fa; border-color: rgba(96,165,250,0.28); }
+.pontoadmin-root .esp-badge-ok         { background: rgba(74,222,128,0.10);  color: #4ade80; border-color: rgba(74,222,128,0.28); }
+.pontoadmin-root .esp-badge-incomplete { background: rgba(245,158,11,0.10);  color: #f59e0b; border-color: rgba(245,158,11,0.28); }
+.pontoadmin-root .esp-badge-absent     { background: rgba(248,113,113,0.10); color: #f87171; border-color: rgba(248,113,113,0.28); }
+.pontoadmin-root .esp-badge-neutral    { background: rgba(255,255,255,0.06); color: var(--mg-muted); border-color: rgba(255,255,255,0.10); }
+.pontoadmin-root .esp-badge-info       { background: rgba(96,165,250,0.10);  color: #60a5fa; border-color: rgba(96,165,250,0.28); }
 
-.esp-badge-just {
+.pontoadmin-root .esp-badge-just {
   border-style: solid;
 }
-.esp-badge-just.approved  { border-color: rgba(74,222,128,0.4);  color: #4ade80; }
-.esp-badge-just.pending   { border-style: dashed; border-color: rgba(212,168,67,0.5); color: var(--mg-gold); }
-.esp-badge-just.rejected  { border-color: rgba(248,113,113,0.4); color: #f87171; text-decoration: line-through; }
+.pontoadmin-root .esp-badge-just.approved  { border-color: rgba(74,222,128,0.4);  color: #4ade80; }
+.pontoadmin-root .esp-badge-just.pending   { border-style: dashed; border-color: rgba(212,168,67,0.5); color: var(--mg-gold); }
+.pontoadmin-root .esp-badge-just.rejected  { border-color: rgba(248,113,113,0.4); color: #f87171; text-decoration: line-through; }
 
 /* Linha de detalhe (ocorrência) */
-.esp-detail-row { display: contents; }
-.esp-detail-row > div {
+.pontoadmin-root .esp-detail-row { display: contents; }
+.pontoadmin-root .esp-detail-row > div {
   grid-column: 1 / -1;
   padding: 4px 10px 10px 20px;
   border-bottom: 0.5px solid rgba(255,255,255,0.06);
   background: var(--mg-bg2);
 }
-.esp-detail-item {
+.pontoadmin-root .esp-detail-item {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -288,8 +235,8 @@
   flex-wrap: wrap;
   padding: 3px 0;
 }
-.esp-detail-time { color: var(--mg-gold); font-weight: 600; }
-.esp-detail-attach {
+.pontoadmin-root .esp-detail-time { color: var(--mg-gold); font-weight: 600; }
+.pontoadmin-root .esp-detail-attach {
   background: none;
   border: none;
   cursor: pointer;
@@ -300,14 +247,14 @@
 }
 
 /* Legenda de correção */
-.esp-legend {
+.pontoadmin-root .esp-legend {
   font-size: 11px;
   color: var(--mg-muted);
   padding: 10px 4px 0;
 }
 
 /* Tooltip de correção */
-.esp-tooltip {
+.pontoadmin-root .esp-tooltip {
   position: absolute;
   z-index: 50;
   min-width: 210px;
@@ -322,11 +269,11 @@
   top: calc(100% + 6px);
   left: 0;
 }
-.esp-tooltip-label { color: var(--mg-muted); margin-right: 4px; }
+.pontoadmin-root .esp-tooltip-label { color: var(--mg-muted); margin-right: 4px; }
 
 /* ── Rodapé de totais ──────────────────────────────────────────────────── */
 
-.esp-footer {
+.pontoadmin-root .esp-footer {
   position: sticky;
   bottom: 0;
   background: var(--mg-bg3);
@@ -339,11 +286,11 @@
   color: var(--mg-muted);
   border-radius: 0 0 10px 10px;
 }
-.esp-footer strong { color: var(--mg-white); }
+.pontoadmin-root .esp-footer strong { color: var(--mg-white); }
 
 /* ── Estados ───────────────────────────────────────────────────────────── */
 
-.esp-state {
+.pontoadmin-root .esp-state {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -354,9 +301,9 @@
   font-size: 13px;
   text-align: center;
 }
-.esp-state-icon { font-size: 30px; }
+.pontoadmin-root .esp-state-icon { font-size: 30px; }
 
-.esp-banner-homologado {
+.pontoadmin-root .esp-banner-homologado {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -371,26 +318,26 @@
 
 /* ── Mobile / PWA ──────────────────────────────────────────────────────── */
 
-.esp-cards { display: none; }
+.pontoadmin-root .esp-cards { display: none; }
 
 @media (max-width: 1100px) {
-  .esp-table-wrap { display: none; }
-  .esp-cards { display: flex; flex-direction: column; gap: 10px; }
+  .pontoadmin-root .esp-table-wrap { display: none; }
+  .pontoadmin-root .esp-cards { display: flex; flex-direction: column; gap: 10px; }
 
-  .esp-card {
+  .pontoadmin-root .esp-card {
     border: var(--mg-border);
     border-left: 3px solid transparent;
     border-radius: 10px;
     background: var(--mg-bg2);
     padding: 12px 14px;
   }
-  .esp-card.st-incomplete { border-left-color: #f59e0b; }
-  .esp-card.st-absent     { border-left-color: #f87171; background: rgba(248,113,113,0.04); }
-  .esp-card.st-justified  { border-left-color: #f59e0b; }
-  .esp-card.st-holiday, .esp-card.st-ferias { border-left-color: #60a5fa; opacity: 0.75; }
-  .esp-card.st-weekend    { opacity: 0.55; }
+  .pontoadmin-root .esp-card.st-incomplete { border-left-color: #f59e0b; }
+  .pontoadmin-root .esp-card.st-absent     { border-left-color: #f87171; background: rgba(248,113,113,0.04); }
+  .pontoadmin-root .esp-card.st-justified  { border-left-color: #f59e0b; }
+  .pontoadmin-root .esp-card.st-holiday, .pontoadmin-root .esp-card.st-ferias { border-left-color: #60a5fa; opacity: 0.75; }
+  .pontoadmin-root .esp-card.st-weekend    { opacity: 0.55; }
 
-  .esp-card-head {
+  .pontoadmin-root .esp-card-head {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -398,11 +345,11 @@
     margin-bottom: 8px;
     flex-wrap: wrap;
   }
-  .esp-card-date { font-weight: 700; color: var(--mg-white); font-size: 13px; }
-  .esp-card-weekday { color: var(--mg-muted); font-size: 11px; margin-left: 6px; }
-  .esp-card-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+  .pontoadmin-root .esp-card-date { font-weight: 700; color: var(--mg-white); font-size: 13px; }
+  .pontoadmin-root .esp-card-weekday { color: var(--mg-muted); font-size: 11px; margin-left: 6px; }
+  .pontoadmin-root .esp-card-badges { display: flex; gap: 6px; flex-wrap: wrap; }
 
-  .esp-card-times {
+  .pontoadmin-root .esp-card-times {
     display: flex;
     gap: 14px;
     font-size: 13px;
@@ -413,14 +360,12 @@
     border-bottom: 0.5px solid rgba(255,255,255,0.06);
     margin: 6px 0;
   }
-  .esp-card-meta {
+  .pontoadmin-root .esp-card-meta {
     font-size: 11px;
     color: var(--mg-muted);
     line-height: 1.6;
   }
 
-  .esp-summary { -webkit-overflow-scrolling: touch; }
-
-  .esp-filter-chip, .esp-monthnav-btn, .esp-time-corrected { min-height: 32px; }
-  button, .esp-filter-chip { min-height: 40px; }
+  .pontoadmin-root .esp-monthnav-btn, .pontoadmin-root .esp-time-corrected { min-height: 32px; }
+  .pontoadmin-root button { min-height: 40px; }
 }
