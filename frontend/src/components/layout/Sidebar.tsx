@@ -232,13 +232,23 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
   const footerBtn =
     'flex w-full items-center gap-2.5 rounded-lg border border-border bg-surface-raised px-3 py-2 text-[13px] font-medium text-text-secondary transition-colors hover:border-border-light hover:bg-surface hover:text-text-primary'
 
-  // Botão de ícone do rail de desktop (34×34, sempre icon-only).
+  // Botão de ícone do rail de desktop (34×34, icon-only) — usado quando
+  // recolhido.
   const railIconBtnClass = (isActive: boolean) =>
     `flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-lg border transition-colors ${
       isActive
         ? 'border-gold-border bg-gold-soft text-gold'
         : 'border-transparent text-text-secondary hover:bg-surface hover:text-text-primary'
     }`
+
+  // Item do rail de desktop: icon-only (34×34) recolhido, linha cheia com
+  // rótulo quando expandido — mesmo componente/gatilho nos dois estados.
+  const desktopNavItemClass = (isActive: boolean) =>
+    expanded
+      ? `flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors ${
+          isActive ? 'bg-gold-soft text-gold' : 'text-text-secondary hover:bg-surface hover:text-text-primary'
+        }`
+      : railIconBtnClass(isActive)
 
   return (
     <aside
@@ -279,8 +289,9 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
         </button>
       </div>
 
-      {/* Navegação — lista completa com labels e acordeão inline: sempre <lg (drawer mobile), e também >=lg quando o rail está expandido. */}
-      <nav className={`flex-1 overflow-y-auto py-2 ${expanded ? '' : 'lg:hidden'}`}>
+      {/* Navegação — mobile: lista completa com labels e acordeão inline (toque
+          não sustenta hover, por isso o cascata do desktop não serve aqui). */}
+      <nav className="flex-1 overflow-y-auto py-2 lg:hidden">
         <NavLink
           to={dashboardItem.to}
           className={`flex items-center gap-3 border-l-[3px] px-4 py-2.5 text-[13px] font-medium transition-colors ${
@@ -351,14 +362,22 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
         ))}
       </nav>
 
-      {/* Navegação — desktop: rail icon-only + menu de "Sistemas" (some quando o rail está expandido, a lista com labels acima assume). */}
-      <nav className={`${expanded ? 'hidden' : 'hidden lg:flex'} flex-1 flex-col items-center gap-2.5 overflow-y-auto py-3.5`}>
+      {/* Navegação — desktop: mesmo rail nos dois estados (só ícones quando
+          recolhido, ícone+rótulo quando expandido), com o mesmo gatilho do
+          menu de Sistemas em cascata — unifica o que antes era uma UI
+          diferente por estado (flyout no colapsado x acordeão no expandido). */}
+      <nav
+        className={`hidden flex-1 flex-col gap-2.5 overflow-y-auto py-3.5 lg:flex ${
+          expanded ? 'items-stretch px-2' : 'items-center'
+        }`}
+      >
         <NavLink
           to={dashboardItem.to}
           title={dashboardItem.label}
-          className={railIconBtnClass(location.pathname === dashboardItem.to)}
+          className={desktopNavItemClass(location.pathname === dashboardItem.to)}
         >
           <dashboardItem.icon className="h-[18px] w-[18px] shrink-0" />
+          {expanded && <span className="truncate">{dashboardItem.label}</span>}
         </NavLink>
 
         <button
@@ -368,9 +387,10 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
           aria-expanded={menuOpen}
           aria-haspopup="menu"
           onClick={() => setMenuOpen(prev => !prev)}
-          className={railIconBtnClass(isSistemasActive || menuOpen)}
+          className={desktopNavItemClass(isSistemasActive || menuOpen)}
         >
           <Grid3X3 className="h-[18px] w-[18px] shrink-0" />
+          {expanded && <span className="truncate">Sistemas</span>}
         </button>
 
         {menuOpen && (
@@ -388,9 +408,10 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
             key={item.to}
             to={item.to}
             title={item.label}
-            className={railIconBtnClass(location.pathname.startsWith(item.to))}
+            className={desktopNavItemClass(location.pathname.startsWith(item.to))}
           >
             <item.icon className="h-[18px] w-[18px] shrink-0" />
+            {expanded && <span className="truncate">{item.label}</span>}
           </NavLink>
         ))}
       </nav>
