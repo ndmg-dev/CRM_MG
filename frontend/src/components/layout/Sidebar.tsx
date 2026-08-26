@@ -276,18 +276,18 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
           <X className="h-[18px] w-[18px]" />
         </button>
 
-        {/* Expandir/recolher o rail (apenas desktop) */}
-        <button
-          onClick={toggleExpanded}
-          aria-label={expanded ? 'Recolher menu de navegação' : 'Expandir menu de navegação'}
-          title={expanded ? 'Recolher menu' : 'Expandir menu'}
-          className={`hidden h-8 w-8 items-center justify-center rounded-md text-text-secondary hover:bg-surface hover:text-text-primary lg:flex ${
-            expanded ? 'ml-auto' : 'absolute -right-3 top-1/2 -translate-y-1/2 z-10 h-6 w-6 rounded-full border border-border bg-sidebar shadow-sm'
-          }`}
-        >
-          {expanded ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-3.5 w-3.5" />}
-        </button>
       </div>
+
+      {/* Expandir/recolher o rail (apenas desktop) — sempre na mesma posição
+          (borda direita, centro vertical) nos dois estados, só a seta vira. */}
+      <button
+        onClick={toggleExpanded}
+        aria-label={expanded ? 'Recolher menu de navegação' : 'Expandir menu de navegação'}
+        title={expanded ? 'Recolher menu' : 'Expandir menu'}
+        className="absolute -right-3 top-1/2 z-10 hidden h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-sidebar text-text-secondary shadow-sm hover:bg-surface hover:text-text-primary lg:flex"
+      >
+        {expanded ? <ChevronLeft className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+      </button>
 
       {/* Navegação — mobile: lista completa com labels e acordeão inline (toque
           não sustenta hover, por isso o cascata do desktop não serve aqui). */}
