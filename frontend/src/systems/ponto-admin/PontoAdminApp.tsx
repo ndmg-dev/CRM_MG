@@ -8,6 +8,7 @@ import Reports from './pages/Reports'
 import Ferias from './pages/Ferias'
 import Settings from './pages/Settings'
 import Justifications from './pages/Justifications'
+import EspelhoPonto from './pages/EspelhoPonto'
 import AuditLog from './pages/AuditLog'
 import Corrections from './pages/Corrections'
 import Users from './pages/Users'
@@ -94,6 +95,7 @@ export default function PontoAdminApp() {
         <Route index element={<RequireAuth><Layout><Dashboard /></Layout></RequireAuth>} />
         <Route path="employees" element={<RequireAuth><RequirePermission permission="employees"><Layout><Employees /></Layout></RequirePermission></RequireAuth>} />
         <Route path="reports" element={<RequireAuth><RequirePermission permission="reports"><Layout><Reports /></Layout></RequirePermission></RequireAuth>} />
+        <Route path="espelho" element={<RequireAuth><RequirePermission permission="reports"><Layout><EspelhoPonto /></Layout></RequirePermission></RequireAuth>} />
         <Route path="ferias" element={<RequireAuth><RequirePermission permission="reports"><Layout><Ferias /></Layout></RequirePermission></RequireAuth>} />
         <Route path="settings" element={<RequireAuth><RequirePermission permission="settings"><Layout><Settings /></Layout></RequirePermission></RequireAuth>} />
         <Route path="justifications" element={<RequireAuth><RequirePermission permission="justifications"><Layout><Justifications /></Layout></RequirePermission></RequireAuth>} />
