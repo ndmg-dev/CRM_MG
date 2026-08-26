@@ -644,6 +644,7 @@ export default function Reports() {
             onDeleteLog={id => deleteLogMutation.mutate(id)}
             onJustifyLog={setJustifyLog}
             employeeNames={scope !== 'employee' ? employeeNameMap : undefined}
+            employeeName={scope === 'employee' ? sectionTitle : undefined}
           />
         )}
 

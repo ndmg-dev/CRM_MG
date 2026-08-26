@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 
 export interface MonthlyRow {
@@ -249,6 +249,13 @@ export interface MirrorOccurrence {
   attachment_url:        string | null
 }
 
+export interface MirrorCorrection {
+  original:   string | null
+  edited_by:  string
+  edited_at:  string | null
+  reason:     string | null
+}
+
 export interface MirrorRow {
   date:            string
   weekday:         string
@@ -263,17 +270,26 @@ export interface MirrorRow {
   expected_h:      number
   status:          'ok' | 'incomplete' | 'absent' | 'justified' | 'weekend' | 'holiday' | 'special' | 'future' | 'ferias'
   has_justification: boolean
+  // Chave = 'entrada' | 'saida_almoco' | 'retorno_almoco' | 'saida' — só
+  // presente quando aquele horário foi corrigido/lançado manualmente por
+  // um admin.
+  corrections:     Record<string, MirrorCorrection>
   occurrences:     MirrorOccurrence[]
 }
 
 export interface MirrorSummary {
-  total_worked_h:   number
-  total_expected_h: number
-  balance_h:        number
-  ok_count:         number
-  incomplete_count: number
-  absent_count:     number
-  justified_count:  number
+  total_worked_h:      number
+  total_expected_h:    number
+  total_justified_h:   number
+  total_unjustified_h: number
+  balance_h:            number
+  ok_count:             number
+  incomplete_count:     number
+  absent_count:         number
+  justified_count:      number
+  homologado:            boolean
+  homologado_by:          string | null
+  homologado_em:          string | null
 }
 
 export interface MirrorResponse {
@@ -286,6 +302,26 @@ export function useMirror(employeeId: string | null, year: number, month: number
     queryKey: ['reports', 'mirror', employeeId, year, month],
     queryFn:  () => api.get(`/api/v1/reports/mirror?employee_id=${employeeId}&year=${year}&month=${month}`),
     enabled:  !!employeeId,
+  })
+}
+
+export function useHomologarMirror() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ employeeId, year, month }: { employeeId: string; year: number; month: number }) =>
+      api.post(`/api/v1/reports/mirror/homologar?employee_id=${employeeId}&year=${year}&month=${month}`, {}),
+    onSuccess: (_, { employeeId, year, month }) =>
+      qc.invalidateQueries({ queryKey: ['reports', 'mirror', employeeId, year, month] }),
+  })
+}
+
+export function useReabrirMirror() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ employeeId, year, month }: { employeeId: string; year: number; month: number }) =>
+      api.post(`/api/v1/reports/mirror/reabrir?employee_id=${employeeId}&year=${year}&month=${month}`, {}),
+    onSuccess: (_, { employeeId, year, month }) =>
+      qc.invalidateQueries({ queryKey: ['reports', 'mirror', employeeId, year, month] }),
   })
 }
 
