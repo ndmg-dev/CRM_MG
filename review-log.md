@@ -703,3 +703,51 @@ Melhorias:
 - Extrair a string `'Este chat foi encerrado.'` para uma constante compartilhada com o regex/comentário em vez de literal duplicado em dois lugares (evita drift entre `SYSTEM_NOTE_PATTERN` e o texto inserido).
 - `changeStatus` e `closeChatMutation` duplicam a lógica de update+invalidate; poderiam compartilhar um helper.
 - O `confirm()` nativo do browser é bloqueante e não estilizado — considerar um dialog consistente com o resto do design system, já que o resto da UI usa `toast`/componentes customizados.
+
+## 2026-08-26 08:11:52 — `frontend/src/systems/central-suporte/utils/ticketStatus.ts`
+
+Confirmado, sem referências antigas restantes.
+
+Melhorias:
+- O comentário no código diz que `pending` significa "TI já está tratando" — vale confirmar essa regra de negócio contra os valores reais usados no banco/backend, já que normalmente `pending` costuma indicar espera pelo cliente, não tratamento ativo.
+- `ticketCategory` poderia usar um mapa (`Record<string, TicketCategory>`) em vez de ifs sequenciais, reduzindo duplicação se novos status forem adicionados no futuro — mas não é essencial dado o tamanho atual.
+
+## 2026-08-26 08:12:13 — `commit 070e0bf (Features-Edu)`
+
+**Bugs / riscos**
+
+1. **Auto-move para "open" ao responder** (`ConversationView.tsx`, item 11): se a TI responder um chamado `closed`/`resolved`/`canceled`, o status volta pra `open` automaticamente. Isso reabre chamados encerrados sem confirmação — provavelmente não é o comportamento desejado (ex.: responder um chamado já fechado só pra comentar algo depois).
+
+2. **RLS de `read_at` não corrigida, só logada** (item 6): o problema real (UPDATE falhando silenciosamente por política RLS) continua existindo em produção; o app só deixa um `console.warn/error`. Se ninguém observar o console, o bug de tick permanece indefinidamente.
+
+3. **Dropdown "Outros" com estado duplicado** (`tab` e `otherSub`): não fica claro no trecho visível se selecionar uma opção do dropdown atualiza os dois estados de forma consistente. Se `otherSub` divergir de `tab` (ex. contador mostrando `otherSub` mas filtro usando `tab`), o contador exibido pode não bater com a lista filtrada.
+
+4. **Canal Realtime único por instância via `useId()`**: corrige o erro de "callbacks after subscribe", mas cria um canal Postgres novo por instância montada — se o ícone flutuante e a lista de conversas renderizarem/desmontarem com frequência, pode gerar overhead de múltiplas subscriptions Realtime simultâneas em vez de reaproveitar uma única.
+
+**Melhorias**
+
+1. Extrair a lógica de fechar o dropdown ao clicar fora (`otherMenuRef` + `mousedown` listener) para um hook reutilizável, já que é um padrão comum que provavelmente se repete em outros dropdowns do projeto.
+2. O arquivo `docs/chat-flutuante-alteracoes.md` é bastante longo para um changelog de commit — vale considerar se não deveria estar num CHANGELOG.md incremental em vez de um doc novo por leva de mudanças, senão vira um arquivo append-only difícil de navegar.
+
+## 2026-08-26 08:13:59 — `PR #64 — feat(chat): abas A fazer/Em Andamento/Outros e mudanca de status pelo chat`
+
+Ok, o código atual já usa `closeChatMutation` corretamente no JSX (linhas 500/503) — o bug "closeChat vs closeChatMutation" apontado no histórico de reviews já não existe no diff atual. Segue a revisão do PR #64:
+
+**Bugs**
+
+1. **Auto-reabertura indevida ao enviar mensagem** (`ConversationView.tsx`, no `sendMessage`): o update `status: 'open'` dispara sempre que `ticketCategory(ticket.status) !== 'in_progress'` — isso inclui `closed`, `testing` e `parado`. Resultado: (a) qualquer mensagem enviada após "Encerrar Chat" reabre o ticket sozinho; (b) um chamado marcado manualmente como "Em teste"/"Parado" volta pra "Em andamento" assim que alguém responde, anulando a escolha manual feita pelos botões de status. A condição deveria excluir `closed` e provavelmente só disparar quando a categoria for `todo` (novo, sem TI ainda).
+
+2. **`closeChatMutation` não é atômica**: primeiro faz `update({status:'closed'})`, depois `insert` do comentário de aviso. Se o insert falhar, o ticket fica fechado sem o aviso ao solicitante, e o usuário só recebe o toast genérico "Erro ao encerrar o chat" sem saber que o status já mudou.
+
+3. **`ticketCategory` com fallback perigoso** (`ticketStatus.ts`): status desconhecidos/não mapeados caem em `'todo'`. Antes (`ticketStatusBucket`), desconhecido-e-não-fechado caía em `'open'` (mais próximo do comportamento seguro). Agora um chamado ativo com status não previsto na lista fixa (`new/open/pending/testing/parado`/fechados) some silenciosamente para a aba "A fazer", mesmo que a TI já esteja tratando.
+
+4. **Sem checagem de permissão/role no client**: os botões de mudança de status e "Encerrar Chat" aparecem para qualquer usuário com acesso ao componente, sem validar se é da TI. Se a RLS de `tickets` não restringir `UPDATE` por role, qualquer usuário autenticado pode alterar status/encerrar qualquer chamado.
+
+5. **Contador do botão "Outros" enganoso** (`ConversationList.tsx`): `categoryCounts[isOtherTab ? tab : otherSub]` mostra só a contagem da última sub-aba selecionada (default `closed`), não a soma de `closed + testing + parado`. O rótulo genérico "Outros" com um número que reflete só uma categoria pode enganar o usuário quanto ao total agrupado ali.
+
+**Melhorias**
+
+- `changeStatus` e `closeChatMutation` duplicam a lógica de update em `tickets` + invalidations — extrair um helper comum.
+- Texto `'Este chat foi encerrado.'` está hardcoded tanto no insert quanto implicitamente casado pelo `SYSTEM_NOTE_PATTERN` — extrair para constante compartilhada evita drift silencioso entre os dois.
+- `confirm()` nativo do browser em "Encerrar Chat" é bloqueante e destoa do resto da UI (que usa toast/componentes próprios); considerar um dialog do design system.
+- Em `ticketStatus.ts`, não há mais um `Set` único listando `testing`/`parado` como havia antes (`OTHER_TICKET_STATUSES`) — um novo status "parado-like" exige lembrar de atualizar `ticketCategory` manualmente; um `switch` exaustivo (`default: never`) pegaria isso em tempo de compilação.
