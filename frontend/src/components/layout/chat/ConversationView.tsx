@@ -48,10 +48,19 @@ function formatTime(dateStr: string): string {
   return new Date(dateStr).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 }
 
+// Textos usados tanto pra montar o comentário quanto pro regex abaixo que o
+// reconhece como nota de sistema — numa constante só pra não desalinhar
+// silenciosamente se um dos dois lados mudar sozinho.
+const CLOSE_NOTE_PREFIX = 'Este chat foi encerrado'
+const REOPEN_NOTE = 'Este chat foi reaberto.'
+
 // Comentários automáticos de evento (transferência, mudança de status etc.)
 // não têm uma coluna própria pra marcar isso — só dá pra reconhecer pelo
 // texto. Viram um separador central, não uma bolha de conversa.
-const SYSTEM_NOTE_PATTERN = /^(transferido de .+ para .+|categoria alterada|status alterado|prioridade alterada|este chat foi encerrado|este chat foi reaberto)/i
+const SYSTEM_NOTE_PATTERN = new RegExp(
+  `^(transferido de .+ para .+|categoria alterada|status alterado|prioridade alterada|${CLOSE_NOTE_PREFIX}|${REOPEN_NOTE.replace(/\.$/, '')})`,
+  'i',
+)
 function isSystemNote(content: string): boolean {
   const stripped = (content || '').trim().replace(/^[^\p{L}]+/u, '')
   return SYSTEM_NOTE_PATTERN.test(stripped)
@@ -120,7 +129,7 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
       setJustClosed(false)
       supabase.from('comments').insert({
         ticket_id: ticketId,
-        content: 'Este chat foi reaberto.',
+        content: REOPEN_NOTE,
         author_id: currentUserId,
         internal_only: false,
       }).then(({ error }) => {
@@ -199,20 +208,15 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
 
     const unreadFromOthers = comments.filter((c: any) => c.author_id !== currentUserId && !c.read_at)
     if (unreadFromOthers.length > 0) {
-      supabase.from('comments')
-        .update({ read_at: new Date().toISOString() })
-        .in('id', unreadFromOthers.map((c: any) => c.id))
-        .select('id')
-        .then(({ data, error }) => {
-          // Se a RLS de `comments` só permitir UPDATE pelo próprio autor, este
-          // update falha silenciosamente (0 linhas, sem erro) e o tick nunca
-          // vira "lido" pro remetente — sinaliza isso no console pra facilitar
-          // o diagnóstico em vez de mascarar o problema.
-          if (error) {
-            console.error('[chat] Falha ao marcar comentários como lidos:', error)
-          } else if ((data?.length ?? 0) < unreadFromOthers.length) {
-            console.warn(`[chat] Só ${data?.length ?? 0} de ${unreadFromOthers.length} comentários foram marcados como lidos — verifique a policy de UPDATE em comments.`)
-          }
+      // RPC em vez de UPDATE direto: a RLS de `comments` só deixa o autor
+      // atualizar a própria linha, e quem marca como lido é sempre o
+      // destinatário — um UPDATE direto falhava silenciosamente (0 linhas,
+      // sem erro) e o tick nunca virava duplo. `mark_comments_read` roda
+      // como SECURITY DEFINER só pra gravar read_at (ver migration
+      // 202608261500_mark_comment_read_rpc.sql).
+      supabase.rpc('mark_comments_read', { p_comment_ids: unreadFromOthers.map((c: any) => c.id) })
+        .then(({ error }) => {
+          if (error) console.error('[chat] Falha ao marcar comentários como lidos:', error)
           queryClient.invalidateQueries({ queryKey: ['chat-widget-comments', ticketId] })
         })
     }
@@ -358,7 +362,7 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
       const authorName = profile?.full_name || 'alguém da TI'
       const { error: commentError } = await supabase.from('comments').insert({
         ticket_id: ticketId,
-        content: `Este chat foi encerrado por ${authorName}.`,
+        content: `${CLOSE_NOTE_PREFIX} por ${authorName}.`,
         author_id: user.id,
         internal_only: false,
       })

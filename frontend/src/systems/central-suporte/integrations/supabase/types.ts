@@ -853,6 +853,10 @@ export type Database = {
         Returns: undefined
       }
       ensure_support_user_profile: { Args: never; Returns: undefined }
+      mark_comments_read: {
+        Args: { p_comment_ids: string[] }
+        Returns: undefined
+      }
       archive_ticket: {
         Args: { _reason: string; _ticket_id: string }
         Returns: undefined
