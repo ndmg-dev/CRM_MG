@@ -21,6 +21,10 @@ import {
   supabase as bimgSupabase,
 } from '@bimg/lib/supabase'
 import {
+  isTaskflowSupabaseConfigured,
+  supabase as taskflowSupabase,
+} from '@taskflow/lib/supabase'
+import {
   isOuvidoriaSupabaseConfigured,
   supabase as ouvidoriaSupabase,
 } from '@ouvidoria/lib/supabase'
@@ -139,6 +143,26 @@ export async function establishUnifiedSession(googleIdToken: string): Promise<Au
     }
   }
 
+  // TaskFlow (NDMG Task Manager). Mesmo esquema do Copilot/BIMG:
+  // signInWithIdToken usando o idToken do Google já validado pelo CRM, sem
+  // redirecionamento de página — a conta do Supabase do TaskFlow precisa ter
+  // o Client ID do Google do CRM liberado em Authentication > Providers >
+  // Google > Authorized Client IDs.
+  if (isTaskflowSupabaseConfigured) {
+    try {
+      const { error: taskflowError } = await taskflowSupabase.auth.signInWithIdToken({
+        provider: 'google',
+        token: googleIdToken,
+      })
+      if (taskflowError) {
+        throw new Error(taskflowError.message)
+      }
+    } catch (error) {
+      // Fail-soft: falha no TaskFlow nunca bloqueia o login do CRM.
+      console.warn('[unifiedAuth] TaskFlow não autenticado (CRM segue normal):', error)
+    }
+  }
+
   // Ouvidoria Corporativa. Mesmo esquema do BIMG: signInWithIdToken usando o
   // idToken do Google já validado pelo CRM, sem redirecionamento de página —
   // a conta do Supabase da Ouvidoria precisa ter o Client ID do Google do
@@ -187,6 +211,9 @@ export async function endUnifiedSession(): Promise<void> {
         : Promise.resolve(),
       isBimgSupabaseConfigured
         ? bimgSupabase.auth.signOut({ scope: 'local' })
+        : Promise.resolve(),
+      isTaskflowSupabaseConfigured
+        ? taskflowSupabase.auth.signOut({ scope: 'local' })
         : Promise.resolve(),
       isOuvidoriaSupabaseConfigured
         ? ouvidoriaSupabase.auth.signOut({ scope: 'local' })

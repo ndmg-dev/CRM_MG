@@ -31,7 +31,9 @@
       "@fronteira-tokens": ["./src/systems/fronteira/packages/@mg-tokens"],
       "@fronteira-ui": ["./src/systems/fronteira/packages/@mg-ui"],
       "@carneleao/*": ["./src/systems/carne-leao/*"],
-      "@doccontabil/*": ["./src/systems/documentacao-contabil/*"]
+      "@doccontabil/*": ["./src/systems/documentacao-contabil/*"],
+      "@cnpj/*": ["./src/systems/consulta-cnpj/*"],
+      "@taskflow/*": ["./src/systems/taskflow/*"]
     },
 
     /* Bundler mode */

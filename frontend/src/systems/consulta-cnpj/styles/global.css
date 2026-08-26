@@ -1,0 +1,1125 @@
+/* Consulta Societária (Consulta CNPJ) — paleta e componentes escopados sob
+   .consulta-cnpj-root, para não vazar pro resto do CRM (mesmo cuidado do
+   Documentação Contábil — ver documentacao-contabil/styles/global.css). O
+   CSS original (index.css + glassmorphism.css + components.css do repo
+   CONSULTA-SOCIETARIO) aplicava tokens direto no :root/body — aqui os
+   tokens viram variáveis escopadas em .consulta-cnpj-root e todo seletor
+   ganha esse prefixo. */
+
+.consulta-cnpj-root {
+  --bg-base: #050505;
+  --bg-deep: #0b0b0d;
+  --bg-surface: #151518;
+  --bg-surface-elevated: #1c1c20;
+  --bg-glass: rgba(21, 21, 24, 0.6);
+  --bg-glass-hover: rgba(21, 21, 24, 0.75);
+
+  --text-primary: #fbfbfb;
+  --text-secondary: #d2d3d5;
+  --text-muted: #9e9fa1;
+
+  --border-subtle: rgba(210, 211, 213, 0.12);
+  --border-strong: rgba(210, 211, 213, 0.25);
+  --border-gold: rgba(184, 155, 100, 0.4);
+
+  --accent-gold: #b89b64;
+  --accent-gold-muted: #816d4b;
+  --accent-gold-glow: rgba(184, 155, 100, 0.15);
+
+  --accent-silver: #d2d3d5;
+  --accent-silver-muted: #9e9fa1;
+
+  --color-success: #4ade80;
+  --color-warning: #fbbf24;
+  --color-error: #f87171;
+  --color-info: #60a5fa;
+
+  --color-bg-secondary: var(--bg-surface);
+  --color-border: var(--border-subtle);
+  --color-text: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+
+  --glass-blur: 16px;
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --glass-border: 1px solid var(--border-subtle);
+  --glass-border-gold: 1px solid var(--border-gold);
+
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+  --space-3xl: 4rem;
+
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 2rem;
+  --font-size-4xl: 2.5rem;
+
+  --transition-fast: 150ms ease;
+  --transition-base: 250ms ease;
+  --transition-slow: 400ms ease;
+
+  font-family: var(--font-family);
+  background: linear-gradient(135deg, var(--bg-base), var(--bg-deep));
+  background-attachment: fixed;
+  color: var(--text-primary);
+  min-height: 100%;
+  line-height: 1.6;
+}
+
+.consulta-cnpj-root a {
+  color: var(--accent-gold);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.consulta-cnpj-root a:hover {
+  text-decoration: underline;
+}
+
+.consulta-cnpj-root img,
+.consulta-cnpj-root svg {
+  display: block;
+  max-width: 100%;
+}
+
+.consulta-cnpj-root ul,
+.consulta-cnpj-root ol {
+  list-style: none;
+}
+
+.consulta-cnpj-root table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+/* -----------------------------------------
+   Glassmorphism utilitário
+   ----------------------------------------- */
+.consulta-cnpj-root .glass {
+  background: var(--bg-glass);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: var(--glass-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--glass-shadow);
+}
+
+/* -----------------------------------------
+   App Shell / Page Container
+   ----------------------------------------- */
+.consulta-cnpj-root.app-shell {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.consulta-cnpj-root .page-container {
+  flex: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--space-xl);
+  width: 100%;
+}
+
+/* -----------------------------------------
+   Search Page
+   ----------------------------------------- */
+.consulta-cnpj-root .search-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 64px);
+  gap: var(--space-xl);
+  text-align: center;
+}
+
+.consulta-cnpj-root .search-page__logo {
+  max-width: 280px;
+  margin-bottom: var(--space-md);
+}
+
+.consulta-cnpj-root .search-page__title {
+  font-size: var(--font-size-3xl);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--space-sm);
+  letter-spacing: -0.5px;
+}
+
+.consulta-cnpj-root .search-page__subtitle {
+  font-size: var(--font-size-lg);
+  color: var(--text-muted);
+  max-width: 500px;
+  margin-bottom: var(--space-xl);
+  line-height: 1.6;
+}
+
+/* -----------------------------------------
+   Search Form
+   ----------------------------------------- */
+.consulta-cnpj-root .search-form {
+  background: var(--bg-glass);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: var(--glass-border);
+  border-top: 3px solid var(--accent-gold);
+  border-radius: var(--radius-md);
+  box-shadow: var(--glass-shadow), 0 -2px 20px rgba(184, 155, 100, 0.08);
+  padding: var(--space-xl);
+  width: 100%;
+  max-width: 520px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.consulta-cnpj-root .search-form__input-group {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.consulta-cnpj-root .search-form__helper {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  text-align: left;
+  line-height: 1.5;
+}
+
+/* -----------------------------------------
+   CNPJ Input
+   ----------------------------------------- */
+.consulta-cnpj-root .cnpj-input {
+  flex: 1;
+  background: rgba(5, 5, 5, 0.6);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 0.875rem 1rem;
+  color: var(--text-primary);
+  font-size: var(--font-size-base);
+  outline: none;
+  transition: border-color var(--transition-base), box-shadow var(--transition-base);
+  min-width: 200px;
+  font-family: var(--font-family);
+}
+
+.consulta-cnpj-root .cnpj-input::placeholder {
+  color: var(--text-muted);
+}
+
+.consulta-cnpj-root .cnpj-input:focus {
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 0 3px var(--accent-gold-glow);
+}
+
+.consulta-cnpj-root .cnpj-input--error {
+  border-color: var(--color-error);
+  box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.15);
+}
+
+.consulta-cnpj-root .cnpj-input--error:focus {
+  border-color: var(--color-error);
+  box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.2);
+}
+
+/* -----------------------------------------
+   Button
+   ----------------------------------------- */
+.consulta-cnpj-root .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.5rem;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-base);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  border: none;
+  font-family: var(--font-family);
+  white-space: nowrap;
+}
+
+.consulta-cnpj-root .btn--primary {
+  background: linear-gradient(135deg, var(--accent-gold), var(--accent-gold-muted));
+  color: #050505;
+  font-weight: 600;
+  box-shadow: 0 4px 16px rgba(184, 155, 100, 0.3);
+}
+
+.consulta-cnpj-root .btn--primary:hover:not(:disabled) {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(184, 155, 100, 0.4);
+}
+
+.consulta-cnpj-root .btn--secondary {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  color: var(--text-secondary);
+}
+
+.consulta-cnpj-root .btn--secondary:hover:not(:disabled) {
+  border-color: var(--accent-gold);
+  color: var(--accent-gold);
+}
+
+.consulta-cnpj-root .btn--ghost {
+  background: transparent;
+  color: var(--text-muted);
+}
+
+.consulta-cnpj-root .btn--ghost:hover:not(:disabled) {
+  color: var(--text-primary);
+  background: rgba(210, 211, 213, 0.08);
+}
+
+.consulta-cnpj-root .btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.consulta-cnpj-root .btn--loading {
+  position: relative;
+  color: transparent !important;
+  pointer-events: none;
+}
+
+.consulta-cnpj-root .btn--loading::after {
+  content: '';
+  position: absolute;
+  width: 1.125rem;
+  height: 1.125rem;
+  border: 2px solid rgba(5, 5, 5, 0.3);
+  border-top-color: #050505;
+  border-radius: 50%;
+  animation: consulta-cnpj-spin 0.6s linear infinite;
+}
+
+.consulta-cnpj-root .btn--loading.btn--secondary::after,
+.consulta-cnpj-root .btn--loading.btn--ghost::after {
+  border-color: var(--border-subtle);
+  border-top-color: var(--accent-gold);
+}
+
+/* -----------------------------------------
+   Glass Card
+   ----------------------------------------- */
+.consulta-cnpj-root .glass-card {
+  background: var(--bg-glass);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: var(--glass-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--glass-shadow);
+  padding: var(--space-lg);
+}
+
+.consulta-cnpj-root .glass-card--gold {
+  border-top: 3px solid var(--accent-gold);
+  box-shadow: var(--glass-shadow), 0 -2px 20px rgba(184, 155, 100, 0.08);
+}
+
+.consulta-cnpj-root .glass-card--elevated {
+  background: rgba(28, 28, 32, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(210, 211, 213, 0.15);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+
+.consulta-cnpj-root .glass-card--hover {
+  transition: background var(--transition-base), border-color var(--transition-base), transform var(--transition-base);
+  cursor: pointer;
+}
+
+.consulta-cnpj-root .glass-card--hover:hover {
+  background: var(--bg-glass-hover);
+  border-color: var(--border-gold);
+  transform: translateY(-2px);
+}
+
+/* -----------------------------------------
+   Company Summary
+   ----------------------------------------- */
+.consulta-cnpj-root .company-summary {
+  background: var(--bg-glass);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: var(--glass-border);
+  border-left: 4px solid var(--accent-gold);
+  border-radius: var(--radius-md);
+  box-shadow: var(--glass-shadow);
+  padding: var(--space-lg);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md);
+}
+
+.consulta-cnpj-root .company-summary__header {
+  grid-column: 1 / -1;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: var(--space-md);
+  margin-bottom: var(--space-sm);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.consulta-cnpj-root .company-summary__header-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.consulta-cnpj-root .company-summary__name {
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+
+.consulta-cnpj-root .company-summary__fantasy {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.consulta-cnpj-root .company-summary__cnpj {
+  font-size: var(--font-size-sm);
+  color: var(--accent-gold);
+  font-family: 'Courier New', monospace;
+  letter-spacing: 0.5px;
+}
+
+.consulta-cnpj-root .company-summary__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.consulta-cnpj-root .company-summary__label {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 500;
+}
+
+.consulta-cnpj-root .company-summary__value {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+/* -----------------------------------------
+   Status Badge
+   ----------------------------------------- */
+.consulta-cnpj-root .status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.consulta-cnpj-root .status-badge--success {
+  background: rgba(74, 222, 128, 0.15);
+  color: #4ade80;
+  border: 1px solid rgba(74, 222, 128, 0.3);
+}
+
+.consulta-cnpj-root .status-badge--warning {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.consulta-cnpj-root .status-badge--error {
+  background: rgba(248, 113, 113, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(248, 113, 113, 0.3);
+}
+
+.consulta-cnpj-root .status-badge--info {
+  background: rgba(96, 165, 250, 0.15);
+  color: #60a5fa;
+  border: 1px solid rgba(96, 165, 250, 0.3);
+}
+
+.consulta-cnpj-root .status-badge--gold {
+  background: var(--accent-gold-glow);
+  color: var(--accent-gold);
+  border: 1px solid var(--border-gold);
+}
+
+.consulta-cnpj-root .status-badge--silver {
+  background: rgba(158, 159, 161, 0.15);
+  color: #d2d3d5;
+  border: 1px solid rgba(158, 159, 161, 0.3);
+}
+
+/* -----------------------------------------
+   Partner Table
+   ----------------------------------------- */
+.consulta-cnpj-root .partner-table-container {
+  background: var(--bg-glass);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: var(--glass-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--glass-shadow);
+  overflow-x: auto;
+}
+
+.consulta-cnpj-root .partner-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.consulta-cnpj-root .partner-table thead {
+  background: rgba(21, 21, 24, 0.8);
+  position: sticky;
+  top: 0;
+}
+
+.consulta-cnpj-root .partner-table th {
+  padding: 0.875rem 1rem;
+  text-align: left;
+  color: var(--text-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  font-size: var(--font-size-xs);
+  letter-spacing: 1px;
+  border-bottom: 1px solid var(--border-strong);
+}
+
+.consulta-cnpj-root .partner-table td {
+  padding: 0.875rem 1rem;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+  vertical-align: middle;
+}
+
+.consulta-cnpj-root .partner-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.consulta-cnpj-root .partner-table tr:hover td {
+  background: rgba(184, 155, 100, 0.05);
+}
+
+.consulta-cnpj-root .partner-table tr.partner-row--pj td {
+  background: rgba(184, 155, 100, 0.08);
+}
+
+.consulta-cnpj-root .partner-table tr.partner-row--pj:hover td {
+  background: rgba(184, 155, 100, 0.12);
+}
+
+.consulta-cnpj-root .partner-name--pj {
+  color: var(--accent-gold);
+  cursor: pointer;
+  transition: color var(--transition-fast);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.consulta-cnpj-root .partner-name--pj:hover {
+  color: var(--text-primary);
+  text-decoration: underline;
+}
+
+/* -----------------------------------------
+   Partner Type Badge
+   ----------------------------------------- */
+.consulta-cnpj-root .partner-type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.consulta-cnpj-root .partner-type-badge--pj {
+  background: var(--accent-gold-glow);
+  color: var(--accent-gold);
+  border: 1px solid var(--border-gold);
+  cursor: pointer;
+}
+
+.consulta-cnpj-root .partner-type-badge--pf {
+  background: rgba(158, 159, 161, 0.15);
+  color: #d2d3d5;
+  border: 1px solid rgba(158, 159, 161, 0.3);
+}
+
+.consulta-cnpj-root .partner-type-badge--estrangeiro {
+  background: rgba(158, 159, 161, 0.1);
+  color: var(--text-muted);
+  border: 1px solid rgba(158, 159, 161, 0.2);
+}
+
+/* -----------------------------------------
+   Section Title
+   ----------------------------------------- */
+.consulta-cnpj-root .section-title {
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--space-md);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.consulta-cnpj-root .section-title__icon {
+  color: var(--accent-gold);
+  font-size: 1.25rem;
+}
+
+.consulta-cnpj-root .section-title__count {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+/* -----------------------------------------
+   Ownership Tree
+   ----------------------------------------- */
+.consulta-cnpj-root .ownership-tree-container {
+  background: rgba(28, 28, 32, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(210, 211, 213, 0.15);
+  border-radius: var(--radius-md);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  padding: var(--space-lg);
+}
+
+.consulta-cnpj-root .ownership-node {
+  position: relative;
+  padding-left: 1.5rem;
+  margin-left: 1rem;
+}
+
+.consulta-cnpj-root .ownership-node::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  border-left: 1px solid var(--border-subtle);
+}
+
+.consulta-cnpj-root .ownership-node::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 1.25rem;
+  width: 1.5rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.consulta-cnpj-root .ownership-node:last-child::before {
+  height: 1.25rem;
+}
+
+.consulta-cnpj-root .ownership-node--root {
+  margin-left: 0;
+  padding-left: 0;
+}
+
+.consulta-cnpj-root .ownership-node--root::before,
+.consulta-cnpj-root .ownership-node--root::after {
+  display: none;
+}
+
+.consulta-cnpj-root .ownership-node__header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+  margin-bottom: 0.25rem;
+  user-select: none;
+}
+
+.consulta-cnpj-root .ownership-node__header:hover {
+  background: var(--accent-gold-glow);
+}
+
+.consulta-cnpj-root .ownership-node--pj > .ownership-node__header {
+  border-left: 3px solid var(--accent-gold);
+}
+
+.consulta-cnpj-root .ownership-node--pf > .ownership-node__header {
+  border-left: 3px solid var(--accent-silver-muted);
+}
+
+.consulta-cnpj-root .ownership-node--unresolved > .ownership-node__header {
+  opacity: 0.6;
+  border-left: 3px solid var(--border-subtle);
+}
+
+.consulta-cnpj-root .ownership-node--cycle > .ownership-node__header {
+  border-left: 3px solid var(--color-warning);
+}
+
+.consulta-cnpj-root .ownership-node__name {
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.consulta-cnpj-root .ownership-node__cnpj {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  font-family: 'Courier New', monospace;
+}
+
+.consulta-cnpj-root .ownership-node__qual {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.consulta-cnpj-root .ownership-node__depth {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  background: var(--bg-surface);
+  padding: 0.125rem 0.375rem;
+  border-radius: 9999px;
+  flex-shrink: 0;
+}
+
+.consulta-cnpj-root .ownership-node__toggle {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  transition: transform var(--transition-fast), color var(--transition-fast);
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.consulta-cnpj-root .ownership-node__toggle:hover {
+  color: var(--accent-gold);
+}
+
+.consulta-cnpj-root .ownership-node__toggle--expanded {
+  transform: rotate(90deg);
+}
+
+.consulta-cnpj-root .ownership-node__children {
+  padding-left: 1rem;
+}
+
+.consulta-cnpj-root .ownership-node__cycle-badge {
+  font-size: var(--font-size-xs);
+  color: var(--color-warning);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  background: rgba(251, 191, 36, 0.12);
+  border-radius: 9999px;
+  border: 1px solid rgba(251, 191, 36, 0.25);
+}
+
+.consulta-cnpj-root .ownership-node__unresolved-badge {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  background: rgba(158, 159, 161, 0.1);
+  border-radius: 9999px;
+}
+
+/* -----------------------------------------
+   Query Metadata
+   ----------------------------------------- */
+.consulta-cnpj-root .query-metadata {
+  background: var(--bg-glass);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: var(--glass-border);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+}
+
+.consulta-cnpj-root .query-metadata__item {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.consulta-cnpj-root .query-metadata__label {
+  color: var(--text-muted);
+}
+
+.consulta-cnpj-root .query-metadata__value {
+  color: var(--text-secondary);
+}
+
+/* -----------------------------------------
+   Error Alert
+   ----------------------------------------- */
+.consulta-cnpj-root .error-alert {
+  background: var(--bg-glass);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: var(--glass-border);
+  border-left: 4px solid var(--color-error);
+  border-radius: var(--radius-md);
+  box-shadow: var(--glass-shadow);
+  padding: var(--space-lg);
+  display: flex;
+  gap: var(--space-md);
+  align-items: flex-start;
+}
+
+.consulta-cnpj-root .error-alert__icon {
+  color: var(--color-error);
+  font-size: var(--font-size-xl);
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.consulta-cnpj-root .error-alert__content {
+  flex: 1;
+}
+
+.consulta-cnpj-root .error-alert__title {
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.consulta-cnpj-root .error-alert__message {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-md);
+  line-height: 1.5;
+}
+
+/* -----------------------------------------
+   Empty State
+   ----------------------------------------- */
+.consulta-cnpj-root .empty-state {
+  text-align: center;
+  padding: var(--space-2xl) var(--space-lg);
+  background: var(--bg-glass);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: var(--glass-border);
+  border-radius: var(--radius-md);
+}
+
+.consulta-cnpj-root .empty-state__icon {
+  font-size: 3rem;
+  margin-bottom: var(--space-md);
+  opacity: 0.5;
+  line-height: 1;
+}
+
+.consulta-cnpj-root .empty-state__title {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--space-sm);
+}
+
+.consulta-cnpj-root .empty-state__description {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  max-width: 400px;
+  margin: 0 auto var(--space-lg);
+  line-height: 1.5;
+}
+
+/* -----------------------------------------
+   Loading Skeleton
+   ----------------------------------------- */
+.consulta-cnpj-root .loading-skeleton {
+  background: linear-gradient(90deg, var(--bg-surface) 0%, var(--bg-surface-elevated) 50%, var(--bg-surface) 100%);
+  background-size: 200% 100%;
+  animation: consulta-cnpj-shimmer 1.5s infinite;
+  border-radius: var(--radius-sm);
+}
+
+@keyframes consulta-cnpj-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.consulta-cnpj-root .loading-skeleton--text {
+  height: 1rem;
+  margin-bottom: var(--space-sm);
+}
+
+.consulta-cnpj-root .loading-skeleton--row {
+  height: 3rem;
+  margin-bottom: var(--space-sm);
+}
+
+/* -----------------------------------------
+   Results Page
+   ----------------------------------------- */
+.consulta-cnpj-root .results-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  padding-bottom: var(--space-2xl);
+}
+
+.consulta-cnpj-root .results-page__back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: var(--font-size-sm);
+  transition: color var(--transition-fast);
+  margin-bottom: var(--space-sm);
+}
+
+.consulta-cnpj-root .results-page__back:hover {
+  color: var(--accent-gold);
+  text-decoration: none;
+}
+
+.consulta-cnpj-root .results-page__sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+/* -----------------------------------------
+   PJ Warning
+   ----------------------------------------- */
+.consulta-cnpj-root .pj-warning {
+  background: var(--bg-glass);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: var(--glass-border);
+  border-left: 4px solid var(--color-warning);
+  border-radius: var(--radius-md);
+  padding: var(--space-md) var(--space-lg);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.consulta-cnpj-root .pj-warning__icon {
+  color: var(--color-warning);
+  flex-shrink: 0;
+  font-size: var(--font-size-lg);
+}
+
+/* -----------------------------------------
+   Recent Searches
+   ----------------------------------------- */
+.consulta-cnpj-root .recent-searches {
+  margin-top: var(--space-xl);
+  width: 100%;
+  max-width: 520px;
+}
+
+.consulta-cnpj-root .recent-searches__title {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+  text-align: left;
+}
+
+.consulta-cnpj-root .recent-searches__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.consulta-cnpj-root .recent-searches__item {
+  background: var(--bg-glass);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  font-family: 'Courier New', monospace;
+  text-decoration: none;
+  border: 1px solid var(--border-subtle);
+}
+
+.consulta-cnpj-root .recent-searches__item:hover {
+  border-color: var(--border-gold);
+  color: var(--accent-gold);
+  background: var(--bg-glass-hover);
+  text-decoration: none;
+}
+
+/* -----------------------------------------
+   Spinner
+   ----------------------------------------- */
+@keyframes consulta-cnpj-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.consulta-cnpj-root .spinner {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid var(--border-subtle);
+  border-top-color: var(--accent-gold);
+  border-radius: 50%;
+  animation: consulta-cnpj-spin 0.6s linear infinite;
+}
+
+/* -----------------------------------------
+   Responsive
+   ----------------------------------------- */
+@media (max-width: 768px) {
+  .consulta-cnpj-root .company-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .consulta-cnpj-root .company-summary__header {
+    grid-column: 1;
+  }
+
+  .consulta-cnpj-root .search-form__input-group {
+    flex-direction: column;
+  }
+
+  .consulta-cnpj-root .search-page__title {
+    font-size: var(--font-size-2xl);
+  }
+
+  .consulta-cnpj-root .search-page__subtitle {
+    font-size: var(--font-size-base);
+  }
+
+  .consulta-cnpj-root .page-container {
+    padding: var(--space-md);
+  }
+
+  .consulta-cnpj-root .partner-table {
+    font-size: var(--font-size-xs);
+  }
+
+  .consulta-cnpj-root .partner-table th,
+  .consulta-cnpj-root .partner-table td {
+    padding: 0.625rem 0.5rem;
+  }
+
+  .consulta-cnpj-root .query-metadata {
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  .consulta-cnpj-root .ownership-tree-container {
+    padding: var(--space-md);
+  }
+
+  .consulta-cnpj-root .ownership-node {
+    padding-left: 1rem;
+    margin-left: 0.5rem;
+  }
+
+  .consulta-cnpj-root .ownership-node__children {
+    padding-left: 0.5rem;
+  }
+
+  .consulta-cnpj-root .search-page__logo {
+    max-width: 200px;
+  }
+}
+
+@media (max-width: 480px) {
+  .consulta-cnpj-root .search-page__title {
+    font-size: var(--font-size-xl);
+  }
+
+  .consulta-cnpj-root .search-page__subtitle {
+    font-size: var(--font-size-sm);
+  }
+
+  .consulta-cnpj-root .search-form {
+    padding: var(--space-md);
+  }
+
+  .consulta-cnpj-root .company-summary {
+    padding: var(--space-md);
+  }
+
+  .consulta-cnpj-root .section-title {
+    font-size: var(--font-size-lg);
+  }
+
+  .consulta-cnpj-root .results-page {
+    gap: var(--space-md);
+  }
+
+  .consulta-cnpj-root .error-alert {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .consulta-cnpj-root .search-page__logo {
+    max-width: 160px;
+  }
+}

@@ -41,6 +41,8 @@ export default defineConfig(({ mode }) => {
         '@fronteira-ui': path.resolve(__dirname, './src/systems/fronteira/packages/@mg-ui'),
         '@carneleao': path.resolve(__dirname, './src/systems/carne-leao'),
         '@doccontabil': path.resolve(__dirname, './src/systems/documentacao-contabil'),
+        '@cnpj': path.resolve(__dirname, './src/systems/consulta-cnpj'),
+        '@taskflow': path.resolve(__dirname, './src/systems/taskflow'),
       },
     },
     server: {

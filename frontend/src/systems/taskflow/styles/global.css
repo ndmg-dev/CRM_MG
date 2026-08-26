@@ -1,0 +1,584 @@
+/* TaskFlow (NDMG Task Manager) — paleta e componentes escopados sob
+   .taskflow-root, para não vazar pro resto do CRM (mesmo cuidado do
+   Consulta CNPJ/Documentação Contábil — ver
+   consulta-cnpj/styles/global.css). O CSS original (frontend/index.css do
+   repo TASK_MANANGER, "NDMG Design System v2 — Deep-Black Marble +
+   Glassmorphism") aplicava tokens direto em @theme/:root/body — aqui os
+   tokens viram variáveis escopadas em .taskflow-root e todo seletor ganha
+   esse prefixo. Keyframes ganham prefixo `taskflow-` pra não colidir
+   globalmente. */
+
+.taskflow-root {
+  --color-bg-primary: #050508;
+  --color-bg-secondary: rgba(12, 12, 18, 0.55);
+  --color-bg-elevated: rgba(18, 18, 30, 0.50);
+  --color-bg-hover: rgba(34, 34, 58, 0.45);
+  --color-bg-active: rgba(42, 42, 69, 0.50);
+
+  --color-accent-gold: #d4a853;
+  --color-accent-gold-light: #e8c97a;
+  --color-accent-gold-dim: #b8942f;
+  --color-accent-gold-glow: rgba(212, 168, 83, 0.12);
+
+  --color-text-primary: #f5f0e8;
+  --color-text-secondary: #9d9bb0;
+  --color-text-muted: #5e5c72;
+
+  --color-border: rgba(212, 168, 83, 0.10);
+  --color-border-light: rgba(212, 168, 83, 0.18);
+
+  --color-danger: #ef4444;
+  --color-danger-soft: rgba(239, 68, 68, 0.12);
+  --color-warning: #f59e0b;
+  --color-warning-soft: rgba(245, 158, 11, 0.12);
+  --color-success: #22c55e;
+  --color-success-soft: rgba(34, 197, 94, 0.12);
+  --color-info: #3b82f6;
+  --color-info-soft: rgba(59, 130, 246, 0.12);
+
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 28px;
+
+  --glass-blur: blur(18px);
+  --glass-blur-heavy: blur(28px);
+
+  font-family: var(--font-sans);
+  color: var(--color-text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100%;
+  position: relative;
+
+  /* ── Deep-Black Marble Background ── */
+  background-color: #050508;
+  background-image:
+    linear-gradient(137deg,
+      transparent 42%,
+      rgba(212, 168, 83, 0.03) 42.5%,
+      rgba(212, 168, 83, 0.06) 43%,
+      rgba(212, 168, 83, 0.03) 43.5%,
+      transparent 44%),
+    linear-gradient(-52deg,
+      transparent 56%,
+      rgba(184, 148, 47, 0.025) 56.5%,
+      rgba(184, 148, 47, 0.05) 57%,
+      rgba(184, 148, 47, 0.025) 57.5%,
+      transparent 58%),
+    linear-gradient(73deg,
+      transparent 30%,
+      rgba(232, 201, 122, 0.02) 30.2%,
+      rgba(232, 201, 122, 0.04) 30.4%,
+      rgba(232, 201, 122, 0.02) 30.6%,
+      transparent 31%),
+    linear-gradient(165deg,
+      transparent 68%,
+      rgba(212, 168, 83, 0.02) 68.3%,
+      rgba(212, 168, 83, 0.035) 68.5%,
+      rgba(212, 168, 83, 0.02) 68.7%,
+      transparent 69%),
+    radial-gradient(ellipse at 20% 50%, rgba(20, 18, 30, 0.8) 0%, transparent 70%),
+    radial-gradient(ellipse at 80% 20%, rgba(15, 13, 22, 0.6) 0%, transparent 60%),
+    radial-gradient(ellipse at 60% 80%, rgba(18, 16, 28, 0.7) 0%, transparent 65%);
+}
+
+.taskflow-root *,
+.taskflow-root *::before,
+.taskflow-root *::after {
+  box-sizing: border-box;
+}
+
+/* ─── Scrollbar ─────────────────────────────────── */
+.taskflow-root ::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.taskflow-root ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.taskflow-root ::-webkit-scrollbar-thumb {
+  background: rgba(212, 168, 83, 0.15);
+  border-radius: 10px;
+}
+
+.taskflow-root ::-webkit-scrollbar-thumb:hover {
+  background: rgba(212, 168, 83, 0.3);
+}
+
+/* ─── Keyframes ─────────────────────────────────── */
+@keyframes taskflow-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes taskflow-slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes taskflow-pulse-gold {
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(212, 168, 83, 0.35);
+  }
+
+  50% {
+    box-shadow: 0 0 0 10px rgba(212, 168, 83, 0);
+  }
+}
+
+@keyframes taskflow-pulse-danger {
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.3);
+  }
+
+  50% {
+    box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+  }
+}
+
+@keyframes taskflow-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes taskflow-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.taskflow-root .animate-fade-in {
+  animation: taskflow-fade-in 0.35s ease-out forwards;
+}
+
+.taskflow-root .animate-slide-in {
+  animation: taskflow-slide-in-right 0.35s ease-out forwards;
+}
+
+.taskflow-root .animate-pulse-gold {
+  animation: taskflow-pulse-gold 2.5s infinite;
+}
+
+.taskflow-root .animate-pulse-danger {
+  animation: taskflow-pulse-danger 1.5s infinite;
+}
+
+.taskflow-root .spinner-inline {
+  animation: taskflow-spin 0.8s linear infinite;
+}
+
+/* ─── Glass Panel ───────────────────────────────── */
+.taskflow-root .glass {
+  background: rgba(12, 12, 20, 0.45);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--color-border);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.taskflow-root .glass-heavy {
+  background: rgba(8, 8, 14, 0.60);
+  backdrop-filter: var(--glass-blur-heavy);
+  -webkit-backdrop-filter: var(--glass-blur-heavy);
+  border: 1px solid var(--color-border);
+  box-shadow:
+    0 12px 48px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+/* ─── Gold Gradient Text ────────────────────────── */
+.taskflow-root .text-gold-gradient {
+  background: linear-gradient(135deg, #e8c97a 0%, #d4a853 40%, #b8942f 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ─── Card Base (Glass) ─────────────────────────── */
+.taskflow-root .card {
+  background: rgba(12, 12, 20, 0.45);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  transition: all 0.25s ease;
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.02);
+}
+
+.taskflow-root .card:hover {
+  border-color: var(--color-border-light);
+  transform: translateY(-2px);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(212, 168, 83, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+/* ─── Buttons ───────────────────────────────────── */
+.taskflow-root .btn-primary {
+  background: linear-gradient(135deg, #d4a853, #b8942f);
+  color: #0a0a0f;
+  font-weight: 700;
+  padding: 10px 22px;
+  border-radius: var(--radius-md);
+  border: none;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  font-size: 13px;
+  letter-spacing: 0.2px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 12px rgba(212, 168, 83, 0.2);
+  font-family: var(--font-sans);
+}
+
+.taskflow-root .btn-primary:hover {
+  background: linear-gradient(135deg, #e8c97a, #d4a853);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(212, 168, 83, 0.35);
+}
+
+.taskflow-root .btn-primary:active {
+  transform: translateY(0);
+}
+
+.taskflow-root .btn-primary:disabled {
+  cursor: not-allowed;
+}
+
+.taskflow-root .btn-secondary {
+  background: rgba(12, 12, 20, 0.45);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: var(--color-text-primary);
+  font-weight: 500;
+  padding: 10px 20px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-sans);
+}
+
+.taskflow-root .btn-secondary:hover {
+  border-color: var(--color-accent-gold);
+  color: var(--color-accent-gold);
+  background: rgba(212, 168, 83, 0.08);
+  box-shadow: 0 0 20px rgba(212, 168, 83, 0.08);
+}
+
+.taskflow-root .btn-secondary:disabled,
+.taskflow-root .btn-primary:disabled {
+  opacity: 0.6;
+}
+
+/* ─── Badge ─────────────────────────────────────── */
+.taskflow-root .badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.taskflow-root .badge-critical {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.taskflow-root .badge-high {
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.taskflow-root .badge-medium {
+  background: var(--color-info-soft);
+  color: var(--color-info);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.taskflow-root .badge-low {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+/* ─── WIP Alert ─────────────────────────────────── */
+.taskflow-root .wip-alert {
+  border-color: rgba(239, 68, 68, 0.4) !important;
+  box-shadow:
+    0 0 0 1px rgba(239, 68, 68, 0.3),
+    0 0 30px rgba(239, 68, 68, 0.06),
+    inset 0 0 20px rgba(239, 68, 68, 0.03);
+}
+
+.taskflow-root .stalled-indicator {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  color: var(--color-warning);
+  animation: taskflow-pulse-gold 2s infinite;
+}
+
+/* ─── Modal Overlay ─────────────────────────────── */
+.taskflow-root .modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 5, 8, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  animation: taskflow-fade-in 0.15s ease-out;
+}
+
+.taskflow-root .modal-content {
+  background: rgba(12, 12, 20, 0.80);
+  backdrop-filter: var(--glass-blur-heavy);
+  -webkit-backdrop-filter: var(--glass-blur-heavy);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+  width: 90%;
+  max-width: 560px;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: taskflow-fade-in 0.2s ease-out;
+  box-shadow:
+    0 24px 80px rgba(0, 0, 0, 0.6),
+    0 0 1px rgba(212, 168, 83, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+/* ─── Form Elements ─────────────────────────────── */
+.taskflow-root .input {
+  width: 100%;
+  padding: 11px 14px;
+  background: rgba(5, 5, 8, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  transition: all 0.25s ease;
+  outline: none;
+}
+
+.taskflow-root .input:focus {
+  border-color: rgba(212, 168, 83, 0.4);
+  box-shadow: 0 0 0 3px rgba(212, 168, 83, 0.08), 0 0 20px rgba(212, 168, 83, 0.05);
+}
+
+.taskflow-root .input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.taskflow-root select.input {
+  appearance: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23d4a853%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 10px auto;
+  padding-right: 36px;
+}
+
+.taskflow-root select.input option {
+  background-color: #0c0c12;
+  color: #f5f0e8;
+  padding: 10px;
+}
+
+.taskflow-root textarea.input {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.taskflow-root label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ─── Kanban Column (Glass) ─────────────────────── */
+.taskflow-root .kanban-column {
+  min-width: 280px;
+  max-width: 320px;
+  flex-shrink: 0;
+  background: rgba(10, 10, 16, 0.40);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 140px);
+  transition: all 0.3s ease;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.02);
+}
+
+/* ─── Kanban Card (Glass) ───────────────────────── */
+.taskflow-root .kanban-card {
+  background: rgba(18, 18, 30, 0.50);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  box-shadow:
+    0 2px 12px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.02);
+}
+
+.taskflow-root .kanban-card:hover {
+  border-color: rgba(212, 168, 83, 0.25);
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(212, 168, 83, 0.08);
+  transform: translateY(-1px);
+}
+
+.taskflow-root .kanban-card.dragging {
+  opacity: 0.4;
+  border-color: rgba(212, 168, 83, 0.3);
+  box-shadow: 0 8px 32px rgba(212, 168, 83, 0.15);
+  transform: scale(1.02);
+  cursor: grabbing;
+}
+
+.taskflow-root .kanban-card-overlay {
+  background: rgba(18, 18, 30, 0.85);
+  backdrop-filter: var(--glass-blur-heavy);
+  -webkit-backdrop-filter: var(--glass-blur-heavy);
+  border: 2px solid rgba(212, 168, 83, 0.4);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  box-shadow:
+    0 20px 60px rgba(212, 168, 83, 0.15),
+    0 0 40px rgba(212, 168, 83, 0.05);
+}
+
+.taskflow-root .card-done {
+  animation: taskflow-flip-to-green 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes taskflow-flip-to-green {
+  0% { transform: rotateY(0deg); }
+  50% { transform: rotateY(90deg); background: rgba(18, 18, 30, 0.50); border-color: var(--color-border); }
+  51% { background: rgba(34, 197, 94, 0.08); border-color: rgba(34, 197, 94, 0.4); }
+  100% { transform: rotateY(0deg); background: rgba(34, 197, 94, 0.08); border-color: rgba(34, 197, 94, 0.4); }
+}
+
+/* ─── Loading Skeleton ──────────────────────────── */
+.taskflow-root .skeleton {
+  background: linear-gradient(90deg,
+      rgba(18, 18, 30, 0.4) 25%,
+      rgba(34, 34, 58, 0.3) 50%,
+      rgba(18, 18, 30, 0.4) 75%);
+  background-size: 200% 100%;
+  animation: taskflow-shimmer 1.5s infinite;
+  border-radius: var(--radius-sm);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* ─── Chart Tooltip (Glass) ─────────────────────── */
+.taskflow-root .chart-tooltip {
+  background: rgba(8, 8, 14, 0.85) !important;
+  backdrop-filter: var(--glass-blur) !important;
+  -webkit-backdrop-filter: var(--glass-blur) !important;
+  border: 1px solid var(--color-border-light) !important;
+  border-radius: var(--radius-sm) !important;
+  padding: 12px 16px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* ─── Prose (AI Report Markdown) ────────────────── */
+.taskflow-root .prose h1,
+.taskflow-root .prose h2,
+.taskflow-root .prose h3 {
+  color: var(--color-accent-gold);
+  margin-top: 16px;
+  margin-bottom: 8px;
+}
+
+.taskflow-root .prose h2 {
+  font-size: 16px;
+}
+
+.taskflow-root .prose h3 {
+  font-size: 14px;
+}
+
+.taskflow-root .prose p {
+  margin-bottom: 8px;
+}
+
+.taskflow-root .prose ul,
+.taskflow-root .prose ol {
+  padding-left: 20px;
+  margin-bottom: 8px;
+}
+
+.taskflow-root .prose li {
+  margin-bottom: 4px;
+}
+
+.taskflow-root .prose strong {
+  color: var(--color-accent-gold-light);
+}
