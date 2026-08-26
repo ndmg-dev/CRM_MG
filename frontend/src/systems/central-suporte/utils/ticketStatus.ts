@@ -7,26 +7,21 @@ export function isTicketClosed(status: string | null | undefined): boolean {
   return !!status && CLOSED_TICKET_STATUSES.has(status)
 }
 
-/** Categoria de exibição do chamado nas abas do chat flutuante.
- *
- * PROVISÓRIO: o enum `ticket_status` não tem um valor dedicado pra "em
- * andamento" — `new`, `open` e `pending` são todos "chamado novo" pro
- * negócio. Até rodar a migração que adiciona um status `in_progress` de
- * verdade, `open` é temporariamente emprestado pra representar "Em
- * Andamento" aqui no chat (mesmo sendo, estritamente, mais um sinônimo de
- * "novo"). Isso diverge do TicketDetailDialog.tsx, que ainda trata `open`
- * como "A Fazer" — esse arquivo também precisa ser corrigido quando a
- * migração acontecer. Buscar por "PROVISÓRIO" pra achar os pontos a trocar.
+/** Categoria de exibição do chamado nas abas do chat flutuante. Confirmado
+ * contra o Kanban (fonte real: `KanbanBoard.tsx`) e o `TicketDetailDialog`
+ * — os dois concordam entre si: `new`/`open` = "A Fazer", `pending` = "Em
+ * Andamento". (Uma versão anterior deste arquivo tinha isso invertido —
+ * NÃO reintroduzir essa troca sem antes conferir o Kanban de novo.)
  *   - todo:        chamado novo, ninguém da TI tratou ainda ("A Fazer")
- *   - in_progress: TI já está tratando ("Em Andamento") — hoje = `open`
+ *   - in_progress: TI já está tratando ("Em Andamento") = `pending`
  *   - closed/testing/parado: sub-opções do dropdown "Outros"
  * `status` nulo (chamado sem status carregado ainda) cai em "todo" — mais
  * seguro que esconder o chamado de qualquer aba. */
 export type TicketCategory = 'todo' | 'in_progress' | 'closed' | 'testing' | 'parado'
 
 export function ticketCategory(status: string | null | undefined): TicketCategory {
-  if (!status || status === 'new' || status === 'pending') return 'todo'
-  if (status === 'open') return 'in_progress' // PROVISÓRIO — ver comentário acima
+  if (!status || status === 'new' || status === 'open') return 'todo'
+  if (status === 'pending') return 'in_progress'
   if (status === 'testing') return 'testing'
   if (status === 'parado') return 'parado'
   if (CLOSED_TICKET_STATUSES.has(status)) return 'closed'

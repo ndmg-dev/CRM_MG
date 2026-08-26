@@ -8,15 +8,13 @@ import { isTicketClosed, ticketCategory } from '@/systems/central-suporte/utils/
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024 // 10MB — mesmo limite do TicketDetailDialog
 
-type ManualTicketStatus = 'open' | 'testing' | 'parado' | 'closed'
+type ManualTicketStatus = 'pending' | 'testing' | 'parado' | 'closed'
 
-// PROVISÓRIO: "Em andamento" grava `open` até existir um status
-// `in_progress` de verdade no banco (ver comentário em ticketStatus.ts).
-// `new`/`open`/`pending` são todos "chamado novo" pro negócio — `open` foi
-// emprestado só aqui no chat pra dar um lugar pro botão escrever até a
-// migração acontecer. Trocar por `in_progress` quando ela rodar.
+// "Em andamento" grava `pending` — confirmado contra o Kanban (fonte real)
+// e o TicketDetailDialog, que concordam: `open` = "A Fazer", `pending` =
+// "Em Andamento". Ver comentário em ticketStatus.ts.
 const STATUS_BUTTONS: { status: ManualTicketStatus; label: string }[] = [
-  { status: 'open', label: 'Em andamento' },
+  { status: 'pending', label: 'Em andamento' },
   { status: 'testing', label: 'Em teste' },
   { status: 'parado', label: 'Parado' },
 ]
@@ -316,12 +314,11 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
         if (attError) throw attError
       }
 
-      // Resposta da TI move o chamado pra "Em Andamento" (status `open`,
-      // provisório — ver comentário em STATUS_BUTTONS) sozinha — sem isso,
-      // um chamado "A fazer"/"Em teste"/"Parado" fica preso lá mesmo depois
-      // de alguém já estar cuidando dele.
+      // Resposta da TI move o chamado pra "Em Andamento" (status `pending`)
+      // sozinha — sem isso, um chamado "A fazer"/"Em teste"/"Parado" fica
+      // preso lá mesmo depois de alguém já estar cuidando dele.
       if (ticket && ticketCategory(ticket.status) !== 'in_progress') {
-        await supabase.from('tickets').update({ status: 'open' }).eq('id', ticketId)
+        await supabase.from('tickets').update({ status: 'pending' }).eq('id', ticketId)
       }
     },
     onSuccess: () => {

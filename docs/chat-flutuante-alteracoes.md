@@ -166,22 +166,28 @@ acontecer.
   etc.), então renderiza como separador central em vez de bolha de
   mensagem, visível pro solicitante.
 
-## 12. Correção do mapeamento A Fazer / Em Andamento + UX de encerrar chat
+## 12. Correção do mapeamento A Fazer / Em Andamento (com um vaivém)
 
 **Arquivos:** `ticketStatus.ts`, `ConversationView.tsx`
 
 Depois do item 11, veio a correção: o resto do app (`TicketDetailDialog.tsx`)
 trata `open` como "A Fazer" e `pending` como "Em Andamento" — o chat tinha
-isso invertido. E mais: pro negócio, `new`/`open`/`pending` são todos
-"chamado novo" — não existe hoje um status dedicado a "em andamento" no
-enum `ticket_status`. Solução provisória, até rodar uma migração
-`ALTER TYPE ticket_status ADD VALUE 'in_progress'` (que também vai exigir
-ajustar `TicketDetailDialog.tsx`, `KanbanBoard.tsx`, `Reports.tsx`,
-`PortalHome.tsx` e o trigger `track_ticket_tm_metrics` — não feito nesta
-rodada, escopo combinado só pro chat por enquanto):
+isso invertido (`open` = in_progress). Nessa primeira correção, achou-se
+(por engano) que `open` também era "chamado novo" pro negócio e usou-se
+`open` como "Em Andamento" provisório.
 
-- **A Fazer** = `new` + `pending`.
-- **Em Andamento** = `open` (emprestado provisoriamente).
+**Isso estava errado — corrigido de volta.** Conferindo o Kanban de
+verdade (`KanbanBoard.tsx`, a fonte real: a coluna "Em Andamento" ali
+filtra por `status === 'pending'`, e "A Fazer" filtra `new`/`open`), ficou
+confirmado que o mapeamento original já estava certo:
+
+- **A Fazer** = `new` + `open`.
+- **Em Andamento** = `pending`.
+
+Kanban e `TicketDetailDialog` concordam entre si nisso — não há
+inconsistência nem necessidade de migração alguma para o chat funcionar
+certo. `ticketCategory()` tem um comentário avisando pra não reintroduzir
+a troca sem reconferir o Kanban.
 
 Também três ajustes de UX no fechamento pedidos depois de usar a
 funcionalidade:
