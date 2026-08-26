@@ -4,9 +4,17 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { useChatWidgetStore } from '@/stores/chatWidgetStore'
 import { supabase } from '@/systems/central-suporte/integrations/supabase/client'
-import { isTicketClosed } from '@/systems/central-suporte/utils/ticketStatus'
+import { isTicketClosed, ticketCategory } from '@/systems/central-suporte/utils/ticketStatus'
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024 // 10MB — mesmo limite do TicketDetailDialog
+
+type ManualTicketStatus = 'open' | 'testing' | 'parado' | 'closed'
+
+const STATUS_BUTTONS: { status: ManualTicketStatus; label: string }[] = [
+  { status: 'open', label: 'Em andamento' },
+  { status: 'testing', label: 'Em teste' },
+  { status: 'parado', label: 'Parado' },
+]
 
 function Avatar({ name }: { name: string }) {
   const letter = (name || '?').trim().charAt(0).toUpperCase()
@@ -40,7 +48,7 @@ function formatTime(dateStr: string): string {
 // Comentários automáticos de evento (transferência, mudança de status etc.)
 // não têm uma coluna própria pra marcar isso — só dá pra reconhecer pelo
 // texto. Viram um separador central, não uma bolha de conversa.
-const SYSTEM_NOTE_PATTERN = /^(transferido de .+ para .+|categoria alterada|status alterado|prioridade alterada)/i
+const SYSTEM_NOTE_PATTERN = /^(transferido de .+ para .+|categoria alterada|status alterado|prioridade alterada|este chat foi encerrado)/i
 function isSystemNote(content: string): boolean {
   const stripped = (content || '').trim().replace(/^[^\p{L}]+/u, '')
   return SYSTEM_NOTE_PATTERN.test(stripped)
@@ -271,6 +279,13 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
         })
         if (attError) throw attError
       }
+
+      // Resposta da TI move o chamado pra "Em Andamento" sozinha — sem
+      // isso, um chamado "A fazer"/"Em teste"/"Parado" fica preso lá mesmo
+      // depois de alguém já estar cuidando dele.
+      if (ticket && ticketCategory(ticket.status) !== 'in_progress') {
+        await supabase.from('tickets').update({ status: 'open' }).eq('id', ticketId)
+      }
     },
     onSuccess: () => {
       setText('')
@@ -278,8 +293,46 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
       queryClient.invalidateQueries({ queryKey: ['chat-widget-comments', ticketId] })
       queryClient.invalidateQueries({ queryKey: ['chat-widget-attachments', ticketId] })
       queryClient.invalidateQueries({ queryKey: ['chat-widget-conversations'] })
+      queryClient.invalidateQueries({ queryKey: ['chat-widget-ticket', ticketId] })
     },
     onError: () => toast.error('Erro ao enviar mensagem'),
+  })
+
+  // Botões de status acima do input: a TI move o chamado sem sair do chat.
+  const changeStatus = useMutation({
+    mutationFn: async (status: ManualTicketStatus) => {
+      const { error } = await supabase.from('tickets').update({ status }).eq('id', ticketId)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['chat-widget-ticket', ticketId] })
+      queryClient.invalidateQueries({ queryKey: ['chat-widget-conversations'] })
+    },
+    onError: () => toast.error('Erro ao alterar o status do chamado'),
+  })
+
+  // "Encerrar Chat": muda o status E deixa um aviso visível pro solicitante
+  // no próprio histórico, diferente dos outros status (que são só internos).
+  const closeChatMutation = useMutation({
+    mutationFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Não autenticado')
+      const { error: statusError } = await supabase.from('tickets').update({ status: 'closed' }).eq('id', ticketId)
+      if (statusError) throw statusError
+      const { error: commentError } = await supabase.from('comments').insert({
+        ticket_id: ticketId,
+        content: 'Este chat foi encerrado.',
+        author_id: user.id,
+        internal_only: false,
+      })
+      if (commentError) throw commentError
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['chat-widget-ticket', ticketId] })
+      queryClient.invalidateQueries({ queryKey: ['chat-widget-comments', ticketId] })
+      queryClient.invalidateQueries({ queryKey: ['chat-widget-conversations'] })
+    },
+    onError: () => toast.error('Erro ao encerrar o chat'),
   })
 
   return (
@@ -420,6 +473,40 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
           })
         )}
       </div>
+
+      {/* Barra de status: TI move o chamado sem sair do chat */}
+      {!isClosed && (
+        <div className="flex flex-wrap items-center gap-1.5 border-t border-border px-2.5 pt-2">
+          {STATUS_BUTTONS.map((b) => {
+            const isCurrent = ticket?.status === b.status
+            return (
+              <button
+                key={b.status}
+                onClick={() => changeStatus.mutate(b.status)}
+                disabled={isCurrent || changeStatus.isPending}
+                className={`rounded-md border px-2 py-1 text-[11px] font-medium transition-colors disabled:opacity-50 ${
+                  isCurrent
+                    ? 'border-gold-border bg-gold-muted text-gold'
+                    : 'border-border text-text-secondary hover:bg-surface hover:text-text-primary'
+                }`}
+              >
+                {b.label}
+              </button>
+            )
+          })}
+          <button
+            onClick={() => {
+              if (confirm('Encerrar este chat? O solicitante verá um aviso de que a conversa foi encerrada.')) {
+                closeChatMutation.mutate()
+              }
+            }}
+            disabled={closeChatMutation.isPending}
+            className="ml-auto rounded-md border border-red-500/40 px-2 py-1 text-[11px] font-medium text-red-500 transition-colors hover:bg-red-500/10 disabled:opacity-50"
+          >
+            Encerrar Chat
+          </button>
+        </div>
+      )}
 
       {/* Pending image preview */}
       {pendingImagePreview && (

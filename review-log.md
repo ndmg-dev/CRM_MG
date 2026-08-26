@@ -541,3 +541,213 @@ Sem outras observações relevantes no restante do diff.
 
 1. O comentário sobre RLS é longo dentro do `.then()`; poderia virar um comentário de uma linha ou ser movido para perto da definição da policy, mas não é bloqueante.
 2. Ao reintroduzir o badge, considere usar `isClosed` do util já centralizado — nesse ponto está tudo certo, só falta o JSX de volta.
+
+## 2026-08-25 17:40:34 — `commit 5dc71f1 (Features-Edu)`
+
+Sugestões de melhoria (não bloqueantes):
+- Em `useUnreadComments.ts`, o filtro do canal realtime (`table: "notifications"`) não restringe por `user_id`, então toda instância do hook recalcula em qualquer alteração de notificações do sistema, não só as do usuário atual — poderia filtrar no `.on(...)` para reduzir invalidações desnecessárias.
+- Em `ConversationList.tsx`, ao trocar de aba seria útil resetar/scroll pro topo e talvez lembrar a última aba usada (localStorage) já que "Abertos" pode não ser o caso mais comum para quem monitora encerrados.
+
+## 2026-08-25 18:16:51 — `frontend/src/systems/central-suporte/utils/ticketStatus.ts`
+
+Bugs:
+
+1. **`status === 'open'` cai em `in_progress`, mas `'open'` pertence a `CLOSED_TICKET_STATUSES`? Não — mas verifique conflito inverso**: na verdade o problema é o oposto. Antes, `ticketStatusBucket` tratava qualquer status desconhecido (não fechado, não "other") como `'open'`. Agora `ticketCategory` só reconhece `'new'`, `'open'`, `'pending'`, `'testing'`, `'parado'` e os fechados — **qualquer outro status ativo desconhecido** (ex.: variações de nome de status que existam no banco mas não estejam nessa lista fixa) cai em `'todo'` em vez de `'in_progress'`, mudando o comportamento silenciosamente para chamados que já estavam sendo tratados. Isso é uma regressão de fallback: antes "desconhecido e não-closed" = aberto; agora "desconhecido" = sempre "a fazer", mesmo que a TI já tenha avançado o status.
+
+2. **Duplicação de fonte de verdade**: `'testing'` e `'parado'` agora aparecem tanto como valores de retorno de `TicketCategory` quanto centralizados antes em `OTHER_TICKET_STATUSES` (removido). Se um novo status "parado-like" for adicionado no futuro, é fácil esquecer de atualizar `ticketCategory` já que não há mais um Set único de referência — aumenta risco de inconsistência entre banco/UI.
+
+3. **Breaking change não sinalizado**: `TicketStatusBucket`/`ticketStatusBucket` foram removidos e substituídos por `TicketCategory`/`ticketCategory` com semântica diferente (3 valores → 5 valores). Vale confirmar que todos os call sites foram atualizados (grep por `ticketStatusBucket`/`TicketStatusBucket` para garantir que não sobrou referência quebrada).
+
+Sugestão de melhoria:
+- Trocar a ordem de fallback: tratar explicitamente os fechados/testing/parado primeiro, e cair em `'in_progress'` (não `'todo'`) para qualquer status ativo desconhecido, preservando o comportamento seguro anterior ("mais seguro que esconder o chamado").
+
+## 2026-08-25 18:17:20 — `frontend/src/components/layout/chat/ConversationList.tsx`
+
+Bugs / riscos:
+
+1. **Fallback silencioso para "todo"** — `ticketCategory` faz `return 'todo'` no `default` para qualquer status desconhecido (não listado: `new`, `open`, `pending`, `testing`, `parado`, ou fechado). Se surgir um novo status no banco (ou erro de digitação), o chamado some silenciosamente jogado pra "A fazer" sem log/aviso — antes o fallback era pra "open" que era mais genérico, agora colide com a lógica de "sem status = A fazer". Vale um `console.warn` para status não mapeado, já que categorização errada nesse contexto é fácil de passar despercebido.
+
+2. **Contador do botão "Outros" quando `otherMenuOpen` inicial / nenhuma sub-aba escolhida ainda**: `categoryCounts[isOtherTab ? tab : otherSub]` mostra só a contagem de `otherSub` (default `'closed'`), não a soma das 3 categorias (`closed + testing + parado`). O botão exibe rótulo genérico "Outros" mas um número que corresponde só a "Encerrados" — pode enganar o usuário achando que só há N chamados agrupados ali, quando na verdade pode haver muito mais em testing/parado.
+
+3. **Subscrição duplicada / from `useConversations`**: o novo listener `UPDATE` em `tickets` provavelmente já existe em outro lugar (o hook `useConversations`/`useUnreadComments`) — vale conferir se não há dois channels ouvindo a mesma tabela e invalidando a mesma query (dessincronia com o commit anterior "canais Supabase duplicados" que já tratou isso). Confirmar que este é o único listener de `tickets` no componente.
+
+Melhorias:
+
+- `otherSub` poderia ser derivado (`isOtherTab ? tab : otherSub`) sem precisar de estado separado — ou simplesmente somar as 3 categorias no botão "Outros" para refletir o total real em vez da última sub-aba visitada.
+- `MAIN_TABS`/`OTHER_OPTIONS` e `ticketCategory` têm acoplamento implícito (5 chaves fixas) sem checagem exaustiva em tempo de compilação — um `switch` com `default: never` no lugar dos `if`s pegaria status novos em tempo de tipo, não silenciosamente em runtime.
+
+## 2026-08-25 18:17:35 — `frontend/src/components/layout/chat/ConversationView.tsx`
+
+STATUS_BUTTONS e a importação de `ticketCategory` não são usados em nenhum outro ponto do arquivo — código morto que vai gerar warning de lint/unused-var e não tem efeito nenhum na tela.
+
+**Bugs/riscos:** nenhum, já que o código não é executado ainda.
+
+**Melhorias:**
+- Remover `STATUS_BUTTONS` e o import de `ticketCategory` se ainda não há uso planejado neste diff, ou completar a integração (ex.: botões de mudança de status na conversa) antes de commitar — deixar constantes/imports não usados é ruído para revisão futura.
+- Se a intenção é usar `STATUS_BUTTONS` para atualizar o status do ticket, falta o `status: 'open'` inicial não caracteriza status "fechado" — mas os valores `'testing'`/`'parado'` já existem em `ticketCategory` (`ticketStatus.ts:21-22`), então estão consistentes com o enum existente.
+
+## 2026-08-25 18:17:49 — `frontend/src/components/layout/chat/ConversationView.tsx`
+
+Bugs / problemas:
+
+- `ticketCategory` importado (linha 7) e `STATUS_BUTTONS` declarado, mas nenhum dos dois é usado em nenhum outro ponto do arquivo — código morto que vai gerar warning de lint/TS (`noUnusedLocals`) e sugere uma feature (botões de status) que não foi de fato conectada à UI.
+- `SYSTEM_NOTE_PATTERN` agora casa "este chat foi encerrado" via `^...` no início da string após strip de caracteres não-letra — ok, mas se o texto real gerado ao encerrar o ticket tiver variação de acentuação/maiúsculas diferente da esperada (ex.: "Este chat foi encerrado." vs "chat encerrado"), a nota não será reconhecida como system note e aparecerá como bolha de conversa normal. Vale confirmar que o texto exato gerado no backend/trigger bate com essa regex.
+
+Melhorias:
+
+- Remover o import/uso não utilizado de `ticketCategory` e o array `STATUS_BUTTONS`, ou completar a integração (parecem ser resíduo de uma feature em andamento não finalizada neste diff).
+
+## 2026-08-25 18:18:11 — `frontend/src/components/layout/chat/ConversationView.tsx`
+
+Bugs / riscos:
+
+1. **Reabertura indevida de chamado encerrado**: o bloco que muda status para `'open'` roda sempre que uma mensagem é enviada e a categoria não é `'in_progress'` — inclusive quando o ticket já está `'closed'`. Se alguém mandar mensagem depois do "Encerrar Chat", o ticket volta sozinho pra "Em andamento", sem passar pelo fluxo dos `STATUS_BUTTONS`. Provavelmente devia excluir `status === 'closed'` dessa lógica.
+
+2. **`closeChat` sem confirmação**: é uma ação destrutiva/irreversível na UI (fecha o chamado e posta aviso público) disparada só pelo clique do botão, sem diálogo de confirmação — fácil de clicar sem querer.
+
+3. **Duas mutations podem correr em paralelo sem lock**: nada impede clicar em `changeStatus` enquanto `sendMessage` está em andamento (que também escreve `status`), gerando corrida de updates na coluna `status` com resultado dependente de ordem de resposta do Supabase.
+
+Melhorias:
+
+4. `closeChat` não dá feedback de sucesso (só `onError` tem toast); as outras mutations têm o mesmo padrão — considerar toast de sucesso para "Encerrar Chat" já que é uma ação importante.
+
+5. `STATUS_BUTTONS` e a lógica de auto-`open` duplicam o conhecimento de qual status representa "em andamento" (`'open'` vs `ticketCategory(...) !== 'in_progress'`) — poderia centralizar em `ticketStatus.ts` para evitar divergência se um novo status for adicionado.
+
+## 2026-08-25 18:18:30 — `frontend/src/components/layout/chat/ConversationView.tsx`
+
+**Bugs / riscos:**
+
+1. **Race condition de status**: a mutação principal de envio de mensagem faz `update({ status: 'open' })` sempre que o status atual não é `in_progress` — inclusive quando o ticket acabou de ser fechado (`closed`) em outra aba/usuário simultaneamente, ou quando o próprio agente clicou "Encerrar Chat" mas ainda há uma mensagem em voo. Não há checagem de `isClosed` antes desse update, então enviar mensagem pode reabrir um chamado fechado sem querer.
+
+2. **`ticket` pode estar desatualizado no closure**: a mutação de envio usa `ticket` capturado no momento da criação do `useMutation` (via closure do componente) — se for um valor de estado de render anterior (stale), a comparação `ticketCategory(ticket.status) !== 'in_progress'` pode operar sobre status antigo. Vale confirmar se `ticket` vem de `useQuery` com refetch ou se é prop estática.
+
+3. **`confirm()` nativo do browser**: bloqueia a thread e é inconsistente com o resto da UI (parece usar toasts/dialogs customizados). Pode falhar silenciosamente em contextos que bloqueiam `window.confirm` (ex.: iframe do widget).
+
+4. **Falta de `isTicketClosed` no botão "Encerrar Chat"**: o botão já está dentro do `!isClosed`, ok — mas os `STATUS_BUTTONS` não desabilitam feedback visual quando `changeStatus` falha (erro só mostra toast, mas o botão volta ao estado normal sem indicar que o status não mudou — pode confundir usuário achando que mudou).
+
+5. **Comentário de "chat encerrado" com `internal_only: false`**: correto para aparecer pro solicitante, mas se o `insert` de comment falhar após o `update` de status ter sucesso, o ticket fica fechado sem o aviso — sem rollback/compensação (erro só dispara toast genérico "Erro ao encerrar o chat", mas o status já mudou).
+
+**Melhorias:**
+
+- As duas mutações `changeStatus` e `closeChat` duplicam a lógica de update de `tickets.status` e o mesmo conjunto de invalidations — poderiam compartilhar um helper.
+- `STATUS_BUTTONS` inclui `'open'` como rótulo "Em andamento", mas o texto do comentário automático já usa "status alterado" via regex — vale confirmar que os valores de status (`'open'`, `'testing'`, `'parado'`) batem exatamente com os usados em `ticketStatus.ts`/schema (não vi o arquivo, mas strings soltas são frágeis a typo).
+- `disabled={isCurrent || changeStatus.isPending}` desabilita todos os botões durante qualquer clique, mas não dá feedback visual (spinner) de qual está pendente.
+
+## 2026-08-25 18:18:51 — `frontend/src/components/layout/chat/ConversationView.tsx`
+
+Confirmado: o Grep não achou `closeChat.mutate` porque no diff a JSX usa `closeChat` mas a mutation foi declarada como `closeChatMutation` — bug de compilação.
+
+**Bugs**
+
+1. **`closeChat` não existe (`ReferenceError`/erro de compilação)** — a mutation é declarada como `closeChatMutation`, mas o botão "Encerrar Chat" chama `closeChat.mutate()` e `closeChat.isPending`. Isso quebra o build/render do componente.
+2. **Condição de auto-mudança de status usa `ticketCategory` errado para "testing"/"parado"** — ao enviar mensagem, o código só evita o update se `ticketCategory(ticket.status) === 'in_progress'`. Só `open`/`pending` caem em `in_progress`; `testing` e `parado` têm categorias próprias (`'testing'`, `'parado'`), então qualquer mensagem enviada enquanto o chamado está em "Em teste" ou "Parado" vai forçá-lo de volta para `open` — o que contradiz o comentário/UI que trata esses status como estados intencionais que a TI escolheu manter. Provavelmente a intenção era só mover para `open` quando estava em `todo` (novo/sem TI ainda), não sempre que não for `in_progress`.
+3. **Sem verificação de `isClosed`/status atual no `changeStatus`/`closeChatMutation`** — nada impede uma race: se dois atendentes clicam em botões diferentes quase ao mesmo tempo, o último `update` vence silenciosamente (sem otimistic lock), mas isso é aceitável na maioria dos casos; mencionar apenas como risco menor.
+4. **`ticket` pode ser `undefined` no momento do envio** (dependendo de como é carregado via `useQuery`) — o `if (ticket && ...)` trata isso, mas nesse caso a mensagem é enviada sem nunca corrigir o status, silenciosamente. Não é crítico, só vale checar se isso é esperado.
+
+**Melhorias**
+
+- Renomear `closeChatMutation` para `closeChat` (ou ajustar o JSX) resolve o bug #1 e também deixa o nome consistente com `changeStatus`.
+- O `if (ticketCategory(ticket.status) !== 'in_progress')` deveria provavelmente ser `if (ticketCategory(ticket.status) === 'todo')`, para não sacar o chamado de `testing`/`parado` de volta a `open` automaticamente.
+- `confirm(...)` é um `window.confirm` nativo — ok para uso interno, mas bloqueia a thread; se o padrão do projeto usa modais/toasts de confirmação em outros lugares, considerar reaproveitar para consistência visual.
+
+## 2026-08-25 18:19:06 — `frontend/src/components/layout/chat/ConversationView.tsx`
+
+Bugs:
+
+1. **Race entre `updateStatus` automático e `changeStatus` manual**: ao enviar mensagem, o código sempre força `status: 'open'` se `ticketCategory(ticket.status) !== 'in_progress'`, mesmo quando o status atual é `'closed'`. Isso reabre um chamado encerrado automaticamente ao enviar qualquer mensagem depois do fechamento (ex.: retry de mutation, ou solicitante respondendo após "Este chat foi encerrado"), sem passar pelos botões. Falta excluir `closed` dessa lógica.
+
+2. **`ticket` pode ser `undefined` no momento do envio**: `if (ticket && ...)` silenciosamente pula a atualização de status se a query do ticket ainda não carregou/foi invalidada, mas a mensagem é enviada normalmente — comportamento inconsistente sem aviso ao usuário.
+
+3. **Sem transação/atomicidade**: em `closeChatMutation`, se `commentError` falhar após `statusError` ter sucesso, o ticket fica com status `closed` mas sem o comentário de aviso — estado inconsistente sem rollback.
+
+4. **`confirm()` nativo do browser**: bloqueia a thread e é inconsistente visualmente com o resto da UI (parece usar componentes próprios de toast/dialog). Preferir um dialog do próprio design system.
+
+5. **Nenhuma verificação de permissão no client**: os botões de status e "Encerrar Chat" aparecem para qualquer usuário que tenha acesso ao componente, sem checar se é da TI/suporte. Se a tabela `tickets` não tiver RLS restringindo update por role, qualquer usuário autenticado pode alterar status de qualquer ticket.
+
+Melhorias:
+
+1. `STATUS_BUTTONS` fica melhor como `as const` para tipar `status` com union literal em vez de `string`.
+2. `changeStatus` e `closeChatMutation` duplicam a lógica de update em `tickets` — dá pra unificar em uma única mutation parametrizada (status + comentário opcional).
+3. Texto do comentário de encerramento (`'Este chat foi encerrado.'`) está hardcoded tanto aqui quanto no regex `SYSTEM_NOTE_PATTERN` — se um mudar, quebra o outro silenciosamente; vale extrair para uma constante compartilhada.
+
+## 2026-08-25 18:19:31 — `frontend/src/components/layout/chat/ConversationView.tsx`
+
+**Bugs**
+
+1. **Conflito entre auto-reabertura e status manual**: em `sendMessage`, qualquer mensagem enviada quando `ticketCategory(ticket.status) !== 'in_progress'` força `status: 'open'`. Isso anula os botões "Em teste"/"Parado": se a TI marca o chamado como "Parado" e depois manda uma mensagem de acompanhamento, o status volta pra "Em andamento" sozinho, sem intenção do usuário.
+
+2. **`closeChatMutation` não é atômica**: primeiro faz `update({status:'closed'})`, depois `insert` do comentário. Se o insert falhar, o ticket já ficou fechado mas sem o aviso pro solicitante — estado inconsistente e o usuário só vê o toast de erro genérico, sem saber que o status já mudou.
+
+3**Nenhuma trava contra concorrência**: se o solicitante fechar o chat enquanto a TI está digitando, o envio da mensagem ainda vai rodar o update de status para `'open'` sem checar se o ticket já foi fechado nesse meio tempo (usa o `ticket` capturado no momento do clique, não o estado mais recente).
+
+**Melhorias**
+
+- Extrair as três blocos quase idênticos de `invalidateQueries(['chat-widget-ticket'/'chat-widget-comments'/'chat-widget-conversations'])` para uma função auxiliar.
+- Trocar `confirm(...)` nativo por um diálogo de confirmação consistente com o resto da UI (o `confirm()` bloqueia a thread e foge do padrão visual do app).
+- Em `closeChatMutation`, inserir o comentário antes (ou dentro de uma transação/RPC) e só então atualizar o status, para evitar o estado inconsistente do item 2.
+
+## 2026-08-25 18:19:48 — `frontend/src/components/layout/chat/ConversationView.tsx`
+
+**Bugs:**
+
+1. **Botão "Encerrar Chat" duplica comentário automático como nota de sistema.** `closeChatMutation` insere o comentário `"Este chat foi encerrado."` — que agora bate no `SYSTEM_NOTE_PATTERN` atualizado — mas via `comments` normal com `internal_only: false`. Se `isSystemNote` for usado para renderizar como separador central em vez de bolha, ok; mas o texto exato precisa continuar batendo com o regex sempre — qualquer acento/pontuação diferente (ex. usuário reenviando manualmente) quebra silenciosamente o match. Baixo risco, mas acoplamento frágil entre string literal e regex.
+
+2. **Condição de corrida entre `changeStatus`/`closeChatMutation` e a auto-mudança de status ao enviar mensagem.** O `sendMessage` (mutationFn) faz um `update({status:'open'})` sempre que `ticket.status` não for `in_progress`, usando o valor de `ticket` capturado no closure — se o agente clicar "Parado" e, antes do refetch, enviar uma mensagem, o status pode voltar para `open` inesperadamente sobrescrevendo a escolha manual recém-feita (race entre invalidateQueries e o próximo envio).
+
+3. **`closeChatMutation` não verifica erro de rede/estado obsoleto do ticket.** Se o ticket já foi fechado por outra aba/usuário entre o `confirm()` e o `mutate()`, ainda assim insere um segundo comentário "Este chat foi encerrado." — não há checagem de `isClosed` no momento da execução (só na renderização do botão, que pode estar desatualizada).
+
+4. **`ticketCategory` importado mas não há fallback se `ticket` for `undefined`/carregando.** `ticket && ticketCategory(...)` está ok, mas confirmar que `ticketCategory` trata status desconhecido/null sem lançar exceção (não visível no diff).
+
+**Melhorias:**
+
+- Extrair a string `'Este chat foi encerrado.'` para uma constante compartilhada com o regex/comentário em vez de literal duplicado em dois lugares (evita drift entre `SYSTEM_NOTE_PATTERN` e o texto inserido).
+- `changeStatus` e `closeChatMutation` duplicam a lógica de update+invalidate; poderiam compartilhar um helper.
+- O `confirm()` nativo do browser é bloqueante e não estilizado — considerar um dialog consistente com o resto do design system, já que o resto da UI usa `toast`/componentes customizados.
+
+## 2026-08-26 08:11:52 — `frontend/src/systems/central-suporte/utils/ticketStatus.ts`
+
+Confirmado, sem referências antigas restantes.
+
+Melhorias:
+- O comentário no código diz que `pending` significa "TI já está tratando" — vale confirmar essa regra de negócio contra os valores reais usados no banco/backend, já que normalmente `pending` costuma indicar espera pelo cliente, não tratamento ativo.
+- `ticketCategory` poderia usar um mapa (`Record<string, TicketCategory>`) em vez de ifs sequenciais, reduzindo duplicação se novos status forem adicionados no futuro — mas não é essencial dado o tamanho atual.
+
+## 2026-08-26 08:12:13 — `commit 070e0bf (Features-Edu)`
+
+**Bugs / riscos**
+
+1. **Auto-move para "open" ao responder** (`ConversationView.tsx`, item 11): se a TI responder um chamado `closed`/`resolved`/`canceled`, o status volta pra `open` automaticamente. Isso reabre chamados encerrados sem confirmação — provavelmente não é o comportamento desejado (ex.: responder um chamado já fechado só pra comentar algo depois).
+
+2. **RLS de `read_at` não corrigida, só logada** (item 6): o problema real (UPDATE falhando silenciosamente por política RLS) continua existindo em produção; o app só deixa um `console.warn/error`. Se ninguém observar o console, o bug de tick permanece indefinidamente.
+
+3. **Dropdown "Outros" com estado duplicado** (`tab` e `otherSub`): não fica claro no trecho visível se selecionar uma opção do dropdown atualiza os dois estados de forma consistente. Se `otherSub` divergir de `tab` (ex. contador mostrando `otherSub` mas filtro usando `tab`), o contador exibido pode não bater com a lista filtrada.
+
+4. **Canal Realtime único por instância via `useId()`**: corrige o erro de "callbacks after subscribe", mas cria um canal Postgres novo por instância montada — se o ícone flutuante e a lista de conversas renderizarem/desmontarem com frequência, pode gerar overhead de múltiplas subscriptions Realtime simultâneas em vez de reaproveitar uma única.
+
+**Melhorias**
+
+1. Extrair a lógica de fechar o dropdown ao clicar fora (`otherMenuRef` + `mousedown` listener) para um hook reutilizável, já que é um padrão comum que provavelmente se repete em outros dropdowns do projeto.
+2. O arquivo `docs/chat-flutuante-alteracoes.md` é bastante longo para um changelog de commit — vale considerar se não deveria estar num CHANGELOG.md incremental em vez de um doc novo por leva de mudanças, senão vira um arquivo append-only difícil de navegar.
+
+## 2026-08-26 08:13:59 — `PR #64 — feat(chat): abas A fazer/Em Andamento/Outros e mudanca de status pelo chat`
+
+Ok, o código atual já usa `closeChatMutation` corretamente no JSX (linhas 500/503) — o bug "closeChat vs closeChatMutation" apontado no histórico de reviews já não existe no diff atual. Segue a revisão do PR #64:
+
+**Bugs**
+
+1. **Auto-reabertura indevida ao enviar mensagem** (`ConversationView.tsx`, no `sendMessage`): o update `status: 'open'` dispara sempre que `ticketCategory(ticket.status) !== 'in_progress'` — isso inclui `closed`, `testing` e `parado`. Resultado: (a) qualquer mensagem enviada após "Encerrar Chat" reabre o ticket sozinho; (b) um chamado marcado manualmente como "Em teste"/"Parado" volta pra "Em andamento" assim que alguém responde, anulando a escolha manual feita pelos botões de status. A condição deveria excluir `closed` e provavelmente só disparar quando a categoria for `todo` (novo, sem TI ainda).
+
+2. **`closeChatMutation` não é atômica**: primeiro faz `update({status:'closed'})`, depois `insert` do comentário de aviso. Se o insert falhar, o ticket fica fechado sem o aviso ao solicitante, e o usuário só recebe o toast genérico "Erro ao encerrar o chat" sem saber que o status já mudou.
+
+3. **`ticketCategory` com fallback perigoso** (`ticketStatus.ts`): status desconhecidos/não mapeados caem em `'todo'`. Antes (`ticketStatusBucket`), desconhecido-e-não-fechado caía em `'open'` (mais próximo do comportamento seguro). Agora um chamado ativo com status não previsto na lista fixa (`new/open/pending/testing/parado`/fechados) some silenciosamente para a aba "A fazer", mesmo que a TI já esteja tratando.
+
+4. **Sem checagem de permissão/role no client**: os botões de mudança de status e "Encerrar Chat" aparecem para qualquer usuário com acesso ao componente, sem validar se é da TI. Se a RLS de `tickets` não restringir `UPDATE` por role, qualquer usuário autenticado pode alterar status/encerrar qualquer chamado.
+
+5. **Contador do botão "Outros" enganoso** (`ConversationList.tsx`): `categoryCounts[isOtherTab ? tab : otherSub]` mostra só a contagem da última sub-aba selecionada (default `closed`), não a soma de `closed + testing + parado`. O rótulo genérico "Outros" com um número que reflete só uma categoria pode enganar o usuário quanto ao total agrupado ali.
+
+**Melhorias**
+
+- `changeStatus` e `closeChatMutation` duplicam a lógica de update em `tickets` + invalidations — extrair um helper comum.
+- Texto `'Este chat foi encerrado.'` está hardcoded tanto no insert quanto implicitamente casado pelo `SYSTEM_NOTE_PATTERN` — extrair para constante compartilhada evita drift silencioso entre os dois.
+- `confirm()` nativo do browser em "Encerrar Chat" é bloqueante e destoa do resto da UI (que usa toast/componentes próprios); considerar um dialog do design system.
+- Em `ticketStatus.ts`, não há mais um `Set` único listando `testing`/`parado` como havia antes (`OTHER_TICKET_STATUSES`) — um novo status "parado-like" exige lembrar de atualizar `ticketCategory` manualmente; um `switch` exaustivo (`default: never`) pegaria isso em tempo de compilação.

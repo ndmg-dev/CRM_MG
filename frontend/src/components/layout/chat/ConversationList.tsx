@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
-import { X } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { ChevronDown, X } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useChatWidgetStore } from '@/stores/chatWidgetStore'
 import { supabase } from '@/systems/central-suporte/integrations/supabase/client'
 import { useUnreadComments } from '@/systems/central-suporte/hooks/useUnreadComments'
-import { ticketStatusBucket, type TicketStatusBucket } from '@/systems/central-suporte/utils/ticketStatus'
+import { ticketCategory, type TicketCategory } from '@/systems/central-suporte/utils/ticketStatus'
 
 interface ConversationRow {
   ticketId: string
@@ -13,13 +13,19 @@ interface ConversationRow {
   requesterName: string
   lastMessage: string
   lastMessageAt: string | null
-  statusBucket: TicketStatusBucket
+  category: TicketCategory
 }
 
-const TABS: { key: TicketStatusBucket; label: string }[] = [
-  { key: 'open', label: 'Abertos' },
+/** As três primeiras categorias têm aba própria; as demais só existem
+ * dentro do dropdown "Outros". */
+const MAIN_TABS: { key: TicketCategory; label: string }[] = [
+  { key: 'todo', label: 'A fazer' },
+  { key: 'in_progress', label: 'Em Andamento' },
+]
+const OTHER_OPTIONS: { key: TicketCategory; label: string }[] = [
   { key: 'closed', label: 'Encerrados' },
-  { key: 'other', label: 'Outros' },
+  { key: 'testing', label: 'Em teste' },
+  { key: 'parado', label: 'Parados' },
 ]
 
 /** Lista de conversas do chat flutuante: um chamado por linha, ordenado pela
@@ -69,7 +75,7 @@ function useConversations() {
             requesterName: t.requester?.full_name || 'Desconhecido',
             lastMessage: last.content,
             lastMessageAt: last.created_at,
-            statusBucket: ticketStatusBucket(t.status),
+            category: ticketCategory(t.status),
           }
         })
     },
@@ -102,16 +108,30 @@ export function ConversationList() {
   const queryClient = useQueryClient()
   const { data: conversations = [], isLoading } = useConversations()
   const unreadCounts = useUnreadComments()
-  const [tab, setTab] = useState<TicketStatusBucket>('open')
+  const [tab, setTab] = useState<TicketCategory>('todo')
+  const [otherSub, setOtherSub] = useState<TicketCategory>('closed')
+  const [otherMenuOpen, setOtherMenuOpen] = useState(false)
+  const otherMenuRef = useRef<HTMLDivElement>(null)
 
-  const tabCounts = useMemo(() => {
-    const counts: Record<TicketStatusBucket, number> = { open: 0, closed: 0, other: 0 }
-    for (const c of conversations) counts[c.statusBucket]++
+  const isOtherTab = OTHER_OPTIONS.some((o) => o.key === tab)
+
+  useEffect(() => {
+    if (!otherMenuOpen) return
+    function handler(e: MouseEvent) {
+      if (otherMenuRef.current && !otherMenuRef.current.contains(e.target as Node)) setOtherMenuOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [otherMenuOpen])
+
+  const categoryCounts = useMemo(() => {
+    const counts: Record<TicketCategory, number> = { todo: 0, in_progress: 0, closed: 0, testing: 0, parado: 0 }
+    for (const c of conversations) counts[c.category]++
     return counts
   }, [conversations])
 
   const visibleConversations = useMemo(
-    () => conversations.filter((c) => c.statusBucket === tab),
+    () => conversations.filter((c) => c.category === tab),
     [conversations, tab]
   )
 
@@ -124,6 +144,11 @@ export function ConversationList() {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'comments' },
+        () => queryClient.invalidateQueries({ queryKey: ['chat-widget-conversations'] })
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'tickets' },
         () => queryClient.invalidateQueries({ queryKey: ['chat-widget-conversations'] })
       )
       .subscribe()
@@ -144,7 +169,7 @@ export function ConversationList() {
       </div>
 
       <div className="flex items-center gap-1 border-b border-border px-2 pt-2">
-        {TABS.map((t) => (
+        {MAIN_TABS.map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
@@ -155,11 +180,52 @@ export function ConversationList() {
             }`}
           >
             {t.label}
-            {tabCounts[t.key] > 0 && (
-              <span className="text-[10px] text-text-muted">{tabCounts[t.key]}</span>
+            {categoryCounts[t.key] > 0 && (
+              <span className="text-[10px] text-text-muted">{categoryCounts[t.key]}</span>
             )}
           </button>
         ))}
+
+        {/* "Outros" agrupa as categorias de menor volume (encerrados, em
+            teste, parados) num único dropdown — evita poluir a barra de
+            abas com mais 3 itens. */}
+        <div ref={otherMenuRef} className="relative">
+          <button
+            onClick={() => setOtherMenuOpen((o) => !o)}
+            className={`flex items-center gap-1 rounded-t-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
+              isOtherTab
+                ? 'border-b-2 border-gold text-text-primary'
+                : 'border-b-2 border-transparent text-text-muted hover:text-text-secondary'
+            }`}
+          >
+            {isOtherTab ? OTHER_OPTIONS.find((o) => o.key === tab)?.label : 'Outros'}
+            {categoryCounts[isOtherTab ? tab : otherSub] > 0 && (
+              <span className="text-[10px] text-text-muted">{categoryCounts[isOtherTab ? tab : otherSub]}</span>
+            )}
+            <ChevronDown className="h-3 w-3" />
+          </button>
+
+          {otherMenuOpen && (
+            <div className="absolute right-0 top-full z-10 mt-1 min-w-[140px] rounded-lg border border-border bg-card py-1 shadow-2xl">
+              {OTHER_OPTIONS.map((o) => (
+                <button
+                  key={o.key}
+                  onClick={() => {
+                    setOtherSub(o.key)
+                    setTab(o.key)
+                    setOtherMenuOpen(false)
+                  }}
+                  className={`flex w-full items-center justify-between gap-3 px-3 py-1.5 text-left text-xs transition-colors ${
+                    tab === o.key ? 'text-gold' : 'text-text-secondary hover:bg-surface'
+                  }`}
+                >
+                  {o.label}
+                  {categoryCounts[o.key] > 0 && <span className="text-[10px] text-text-muted">{categoryCounts[o.key]}</span>}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto">
