@@ -1,0 +1,577 @@
+import { useNavigate } from "@suporte/lib/router-shim";
+import { Button } from "@suporte/components/ui/button";
+import { Input } from "@suporte/components/ui/input";
+import { Textarea } from "@suporte/components/ui/textarea";
+import { useState, useEffect, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@suporte/integrations/supabase/client";
+import { toast } from "sonner";
+import { Headset, Paperclip, Undo2, CheckCircle2 } from "lucide-react";
+
+const TI_SECTOR_ID = "dd55f61b-0754-475e-8ea6-2eb0c79b68d6";
+
+// PROTÓTIPO / SÓ EM DEV: sem a sessão SSO do Supabase da Central (que só
+// existe com o login Google real), o RLS devolve categoria/subcategoria
+// vazias e não dá pra percorrer o fluxo localmente. Estes dados de exemplo
+// aparecem SOMENTE em `npm run dev` e apenas quando a consulta real volta
+// vazia — em produção (import.meta.env.DEV === false) nunca são usados.
+// Remover junto com o protótipo quando a decisão for tomada.
+const DEV_SAMPLE_CATEGORIES = [
+  { id: "dev-acessos", name: "Acessos", default_assignee_id: null, default_priority: null },
+  { id: "dev-rede", name: "Rede e conectividade", default_assignee_id: null, default_priority: null },
+  { id: "dev-hardware", name: "Equipamentos", default_assignee_id: null, default_priority: null },
+  { id: "dev-sistemas", name: "Sistemas", default_assignee_id: null, default_priority: null },
+];
+
+const DEV_SAMPLE_SUBCATEGORIES: Record<string, { id: string; name: string; default_assignee_id: null; default_priority: null }[]> = {
+  "dev-acessos": [
+    { id: "dev-drive", name: "Google Drive", default_assignee_id: null, default_priority: null },
+    { id: "dev-email", name: "E-mail", default_assignee_id: null, default_priority: null },
+    { id: "dev-senha", name: "Senha / bloqueio", default_assignee_id: null, default_priority: null },
+  ],
+  "dev-rede": [
+    { id: "dev-wifi", name: "Wi-Fi", default_assignee_id: null, default_priority: null },
+    { id: "dev-vpn", name: "VPN", default_assignee_id: null, default_priority: null },
+  ],
+  // "dev-hardware" e "dev-sistemas" ficam sem subcategoria de propósito —
+  // é assim que dá pra testar o caminho que pula direto pra descrição.
+};
+
+/** Etapas do fluxo conversacional, em ordem. `done` = chamado já criado. */
+type Step = "category" | "subcategory" | "description" | "attachments" | "creating" | "done";
+
+interface ChatEntry {
+  from: "bot" | "user";
+  text: string;
+}
+
+/** Identidade estável do anexo — dois prints colados no mesmo segundo ainda
+ * se distinguem pelo tamanho, e nome+tamanho basta pra chavear a miniatura. */
+const fileKey = (f: File) => `${f.name}:${f.size}`;
+
+/** Assunto do chamado = categoria + descrição. Usa só a primeira linha do
+ * relato e corta em 80 caracteres pra não estourar a coluna de título nas
+ * listagens; a descrição completa vai no corpo do chamado de qualquer jeito. */
+function buildTitle(categoryName: string | undefined, description: string): string {
+  const firstLine = description.trim().split("\n")[0].trim();
+  const resumo = firstLine.length > 80 ? `${firstLine.slice(0, 80).trimEnd()}...` : firstLine;
+  return [categoryName, resumo].filter(Boolean).join(" — ");
+}
+
+/** Snapshot pra desfazer uma resposta e voltar um passo do fluxo. */
+interface StepSnapshot {
+  step: Step;
+  historyLength: number;
+  selectedCategory: string;
+  selectedSubcategory: string;
+}
+
+const Bubble = ({ entry }: { entry: ChatEntry }) => (
+  <div className={`flex items-end gap-2 ${entry.from === "user" ? "justify-end" : "justify-start"}`}>
+    {entry.from === "bot" && (
+      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-primary/30 bg-primary/10 text-primary">
+        <Headset className="h-3.5 w-3.5" />
+      </div>
+    )}
+    <div
+      className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+        entry.from === "user"
+          ? "rounded-br-sm bg-primary font-medium text-primary-foreground"
+          : "rounded-bl-sm border border-border bg-muted/60 text-foreground"
+      }`}
+    >
+      {entry.text}
+    </div>
+  </div>
+);
+
+/** Opção clicável do fluxo (categoria/subcategoria) — dourado do sistema. */
+const Chip = ({ label, onClick }: { label: string; onClick: () => void }) => (
+  <button
+    onClick={onClick}
+    className="rounded-full border border-primary/40 bg-primary/5 px-4 py-1.5 text-sm font-medium text-primary transition-colors hover:border-primary hover:bg-primary/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+  >
+    {label}
+  </button>
+);
+
+const NewTicketChat = () => {
+  const navigate = useNavigate();
+  const [step, setStep] = useState<Step>("category");
+  const [history, setHistory] = useState<ChatEntry[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string>("");
+  const [description, setDescription] = useState("");
+  // File[] em vez de FileList: imagem colada do clipboard chega como File
+  // avulso, e FileList é read-only (não dá pra ir acumulando).
+  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<Record<string, string>>({});
+  const [createdCode, setCreatedCode] = useState<number | null>(null);
+  // Pilha de estados anteriores — permite corrigir uma escolha errada sem
+  // ter que abandonar o chamado e recomeçar do zero.
+  const [undoStack, setUndoStack] = useState<StepSnapshot[]>([]);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const { data: profile } = useQuery({
+    queryKey: ["current-profile-name"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+      const { data } = await supabase.from("profiles").select("full_name").eq("id", user.id).single();
+      return data;
+    },
+  });
+  const firstName = (profile?.full_name || "").trim().split(" ")[0];
+
+  const { data: categories, isLoading: catsLoading, error: catsError } = useQuery({
+    queryKey: ["categories-by-sector", TI_SECTOR_ID],
+    queryFn: async () => {
+      const { data: catSectors, error: csError } = await supabase
+        .from("category_sectors")
+        .select("category_id")
+        .eq("sector_id", TI_SECTOR_ID);
+      if (csError) throw csError;
+
+      if (!catSectors || catSectors.length === 0) {
+        const { data: allLinked, error: allError } = await supabase
+          .from("category_sectors")
+          .select("category_id");
+        if (allError) throw allError;
+        const linkedIds = new Set((allLinked || []).map(c => c.category_id));
+        const { data: allCats, error: catError } = await supabase.from("categories").select("*").order("name");
+        if (catError) throw catError;
+        return (allCats || []).filter(c => !linkedIds.has(c.id));
+      }
+
+      const categoryIds = catSectors.map(cs => cs.category_id);
+      const { data, error } = await supabase
+        .from("categories")
+        .select("*")
+        .in("id", categoryIds)
+        .order("name");
+      if (error) throw error;
+      return data;
+    },
+    select: (data) =>
+      // Ver DEV_SAMPLE_CATEGORIES: só substitui quando o banco real veio
+      // vazio E estamos em dev.
+      import.meta.env.DEV && (!data || data.length === 0) ? (DEV_SAMPLE_CATEGORIES as typeof data) : data,
+  });
+
+  const { data: subcategories, error: subsError } = useQuery({
+    queryKey: ["subcategories", selectedCategory],
+    queryFn: async () => {
+      if (!selectedCategory) return [];
+      // Ids de exemplo (dev) não existem no banco — devolve direto, senão a
+      // consulta real volta vazia e o passo de subcategoria some no teste.
+      if (import.meta.env.DEV && selectedCategory.startsWith("dev-")) {
+        return DEV_SAMPLE_SUBCATEGORIES[selectedCategory] ?? []
+      }
+      const { data, error } = await supabase
+        .from("subcategories")
+        .select("*")
+        .eq("category_id", selectedCategory)
+        .order("name");
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!selectedCategory,
+  });
+
+  const categoryLabel = categories?.find(c => c.id === selectedCategory)?.name;
+
+  // Primeira fala do bot — espera o nome carregar pra não cumprimentar vazio.
+  useEffect(() => {
+    if (history.length === 0 && profile !== undefined) {
+      setHistory([{ from: "bot", text: `Olá${firstName ? `, ${firstName}` : ""}! O que você precisa resolver hoje?` }]);
+    }
+  }, [profile, firstName, history.length]);
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [history, step]);
+
+  function say(from: ChatEntry["from"], text: string) {
+    setHistory(h => [...h, { from, text }]);
+  }
+
+  /** Guarda o estado ANTES de responder, pra poder desfazer depois. */
+  function snapshot() {
+    setUndoStack(s => [...s, { step, historyLength: history.length, selectedCategory, selectedSubcategory }]);
+  }
+
+  function goBack() {
+    const prev = undoStack[undoStack.length - 1];
+    if (!prev) return;
+    setUndoStack(s => s.slice(0, -1));
+    setHistory(h => h.slice(0, prev.historyLength));
+    setSelectedCategory(prev.selectedCategory);
+    setSelectedSubcategory(prev.selectedSubcategory);
+    setStep(prev.step);
+  }
+
+  function pickCategory(id: string, name: string) {
+    snapshot();
+    setSelectedCategory(id);
+    setSelectedSubcategory("");
+    say("user", name);
+  }
+
+  // Só dá pra saber se tem subcategoria depois que a query resolve — decide
+  // aqui (e não no clique) pra não perguntar algo que não existe.
+  useEffect(() => {
+    if (!selectedCategory || step !== "category") return;
+    // Sem o caso de erro, uma falha aqui deixa `subcategories` undefined pra
+    // sempre e o chat trava mudo depois de escolher a categoria — segue pra
+    // descrição, que é o passo que realmente importa pro chamado.
+    if (subcategories === undefined && !subsError) return; // ainda carregando
+    if (subcategories && subcategories.length > 0) {
+      say("bot", "Certo. Qual dessas opções descreve melhor?");
+      setStep("subcategory");
+    } else {
+      say("bot", "Entendi. Descreva o problema com o máximo de detalhe que conseguir.");
+      setStep("description");
+    }
+  }, [selectedCategory, subcategories, subsError, step]);
+
+  function pickSubcategory(id: string, name: string) {
+    snapshot();
+    setSelectedSubcategory(id);
+    say("user", name);
+    say("bot", "Entendi. Descreva o problema com o máximo de detalhe que conseguir.");
+    setStep("description");
+  }
+
+  function submitDescription() {
+    const text = description.trim();
+    if (!text) return;
+    snapshot();
+    say("user", text);
+    say("bot", "Anexar um print ajuda muito a resolver mais rápido. Cole (Ctrl+V) ou escolha um arquivo.");
+    setStep("attachments");
+  }
+
+  function addFiles(incoming: File[]) {
+    if (!incoming.length) return;
+    setAttachedFiles(prev => [...prev, ...incoming]);
+    // Miniatura só faz sentido pra imagem; PDF/doc aparecem só pelo nome.
+    for (const f of incoming) {
+      if (!f.type.startsWith("image/")) continue;
+      const url = URL.createObjectURL(f);
+      setPreviews(p => ({ ...p, [fileKey(f)]: url }));
+    }
+  }
+
+  function removeFile(index: number) {
+    const f = attachedFiles[index];
+    const key = fileKey(f);
+    if (previews[key]) {
+      URL.revokeObjectURL(previews[key]);
+      setPreviews(p => { const next = { ...p }; delete next[key]; return next });
+    }
+    setAttachedFiles(prev => prev.filter((_, i) => i !== index));
+  }
+
+  // Cola print direto (Ctrl+V) — o clipboard entrega a imagem como item de
+  // tipo image/*, geralmente com o nome genérico "image.png"; renomeia com
+  // timestamp pra não virar um monte de anexo com o mesmo nome no chamado.
+  function handlePaste(e: React.ClipboardEvent) {
+    const imageItems = Array.from(e.clipboardData.items).filter(i => i.type.startsWith("image/"));
+    if (!imageItems.length) return;
+    e.preventDefault();
+    const pasted = imageItems
+      .map(item => item.getAsFile())
+      .filter((f): f is File => !!f)
+      .map(f => new File([f], `print-${Date.now()}.${f.type.split("/")[1] || "png"}`, { type: f.type }));
+    addFiles(pasted);
+  }
+
+  const resolveDefaults = () => {
+    const category = categories?.find(c => c.id === selectedCategory);
+    const subcategory = subcategories?.find(s => s.id === selectedSubcategory);
+    const assigneeId = subcategory?.default_assignee_id || category?.default_assignee_id || null;
+    const priority = subcategory?.default_priority || category?.default_priority || "p3";
+    return { assigneeId, priority };
+  };
+
+  async function createTicket() {
+    setStep("creating");
+
+    // PROTÓTIPO / SÓ EM DEV: com as categorias de exemplo os ids não existem
+    // no banco e não há sessão, então o insert real falharia. Simula o
+    // desfecho pra dar pra avaliar o fluxo inteiro — e deixa explícito na
+    // própria mensagem que NENHUM chamado foi aberto.
+    if (import.meta.env.DEV && selectedCategory.startsWith("dev-")) {
+      await new Promise(r => setTimeout(r, 600));
+      say("bot", "⚠️ SIMULAÇÃO (dados de teste, nenhum chamado foi aberto de verdade). No ambiente real, seu chamado estaria aberto neste ponto e a TI já teria sido notificada.");
+      setStep("done");
+      return;
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+
+      const { assigneeId, priority } = resolveDefaults();
+      if (assigneeId && assigneeId === user.id) {
+        toast.error("Você não pode abrir um chamado para si mesmo.");
+        setStep("attachments");
+        return;
+      }
+
+      const categoryName = categories?.find(c => c.id === selectedCategory)?.name;
+      const subcategoryName = subcategories?.find(s => s.id === selectedSubcategory)?.name;
+      // O chat não pergunta "Assunto": ele é montado como categoria +
+      // descrição. A categoria vem de uma escolha guiada (sempre válida) e a
+      // descrição dá o contexto — junto isso lê melhor na fila da TI do que
+      // um assunto digitado às pressas.
+      const title = buildTitle(categoryName, description);
+
+      const { data: ticket, error: ticketError } = await supabase
+        .from("tickets")
+        .insert({
+          title,
+          description: description.trim(),
+          type: "request" as const,
+          category_id: selectedCategory || null,
+          subcategory_id: selectedSubcategory || null,
+          target_sector_id: TI_SECTOR_ID,
+          assignee_id: assigneeId,
+          requester_id: user.id,
+          status: "new",
+          priority: priority as any,
+        } as any)
+        .select()
+        .single();
+
+      if (ticketError) throw ticketError;
+
+      const hasDefaultPriority = !!(subcategories?.find(s => s.id === selectedSubcategory)?.default_priority
+        || categories?.find(c => c.id === selectedCategory)?.default_priority);
+
+      if (!hasDefaultPriority) {
+        supabase.functions.invoke("classify-priority", {
+          body: { title, description, type: "request", category: categoryName, subcategory: subcategoryName },
+        }).then(async ({ data: aiResult, error: aiError }) => {
+          if (!aiError && aiResult?.priority && aiResult.priority !== "p3") {
+            await supabase.from("tickets").update({ priority: aiResult.priority as any }).eq("id", ticket.id);
+          }
+        }).catch(console.error);
+      }
+
+      if (attachedFiles.length > 0) {
+        for (const file of attachedFiles) {
+          const fileExt = file.name.split(".").pop();
+          const filePath = `${ticket.id}/${crypto.randomUUID()}.${fileExt}`;
+          const { error: uploadError } = await supabase.storage.from("ticket-attachments").upload(filePath, file);
+          if (uploadError) throw uploadError;
+          const { error: attachmentError } = await supabase.from("attachments").insert({
+            ticket_id: ticket.id,
+            file_name: file.name,
+            file_path: filePath,
+            file_size: file.size,
+            file_type: file.type,
+            uploaded_by: user.id,
+          });
+          if (attachmentError) throw attachmentError;
+        }
+      }
+
+      setCreatedCode((ticket as any).ticket_code ?? null);
+      say("bot", `Pronto! Seu chamado foi aberto${(ticket as any).ticket_code ? ` com o número #${String((ticket as any).ticket_code).padStart(3, "0")}` : ""}. A TI já foi notificada e você acompanha tudo por aqui.`);
+      setStep("done");
+    } catch (error: any) {
+      console.error("Error creating ticket:", error);
+      toast.error("Erro ao criar chamado: " + error.message);
+      setStep("attachments");
+    }
+  }
+
+  return (
+    <div className="max-w-2xl mx-auto space-y-4">
+      <div>
+        <h2 className="text-3xl font-bold tracking-tight">
+          Abrir chamado <span className="text-primary">TI</span>
+        </h2>
+        <p className="text-muted-foreground">Responda as perguntas e a TI recebe tudo já classificado.</p>
+      </div>
+
+      <div className="overflow-hidden rounded-xl border border-primary/25 bg-card shadow-lg shadow-black/20">
+        {/* Faixa dourada do topo — mesma linguagem visual do resto do sistema */}
+        <div className="flex items-center gap-2.5 border-b border-primary/20 bg-primary/5 px-4 py-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-primary/30 bg-primary/10 text-primary">
+            <Headset className="h-4 w-4" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold leading-tight">Atendimento TI</p>
+            <p className="text-xs text-muted-foreground">Suas respostas classificam o chamado</p>
+          </div>
+        </div>
+
+        <div ref={scrollRef} className="max-h-[420px] min-h-[280px] space-y-3 overflow-y-auto p-4">
+          {history.map((entry, i) => <Bubble key={i} entry={entry} />)}
+        </div>
+
+        <div className="border-t border-border bg-muted/20 p-4">
+          {step === "category" && (
+            <div className="flex flex-wrap gap-2">
+              {categories?.map(cat => (
+                <Chip key={cat.id} label={cat.name} onClick={() => pickCategory(cat.id, cat.name)} />
+              ))}
+              {/* Estados separados de propósito: "carregando", "falhou" e
+                  "nenhuma categoria cadastrada" são problemas diferentes e
+                  precisam de mensagens diferentes pra dar pra diagnosticar. */}
+              {catsLoading && <p className="text-sm text-muted-foreground">Carregando opções...</p>}
+              {catsError && (
+                <p className="text-sm text-destructive">
+                  Não foi possível carregar as categorias: {(catsError as Error).message}
+                </p>
+              )}
+              {!catsLoading && !catsError && !categories?.length && (
+                <p className="text-sm text-muted-foreground">
+                  Nenhuma categoria cadastrada para o setor de TI.
+                </p>
+              )}
+            </div>
+          )}
+
+          {step === "subcategory" && (
+            <div className="flex flex-wrap gap-2">
+              {subcategories?.map(sub => (
+                <Chip key={sub.id} label={sub.name} onClick={() => pickSubcategory(sub.id, sub.name)} />
+              ))}
+            </div>
+          )}
+
+          {step === "description" && (
+            <div className="space-y-2">
+              <Textarea
+                autoFocus
+                value={description}
+                onChange={e => setDescription(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitDescription(); }
+                }}
+                placeholder="Ex.: não consigo acessar a pasta do Fiscal 2025 no Drive"
+                className="min-h-[90px] border-border focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/40"
+              />
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">Enter envia · Shift+Enter quebra linha</span>
+                <Button onClick={submitDescription} disabled={!description.trim()}>Enviar</Button>
+              </div>
+            </div>
+          )}
+
+          {step === "attachments" && (
+            <div className="space-y-3">
+              {/* tabIndex torna a div focável: sem foco o browser não entrega
+                  o evento de paste, e colar o print não funcionaria. */}
+              <div
+                tabIndex={0}
+                onPaste={handlePaste}
+                className="flex cursor-text flex-col items-center gap-1.5 rounded-lg border border-dashed border-primary/40 bg-primary/5 p-4 text-center text-sm text-muted-foreground outline-none transition-colors hover:border-primary/60 focus:border-primary focus:bg-primary/10"
+              >
+                <Paperclip className="h-4 w-4 text-primary" />
+                <span>
+                  Clique aqui e cole o print com{" "}
+                  <kbd className="rounded border border-primary/30 bg-background px-1.5 py-0.5 text-xs text-primary">Ctrl</kbd>
+                  {" + "}
+                  <kbd className="rounded border border-primary/30 bg-background px-1.5 py-0.5 text-xs text-primary">V</kbd>
+                </span>
+              </div>
+
+              <Input
+                type="file"
+                multiple
+                className="cursor-pointer"
+                onChange={e => { addFiles(Array.from(e.target.files ?? [])); e.target.value = ""; }}
+              />
+
+              {attachedFiles.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {attachedFiles.map((f, i) => (
+                    <div key={`${fileKey(f)}:${i}`} className="relative rounded-lg border border-primary/30 bg-primary/5 p-1">
+                      {previews[fileKey(f)] ? (
+                        <img src={previews[fileKey(f)]} alt={f.name} className="h-16 w-16 rounded object-cover" />
+                      ) : (
+                        <div className="flex h-16 w-16 items-center justify-center rounded bg-muted px-1 text-center text-[10px] leading-tight text-muted-foreground">
+                          {f.name.slice(0, 18)}
+                        </div>
+                      )}
+                      <button
+                        onClick={() => removeFile(i)}
+                        aria-label={`Remover ${f.name}`}
+                        className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs text-destructive-foreground"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => { say("user", "Sem anexos"); createTicket(); }}>
+                  Pular
+                </Button>
+                <Button onClick={() => {
+                  say("user", attachedFiles.length ? `${attachedFiles.length} arquivo(s) anexado(s)` : "Sem anexos");
+                  createTicket();
+                }}>
+                  Abrir chamado
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {step === "creating" && (
+            <div className="flex items-center justify-center gap-2 py-1 text-sm text-muted-foreground">
+              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
+              Abrindo seu chamado...
+            </div>
+          )}
+
+          {step === "done" && (
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="flex items-center gap-1.5 text-sm text-primary">
+                <CheckCircle2 className="h-4 w-4" />
+                Chamado registrado
+              </span>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => navigate("/portal")}>Voltar ao portal</Button>
+                <Button onClick={() => navigate("/portal/my-tickets")}>Ver meus chamados</Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {step !== "done" && step !== "creating" && (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="sm" onClick={() => navigate("/portal")}>Cancelar</Button>
+            {undoStack.length > 0 && (
+              <Button variant="ghost" size="sm" onClick={goBack} className="gap-1.5 text-primary hover:text-primary">
+                <Undo2 className="h-3.5 w-3.5" />
+                Corrigir resposta anterior
+              </Button>
+            )}
+          </div>
+          {(step === "description" || step === "attachments") && categoryLabel && description.trim() && (
+            <span className="text-xs text-muted-foreground">
+              Assunto: <span className="text-foreground">{buildTitle(categoryLabel, description)}</span>
+            </span>
+          )}
+        </div>
+      )}
+
+      {createdCode !== null && (
+        <p className="text-center text-xs text-muted-foreground">
+          Chamado #{String(createdCode).padStart(3, "0")} criado.
+        </p>
+      )}
+    </div>
+  );
+};
+
+export default NewTicketChat;
