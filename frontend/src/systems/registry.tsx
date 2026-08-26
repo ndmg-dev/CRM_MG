@@ -54,6 +54,14 @@ export const systemRegistry: Record<string, LazyExoticComponent<ComponentType>> 
   // https://doccontabil.mendoncagalvao.com.br — passa a renderizar nativo
   // automaticamente, sem precisar mudar nada no banco.
   'documentacao-contabil': lazy(() => import('@doccontabil/DocumentacaoContabilApp')),
+  // Slug já cadastrado no banco (setor SOCIETARIO) apontando pro iframe de
+  // https://consultacnpj.mendoncagalvao.com.br — passa a renderizar nativo
+  // automaticamente, sem precisar mudar nada no banco.
+  'consulta-cnpj': lazy(() => import('@cnpj/ConsultaCnpjApp')),
+  // Slug já cadastrado no banco (setor TI) apontando pro iframe de
+  // https://taskflow.nucleodigital.cloud/ — passa a renderizar nativo
+  // automaticamente, sem precisar mudar nada no banco.
+  'taskflow': lazy(() => import('@taskflow/TaskFlowApp')),
 }
 
 /**

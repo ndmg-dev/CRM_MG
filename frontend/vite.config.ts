@@ -28,6 +28,8 @@ export default defineConfig(({ mode }) => {
         '@contai': path.resolve(__dirname, './src/systems/contai'),
         '@carneleao': path.resolve(__dirname, './src/systems/carne-leao'),
         '@doccontabil': path.resolve(__dirname, './src/systems/documentacao-contabil'),
+        '@cnpj': path.resolve(__dirname, './src/systems/consulta-cnpj'),
+        '@taskflow': path.resolve(__dirname, './src/systems/taskflow'),
       },
     },
     server: {
