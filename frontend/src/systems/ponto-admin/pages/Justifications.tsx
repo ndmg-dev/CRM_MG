@@ -32,6 +32,63 @@ interface Justification {
 
 const STATUS_FILTER = ['Todos', 'PENDENTE', 'APROVADO', 'REPROVADO'] as const
 
+// Uma justificativa de atestado de N dias vira N registros no banco (um POST
+// por dia, ver CreateModal.handleSave) — sem agrupar de volta na exibição,
+// a lista mostra N linhas idênticas em vez de um período só. `items` guarda
+// os registros originais (ordenados por data) — o primeiro é usado como
+// representante pros campos que não entram na comparação de agrupamento
+// (ex.: geolocalização de local externo).
+interface JustificationGroup {
+  items: Justification[]
+}
+
+// Dias consecutivos entre duas datas ISO (ambas ancoradas ao meio-dia local
+// na criação, ver dateRange() do CreateModal) — Math.round absorve o
+// pequeno desvio de horas em dias de troca de horário de verão.
+function dayDiff(aIso: string, bIso: string): number {
+  return Math.round((new Date(bIso).getTime() - new Date(aIso).getTime()) / 86400000)
+}
+
+function groupJustifications(items: Justification[]): JustificationGroup[] {
+  const sorted = [...items].sort((a, b) => {
+    if (a.employee_id !== b.employee_id) return a.employee_id < b.employee_id ? -1 : 1
+    return a.date.localeCompare(b.date)
+  })
+
+  const groups: JustificationGroup[] = []
+  for (const j of sorted) {
+    // Só agrupa "dia inteiro" — com horário real (start_time/end_time) cada
+    // dia tem um intervalo próprio, e local externo tem geolocalização
+    // própria por dia; misturar isso numa linha só perderia informação.
+    const canGroup = !j.start_time && !j.end_time && j.occurrence_type !== 'LOCAL_EXTERNO'
+    const last = groups[groups.length - 1]
+    const lastItem = last?.items[last.items.length - 1]
+    const sameBucket = !!lastItem && canGroup &&
+      !lastItem.start_time && !lastItem.end_time &&
+      lastItem.employee_id === j.employee_id &&
+      lastItem.occurrence_type === j.occurrence_type &&
+      lastItem.reason === j.reason &&
+      lastItem.status === j.status &&
+      (lastItem.attachment_url ?? null) === (j.attachment_url ?? null) &&
+      dayDiff(lastItem.date, j.date) === 1
+
+    if (sameBucket) {
+      last.items.push(j)
+    } else {
+      groups.push({ items: [j] })
+    }
+  }
+
+  // A ordenação acima foi só pra detectar sequência — devolve na ordem
+  // original (mais recente primeiro, como a API retorna), usando a data
+  // mais recente de cada grupo como critério.
+  return groups.sort((a, b) => {
+    const aLast = a.items[a.items.length - 1].date
+    const bLast = b.items[b.items.length - 1].date
+    return bLast.localeCompare(aLast)
+  })
+}
+
 const OCCURRENCE_TYPE_OPTIONS: { value: OccurrenceType; label: string }[] = [
   { value: 'FALTA_INTEGRAL',    label: 'Falta integral (dia todo)' },
   { value: 'FALTA_PARCIAL',     label: 'Falta parcial (com horário)' },
@@ -259,18 +316,21 @@ export default function Justifications() {
     queryFn: () => api.get(`/api/v1/justifications${filter !== 'Todos' ? `?status=${filter}` : ''}`),
   })
 
+  // Aceita um ou vários ids — uma linha agrupada (atestado de N dias) aprova/
+  // reprova todos os registros do grupo de uma vez.
   const approveMutation = useMutation({
-    mutationFn: (id: string) => api.patch(`/api/v1/justifications/${id}/approve`),
+    mutationFn: (ids: string[]) => Promise.all(ids.map(id => api.patch(`/api/v1/justifications/${id}/approve`))),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['justifications'] }),
   })
 
   const rejectMutation = useMutation({
-    mutationFn: (id: string) => api.patch(`/api/v1/justifications/${id}/reject`),
+    mutationFn: (ids: string[]) => Promise.all(ids.map(id => api.patch(`/api/v1/justifications/${id}/reject`))),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['justifications'] }),
   })
 
   const employeeMap = Object.fromEntries((employees ?? []).map(e => [e.id, e]))
   const pendingCount = (data ?? []).filter(j => j.status === 'PENDENTE').length
+  const groups = groupJustifications(data ?? [])
 
   return (
     <div className="animate-in">
@@ -312,17 +372,29 @@ export default function Justifications() {
           </thead>
           <tbody>
             {isLoading && <tr><td colSpan={7} style={{ color: 'var(--mg-muted)', textAlign: 'center', padding: 24 }}>Carregando...</td></tr>}
-            {(data ?? []).map(j => {
+            {groups.map(g => {
+              const j = g.items[0]
+              const last = g.items[g.items.length - 1]
               const emp = employeeMap[j.employee_id]
+              const ids = g.items.map(i => i.id)
               return (
-                <tr key={j.id}>
+                <tr key={ids.join(',')}>
                   <td>
                     <div className="employee-cell">
                       <Avatar name={emp?.name ?? '?'} size={28} />
                       <span>{emp?.name ?? j.employee_id}</span>
                     </div>
                   </td>
-                  <td style={{ color: 'var(--mg-muted)' }}>{formatDate(j.date)}</td>
+                  <td style={{ color: 'var(--mg-muted)' }}>
+                    {g.items.length > 1 ? (
+                      <>
+                        {formatDate(j.date)} – {formatDate(last.date)}
+                        <span style={{ marginLeft: 6, fontSize: 10, color: 'var(--mg-muted)' }}>
+                          🗓{g.items.length}d
+                        </span>
+                      </>
+                    ) : formatDate(j.date)}
+                  </td>
                   <td style={{ fontSize: 12 }}>
                     {OCCURRENCE_TYPE_LABEL[j.occurrence_type ?? 'FALTA_INTEGRAL'] ?? j.occurrence_type}
                   </td>
@@ -358,11 +430,11 @@ export default function Justifications() {
                     {j.status === 'PENDENTE' && (
                       <div style={{ display: 'flex', gap: 8 }}>
                         <button className="btn-primary" style={{ padding: '4px 10px', fontSize: 12 }}
-                          onClick={() => approveMutation.mutate(j.id)} disabled={approveMutation.isPending}>
+                          onClick={() => approveMutation.mutate(ids)} disabled={approveMutation.isPending}>
                           Aprovar
                         </button>
                         <button className="btn-danger" style={{ padding: '4px 10px', fontSize: 12 }}
-                          onClick={() => rejectMutation.mutate(j.id)} disabled={rejectMutation.isPending}>
+                          onClick={() => rejectMutation.mutate(ids)} disabled={rejectMutation.isPending}>
                           Reprovar
                         </button>
                       </div>
