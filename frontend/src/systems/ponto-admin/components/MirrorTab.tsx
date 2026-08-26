@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { api, openAttachment } from '../lib/api'
 import { Modal } from './Modal'
@@ -55,8 +55,6 @@ function fmtDateTime(iso: string | null) {
   const d = new Date(iso)
   return `${d.toLocaleDateString('pt-BR')} ${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`
 }
-
-type FilterKey = 'todos' | 'pendencia' | 'faltas' | 'incompletos' | 'corrigidos'
 
 // ─── Tooltip de horário corrigido ──────────────────────────────────────────
 
@@ -299,19 +297,9 @@ function DayCard({ row: r }: { row: MirrorRow }) {
   )
 }
 
-function SummaryCard({ label, value, tone, zero }: { label: string; value: string; tone?: 'green' | 'red'; zero?: boolean }) {
-  return (
-    <div className={`esp-summary-card ${zero ? 'is-zero' : ''}`}>
-      <div className={`esp-summary-value ${tone ? `tone-${tone}` : ''}`}>{value}</div>
-      <div className="esp-summary-label">{label}</div>
-    </div>
-  )
-}
-
 // ─── Aba Espelho de ponto ──────────────────────────────────────────────────
 
 export default function MirrorTab({ data, employeeId, year, month, canManage, onExportPdf, onExportXlsx }: Props) {
-  const [filter, setFilter] = useState<FilterKey>('todos')
   const [showAdjust, setShowAdjust] = useState(false)
   const homologarMutation = useHomologarMirror()
   const reabrirMutation   = useReabrirMirror()
@@ -319,21 +307,6 @@ export default function MirrorTab({ data, employeeId, year, month, canManage, on
   const rows = data?.rows.filter(r => r.status !== 'future') ?? []
   const summary = data?.summary
   const homologado = summary?.homologado ?? false
-
-  const counts = useMemo(() => ({
-    pendencia:    rows.filter(r => r.occurrences.some(o => o.status === 'PENDENTE')).length,
-    faltas:       rows.filter(r => r.status === 'absent').length,
-    incompletos:  rows.filter(r => r.status === 'incomplete').length,
-    corrigidos:   rows.filter(r => Object.keys(r.corrections).length > 0).length,
-  }), [rows])
-
-  const filteredRows = rows.filter(r => {
-    if (filter === 'pendencia')   return r.occurrences.some(o => o.status === 'PENDENTE')
-    if (filter === 'faltas')      return r.status === 'absent'
-    if (filter === 'incompletos') return r.status === 'incomplete'
-    if (filter === 'corrigidos')  return Object.keys(r.corrections).length > 0
-    return true
-  })
 
   function toggleHomologar() {
     if (!employeeId) return
@@ -391,24 +364,6 @@ export default function MirrorTab({ data, employeeId, year, month, canManage, on
         <div className="esp-state">Nenhum registro neste mês.</div>
       ) : (
         <>
-          {summary && (
-            <div className="esp-summary">
-              <SummaryCard label="Previsto"  value={fmtHPlain(summary.total_expected_h)} />
-              <SummaryCard label="Trabalhado" value={fmtHPlain(summary.total_worked_h)} tone="green" />
-              <SummaryCard label="Abonado"   value={fmtHPlain(summary.total_justified_h)} zero={summary.total_justified_h === 0} />
-              <SummaryCard label="Faltas"    value={fmtHPlain(summary.total_unjustified_h)} tone={summary.total_unjustified_h > 0 ? 'red' : undefined} zero={summary.total_unjustified_h === 0} />
-              <SummaryCard label="Saldo do mês" value={fmtH(summary.balance_h)} tone={summary.balance_h < 0 ? 'red' : summary.balance_h > 0 ? 'green' : undefined} />
-            </div>
-          )}
-
-          <div className="esp-filters">
-            <button className={`esp-filter-chip ${filter === 'todos' ? 'active' : ''}`} onClick={() => setFilter('todos')}>Todos</button>
-            <button className={`esp-filter-chip ${filter === 'pendencia' ? 'active' : ''}`} onClick={() => setFilter('pendencia')}>Com pendência ({counts.pendencia})</button>
-            <button className={`esp-filter-chip ${filter === 'faltas' ? 'active' : ''}`} onClick={() => setFilter('faltas')}>Faltas ({counts.faltas})</button>
-            <button className={`esp-filter-chip ${filter === 'incompletos' ? 'active' : ''}`} onClick={() => setFilter('incompletos')}>Incompletos ({counts.incompletos})</button>
-            <button className={`esp-filter-chip ${filter === 'corrigidos' ? 'active' : ''}`} onClick={() => setFilter('corrigidos')}>Corrigidos ({counts.corrigidos})</button>
-          </div>
-
           {/* Desktop */}
           <div className="esp-table-wrap">
             <div className="esp-grid">
@@ -418,14 +373,14 @@ export default function MirrorTab({ data, employeeId, year, month, canManage, on
                 <div>Horas totais</div><div>Horas justif.</div><div>Intervalo</div>
                 <div>Saldo</div><div>Status</div>
               </div>
-              {filteredRows.map(r => <DayRow key={r.date} row={r} />)}
+              {rows.map(r => <DayRow key={r.date} row={r} />)}
             </div>
             <div className="esp-legend">✎ horário ajustado manualmente — passe o cursor para ver o registro original</div>
           </div>
 
           {/* Mobile */}
           <div className="esp-cards">
-            {filteredRows.map(r => <DayCard key={r.date} row={r} />)}
+            {rows.map(r => <DayCard key={r.date} row={r} />)}
           </div>
 
           {summary && (

@@ -99,64 +99,6 @@
 
 .pontoadmin-root .esp-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
-/* ── Faixa de resumo ───────────────────────────────────────────────────── */
-
-.pontoadmin-root .esp-summary {
-  display: flex;
-  gap: 10px;
-  overflow-x: auto;
-  padding-bottom: 6px;
-  margin-bottom: 20px;
-  scrollbar-width: thin;
-}
-.pontoadmin-root .esp-summary-card {
-  flex: 0 0 auto;
-  min-width: 120px;
-  background: var(--mg-bg2);
-  border: var(--mg-border);
-  border-radius: 10px;
-  padding: 12px 14px;
-}
-.pontoadmin-root .esp-summary-card.is-zero { opacity: 0.45; }
-.pontoadmin-root .esp-summary-value {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--mg-white);
-  line-height: 1.15;
-}
-.pontoadmin-root .esp-summary-value.tone-green { color: #4ade80; }
-.pontoadmin-root .esp-summary-value.tone-red   { color: #f87171; }
-.pontoadmin-root .esp-summary-label {
-  font-size: 11px;
-  color: var(--mg-muted);
-  margin-top: 2px;
-}
-
-/* ── Filtros ───────────────────────────────────────────────────────────── */
-
-.pontoadmin-root .esp-filters {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-bottom: 16px;
-}
-.pontoadmin-root .esp-filter-chip {
-  padding: 6px 12px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 500;
-  border: 0.5px solid var(--mg-border-color, #262626);
-  background: var(--mg-bg2);
-  color: var(--mg-muted);
-  cursor: pointer;
-  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
-}
-.pontoadmin-root .esp-filter-chip:hover { color: var(--mg-white); }
-.pontoadmin-root .esp-filter-chip.active {
-  background: rgba(212, 168, 67, 0.14);
-  border-color: rgba(212, 168, 67, 0.45);
-  color: var(--mg-gold);
-}
 
 /* ── Tabela (desktop) ──────────────────────────────────────────────────── */
 
@@ -424,8 +366,6 @@
     line-height: 1.6;
   }
 
-  .pontoadmin-root .esp-summary { -webkit-overflow-scrolling: touch; }
-
-  .pontoadmin-root .esp-filter-chip, .pontoadmin-root .esp-monthnav-btn, .pontoadmin-root .esp-time-corrected { min-height: 32px; }
-  .pontoadmin-root button, .pontoadmin-root .esp-filter-chip { min-height: 40px; }
+  .pontoadmin-root .esp-monthnav-btn, .pontoadmin-root .esp-time-corrected { min-height: 32px; }
+  .pontoadmin-root button { min-height: 40px; }
 }
