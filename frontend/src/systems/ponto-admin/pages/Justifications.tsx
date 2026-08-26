@@ -6,6 +6,7 @@ import Badge from '../components/Badge'
 import Avatar from '../components/Avatar'
 import { formatDate } from '../utils/date'
 import { Modal } from '../components/Modal'
+import JustificationDetailModal from '../components/JustificationDetailModal'
 
 type OccurrenceType = 'FALTA_INTEGRAL' | 'FALTA_PARCIAL' | 'ATRASO' | 'SAIDA_ANTECIPADA' | 'ABONO' | 'LOCAL_EXTERNO'
 
@@ -23,11 +24,43 @@ interface Justification {
   justified_hours?: number | null
   affects_chart?: boolean
   attachment_url?: string | null
+  // Agrupa os N registros (um por dia) de um atestado de vários dias criado
+  // numa chamada só — ver POST /justifications/batch. Registros avulsos não
+  // têm batch_id.
+  batch_id?: string | null
   // Só vem preenchido para occurrence_type === LOCAL_EXTERNO — endereço/coords
   // da batida vinculada, pra mostrar onde o ponto foi registrado.
   time_log_address?: string | null
   time_log_latitude?: number | null
   time_log_longitude?: number | null
+  created_by_name?: string | null
+  reviewed_by_name?: string | null
+  reviewed_at?: string | null
+}
+
+/** Uma linha renderizável na tabela: ou uma justificativa avulsa, ou um
+ * atestado de vários dias representado pela sua primeira linha (mesmo
+ * status/reason em todas — só é criado e só muda de estado em lote). */
+interface JustificationRow {
+  key: string
+  rows: Justification[]
+  isBatch: boolean
+}
+
+function groupByBatch(data: Justification[]): JustificationRow[] {
+  const seen = new Set<string>()
+  const out: JustificationRow[] = []
+  for (const j of data) {
+    if (j.batch_id) {
+      if (seen.has(j.batch_id)) continue
+      seen.add(j.batch_id)
+      const rows = data.filter(x => x.batch_id === j.batch_id).sort((a, b) => a.date.localeCompare(b.date))
+      out.push({ key: j.batch_id, rows, isBatch: true })
+    } else {
+      out.push({ key: j.id, rows: [j], isBatch: false })
+    }
+  }
+  return out
 }
 
 const STATUS_FILTER = ['Todos', 'PENDENTE', 'APROVADO', 'REPROVADO'] as const
@@ -60,12 +93,13 @@ function hoursBetween(start: string, end: string): number | null {
 
 function CreateModal({ employees, onClose }: { employees: { id: string; name: string }[]; onClose: () => void }) {
   const qc = useQueryClient()
-  // Sem onSuccess aqui de propósito: ao criar um atestado de vários dias, o
-  // handleSave chama mutateAsync em sequência (um POST por dia) — se cada
-  // sucesso já fechasse o modal, o fluxo pararia no primeiro dia.
-  // invalidateQueries + onClose só rodam depois que TODOS os dias terminam.
   const createMutation = useMutation({
     mutationFn: (data: object) => api.post('/api/v1/justifications', data),
+  })
+  // Atestado de vários dias: uma chamada só ao /batch — o backend cria todos
+  // os dias numa transação (tudo ou nada, sem mais "criado 3 de 5 dias").
+  const createBatchMutation = useMutation({
+    mutationFn: (data: object) => api.post('/api/v1/justifications/batch', data),
   })
   const [form, setForm] = useState({
     employee_id: employees[0]?.id ?? '',
@@ -86,20 +120,27 @@ function CreateModal({ employees, onClose }: { employees: { id: string; name: st
   const hasTimes = !!(form.start_time && form.end_time)
   const computedHours = hasTimes ? hoursBetween(form.start_time, form.end_time) : null
 
-  // Intervalo de vários dias (atestado de N dias) só faz sentido pra
-  // justificativa de dia inteiro — com horário real preenchido, cada dia
-  // teria um intervalo diferente, então o campo "até" fica desabilitado.
-  function dateRange(from: string, to: string): string[] {
-    if (!to || to <= from) return [from]
-    const dates: string[] = []
-    const cur = new Date(`${from}T12:00:00`)
-    const end = new Date(`${to}T12:00:00`)
-    while (cur <= end) {
-      dates.push(cur.toLocaleDateString('en-CA'))
-      cur.setDate(cur.getDate() + 1)
-    }
-    return dates
+  // Falta integral/abono são sempre dia inteiro — não faz sentido carregar
+  // horário/horas parciais junto (já visto em produção: "Falta integral"
+  // com 2.5h preenchidas). Local externo já carrega o horário da batida
+  // vinculada, então fica de fora dessa exigência.
+  const wholeDayOnly    = form.occurrence_type === 'FALTA_INTEGRAL' || form.occurrence_type === 'ABONO'
+  const partialRequired = !wholeDayOnly && form.occurrence_type !== 'LOCAL_EXTERNO'
+  // Só um dos dois horários preenchido não é um intervalo válido — o payload
+  // manda os dois como null nesse caso (ver handleSave), então isso NÃO conta
+  // como "preenchido" (senão a validação passa mas nada é enviado de fato).
+  const onlyOneTime      = !!(form.start_time || form.end_time) && !hasTimes
+  const hasPartialFilled = hasTimes || !!form.justified_hours
+
+  function changeOccurrenceType(occurrence_type: OccurrenceType) {
+    const wholeDay = occurrence_type === 'FALTA_INTEGRAL' || occurrence_type === 'ABONO'
+    setForm(f => ({
+      ...f, occurrence_type,
+      ...(wholeDay ? { start_time: '', end_time: '', justified_hours: '' } : { end_date: '' }),
+    }))
   }
+
+  const isRange = wholeDayOnly && !!form.end_date && form.end_date > form.date
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -119,16 +160,27 @@ function CreateModal({ employees, onClose }: { employees: { id: string; name: st
   async function handleSave(e: React.FormEvent) {
     e.preventDefault(); setErr(''); setProgress('')
     if (!form.reason.trim()) { setErr('Informe o motivo'); return }
+    if (onlyOneTime) { setErr('Preencha os dois horários do intervalo (início e fim), ou deixe ambos em branco'); return }
     if (hasTimes && computedHours === null) { setErr('Horário final deve ser depois do horário inicial'); return }
+    if (wholeDayOnly && hasPartialFilled) { setErr('Falta integral/abono não pode ter horário ou horas parciais — deixe em branco para dia inteiro'); return }
+    if (partialRequired && !hasPartialFilled) { setErr('Informe o horário real ou as horas justificadas para este tipo de ocorrência'); return }
 
-    const days = hasTimes ? [form.date] : dateRange(form.date, form.end_date)
-    const failed: string[] = []
-    for (let i = 0; i < days.length; i++) {
-      if (days.length > 1) setProgress(`Criando ${i + 1} de ${days.length}...`)
-      try {
+    try {
+      if (isRange) {
+        setProgress('Criando atestado...')
+        await createBatchMutation.mutateAsync({
+          employee_id: form.employee_id,
+          date: new Date(`${form.date}T12:00:00`).toISOString(),
+          date_end: new Date(`${form.end_date}T12:00:00`).toISOString(),
+          reason: form.reason.trim(),
+          occurrence_type: form.occurrence_type,
+          affects_chart: form.affects_chart,
+          attachment_url: form.attachment_url || null,
+        })
+      } else {
         await createMutation.mutateAsync({
           employee_id: form.employee_id,
-          date: new Date(`${days[i]}T12:00:00`).toISOString(),
+          date: new Date(`${form.date}T12:00:00`).toISOString(),
           reason: form.reason.trim(),
           occurrence_type: form.occurrence_type,
           start_time: hasTimes ? form.start_time : null,
@@ -139,19 +191,13 @@ function CreateModal({ employees, onClose }: { employees: { id: string; name: st
           affects_chart: form.affects_chart,
           attachment_url: form.attachment_url || null,
         })
-      } catch {
-        failed.push(days[i])
       }
-    }
-    setProgress('')
-    if (failed.length) {
-      setErr(
-        failed.length === days.length
-          ? 'Não foi possível criar as justificativas.'
-          : `Criado(s) ${days.length - failed.length} de ${days.length} dia(s) — falhou em: ${failed.map(d => d.split('-').reverse().join('/')).join(', ')}`,
-      )
+    } catch (e) {
+      setProgress('')
+      setErr(e instanceof Error ? e.message : 'Não foi possível criar a justificativa.')
       return
     }
+    setProgress('')
     qc.invalidateQueries({ queryKey: ['justifications'] })
     onClose()
   }
@@ -175,14 +221,15 @@ function CreateModal({ employees, onClose }: { employees: { id: string; name: st
           <div className="form-group">
             <label className="form-label">Até (atestado de vários dias)</label>
             <input className="form-input" type="date" value={form.end_date} min={form.date}
-              disabled={hasTimes} title={hasTimes ? 'Não disponível com horário real preenchido' : undefined}
+              disabled={!wholeDayOnly}
+              title={!wholeDayOnly ? 'Só disponível para falta integral/abono' : undefined}
               onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))} />
           </div>
         </div>
         <div className="form-group">
           <label className="form-label">Tipo</label>
           <select className="form-input" value={form.occurrence_type}
-            onChange={e => setForm(f => ({ ...f, occurrence_type: e.target.value as OccurrenceType }))}>
+            onChange={e => changeOccurrenceType(e.target.value as OccurrenceType)}>
             {OCCURRENCE_TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
         </div>
@@ -193,22 +240,27 @@ function CreateModal({ employees, onClose }: { employees: { id: string; name: st
             onChange={e => setForm(f => ({ ...f, reason: e.target.value }))} />
         </div>
         <div className="form-group">
-          <label className="form-label">Intervalo real (ex.: saída 09:00, retorno 11:00) — opcional</label>
+          <label className="form-label">
+            Intervalo real (ex.: saída 09:00, retorno 11:00){wholeDayOnly ? '' : partialRequired ? '' : ' — opcional'}
+            {wholeDayOnly && ' — não se aplica a falta integral/abono'}
+          </label>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <input className="form-input" type="time" value={form.start_time}
+            <input className="form-input" type="time" value={form.start_time} disabled={wholeDayOnly}
               onChange={e => setForm(f => ({ ...f, start_time: e.target.value, end_date: '' }))} />
-            <input className="form-input" type="time" value={form.end_time}
+            <input className="form-input" type="time" value={form.end_time} disabled={wholeDayOnly}
               onChange={e => setForm(f => ({ ...f, end_time: e.target.value, end_date: '' }))} />
           </div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div className="form-group">
             <label className="form-label">
-              {hasTimes ? 'Horas justificadas (calculado)' : 'Horas justificadas (vazio = dia inteiro)'}
+              {hasTimes ? 'Horas justificadas (calculado)'
+                : wholeDayOnly ? 'Horas justificadas (dia inteiro)'
+                : 'Horas justificadas'}
             </label>
             <input className="form-input" type="number" step="0.5" min="0.5" max="12"
               value={hasTimes ? (computedHours ?? '') : form.justified_hours}
-              placeholder="Ex: 2" disabled={hasTimes}
+              placeholder="Ex: 2" disabled={hasTimes || wholeDayOnly}
               onChange={e => setForm(f => ({ ...f, justified_hours: e.target.value }))} />
           </div>
           <div className="form-group">
@@ -237,8 +289,9 @@ function CreateModal({ employees, onClose }: { employees: { id: string; name: st
         {err && <div style={{ fontSize: 12, color: 'var(--mg-red)', marginBottom: 12 }}>{err}</div>}
         <div className="modal-actions">
           <button type="button" className="btn-ghost" onClick={onClose}>Cancelar</button>
-          <button type="submit" className="btn-primary" disabled={createMutation.isPending || uploading}>
-            {progress || (createMutation.isPending ? 'Salvando...' : 'Criar justificativa')}
+          <button type="submit" className="btn-primary"
+            disabled={createMutation.isPending || createBatchMutation.isPending || uploading}>
+            {progress || (createMutation.isPending || createBatchMutation.isPending ? 'Salvando...' : 'Criar justificativa')}
           </button>
         </div>
       </form>
@@ -251,26 +304,52 @@ function CreateModal({ employees, onClose }: { employees: { id: string; name: st
 export default function Justifications() {
   const [filter,     setFilter]     = useState<typeof STATUS_FILTER[number]>('Todos')
   const [showCreate, setShowCreate] = useState(false)
+  const [detailRow,  setDetailRow]  = useState<JustificationRow | null>(null)
   const qc = useQueryClient()
   const { data: employees = [] } = useEmployees()
 
-  const { data, isLoading } = useQuery<Justification[]>({
-    queryKey: ['justifications', filter],
-    queryFn: () => api.get(`/api/v1/justifications${filter !== 'Todos' ? `?status=${filter}` : ''}`),
+  // Busca sempre tudo e filtra no cliente — um filtro de status na querystring
+  // faz um registro conflitante (ex.: já reprovado) sumir da tela sem deixar
+  // rastro, o que já causou confusão num 409 que não batia com o que aparecia
+  // pro usuário (nenhuma justificativa daquele status visível ali).
+  const { data: allData, isLoading } = useQuery<Justification[]>({
+    queryKey: ['justifications'],
+    queryFn: () => api.get('/api/v1/justifications'),
   })
+  const data = filter === 'Todos' ? allData : allData?.filter(j => j.status === filter)
 
   const approveMutation = useMutation({
     mutationFn: (id: string) => api.patch(`/api/v1/justifications/${id}/approve`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['justifications'] }),
   })
-
   const rejectMutation = useMutation({
     mutationFn: (id: string) => api.patch(`/api/v1/justifications/${id}/reject`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['justifications'] }),
   })
+  // Um atestado de vários dias sempre aprova/recusa inteiro — os dias que o
+  // compõem não têm ação individual, só a do lote.
+  const approveBatchMutation = useMutation({
+    mutationFn: (batchId: string) => api.patch(`/api/v1/justifications/batch/${batchId}/approve`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['justifications'] }),
+  })
+  const rejectBatchMutation = useMutation({
+    mutationFn: (batchId: string) => api.patch(`/api/v1/justifications/batch/${batchId}/reject`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['justifications'] }),
+  })
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/api/v1/justifications/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['justifications'] }),
+    onError: (e: unknown) => alert(e instanceof Error ? e.message : 'Erro ao excluir'),
+  })
+  const deleteBatchMutation = useMutation({
+    mutationFn: (batchId: string) => api.delete(`/api/v1/justifications/batch/${batchId}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['justifications'] }),
+    onError: (e: unknown) => alert(e instanceof Error ? e.message : 'Erro ao excluir'),
+  })
 
   const employeeMap = Object.fromEntries((employees ?? []).map(e => [e.id, e]))
-  const pendingCount = (data ?? []).filter(j => j.status === 'PENDENTE').length
+  const pendingCount = (allData ?? []).filter(j => j.status === 'PENDENTE').length
+  const rows = groupByBatch(data ?? [])
 
   return (
     <div className="animate-in">
@@ -312,17 +391,35 @@ export default function Justifications() {
           </thead>
           <tbody>
             {isLoading && <tr><td colSpan={7} style={{ color: 'var(--mg-muted)', textAlign: 'center', padding: 24 }}>Carregando...</td></tr>}
-            {(data ?? []).map(j => {
+            {rows.map(({ key, rows: batchRows, isBatch }) => {
+              const j = batchRows[0]
+              const last = batchRows[batchRows.length - 1]
               const emp = employeeMap[j.employee_id]
+              const onApprove = () => isBatch ? approveBatchMutation.mutate(key) : approveMutation.mutate(j.id)
+              const onReject  = () => isBatch ? rejectBatchMutation.mutate(key)  : rejectMutation.mutate(j.id)
+              const pending = isBatch
+                ? approveBatchMutation.isPending || rejectBatchMutation.isPending
+                : approveMutation.isPending || rejectMutation.isPending
               return (
-                <tr key={j.id}>
+                <tr key={key} style={{ cursor: 'pointer' }}
+                  onClick={e => { if ((e.target as HTMLElement).closest('button')) return; setDetailRow({ key, rows: batchRows, isBatch }) }}>
                   <td>
                     <div className="employee-cell">
                       <Avatar name={emp?.name ?? '?'} size={28} />
                       <span>{emp?.name ?? j.employee_id}</span>
                     </div>
                   </td>
-                  <td style={{ color: 'var(--mg-muted)' }}>{formatDate(j.date)}</td>
+                  <td style={{ color: 'var(--mg-muted)' }}>
+                    {isBatch && batchRows.length > 1
+                      ? `${formatDate(j.date)} – ${formatDate(last.date)}`
+                      : formatDate(j.date)}
+                    {isBatch && (
+                      <span style={{ marginLeft: 6, fontSize: 10, color: 'var(--mg-muted)', opacity: 0.7 }}
+                        title="Atestado de vários dias — aprovar/recusar afeta todos os dias">
+                        📎{batchRows.length}d
+                      </span>
+                    )}
+                  </td>
                   <td style={{ fontSize: 12 }}>
                     {OCCURRENCE_TYPE_LABEL[j.occurrence_type ?? 'FALTA_INTEGRAL'] ?? j.occurrence_type}
                   </td>
@@ -355,23 +452,35 @@ export default function Justifications() {
                     </Badge>
                   </td>
                   <td>
-                    {j.status === 'PENDENTE' && (
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        <button className="btn-primary" style={{ padding: '4px 10px', fontSize: 12 }}
-                          onClick={() => approveMutation.mutate(j.id)} disabled={approveMutation.isPending}>
-                          Aprovar
-                        </button>
-                        <button className="btn-danger" style={{ padding: '4px 10px', fontSize: 12 }}
-                          onClick={() => rejectMutation.mutate(j.id)} disabled={rejectMutation.isPending}>
-                          Reprovar
-                        </button>
-                      </div>
-                    )}
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      {j.status === 'PENDENTE' && (
+                        <>
+                          <button className="btn-primary" style={{ padding: '4px 10px', fontSize: 12 }}
+                            onClick={onApprove} disabled={pending}>
+                            Aprovar
+                          </button>
+                          <button className="btn-danger" style={{ padding: '4px 10px', fontSize: 12 }}
+                            onClick={onReject} disabled={pending}>
+                            Reprovar
+                          </button>
+                        </>
+                      )}
+                      <button className="btn-ghost" style={{ padding: '4px 10px', fontSize: 12 }}
+                        disabled={deleteMutation.isPending || deleteBatchMutation.isPending}
+                        onClick={() => {
+                          if (!confirm(isBatch
+                            ? `Excluir o atestado inteiro (${batchRows.length} dia(s))? Essa ação não pode ser desfeita.`
+                            : 'Excluir esta justificativa? Essa ação não pode ser desfeita.')) return
+                          isBatch ? deleteBatchMutation.mutate(key) : deleteMutation.mutate(j.id)
+                        }}>
+                        🗑
+                      </button>
+                    </div>
                   </td>
                 </tr>
               )
             })}
-            {!isLoading && !data?.length && (
+            {!isLoading && !rows.length && (
               <tr><td colSpan={7} style={{ color: 'var(--mg-muted)', textAlign: 'center', padding: 24 }}>Nenhuma justificativa</td></tr>
             )}
           </tbody>
@@ -380,8 +489,21 @@ export default function Justifications() {
 
       {showCreate && (
         <CreateModal
-          employees={employees.filter(e => e.is_active).map(e => ({ id: e.id, name: e.name }))}
+          employees={employees
+            .filter(e => e.is_active)
+            .map(e => ({ id: e.id, name: e.name }))
+            .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))}
           onClose={() => setShowCreate(false)}
+        />
+      )}
+      {detailRow && (
+        <JustificationDetailModal
+          justification={detailRow.rows[0]}
+          employeeName={employeeMap[detailRow.rows[0].employee_id]?.name ?? detailRow.rows[0].employee_id}
+          dateRangeLabel={detailRow.isBatch && detailRow.rows.length > 1
+            ? `${formatDate(detailRow.rows[0].date)} – ${formatDate(detailRow.rows[detailRow.rows.length - 1].date)} (${detailRow.rows.length} dias)`
+            : undefined}
+          onClose={() => setDetailRow(null)}
         />
       )}
     </div>

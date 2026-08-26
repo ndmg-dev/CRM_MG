@@ -8,6 +8,10 @@ export interface TimeLog {
   source: string
   notes?: string
   created_at: string
+  /** Preenchido só quando o horário foi corrigido (não em criações manuais puras) — ver comentário no model do backend. */
+  original_created_at?: string
+  edited_by_name?: string
+  edited_at?: string
   employee_id: string
   company_id: string
   latitude?: number

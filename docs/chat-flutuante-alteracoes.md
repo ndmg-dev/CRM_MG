@@ -166,22 +166,28 @@ acontecer.
   etc.), então renderiza como separador central em vez de bolha de
   mensagem, visível pro solicitante.
 
-## 12. Correção do mapeamento A Fazer / Em Andamento + UX de encerrar chat
+## 12. Correção do mapeamento A Fazer / Em Andamento (com um vaivém)
 
 **Arquivos:** `ticketStatus.ts`, `ConversationView.tsx`
 
 Depois do item 11, veio a correção: o resto do app (`TicketDetailDialog.tsx`)
 trata `open` como "A Fazer" e `pending` como "Em Andamento" — o chat tinha
-isso invertido. E mais: pro negócio, `new`/`open`/`pending` são todos
-"chamado novo" — não existe hoje um status dedicado a "em andamento" no
-enum `ticket_status`. Solução provisória, até rodar uma migração
-`ALTER TYPE ticket_status ADD VALUE 'in_progress'` (que também vai exigir
-ajustar `TicketDetailDialog.tsx`, `KanbanBoard.tsx`, `Reports.tsx`,
-`PortalHome.tsx` e o trigger `track_ticket_tm_metrics` — não feito nesta
-rodada, escopo combinado só pro chat por enquanto):
+isso invertido (`open` = in_progress). Nessa primeira correção, achou-se
+(por engano) que `open` também era "chamado novo" pro negócio e usou-se
+`open` como "Em Andamento" provisório.
 
-- **A Fazer** = `new` + `pending`.
-- **Em Andamento** = `open` (emprestado provisoriamente).
+**Isso estava errado — corrigido de volta.** Conferindo o Kanban de
+verdade (`KanbanBoard.tsx`, a fonte real: a coluna "Em Andamento" ali
+filtra por `status === 'pending'`, e "A Fazer" filtra `new`/`open`), ficou
+confirmado que o mapeamento original já estava certo:
+
+- **A Fazer** = `new` + `open`.
+- **Em Andamento** = `pending`.
+
+Kanban e `TicketDetailDialog` concordam entre si nisso — não há
+inconsistência nem necessidade de migração alguma para o chat funcionar
+certo. `ticketCategory()` tem um comentário avisando pra não reintroduzir
+a troca sem reconferir o Kanban.
 
 Também três ajustes de UX no fechamento pedidos depois de usar a
 funcionalidade:
@@ -189,16 +195,33 @@ funcionalidade:
 - **Modal próprio em vez de `confirm()` do navegador** — o clique em
   "Encerrar Chat" abre um modal no estilo do resto do widget, não mais o
   alert nativo do Chrome.
-- **Chat não some mais da tela na hora** — antes, encerrar já gravava
-  `status: closed` na hora, e o chamado sumia imediatamente da aba Em
-  Andamento (confuso pra quem estava no meio de ler a conversa). Agora
-  "Encerrar Chat" só posta o aviso no histórico e bloqueia o input; o
-  status só é gravado como `closed` de fato quando a TI sai da conversa
-  (volta pra lista, minimiza ou fecha o widget — via um `useEffect` de
-  cleanup que dispara o update no unmount).
+- **Chat não some mais da tela na hora** (primeira versão) — encerrar
+  passou a só postar o aviso e bloquear o input, adiando o `status:
+  closed` de verdade pra quando a TI saísse da conversa (via `useEffect`
+  de cleanup no unmount). Revisado no item 13 — ver abaixo.
 - **Quem encerrou** — a mensagem de encerramento agora inclui o nome de
   quem encerrou ("Este chat foi encerrado por Fulano."), não só um aviso
   genérico.
+
+## 13. Encerrar chat: status imediato, sem aviso de "vai sumir" + detecção de reabertura
+
+**Arquivo:** `ConversationView.tsx`
+
+Revisão do item 12: em vez de adiar a gravação do `status: closed` até o
+unmount (via `useEffect` de cleanup), agora **"Encerrar Chat" grava o
+status na hora** — mais simples, sem a complexidade do timing de unmount.
+O que muda é o que a **tela atual** mostra: um estado local (`justClosed`)
+mantém o input e os botões de status funcionando normalmente nesta mesma
+instância da conversa até a TI sair dela — sem nenhum aviso de "isso vai
+sumir da aba". Na próxima vez que a conversa for aberta (remount), o
+`status` já é `closed` de verdade e a tela mostra o bloqueio normal.
+
+Também: detecção automática de reabertura. Se o chamado voltar de
+`closed`/`resolved`/`canceled` pra qualquer outro status — pelos botões do
+próprio chat, ou por fora (dropdown do `TicketDetailDialog`, Kanban etc.)
+— o chat detecta a transição (comparando o status anterior com o atual via
+`useEffect`) e insere sozinho um "Este chat foi reaberto." no histórico,
+sem precisar que a reabertura tenha passado pelo chat.
 
 ## Verificação
 

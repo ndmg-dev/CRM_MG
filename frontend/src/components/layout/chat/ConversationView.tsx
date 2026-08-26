@@ -8,15 +8,13 @@ import { isTicketClosed, ticketCategory } from '@/systems/central-suporte/utils/
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024 // 10MB — mesmo limite do TicketDetailDialog
 
-type ManualTicketStatus = 'open' | 'testing' | 'parado' | 'closed'
+type ManualTicketStatus = 'pending' | 'testing' | 'parado' | 'closed'
 
-// PROVISÓRIO: "Em andamento" grava `open` até existir um status
-// `in_progress` de verdade no banco (ver comentário em ticketStatus.ts).
-// `new`/`open`/`pending` são todos "chamado novo" pro negócio — `open` foi
-// emprestado só aqui no chat pra dar um lugar pro botão escrever até a
-// migração acontecer. Trocar por `in_progress` quando ela rodar.
+// "Em andamento" grava `pending` — confirmado contra o Kanban (fonte real)
+// e o TicketDetailDialog, que concordam: `open` = "A Fazer", `pending` =
+// "Em Andamento". Ver comentário em ticketStatus.ts.
 const STATUS_BUTTONS: { status: ManualTicketStatus; label: string }[] = [
-  { status: 'open', label: 'Em andamento' },
+  { status: 'pending', label: 'Em andamento' },
   { status: 'testing', label: 'Em teste' },
   { status: 'parado', label: 'Parado' },
 ]
@@ -50,10 +48,19 @@ function formatTime(dateStr: string): string {
   return new Date(dateStr).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 }
 
+// Textos usados tanto pra montar o comentário quanto pro regex abaixo que o
+// reconhece como nota de sistema — numa constante só pra não desalinhar
+// silenciosamente se um dos dois lados mudar sozinho.
+const CLOSE_NOTE_PREFIX = 'Este chat foi encerrado'
+const REOPEN_NOTE = 'Este chat foi reaberto.'
+
 // Comentários automáticos de evento (transferência, mudança de status etc.)
 // não têm uma coluna própria pra marcar isso — só dá pra reconhecer pelo
 // texto. Viram um separador central, não uma bolha de conversa.
-const SYSTEM_NOTE_PATTERN = /^(transferido de .+ para .+|categoria alterada|status alterado|prioridade alterada|este chat foi encerrado)/i
+const SYSTEM_NOTE_PATTERN = new RegExp(
+  `^(transferido de .+ para .+|categoria alterada|status alterado|prioridade alterada|${CLOSE_NOTE_PREFIX}|${REOPEN_NOTE.replace(/\.$/, '')})`,
+  'i',
+)
 function isSystemNote(content: string): boolean {
   const stripped = (content || '').trim().replace(/^[^\p{L}]+/u, '')
   return SYSTEM_NOTE_PATTERN.test(stripped)
@@ -78,13 +85,16 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [newDividerIndex, setNewDividerIndex] = useState<number | null>(null)
   const [closeModalOpen, setCloseModalOpen] = useState(false)
-  const [pendingClose, setPendingClose] = useState(false)
+  // Grava status=closed na hora (ver closeChatMutation), mas mantém ESTA
+  // instância da tela funcionando normalmente — sem o aviso "vai sumir da
+  // aba" nem bloquear o input — até a TI sair da conversa. Na próxima vez
+  // que abrir (remount), `isClosed` já reflete o banco e mostra bloqueado.
+  const [justClosed, setJustClosed] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const seenCounts = useRef<Map<string, number>>(new Map())
   const dividerComputedFor = useRef<string | null>(null)
   const commentsLenRef = useRef(0)
-  const pendingCloseRef = useRef(false)
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id ?? null))
@@ -104,11 +114,30 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
   })
 
   const isClosed = isTicketClosed(ticket?.status)
-  // "Encerrar Chat" não grava o status na hora — só quando a TI sai desta
-  // conversa (ver efeito de unmount abaixo). Até lá, `pendingClose` já
-  // bloqueia o input e mostra o aviso, mas o chamado continua onde estava
-  // (ex.: na aba Em Andamento) em vez de sumir da tela no meio da leitura.
-  const isBlocked = isClosed || pendingClose
+  const isBlocked = isClosed && !justClosed
+
+  // Detecta reabertura mesmo quando ela acontece fora do chat (dropdown de
+  // status do TicketDetailDialog, Kanban etc.) — sem isso, o histórico fica
+  // com "Este chat foi encerrado" e nada avisando que voltou a aceitar
+  // mensagem, mesmo com o input já liberado de novo.
+  const prevStatusRef = useRef<string | null | undefined>(undefined)
+  useEffect(() => {
+    if (!ticket) return
+    const prevStatus = prevStatusRef.current
+    const wasClosed = prevStatus !== undefined && isTicketClosed(prevStatus)
+    if (wasClosed && !isTicketClosed(ticket.status)) {
+      setJustClosed(false)
+      supabase.from('comments').insert({
+        ticket_id: ticketId,
+        content: REOPEN_NOTE,
+        author_id: currentUserId,
+        internal_only: false,
+      }).then(({ error }) => {
+        if (!error) queryClient.invalidateQueries({ queryKey: ['chat-widget-comments', ticketId] })
+      })
+    }
+    prevStatusRef.current = ticket.status
+  }, [ticket, ticketId, currentUserId, queryClient])
 
   const { data: comments = [] } = useQuery({
     queryKey: ['chat-widget-comments', ticketId],
@@ -145,19 +174,6 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
     },
   })
 
-  // Finaliza o encerramento só ao sair desta conversa (voltar pra lista,
-  // minimizar ou fechar o widget) — é o que faz o chamado só "sumir" da
-  // aba Em Andamento depois que a TI já viu a confirmação, e não no
-  // instante em que clicou em Encerrar Chat.
-  useEffect(() => {
-    return () => {
-      if (pendingCloseRef.current) {
-        supabase.from('tickets').update({ status: 'closed' }).eq('id', ticketId).then(() => {
-          queryClient.invalidateQueries({ queryKey: ['chat-widget-conversations'] })
-        })
-      }
-    }
-  }, [ticketId, queryClient])
 
   useEffect(() => {
     const channel = supabase
@@ -192,20 +208,15 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
 
     const unreadFromOthers = comments.filter((c: any) => c.author_id !== currentUserId && !c.read_at)
     if (unreadFromOthers.length > 0) {
-      supabase.from('comments')
-        .update({ read_at: new Date().toISOString() })
-        .in('id', unreadFromOthers.map((c: any) => c.id))
-        .select('id')
-        .then(({ data, error }) => {
-          // Se a RLS de `comments` só permitir UPDATE pelo próprio autor, este
-          // update falha silenciosamente (0 linhas, sem erro) e o tick nunca
-          // vira "lido" pro remetente — sinaliza isso no console pra facilitar
-          // o diagnóstico em vez de mascarar o problema.
-          if (error) {
-            console.error('[chat] Falha ao marcar comentários como lidos:', error)
-          } else if ((data?.length ?? 0) < unreadFromOthers.length) {
-            console.warn(`[chat] Só ${data?.length ?? 0} de ${unreadFromOthers.length} comentários foram marcados como lidos — verifique a policy de UPDATE em comments.`)
-          }
+      // RPC em vez de UPDATE direto: a RLS de `comments` só deixa o autor
+      // atualizar a própria linha, e quem marca como lido é sempre o
+      // destinatário — um UPDATE direto falhava silenciosamente (0 linhas,
+      // sem erro) e o tick nunca virava duplo. `mark_comments_read` roda
+      // como SECURITY DEFINER só pra gravar read_at (ver migration
+      // 202608261500_mark_comment_read_rpc.sql).
+      supabase.rpc('mark_comments_read', { p_comment_ids: unreadFromOthers.map((c: any) => c.id) })
+        .then(({ error }) => {
+          if (error) console.error('[chat] Falha ao marcar comentários como lidos:', error)
           queryClient.invalidateQueries({ queryKey: ['chat-widget-comments', ticketId] })
         })
     }
@@ -307,12 +318,11 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
         if (attError) throw attError
       }
 
-      // Resposta da TI move o chamado pra "Em Andamento" (status `open`,
-      // provisório — ver comentário em STATUS_BUTTONS) sozinha — sem isso,
-      // um chamado "A fazer"/"Em teste"/"Parado" fica preso lá mesmo depois
-      // de alguém já estar cuidando dele.
+      // Resposta da TI move o chamado pra "Em Andamento" (status `pending`)
+      // sozinha — sem isso, um chamado "A fazer"/"Em teste"/"Parado" fica
+      // preso lá mesmo depois de alguém já estar cuidando dele.
       if (ticket && ticketCategory(ticket.status) !== 'in_progress') {
-        await supabase.from('tickets').update({ status: 'open' }).eq('id', ticketId)
+        await supabase.from('tickets').update({ status: 'pending' }).eq('id', ticketId)
       }
     },
     onSuccess: () => {
@@ -339,28 +349,32 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
     onError: () => toast.error('Erro ao alterar o status do chamado'),
   })
 
-  // "Encerrar Chat": deixa um aviso visível pro solicitante no histórico
-  // (com quem encerrou) e bloqueia o input na hora — mas só grava o status
-  // `closed` de fato quando a TI sai desta conversa (ver efeito de unmount
-  // acima), pra não sumir o chamado da tela no meio da leitura.
+  // "Encerrar Chat": grava o status `closed` na hora (o chamado já muda de
+  // aba pra quem estiver na lista) e deixa um aviso visível no histórico
+  // (com quem encerrou) — mas esta tela em particular continua se
+  // comportando como aberta (via `justClosed`) até a TI sair da conversa,
+  // pra não travar o input nem soltar aviso de "vai sumir" no meio do uso.
   const closeChatMutation = useMutation({
     mutationFn: async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Não autenticado')
       const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', user.id).single()
       const authorName = profile?.full_name || 'alguém da TI'
-      const { error } = await supabase.from('comments').insert({
+      const { error: commentError } = await supabase.from('comments').insert({
         ticket_id: ticketId,
-        content: `Este chat foi encerrado por ${authorName}.`,
+        content: `${CLOSE_NOTE_PREFIX} por ${authorName}.`,
         author_id: user.id,
         internal_only: false,
       })
-      if (error) throw error
+      if (commentError) throw commentError
+      const { error: statusError } = await supabase.from('tickets').update({ status: 'closed' }).eq('id', ticketId)
+      if (statusError) throw statusError
     },
     onSuccess: () => {
-      pendingCloseRef.current = true
-      setPendingClose(true)
+      setJustClosed(true)
       queryClient.invalidateQueries({ queryKey: ['chat-widget-comments', ticketId] })
+      queryClient.invalidateQueries({ queryKey: ['chat-widget-ticket', ticketId] })
+      queryClient.invalidateQueries({ queryKey: ['chat-widget-conversations'] })
     },
     onError: () => toast.error('Erro ao encerrar o chat'),
   })
@@ -552,9 +566,7 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
       {/* Input */}
       {isBlocked ? (
         <div className="border-t border-border p-3 text-center text-xs text-text-muted">
-          {pendingClose
-            ? 'Chat encerrado. Ele sai da aba Em Andamento quando você sair desta conversa.'
-            : 'Este chamado está encerrado. Mova-o para outra seção e reabra pra continuar a conversa.'}
+          Este chamado está encerrado. Mova-o para outra seção e reabra pra continuar a conversa.
         </div>
       ) : (
       <div className="flex items-center gap-2 border-t border-border p-2.5">

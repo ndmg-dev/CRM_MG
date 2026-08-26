@@ -109,7 +109,6 @@ export function ConversationList() {
   const { data: conversations = [], isLoading } = useConversations()
   const unreadCounts = useUnreadComments()
   const [tab, setTab] = useState<TicketCategory>('todo')
-  const [otherSub, setOtherSub] = useState<TicketCategory>('closed')
   const [otherMenuOpen, setOtherMenuOpen] = useState(false)
   const otherMenuRef = useRef<HTMLDivElement>(null)
 
@@ -129,6 +128,12 @@ export function ConversationList() {
     for (const c of conversations) counts[c.category]++
     return counts
   }, [conversations])
+
+  // Soma das 3 sub-categorias do dropdown — o botão "Outros" (fechado)
+  // precisa mostrar o total agrupado ali, não só a contagem da sub-aba
+  // selecionada por último (senão o número não bate com o que a pessoa
+  // vai encontrar ao abrir o dropdown).
+  const otherTotal = OTHER_OPTIONS.reduce((sum, o) => sum + categoryCounts[o.key], 0)
 
   const visibleConversations = useMemo(
     () => conversations.filter((c) => c.category === tab),
@@ -199,8 +204,8 @@ export function ConversationList() {
             }`}
           >
             {isOtherTab ? OTHER_OPTIONS.find((o) => o.key === tab)?.label : 'Outros'}
-            {categoryCounts[isOtherTab ? tab : otherSub] > 0 && (
-              <span className="text-[10px] text-text-muted">{categoryCounts[isOtherTab ? tab : otherSub]}</span>
+            {(isOtherTab ? categoryCounts[tab] : otherTotal) > 0 && (
+              <span className="text-[10px] text-text-muted">{isOtherTab ? categoryCounts[tab] : otherTotal}</span>
             )}
             <ChevronDown className="h-3 w-3" />
           </button>
@@ -211,7 +216,6 @@ export function ConversationList() {
                 <button
                   key={o.key}
                   onClick={() => {
-                    setOtherSub(o.key)
                     setTab(o.key)
                     setOtherMenuOpen(false)
                   }}

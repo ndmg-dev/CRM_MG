@@ -8,9 +8,17 @@ export interface Justification {
   status: 'PENDENTE' | 'APROVADO' | 'REPROVADO'
   employee_id: string
   time_log_id?: string
+  occurrence_type?: string
+  start_time?: string | null
+  end_time?: string | null
   justified_hours?: number
   affects_chart: boolean
+  attachment_url?: string | null
   created_at: string
+  batch_id?: string | null
+  created_by_name?: string | null
+  reviewed_by_name?: string | null
+  reviewed_at?: string | null
 }
 
 export function useJustifications(params?: { employee_id?: string; status?: string }) {
