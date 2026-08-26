@@ -189,16 +189,33 @@ funcionalidade:
 - **Modal próprio em vez de `confirm()` do navegador** — o clique em
   "Encerrar Chat" abre um modal no estilo do resto do widget, não mais o
   alert nativo do Chrome.
-- **Chat não some mais da tela na hora** — antes, encerrar já gravava
-  `status: closed` na hora, e o chamado sumia imediatamente da aba Em
-  Andamento (confuso pra quem estava no meio de ler a conversa). Agora
-  "Encerrar Chat" só posta o aviso no histórico e bloqueia o input; o
-  status só é gravado como `closed` de fato quando a TI sai da conversa
-  (volta pra lista, minimiza ou fecha o widget — via um `useEffect` de
-  cleanup que dispara o update no unmount).
+- **Chat não some mais da tela na hora** (primeira versão) — encerrar
+  passou a só postar o aviso e bloquear o input, adiando o `status:
+  closed` de verdade pra quando a TI saísse da conversa (via `useEffect`
+  de cleanup no unmount). Revisado no item 13 — ver abaixo.
 - **Quem encerrou** — a mensagem de encerramento agora inclui o nome de
   quem encerrou ("Este chat foi encerrado por Fulano."), não só um aviso
   genérico.
+
+## 13. Encerrar chat: status imediato, sem aviso de "vai sumir" + detecção de reabertura
+
+**Arquivo:** `ConversationView.tsx`
+
+Revisão do item 12: em vez de adiar a gravação do `status: closed` até o
+unmount (via `useEffect` de cleanup), agora **"Encerrar Chat" grava o
+status na hora** — mais simples, sem a complexidade do timing de unmount.
+O que muda é o que a **tela atual** mostra: um estado local (`justClosed`)
+mantém o input e os botões de status funcionando normalmente nesta mesma
+instância da conversa até a TI sair dela — sem nenhum aviso de "isso vai
+sumir da aba". Na próxima vez que a conversa for aberta (remount), o
+`status` já é `closed` de verdade e a tela mostra o bloqueio normal.
+
+Também: detecção automática de reabertura. Se o chamado voltar de
+`closed`/`resolved`/`canceled` pra qualquer outro status — pelos botões do
+próprio chat, ou por fora (dropdown do `TicketDetailDialog`, Kanban etc.)
+— o chat detecta a transição (comparando o status anterior com o atual via
+`useEffect`) e insere sozinho um "Este chat foi reaberto." no histórico,
+sem precisar que a reabertura tenha passado pelo chat.
 
 ## Verificação
 
