@@ -17,7 +17,6 @@ import {
   ChevronDown,
   Shield,
   Calendar,
-  Hourglass,
   Pencil,
   UserCog,
   Settings,
@@ -37,7 +36,6 @@ const directItems: { to: string; label: string; icon: typeof Home; end?: boolean
 ]
 
 const managementItems: { to: string; label: string; icon: typeof Home; permission: Permission }[] = [
-  { to: 'espelho', label: 'Espelho de ponto', icon: Hourglass, permission: 'reports' },
   { to: 'justifications', label: 'Justificativas', icon: FileText, permission: 'justifications' },
   { to: 'corrections', label: 'Correções de ponto', icon: Pencil, permission: 'corrections' },
   { to: 'calendar', label: 'Calendário', icon: Calendar, permission: 'calendar' },
