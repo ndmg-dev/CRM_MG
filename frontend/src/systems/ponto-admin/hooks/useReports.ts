@@ -118,8 +118,9 @@ export function useAlerts(year: number, month: number, scope: string, ids?: stri
 }
 
 export interface Totals {
-  total_expected_hours: number
-  total_worked_hours:   number
+  total_expected_hours:  number
+  total_worked_hours:    number
+  total_justified_hours: number
   total_balance:        number
   avg_attendance_pct:   number
   employee_count:       number
@@ -266,13 +267,15 @@ export interface MirrorRow {
   retorno_almoco:  string | null
   saida:           string | null
   worked_h:        number
+  justified_h:     number
+  total_h:         number
   lunch_minutes:   number | null
   expected_h:      number
   status:          'ok' | 'incomplete' | 'absent' | 'justified' | 'weekend' | 'holiday' | 'special' | 'future' | 'ferias'
   has_justification: boolean
   // Chave = 'entrada' | 'saida_almoco' | 'retorno_almoco' | 'saida' — só
   // presente quando aquele horário foi corrigido/lançado manualmente por
-  // um admin.
+  // um admin (ver routers/time_logs.py).
   corrections:     Record<string, MirrorCorrection>
   occurrences:     MirrorOccurrence[]
 }
