@@ -118,6 +118,19 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
   const isSistemasActive = location.pathname.startsWith('/sistemas')
   const secondaryItems = isAdmin ? [...navItems, ...adminItems] : navItems
 
+  // Submenu de categorias (nav expandida, mobile): aberto/fechado por clique,
+  // não pela rota — senão clicar em "Sistemas" de novo nunca fecharia (a rota
+  // já é /sistemas, não muda). Abre sozinho só ao ENTRAR na área de Sistemas
+  // vindo de fora (não a cada troca de sistema dentro dela), pra não brigar
+  // com um fechamento manual do usuário.
+  const [sistemasSubmenuOpen, setSistemasSubmenuOpen] = useState(false)
+  const prevPathRef = useRef(location.pathname)
+  useEffect(() => {
+    const wasOutside = !prevPathRef.current.startsWith('/sistemas')
+    if (isSistemasActive && wasOutside) setSistemasSubmenuOpen(true)
+    prevPathRef.current = location.pathname
+  }, [location.pathname, isSistemasActive])
+
   const { data: sistemas = [] } = useQuery({
     queryKey: ['sistemas'],
     queryFn: () => api.sistemas.getAll(),
@@ -283,6 +296,16 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
         <div className="flex flex-col">
           <NavLink
             to="/sistemas"
+            onClick={(e) => {
+              // Já estamos na área de Sistemas: o clique só alterna o
+              // submenu, não precisa navegar de novo (mesma rota).
+              if (isSistemasActive) {
+                e.preventDefault()
+                setSistemasSubmenuOpen((prev) => !prev)
+              } else {
+                setSistemasSubmenuOpen(true)
+              }
+            }}
             className={`flex items-center gap-3 border-l-[3px] px-4 py-2.5 text-[13px] font-medium transition-colors ${
               isSistemasActive
                 ? 'border-gold bg-gold-soft text-gold'
@@ -293,7 +316,7 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
             <span className="truncate">Sistemas</span>
           </NavLink>
 
-          {isSistemasActive && (
+          {sistemasSubmenuOpen && (
             <div className="max-h-[50vh] overflow-y-auto overflow-x-hidden border-l-[3px] border-transparent bg-background/40 py-1 pl-4 pr-2">
               {Object.entries(sistemasBySetor).map(([setor, items]) => {
                 const meta = getSetorColors(setor, nomeSetor[setor])
