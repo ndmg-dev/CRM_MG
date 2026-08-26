@@ -10,6 +10,11 @@ const MAX_IMAGE_BYTES = 10 * 1024 * 1024 // 10MB — mesmo limite do TicketDetai
 
 type ManualTicketStatus = 'open' | 'testing' | 'parado' | 'closed'
 
+// PROVISÓRIO: "Em andamento" grava `open` até existir um status
+// `in_progress` de verdade no banco (ver comentário em ticketStatus.ts).
+// `new`/`open`/`pending` são todos "chamado novo" pro negócio — `open` foi
+// emprestado só aqui no chat pra dar um lugar pro botão escrever até a
+// migração acontecer. Trocar por `in_progress` quando ela rodar.
 const STATUS_BUTTONS: { status: ManualTicketStatus; label: string }[] = [
   { status: 'open', label: 'Em andamento' },
   { status: 'testing', label: 'Em teste' },
@@ -72,11 +77,14 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
   const [pendingImagePreview, setPendingImagePreview] = useState<string | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [newDividerIndex, setNewDividerIndex] = useState<number | null>(null)
+  const [closeModalOpen, setCloseModalOpen] = useState(false)
+  const [pendingClose, setPendingClose] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const seenCounts = useRef<Map<string, number>>(new Map())
   const dividerComputedFor = useRef<string | null>(null)
   const commentsLenRef = useRef(0)
+  const pendingCloseRef = useRef(false)
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id ?? null))
@@ -96,6 +104,11 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
   })
 
   const isClosed = isTicketClosed(ticket?.status)
+  // "Encerrar Chat" não grava o status na hora — só quando a TI sai desta
+  // conversa (ver efeito de unmount abaixo). Até lá, `pendingClose` já
+  // bloqueia o input e mostra o aviso, mas o chamado continua onde estava
+  // (ex.: na aba Em Andamento) em vez de sumir da tela no meio da leitura.
+  const isBlocked = isClosed || pendingClose
 
   const { data: comments = [] } = useQuery({
     queryKey: ['chat-widget-comments', ticketId],
@@ -131,6 +144,20 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
       return withUrls
     },
   })
+
+  // Finaliza o encerramento só ao sair desta conversa (voltar pra lista,
+  // minimizar ou fechar o widget) — é o que faz o chamado só "sumir" da
+  // aba Em Andamento depois que a TI já viu a confirmação, e não no
+  // instante em que clicou em Encerrar Chat.
+  useEffect(() => {
+    return () => {
+      if (pendingCloseRef.current) {
+        supabase.from('tickets').update({ status: 'closed' }).eq('id', ticketId).then(() => {
+          queryClient.invalidateQueries({ queryKey: ['chat-widget-conversations'] })
+        })
+      }
+    }
+  }, [ticketId, queryClient])
 
   useEffect(() => {
     const channel = supabase
@@ -280,9 +307,10 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
         if (attError) throw attError
       }
 
-      // Resposta da TI move o chamado pra "Em Andamento" sozinha — sem
-      // isso, um chamado "A fazer"/"Em teste"/"Parado" fica preso lá mesmo
-      // depois de alguém já estar cuidando dele.
+      // Resposta da TI move o chamado pra "Em Andamento" (status `open`,
+      // provisório — ver comentário em STATUS_BUTTONS) sozinha — sem isso,
+      // um chamado "A fazer"/"Em teste"/"Parado" fica preso lá mesmo depois
+      // de alguém já estar cuidando dele.
       if (ticket && ticketCategory(ticket.status) !== 'in_progress') {
         await supabase.from('tickets').update({ status: 'open' }).eq('id', ticketId)
       }
@@ -311,26 +339,28 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
     onError: () => toast.error('Erro ao alterar o status do chamado'),
   })
 
-  // "Encerrar Chat": muda o status E deixa um aviso visível pro solicitante
-  // no próprio histórico, diferente dos outros status (que são só internos).
+  // "Encerrar Chat": deixa um aviso visível pro solicitante no histórico
+  // (com quem encerrou) e bloqueia o input na hora — mas só grava o status
+  // `closed` de fato quando a TI sai desta conversa (ver efeito de unmount
+  // acima), pra não sumir o chamado da tela no meio da leitura.
   const closeChatMutation = useMutation({
     mutationFn: async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Não autenticado')
-      const { error: statusError } = await supabase.from('tickets').update({ status: 'closed' }).eq('id', ticketId)
-      if (statusError) throw statusError
-      const { error: commentError } = await supabase.from('comments').insert({
+      const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', user.id).single()
+      const authorName = profile?.full_name || 'alguém da TI'
+      const { error } = await supabase.from('comments').insert({
         ticket_id: ticketId,
-        content: 'Este chat foi encerrado.',
+        content: `Este chat foi encerrado por ${authorName}.`,
         author_id: user.id,
         internal_only: false,
       })
-      if (commentError) throw commentError
+      if (error) throw error
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['chat-widget-ticket', ticketId] })
+      pendingCloseRef.current = true
+      setPendingClose(true)
       queryClient.invalidateQueries({ queryKey: ['chat-widget-comments', ticketId] })
-      queryClient.invalidateQueries({ queryKey: ['chat-widget-conversations'] })
     },
     onError: () => toast.error('Erro ao encerrar o chat'),
   })
@@ -475,7 +505,7 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
       </div>
 
       {/* Barra de status: TI move o chamado sem sair do chat */}
-      {!isClosed && (
+      {!isBlocked && (
         <div className="flex flex-wrap items-center gap-1.5 border-t border-border px-2.5 pt-2">
           {STATUS_BUTTONS.map((b) => {
             const isCurrent = ticket?.status === b.status
@@ -495,11 +525,7 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
             )
           })}
           <button
-            onClick={() => {
-              if (confirm('Encerrar este chat? O solicitante verá um aviso de que a conversa foi encerrada.')) {
-                closeChatMutation.mutate()
-              }
-            }}
+            onClick={() => setCloseModalOpen(true)}
             disabled={closeChatMutation.isPending}
             className="ml-auto rounded-md border border-red-500/40 px-2 py-1 text-[11px] font-medium text-red-500 transition-colors hover:bg-red-500/10 disabled:opacity-50"
           >
@@ -524,9 +550,11 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
       )}
 
       {/* Input */}
-      {isClosed ? (
+      {isBlocked ? (
         <div className="border-t border-border p-3 text-center text-xs text-text-muted">
-          Este chamado está encerrado. Mova-o para outra seção e reabra pra continuar a conversa.
+          {pendingClose
+            ? 'Chat encerrado. Ele sai da aba Em Andamento quando você sair desta conversa.'
+            : 'Este chamado está encerrado. Mova-o para outra seção e reabra pra continuar a conversa.'}
         </div>
       ) : (
       <div className="flex items-center gap-2 border-t border-border p-2.5">
@@ -571,6 +599,43 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
           <Send className="h-4 w-4" />
         </button>
       </div>
+      )}
+
+      {/* Modal de confirmação — CRM próprio, sem confirm() nativo do navegador */}
+      {closeModalOpen && (
+        <div
+          className="fixed inset-0 z-[130] flex items-center justify-center bg-black/60 p-4"
+          onClick={() => setCloseModalOpen(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-xs rounded-xl border border-border bg-card p-4 shadow-2xl"
+          >
+            <h4 className="text-sm font-semibold text-text-primary">Encerrar chat?</h4>
+            <p className="mt-1.5 text-xs text-text-muted">
+              O solicitante verá um aviso de que o chat foi encerrado. A conversa continua na sua
+              tela até você sair dela.
+            </p>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                onClick={() => setCloseModalOpen(false)}
+                className="rounded-md px-3 py-1.5 text-xs font-medium text-text-secondary hover:bg-surface"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  setCloseModalOpen(false)
+                  closeChatMutation.mutate()
+                }}
+                disabled={closeChatMutation.isPending}
+                className="rounded-md bg-red-500 px-3 py-1.5 text-xs font-semibold text-white transition-opacity hover:bg-red-600 disabled:opacity-50"
+              >
+                Encerrar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

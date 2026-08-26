@@ -751,3 +751,60 @@ Ok, o código atual já usa `closeChatMutation` corretamente no JSX (linhas 500/
 - Texto `'Este chat foi encerrado.'` está hardcoded tanto no insert quanto implicitamente casado pelo `SYSTEM_NOTE_PATTERN` — extrair para constante compartilhada evita drift silencioso entre os dois.
 - `confirm()` nativo do browser em "Encerrar Chat" é bloqueante e destoa do resto da UI (que usa toast/componentes próprios); considerar um dialog do design system.
 - Em `ticketStatus.ts`, não há mais um `Set` único listando `testing`/`parado` como havia antes (`OTHER_TICKET_STATUSES`) — um novo status "parado-like" exige lembrar de atualizar `ticketCategory` manualmente; um `switch` exaustivo (`default: never`) pegaria isso em tempo de compilação.
+
+## 2026-08-26 08:35:37 — `frontend/src/systems/central-suporte/utils/ticketStatus.ts`
+
+Bugs/lógica:
+- Nenhum bug funcional. A mudança apenas move `open` de `in_progress` para `todo`, alinhando com o comportamento descrito no comentário. O fallthrough (if/if em vez de if/else if) mantém a mesma ordem de precedência de antes, sem regressão.
+
+Melhorias:
+- Comentário ficou bem mais claro que antes, referenciando o `TicketDetailDialog` como fonte da verdade — bom para evitar confusão futura.
+
+Sem observações relevantes além disso.
+
+## 2026-08-26 08:35:47 — `frontend/src/components/layout/chat/ConversationView.tsx`
+
+Sem observações.
+
+## 2026-08-26 08:35:58 — `frontend/src/components/layout/chat/ConversationView.tsx`
+
+Sem observações.
+
+## 2026-08-26 08:42:54 — `frontend/src/systems/central-suporte/utils/ticketStatus.ts`
+
+Bugs/riscos:
+
+- **Divergência funcional real, não só documentada**: `pending` mudou de `in_progress` para `todo`. Isso altera onde chamados existentes aparecem no chat (de "Em Andamento" para "A Fazer") sem nenhuma migração de dados — é uma mudança de comportamento visível ao usuário, não apenas um ajuste de comentário. Confirmar se essa é realmente a intenção (parece ser, dado o comentário), mas vale checar se há tickets com status `pending` em produção hoje que vão "sumir" da aba Em Andamento inesperadamente.
+- **Inconsistência com `TicketDetailDialog.tsx`** (citada no próprio comentário): `open` é tratado como "A Fazer" lá e "Em Andamento" aqui. Isso é um bug real de UX ativo, só documentado, não corrigido. Vale considerar corrigir os dois arquivos juntos em vez de adiar.
+
+Melhorias:
+
+- Comentário muito longo para uma função tão pequena; poderia ser reduzido a 3-4 linhas com um link/issue tracker em vez de explicar toda a motivação inline.
+- Já que há duplicação de lógica de status entre `ticketStatus.ts` e `TicketDetailDialog.tsx`, considerar extrair um mapa único (ex.: `STATUS_TO_CATEGORY`) para evitar divergência futura, já que essa mesma divergência é o problema atual.
+
+## 2026-08-26 08:43:03 — `frontend/src/components/layout/chat/ConversationView.tsx`
+
+Bug: `pending` não faz parte do type `ManualTicketStatus` ('open' | 'testing' | 'parado' | 'closed') nem aparece em `STATUS_BUTTONS`. Se `ticketStatus.ts` categoriza `pending` como `in_progress`, tudo bem; mas se o botão "Em andamento" ainda grava `open` (conforme o comentário adicionado) enquanto a resposta automática da TI grava `pending`, chamados podem acabar com dois valores distintos representando o mesmo estado "em andamento" — inconsistência de dados que pode quebrar filtros/relatórios que comparam `status === 'open'` estritamente em vez de usar `ticketCategory`.
+
+Sugiro conferir `ticketStatus.ts` para confirmar que `pending` já está mapeado em `ticketCategory` como `in_progress` — se não estiver, essa mudança quebra a tab "Em Andamento" para chamados respondidos automaticamente.
+
+## 2026-08-26 08:43:12 — `frontend/src/components/layout/chat/ConversationView.tsx`
+
+Bugs/riscos:
+
+- O comentário novo assume que `open` é "chamado novo", mas `STATUS_BUTTONS` usa `open` como "Em andamento" e o handler de resposta da TI grava `status: 'open'` para mover para "Em andamento". Se `ticketStatus.ts` realmente trata `open` como categoria "a fazer"/novo (conforme o comentário sugere), há uma inconsistência real de lógica, não só de nomenclatura — o chamado pode acabar categorizado como "novo" em vez de "em andamento" dependendo de como `ticketCategory` mapeia `open`. Vale conferir `ticketStatus.ts` para confirmar se o mapeamento bate com o que o botão/handler fazem.
+
+Melhorias:
+
+- É só comentário explicativo duplicado em dois pontos (STATUS_BUTTONS e handler) — poderia centralizar a explicação em um único lugar (ex.: perto da definição de `ManualTicketStatus` ou em `ticketStatus.ts`) e referenciar dali, evitando repetição que pode divergir no futuro.
+
+## 2026-08-26 08:46:33 — `frontend/src/components/layout/chat/ConversationView.tsx`
+
+Bugs:
+
+- `closeModalOpen`, `setCloseModalOpen`, `pendingCloseRef` são declarados nesta diff mas não parecem ter setters/usos completos além de `isBlocked` usando `pendingClose`. Se `setCloseModalOpen`/`pendingCloseRef` não são referenciados em mais nenhum lugar do arquivo, são código morto (dead state) — checar se há uso mais abaixo do arquivo antes de assumir intencional; se não houver, isso é lixo deixado no meio da mudança.
+
+Melhorias:
+
+- Comentário novo em `STATUS_BUTTONS` é bom, mas duplica parte da explicação já presente no bloco de `ticketStatus.ts` referenciado — ok manter curto, mas cuidado para não desalinhar os dois textos no futuro (um documenta e o outro pode ficar desatualizado se só um for editado).
+- Nada crítico de segurança ou lógica no trecho do diff em si além do ponto acima.

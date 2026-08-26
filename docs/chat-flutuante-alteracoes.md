@@ -125,8 +125,8 @@ envio continua ativo.
 A lista de conversas ganhou navegação por abas em vez de uma lista única
 misturando tudo:
 
-- **A fazer** — status `new`.
-- **Em Andamento** — status `open` / `pending`.
+- **A fazer** — status `new` / `pending` (chamado ainda não tratado).
+- **Em Andamento** — status `open`.
 - **Outros** (dropdown) — agrupa três sub-opções que não precisam de aba
   fixa: **Encerrados** (`resolved`/`closed`/`canceled`), **Em teste**
   (`testing`) e **Parados** (`parado`). Escolher uma opção no dropdown já
@@ -136,13 +136,26 @@ A categorização mora em `ticketStatus.ts` (`ticketCategory()`), usada
 tanto na lista quanto na conversa — uma única fonte de verdade para "em
 que grupo esse status cai".
 
+**⚠️ Mapeamento provisório — pendente de migração.** O enum
+`ticket_status` não tem um valor dedicado a "em andamento": pro negócio,
+`new`, `open` e `pending` são todos "chamado novo". Até rodar uma migração
+adicionando um status `in_progress` de verdade, o chat empresta `open`
+pra representar "Em Andamento" (e agrupa `new`+`pending` em "A Fazer").
+Isso diverge do `TicketDetailDialog.tsx`, que ainda trata `open` como "A
+Fazer" — esse arquivo (junto com `KanbanBoard.tsx`, `Reports.tsx`,
+`PortalHome.tsx` e o trigger `track_ticket_tm_metrics`) precisa ser
+corrigido na mesma migração, pra não conviver com dois mapeamentos
+diferentes de `open` no app. Busca por `PROVISÓRIO` em `ticketStatus.ts`
+e `ConversationView.tsx` pra achar os pontos a trocar quando isso
+acontecer.
+
 ## 11. TI move o chamado direto pelo chat
 
 **Arquivo:** `ConversationView.tsx`
 
 - **Auto-move para "Em Andamento"**: toda resposta da TI num chamado que
-  não está em `open`/`pending` move o status pra `open` automaticamente,
-  logo após o envio da mensagem — sem precisar sair do chat pra isso.
+  não está em `open` move o status pra `open` automaticamente, logo após o
+  envio da mensagem — sem precisar sair do chat pra isso.
 - **Barra de botões acima do input** (só aparece com o chamado ainda
   aberto): botões "Em andamento", "Em teste" e "Parado" — o botão do
   status atual fica desabilitado/destacado — e, separado à direita,
@@ -152,6 +165,40 @@ que grupo esse status cai".
   mesmo padrão das notas de sistema (transferência, mudança de status
   etc.), então renderiza como separador central em vez de bolha de
   mensagem, visível pro solicitante.
+
+## 12. Correção do mapeamento A Fazer / Em Andamento + UX de encerrar chat
+
+**Arquivos:** `ticketStatus.ts`, `ConversationView.tsx`
+
+Depois do item 11, veio a correção: o resto do app (`TicketDetailDialog.tsx`)
+trata `open` como "A Fazer" e `pending` como "Em Andamento" — o chat tinha
+isso invertido. E mais: pro negócio, `new`/`open`/`pending` são todos
+"chamado novo" — não existe hoje um status dedicado a "em andamento" no
+enum `ticket_status`. Solução provisória, até rodar uma migração
+`ALTER TYPE ticket_status ADD VALUE 'in_progress'` (que também vai exigir
+ajustar `TicketDetailDialog.tsx`, `KanbanBoard.tsx`, `Reports.tsx`,
+`PortalHome.tsx` e o trigger `track_ticket_tm_metrics` — não feito nesta
+rodada, escopo combinado só pro chat por enquanto):
+
+- **A Fazer** = `new` + `pending`.
+- **Em Andamento** = `open` (emprestado provisoriamente).
+
+Também três ajustes de UX no fechamento pedidos depois de usar a
+funcionalidade:
+
+- **Modal próprio em vez de `confirm()` do navegador** — o clique em
+  "Encerrar Chat" abre um modal no estilo do resto do widget, não mais o
+  alert nativo do Chrome.
+- **Chat não some mais da tela na hora** — antes, encerrar já gravava
+  `status: closed` na hora, e o chamado sumia imediatamente da aba Em
+  Andamento (confuso pra quem estava no meio de ler a conversa). Agora
+  "Encerrar Chat" só posta o aviso no histórico e bloqueia o input; o
+  status só é gravado como `closed` de fato quando a TI sai da conversa
+  (volta pra lista, minimiza ou fecha o widget — via um `useEffect` de
+  cleanup que dispara o update no unmount).
+- **Quem encerrou** — a mensagem de encerramento agora inclui o nome de
+  quem encerrou ("Este chat foi encerrado por Fulano."), não só um aviso
+  genérico.
 
 ## Verificação
 
