@@ -14,6 +14,7 @@ import TicketConsultation from "./pages/admin/TicketConsultation";
 import Tasks from "./pages/admin/Tasks";
 import NewTicket from "./pages/portal/NewTicket";
 import NewTicketTI from "./pages/portal/NewTicketTI";
+import NewTicketChat from "./pages/portal/NewTicketChat";
 import MyTickets from "./pages/portal/MyTickets";
 import NotFound from "./pages/NotFound";
 import { requestBrowserNotificationPermission } from "@suporte/hooks/useBrowserNotifications";
@@ -37,7 +38,13 @@ const App = () => {
             <Route path="/portal" element={<Layout />}>
               <Route index element={<Portal />} />
               <Route path="new-ticket" element={<NewTicket />} />
-              <Route path="new-ticket-ti" element={<NewTicketTI />} />
+              {/* Abertura de chamado TI em formato de chat (perguntas
+                  guiadas) — substituiu o formulário pra atacar o problema de
+                  categoria errada na abertura. O formulário antigo segue
+                  acessível pela rota abaixo (fora dos menus) enquanto o novo
+                  fluxo é validado; remover quando não for mais necessário. */}
+              <Route path="new-ticket-ti" element={<NewTicketChat />} />
+              <Route path="new-ticket-ti-formulario" element={<NewTicketTI />} />
               <Route path="my-tickets" element={<MyTickets />} />
             </Route>
             <Route path="/admin" element={<Layout />}>

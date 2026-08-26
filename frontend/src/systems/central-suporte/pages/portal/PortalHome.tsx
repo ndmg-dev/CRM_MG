@@ -101,7 +101,7 @@ const Portal = () => {
                   </div>
                 </CardContent>
               </Card>
-              <Card 
+              <Card
                 className="hover:bg-accent/10 transition-colors cursor-pointer border-primary/20"
                 onClick={() => { setShowTicketChoice(false); navigate("/portal/new-ticket"); }}
               >
