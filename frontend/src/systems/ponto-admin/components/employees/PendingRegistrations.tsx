@@ -42,15 +42,6 @@ export default function PendingRegistrations({ pendingList, onApprove, onReject 
                       📷 Biometria cadastrada
                     </span>
                   )}
-                  {p.similar_employee && (
-                    <span style={{
-                      fontSize: 10, padding: '2px 7px', borderRadius: 4, fontWeight: 600,
-                      background: 'rgba(226,75,74,0.15)', color: 'var(--mg-red)',
-                      border: '0.5px solid rgba(226,75,74,0.3)',
-                    }}>
-                      ⚠ Parecido com {p.similar_employee} — possível duplicado
-                    </span>
-                  )}
                 </div>
               </div>
             </div>

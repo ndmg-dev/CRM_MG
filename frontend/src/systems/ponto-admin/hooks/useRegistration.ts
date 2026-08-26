@@ -18,9 +18,6 @@ export interface PendingRegistration {
   phone?: string | null
   has_face: boolean
   submitted_at: string
-  // Nome de um funcionário ativo cujo rosto já cadastrado é muito parecido
-  // com o desta biometria — sinal de possível cadastro duplicado.
-  similar_employee?: string | null
 }
 
 export function useRegistrationLinks() {
