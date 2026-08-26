@@ -10,6 +10,7 @@ import { useHeartbeat } from '@/hooks/useHeartbeat'
 export default function MainLayout() {
   const fullBleedSystem = useUIStore((s) => s.fullBleedSystem)
   const kioskMode = useUIStore((s) => s.kioskMode)
+  const sidebarExpanded = useUIStore((s) => s.sidebarExpanded)
   useHeartbeat()
 
   // Drawer da navegação em telas < lg. Estado puramente visual, local ao shell.
@@ -44,7 +45,7 @@ export default function MainLayout() {
 
       <main
         className={`min-h-screen transition-[margin] duration-200 ease-in-out ${
-          kioskMode ? '' : 'lg:ml-16'
+          kioskMode ? '' : sidebarExpanded ? 'lg:ml-56' : 'lg:ml-16'
         }`}
       >
         {/* Header fica sempre visível (pesquisa, mensagens, notificações,

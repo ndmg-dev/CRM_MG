@@ -43,6 +43,7 @@ export default defineConfig(({ mode }) => {
         '@doccontabil': path.resolve(__dirname, './src/systems/documentacao-contabil'),
         '@cnpj': path.resolve(__dirname, './src/systems/consulta-cnpj'),
         '@taskflow': path.resolve(__dirname, './src/systems/taskflow'),
+        '@analyticsdp': path.resolve(__dirname, './src/systems/analytics-dp'),
       },
     },
     server: {
