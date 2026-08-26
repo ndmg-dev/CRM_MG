@@ -124,87 +124,6 @@ function statusVariant(s: string): 'ok' | 'warn' | 'err' | 'neutral' {
   return 'warn'
 }
 
-// ─── Tag de correção manual (Horário) ─────────────────────────────────────────
-
-function CorrectionTag({ log }: { log: TimeLog }) {
-  const corrected = !!log.original_created_at
-  const inserted  = !corrected && log.source === 'MANUAL'
-  if (!corrected && !inserted) return null
-  return (
-    <span style={{
-      fontSize: 10, fontWeight: 600, padding: '1px 7px', borderRadius: 10, marginLeft: 6,
-      background: corrected ? 'rgba(245,166,35,0.15)' : 'rgba(59,130,246,0.15)',
-      color: corrected ? '#F5A623' : '#3B82F6',
-      border: `1px solid ${corrected ? 'rgba(245,166,35,0.35)' : 'rgba(59,130,246,0.35)'}`,
-    }}>
-      {corrected ? 'Corrigido' : 'Inserido'}
-    </span>
-  )
-}
-
-// ─── Tag de status da justificativa ───────────────────────────────────────────
-
-const JUSTIFICATION_TAG: Record<Justification['status'], { icon: string; label: string; color: string; strike?: boolean }> = {
-  APROVADO:  { icon: '✓', label: 'aprovada', color: '#2ECC71' },
-  PENDENTE:  { icon: '⏳', label: 'pendente', color: '#F5A623' },
-  REPROVADO: { icon: '✗', label: 'recusada', color: '#E74C3C', strike: true },
-}
-
-function JustificationCell({ justification, onJustify, onOpenDetail }: {
-  justification: Justification | undefined; onJustify: () => void; onOpenDetail: () => void
-}) {
-  const approveMutation = useApproveJustification()
-  const rejectMutation  = useRejectJustification()
-  const [actionError, setActionError] = useState('')
-
-  if (!justification) {
-    return (
-      <button onClick={onJustify}
-        style={{ fontSize: 11, color: C.justified, background: 'none', border: 'none', cursor: 'pointer' }}>
-        + justificar
-      </button>
-    )
-  }
-
-  const tag = JUSTIFICATION_TAG[justification.status]
-
-  function handle(mutation: typeof approveMutation | typeof rejectMutation, id: string) {
-    setActionError('')
-    mutation.mutate(id, {
-      onError: e => setActionError(e instanceof Error ? e.message : 'Erro ao processar'),
-    })
-  }
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        <button onClick={onOpenDetail} style={{
-          fontSize: 11, color: tag.color, textDecoration: tag.strike ? 'line-through' : 'none',
-          opacity: tag.strike ? 0.7 : 1, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left',
-        }} title={justification.reason}>
-          {tag.icon} {justification.reason} · {tag.label}
-        </button>
-        {justification.status === 'PENDENTE' && (
-          <div style={{ display: 'flex', gap: 3 }}>
-            <button title="Aprovar" disabled={approveMutation.isPending}
-              onClick={() => handle(approveMutation, justification.id)}
-              style={{ fontSize: 11, color: '#2ECC71', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-              ✓
-            </button>
-            <button title="Recusar" disabled={rejectMutation.isPending}
-              onClick={() => handle(rejectMutation, justification.id)}
-              style={{ fontSize: 11, color: '#E74C3C', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-              ✗
-            </button>
-          </div>
-        )}
-      </div>
-      {actionError && <span style={{ fontSize: 10, color: '#E74C3C' }}>{actionError}</span>}
-    </div>
-  )
-}
-
 // ─── Alertas ────────────────────────────────────────────────────────────────
 
 const ALERT_COLORS: Record<string, string> = {
@@ -517,7 +436,6 @@ export default function MonthlyReportTab({
   employeeNames, employeeName,
 }: MonthlyReportTabProps) {
   const showEmployeeColumn = !!employeeNames
-  const [detailJustification, setDetailJustification] = useState<Justification | null>(null)
   const [lineMode, setLineMode] = useState(false)
   const [typeFilter, setTypeFilter] = useState<TimeLog['type'] | null>(null)
   const [detailJustification, setDetailJustification] = useState<Justification | null>(null)
