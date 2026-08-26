@@ -6,7 +6,9 @@ import {
 import type { ChartDay, CalendarDay, Alert } from '../../hooks/useReports'
 import type { TimeLog } from '../../hooks/useTimeLogs'
 import type { Justification } from '../../hooks/useJustifications'
+import { useApproveJustification, useRejectJustification } from '../../hooks/useJustifications'
 import Badge from '../Badge'
+import JustificationDetailModal from '../JustificationDetailModal'
 import LocationCell from '../dashboard/LocationCell'
 import { formatDate, formatTime, formatTimeShort, localMinutesOfDay } from '../../utils/date'
 import { TYPE_LABELS, STATUS_LABELS } from '../../utils/labels'
@@ -120,6 +122,87 @@ function statusVariant(s: string): 'ok' | 'warn' | 'err' | 'neutral' {
   if (s === 'JUSTIFICADO')  return 'neutral'
   if (s === 'FORA_DO_LOCAL') return 'err'
   return 'warn'
+}
+
+// ─── Tag de correção manual (Horário) ─────────────────────────────────────────
+
+function CorrectionTag({ log }: { log: TimeLog }) {
+  const corrected = !!log.original_created_at
+  const inserted  = !corrected && log.source === 'MANUAL'
+  if (!corrected && !inserted) return null
+  return (
+    <span style={{
+      fontSize: 10, fontWeight: 600, padding: '1px 7px', borderRadius: 10, marginLeft: 6,
+      background: corrected ? 'rgba(245,166,35,0.15)' : 'rgba(59,130,246,0.15)',
+      color: corrected ? '#F5A623' : '#3B82F6',
+      border: `1px solid ${corrected ? 'rgba(245,166,35,0.35)' : 'rgba(59,130,246,0.35)'}`,
+    }}>
+      {corrected ? 'Corrigido' : 'Inserido'}
+    </span>
+  )
+}
+
+// ─── Tag de status da justificativa ───────────────────────────────────────────
+
+const JUSTIFICATION_TAG: Record<Justification['status'], { icon: string; label: string; color: string; strike?: boolean }> = {
+  APROVADO:  { icon: '✓', label: 'aprovada', color: '#2ECC71' },
+  PENDENTE:  { icon: '⏳', label: 'pendente', color: '#F5A623' },
+  REPROVADO: { icon: '✗', label: 'recusada', color: '#E74C3C', strike: true },
+}
+
+function JustificationCell({ justification, onJustify, onOpenDetail }: {
+  justification: Justification | undefined; onJustify: () => void; onOpenDetail: () => void
+}) {
+  const approveMutation = useApproveJustification()
+  const rejectMutation  = useRejectJustification()
+  const [actionError, setActionError] = useState('')
+
+  if (!justification) {
+    return (
+      <button onClick={onJustify}
+        style={{ fontSize: 11, color: C.justified, background: 'none', border: 'none', cursor: 'pointer' }}>
+        + justificar
+      </button>
+    )
+  }
+
+  const tag = JUSTIFICATION_TAG[justification.status]
+
+  function handle(mutation: typeof approveMutation | typeof rejectMutation, id: string) {
+    setActionError('')
+    mutation.mutate(id, {
+      onError: e => setActionError(e instanceof Error ? e.message : 'Erro ao processar'),
+    })
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <button onClick={onOpenDetail} style={{
+          fontSize: 11, color: tag.color, textDecoration: tag.strike ? 'line-through' : 'none',
+          opacity: tag.strike ? 0.7 : 1, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left',
+        }} title={justification.reason}>
+          {tag.icon} {justification.reason} · {tag.label}
+        </button>
+        {justification.status === 'PENDENTE' && (
+          <div style={{ display: 'flex', gap: 3 }}>
+            <button title="Aprovar" disabled={approveMutation.isPending}
+              onClick={() => handle(approveMutation, justification.id)}
+              style={{ fontSize: 11, color: '#2ECC71', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+              ✓
+            </button>
+            <button title="Recusar" disabled={rejectMutation.isPending}
+              onClick={() => handle(rejectMutation, justification.id)}
+              style={{ fontSize: 11, color: '#E74C3C', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+              ✗
+            </button>
+          </div>
+        )}
+      </div>
+      {actionError && <span style={{ fontSize: 10, color: '#E74C3C' }}>{actionError}</span>}
+    </div>
+  )
 }
 
 // ─── Alertas ────────────────────────────────────────────────────────────────
@@ -338,6 +421,9 @@ interface MonthlyReportTabProps {
    * na tabela (necessário nas visões por Setor/Equipe toda, onde os registros
    * misturam vários funcionários). */
   employeeNames?: Record<string, string>
+  /** Nome do colaborador único da visão atual (scope === 'employee') — usado
+   * só pro modal de detalhes da justificativa, não ativa a coluna Colaborador. */
+  employeeName?: string
 }
 
 export default function MonthlyReportTab({
@@ -347,9 +433,10 @@ export default function MonthlyReportTab({
   filteredAlerts,
   logs, expandedLogs, onExpandLogs, justifications,
   onOpenDetail, onEditLog, onDeleteLog, onJustifyLog,
-  employeeNames,
+  employeeNames, employeeName,
 }: MonthlyReportTabProps) {
   const showEmployeeColumn = !!employeeNames
+  const [detailJustification, setDetailJustification] = useState<Justification | null>(null)
   const [lineMode, setLineMode] = useState(false)
   const [typeFilter, setTypeFilter] = useState<TimeLog['type'] | null>(null)
   const filteredLogs = typeFilter ? logs.filter(l => l.type === typeFilter) : logs
@@ -469,7 +556,15 @@ export default function MonthlyReportTab({
               onClick={e => { if ((e.target as HTMLElement).closest('button')) return; onOpenDetail(log) }}>
               {showEmployeeColumn && <td>{employeeNames?.[log.employee_id] ?? '—'}</td>}
               <td>{formatDate(log.created_at)}</td>
-              <td style={{ color: 'var(--mg-gold)', fontWeight: 500 }}>{formatTime(log.created_at)}</td>
+              <td style={{ color: 'var(--mg-gold)', fontWeight: 500 }}>
+                {log.original_created_at && (
+                  <span style={{ color: 'var(--mg-muted)', fontWeight: 400, textDecoration: 'line-through', marginRight: 6 }}>
+                    {formatTime(log.original_created_at)}
+                  </span>
+                )}
+                {formatTime(log.created_at)}
+                <CorrectionTag log={log} />
+              </td>
               <td>{TYPE_LABELS[log.type] ?? log.type}</td>
               <td>
                 <Badge variant={statusVariant(log.status)}>
@@ -496,13 +591,14 @@ export default function MonthlyReportTab({
                 )}
               </td>
               <td>
-                {justifications.find(j => j.time_log_id === log.id)
-                  ? <span style={{ fontSize: 11, color: C.justified }}>✓ Justificado</span>
-                  : <button onClick={() => onJustifyLog(log)}
-                      style={{ fontSize: 11, color: C.justified, background: 'none', border: 'none', cursor: 'pointer' }}>
-                      + justificar
-                    </button>
-                }
+                <JustificationCell
+                  justification={justifications.find(j => j.time_log_id === log.id)}
+                  onJustify={() => onJustifyLog(log)}
+                  onOpenDetail={() => {
+                    const j = justifications.find(x => x.time_log_id === log.id)
+                    if (j) setDetailJustification(j)
+                  }}
+                />
               </td>
               <td>
                 <div style={{ display: 'flex', gap: 6 }}>
@@ -527,6 +623,14 @@ export default function MonthlyReportTab({
             Ver todos os {filteredLogs.length} registros
           </button>
         </div>
+      )}
+
+      {detailJustification && (
+        <JustificationDetailModal
+          justification={detailJustification}
+          employeeName={employeeNames?.[detailJustification.employee_id] ?? employeeName ?? '—'}
+          onClose={() => setDetailJustification(null)}
+        />
       )}
     </>
   )

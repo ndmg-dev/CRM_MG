@@ -18,6 +18,7 @@ import { TYPE_LABELS, STATUS_LABELS } from '../utils/labels'
 import { downloadBlob } from '../lib/api'
 import { Modal } from '../components/Modal'
 import KpiCard, { type Tone } from '../components/dashboard/MetricCard'
+import { useAuth } from '../hooks/useAuth'
 
 const MONTHS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
 
@@ -106,6 +107,9 @@ function ScaleIcon() {
 }
 function UsersIcon() {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" /></svg>
+}
+function FileCheckIcon() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline points="14 2 14 8 20 8" /><polyline points="9 15 11 17 15 13" /></svg>
 }
 
 function presenceTone(pct: number): Tone {
@@ -271,6 +275,7 @@ export default function Reports() {
   const [calYear,  setCalYear]  = useState(now.getFullYear())
   const [calMonth, setCalMonth] = useState(now.getMonth() + 1)
   const [innerTab, setInnerTab] = useState<'registros' | 'espelho' | 'anomalias' | 'banco'>('registros')
+  const { can } = useAuth()
 
   const { data: employees = [] } = useEmployees()
   const { data: sectors   = [] } = useSectors()
@@ -354,9 +359,10 @@ export default function Reports() {
 
   // Aggregated totals come from the server — no business logic on the frontend
   const totals = {
-    exp:    serverTotals?.total_expected_hours ?? 0,
-    wrk:    serverTotals?.total_worked_hours   ?? 0,
-    avgPct: serverTotals?.avg_attendance_pct   ?? 0,
+    exp:    serverTotals?.total_expected_hours  ?? 0,
+    wrk:    serverTotals?.total_worked_hours    ?? 0,
+    just:   serverTotals?.total_justified_hours ?? 0,
+    avgPct: serverTotals?.avg_attendance_pct    ?? 0,
   }
 
   const doughnutData = useMemo(() => {
@@ -529,7 +535,13 @@ export default function Reports() {
           label="Saldo"
           value={fmtH(serverTotals?.total_balance ?? (totals.wrk - totals.exp))}
           valueTone={(serverTotals?.total_balance ?? (totals.wrk - totals.exp)) >= 0 ? 'ok' : 'err'}
-          sub="Trabalhado − esperado"
+          sub="Trabalhado − esperado + justificado"
+        />
+        <KpiCard
+          icon={<FileCheckIcon />} tone="gold"
+          label="Horas justificadas"
+          value={fmtH(totals.just)}
+          sub="Abonadas no período"
         />
         <KpiCard
           icon={<UsersIcon />} tone="gold"
@@ -644,6 +656,7 @@ export default function Reports() {
             onDeleteLog={id => deleteLogMutation.mutate(id)}
             onJustifyLog={setJustifyLog}
             employeeNames={scope !== 'employee' ? employeeNameMap : undefined}
+            employeeName={scope === 'employee' ? sectionTitle : undefined}
           />
         )}
 
@@ -651,6 +664,10 @@ export default function Reports() {
         {innerTab === 'espelho' && (
           <MirrorTab
             data={mirrorData}
+            employeeId={selectedEmployee}
+            year={year}
+            month={month}
+            canManage={can('corrections')}
             onExportPdf={() => downloadBlob(
               buildSubExportUrl('mirror', 'pdf', selectedEmployee, year, month),
               `espelho_${year}_${String(month).padStart(2,'0')}.pdf`
