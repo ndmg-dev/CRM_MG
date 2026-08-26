@@ -33,7 +33,8 @@
       "@carneleao/*": ["./src/systems/carne-leao/*"],
       "@doccontabil/*": ["./src/systems/documentacao-contabil/*"],
       "@cnpj/*": ["./src/systems/consulta-cnpj/*"],
-      "@taskflow/*": ["./src/systems/taskflow/*"]
+      "@taskflow/*": ["./src/systems/taskflow/*"],
+      "@analyticsdp/*": ["./src/systems/analytics-dp/*"]
     },
 
     /* Bundler mode */

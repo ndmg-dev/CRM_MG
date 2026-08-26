@@ -81,6 +81,10 @@ export const systemRegistry: Record<string, LazyExoticComponent<ComponentType>> 
   // https://taskflow.nucleodigital.cloud/ — passa a renderizar nativo
   // automaticamente, sem precisar mudar nada no banco.
   'taskflow': lazy(() => import('@taskflow/TaskFlowApp')),
+  // Slug já cadastrado no banco (setor DP) apontando pro iframe de
+  // https://analyticsdp.mendoncagalvao.com.br — passa a renderizar nativo
+  // automaticamente, sem precisar mudar nada no banco.
+  'analytics-dp': lazy(() => import('@analyticsdp/AnalyticsDpApp')),
 }
 
 /**
