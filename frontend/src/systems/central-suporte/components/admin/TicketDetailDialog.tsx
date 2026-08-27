@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
+import { createPortal } from "react-dom";
 import {
   Dialog,
   DialogContent,
@@ -1076,12 +1077,15 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
       }}
     />
 
-    {/* Preview de imagem — fora do <Dialog> de propósito: DialogContent usa
-        transform (translate-x/y) pra centralizar, o que cria um containing
-        block novo e prende qualquer `fixed` de dentro nele em vez do
-        viewport inteiro. Como sibling no fragmento, fica de verdade por
-        cima de tudo. */}
-    {previewImage && (
+    {/* Preview de imagem — via createPortal direto pro <body>, não só
+        "sibling" no JSX. O <Dialog> do Radix já é portalizado pro body por
+        conta própria; um <div fixed> comum, sem portal, fica preso no
+        stacking context de qualquer ancestral no caminho (esta tela pode
+        abrir a partir de páginas diferentes — Kanban, notificação global
+        etc. — cada uma com sua própria árvore de containers), e aparecia
+        ATRÁS do modal em vez de por cima. Portal pro body garante que os
+        dois concorrem no mesmo nível, e aí o z-index realmente vale. */}
+    {previewImage && createPortal(
       <div
         role="dialog"
         aria-modal="true"
@@ -1102,7 +1106,8 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
           onClick={(e) => e.stopPropagation()}
           className="max-h-full max-w-full rounded-lg object-contain"
         />
-      </div>
+      </div>,
+      document.body
     )}
     </>
   );
