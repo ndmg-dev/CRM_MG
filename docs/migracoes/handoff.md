@@ -10,7 +10,10 @@ qualquer coisa nova nessa frente.
   pra `main` a cada leva de commits prontos pra revisão (não ficamos numa branch por sistema).
 - Repos satélite clonados localmente em `C:\Users\User\Projetos\`: `COPILOT_CONTABIL`,
   `BIBM-MG` (BIMG), `ContAI_PRO`, `GERADOR_DE_NOTAS`, `PROJETO-CARNE-LEAO`,
-  `CONSULTA-SOCIETARIO`, `TASK_MANANGER`, `ANALYTICS-DP`, `CRONOS_MG`.
+  `CONSULTA-SOCIETARIO`, `TASK_MANANGER`, `ANALYTICS-DP`, `CRONOS_MG`. **`TASK_MANANGER`
+  está grafado assim mesmo** (com o typo) — é o nome real do repo em
+  `github.com/ndmg-dev/TASK_MANANGER`, não um erro nosso; mantenha a grafia idêntica ao
+  clonar/referenciar, "corrigir" pra `TASK_MANAGER` só quebraria o path do clone.
 
 ## ⚠️ Gotcha novo: PRs somem sozinhos entre uma ação e outra
 
@@ -63,9 +66,12 @@ volta pra apontar pro deploy Coolify em vez do Vercel.
 1. **Investigar o sistema original**: stack (React puro? Next.js? Flask+Jinja2?), auth
    (Supabase próprio? Google OAuth direto? Sem auth? Senha compartilhada?), onde está
    deployado hoje (Coolify? Vercel? VPS própria?), se já está cadastrado em
-   `sistemas_seed.sql`/no banco (esse arquivo fica desatualizado — **sempre confirmar no
-   banco de produção via psql**, nunca confiar só no seed). Delegar essa investigação pra
-   um agente Explore em paralelo (um por sistema) economiza contexto.
+   `sistemas_seed.sql`/no banco. **O `sistemas_seed.sql` do repo é só um seed inicial pra
+   ambiente novo — nunca é atualizado depois que um sistema é cadastrado/editado direto no
+   banco de produção, então diverge por design, não por falta de processo.** Não faz
+   sentido manter os dois sincronizados automaticamente; o psql é a fonte de verdade,
+   sempre. Delegar essa investigação pra um agente Explore em paralelo (um por sistema)
+   economiza contexto.
 2. **Portar o frontend** pra `frontend/src/systems/<slug>/`:
    - Entrypoint `<Nome>App.tsx`.
    - Sem `<Router>`/`<BrowserRouter>` aninhado — o sistema é montado em `/sistemas/:id/*`
@@ -83,13 +89,18 @@ volta pra apontar pro deploy Coolify em vez do Vercel.
      sidebar vertical própria (ex: TaskFlow, Analytics DP, Ponto Admin) viram nav horizontal
      no Topbar, sem duplicar avatar/logout/branding que o CRM já mostra.
    - CSS original escopado sob uma classe raiz (`.{sistema}-root`) pra não vazar reset/tema
-     pro resto do CRM. Mecanismo: recriar os tokens/variáveis customizadas como custom
-     properties em `.{sistema}-root` e prefixar cada seletor original com essa classe (ver
-     `frontend/src/systems/consulta-cnpj/styles/global.css` como modelo manual, ou —
-     pro Ponto Admin — a lib `postcss-prefix-selector` já é devDependency e foi usada num
-     script Node temporário pra prefixar automaticamente, mais confiável que regex manual
-     pra CSS grande com nesting/media queries). Prefixar também `@keyframes` (ex:
-     `<sistema>-spin`) pra não colidir globalmente entre sistemas.
+     pro resto do CRM. **Preferir sempre a ferramenta automatizada em vez de prefixar
+     seletor por seletor à mão**: `postcss-prefix-selector` já é devDependency do projeto
+     (usada pela primeira vez no Ponto Admin) — escrever um script Node de poucas linhas
+     que lê o CSS original, roda o transform, escreve o resultado, e apagar o script depois.
+     Isso evita erro humano em seletores compostos/aninhados/media queries que uma edição
+     manual (ou regex) facilmente erra. Só recorra à edição manual seletor-a-seletor (como
+     foi feito no Consulta CNPJ, antes de estabelecer esse padrão) se o CSS for pequeno o
+     bastante pra revisar cada linha com segurança — para qualquer coisa acima de ~100
+     linhas, use o script. Prefixar também `@keyframes` (ex: `<sistema>-spin`) pra não
+     colidir globalmente entre sistemas — o script de prefixação de seletores não cobre
+     isso sozinho, precisa de um passo à parte (rename manual do nome do keyframe + dos
+     `animation-name` que o referenciam).
      **Atenção**: se algum elemento for portalizado pra fora dessa árvore (como o Topbar),
      CSS vars definidas só em `.{sistema}-root` não chegam nele — usar valores diretos
      (hex/rgba) nesses casos, não `var(--x)`.
@@ -126,7 +137,13 @@ volta pra apontar pro deploy Coolify em vez do Vercel.
      login/senha própria continua sendo a primeira coisa renderizada dentro do
      `<Sistema>App.tsx`), **sem integrar com o SSO do CRM nem com `unifiedAuth.ts`**. Não é
      uma migração incompleta — é a decisão certa quando o sistema original já tem um esquema
-     de auth "self-contained" que funciona e não expõe token do CRM.
+     de auth "self-contained" que funciona e não expõe token do CRM. **Isso não é o mesmo
+     risco que "sem auth nenhuma"** (item abaixo): aqui existe uma barreira de acesso real
+     (senha ou token), só que mais fraca que SSO/JWT — decisão consciente, confirmada com o
+     usuário via AskUserQuestion antes de portar (não é algo pra "corrigir" sozinho depois;
+     se achar que o nível de segurança de algum desses sistemas ficou baixo demais pro dado
+     que ele expõe, isso é uma decisão de produto pra levar ao usuário, não um bug de
+     migração).
    - **Gotcha de CSRF** (Flask + Flask-WTF): se o backend satélite usa
      `CSRFProtect(app)` global, toda chamada de escrita (POST/DELETE) via Bearer vai falhar
      com 400 "CSRF token missing", porque CSRF é pensado pra sessão de cookie, não Bearer
@@ -141,7 +158,11 @@ volta pra apontar pro deploy Coolify em vez do Vercel.
      DP) já cobrem isso de cara, sem mudança nenhuma.
    - **Sistema sem nenhuma auth** (Documentação Contábil, Contábil Script, Consulta CNPJ):
      não inventar auth nova — só confirmar que o CORS do backend original libera a origem do
-     CRM (`https://crmmg.mendoncagalvao.com.br`).
+     CRM (`https://crmmg.mendoncagalvao.com.br`). Esses três não lidam com dado sensível
+     de pessoa física/financeiro protegido — é decisão de projeto original (não nossa),
+     mantida por fidelidade ao sistema fonte. **Se algum sistema futuro sem auth lidar com
+     dado sensível, isso é motivo pra parar e perguntar ao usuário antes de portar** em vez
+     de replicar a ausência de auth automaticamente só porque "é assim que já era".
 7. **Padrão de seletor de "empresa ativa"** (multi-tenant por sessão): sistemas que
    dependiam de `session['active_empresa']` (Flask) quebram numa API stateless via Bearer —
    cada chamada precisa do `empresa_id` explícito (query param). Solução: endpoint
@@ -207,9 +228,25 @@ CRM, é preciso reaplicar só o delta:
    porque o arquivo do CRM já diverge do satélite nas adaptações de navegação/CSS/auth.
 4. CSS novo/alterado precisa passar pelo mesmo tratamento de prefixação que o resto do
    sistema (script Node temporário com `postcss-prefix-selector`, apagar depois de gerar).
-5. **Antes de sincronizar, confirme que ninguém mais mexeu nesse sistema recentemente** (ver
-   gotcha no topo deste arquivo) — rode `git log --oneline -10 -- frontend/src/systems/<slug>/`
-   no CRM_MG pra checar.
+5. **Antes de sincronizar, confirme que ninguém mais mexeu nesse sistema recentemente** —
+   rode `git log --oneline -10 -- frontend/src/systems/<slug>/` no CRM_MG. Se aparecer um
+   commit recente (últimas horas) de outra pessoa tocando o mesmo sistema, **leia a mensagem
+   do commit dela antes de começar**, não só depois de esbarrar num conflito:
+   - Se o escopo dela é claramente diferente do seu (arquivos/páginas diferentes), pode
+     seguir normalmente — só vai ficar de olho num merge futuro.
+   - Se o escopo se sobrepõe (mesma feature, mesmo arquivo grande), **pare e pergunte ao
+     usuário antes de investir tempo portando** — foi exatamente essa checagem que faltou
+     na sincronização do Ponto Admin (ver caso real no gotcha do topo: duas sincronizações
+     do mesmo satélite, decisões de arquitetura diferentes, só descoberto na hora do PR já
+     ter conflito). O sinal de que virou conflito de arquitetura (não só textual) é quando
+     `git diff`/`git merge` não reporta conflito nenhum mas o resultado tem duas
+     implementações da mesma coisa (dois componentes, duas rotas, dois imports pro mesmo
+     conceito) — nesse caso, resolva perguntando ao usuário qual versão deve prevalecer
+     (`AskUserQuestion` com as duas opções descritas objetivamente), não decida sozinho qual
+     "parece melhor". Depois de decidido, `git revert` do commit descartado (nunca
+     `reset --hard`/force-push numa branch compartilhada) é o jeito seguro de desfazer sem
+     perder histórico, e dá pra "desfazer o revert" (`git revert` de novo em cima do próprio
+     revert) se a decisão mudar de lado depois.
 6. Depois de terminar, **cheque se o satélite avançou mais um commit enquanto você
    trabalhava** — já aconteceu (Ponto Admin: um fix upstream removendo cards/filtros
    redundantes chegou minutos depois do meu snapshot) — reabra o diff contra o HEAD atual do
