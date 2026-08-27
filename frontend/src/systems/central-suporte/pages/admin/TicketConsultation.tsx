@@ -284,7 +284,7 @@ const TicketConsultation = () => {
         ) : (
           <div style={{ overflowX: "auto" }}>
             <div className="min-w-[900px]">
-              <div style={{ display: "grid", gridTemplateColumns: "70px 1fr 140px 140px 130px 100px 90px 140px", padding: "12px 18px", fontSize: 12, color: TEXT_SECONDARY, borderBottom: `0.5px solid ${BORDER_DEFAULT}` }}>
+              <div style={{ display: "grid", gridTemplateColumns: "70px 1fr 140px 140px 130px 120px 120px 140px", padding: "12px 18px", fontSize: 12, color: TEXT_SECONDARY, borderBottom: `0.5px solid ${BORDER_DEFAULT}` }}>
                 <div>Código</div><div>Título</div><div>Solicitante</div><div>Responsável</div><div>Categoria</div><div>Prioridade</div><div>Status</div><div>Data</div>
               </div>
               {filteredTickets.map((ticket) => {
@@ -295,7 +295,7 @@ const TicketConsultation = () => {
                     key={ticket.id}
                     onClick={() => setSelectedTicketId(ticket.id)}
                     className="hover:bg-[var(--mg-color-bg-hover)] cursor-pointer"
-                    style={{ display: "grid", gridTemplateColumns: "70px 1fr 140px 140px 130px 100px 90px 140px", alignItems: "center", padding: "13px 18px", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}
+                    style={{ display: "grid", gridTemplateColumns: "70px 1fr 140px 140px 130px 120px 120px 140px", alignItems: "center", padding: "13px 18px", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}
                   >
                     <div style={{ fontSize: 13, color: TEXT_SECONDARY, fontFamily: "ui-monospace, monospace" }}>#{String(ticket.ticket_code).padStart(3, "0")}</div>
                     <div style={{ fontSize: 13, fontWeight: 600, color: TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", paddingRight: 12 }}>{ticket.title}</div>
@@ -303,12 +303,12 @@ const TicketConsultation = () => {
                     <div style={{ fontSize: 12.5, color: TEXT_SECONDARY }}>{(ticket.assignee as any)?.full_name || (ticket.assignee as any)?.email || "—"}</div>
                     <div style={{ fontSize: 12.5, color: TEXT_SECONDARY }}>{(ticket.category as any)?.name || "—"}</div>
                     <div>
-                      <span style={{ display: "inline-flex", alignItems: "center", height: 20, padding: "0 8px", background: pr.bg, color: pr.color, fontSize: 10.5, fontWeight: 700, borderRadius: 999 }}>
+                      <span style={{ display: "inline-flex", alignItems: "center", height: 20, padding: "0 8px", background: pr.bg, color: pr.color, fontSize: 10.5, fontWeight: 700, borderRadius: 999, whiteSpace: "nowrap" }}>
                         {priorityLabels[ticket.priority || "p3"]}
                       </span>
                     </div>
                     <div>
-                      <span style={{ display: "inline-flex", alignItems: "center", height: 20, padding: "0 9px", background: st.bg, color: st.color, fontSize: 10.5, fontWeight: 700, borderRadius: 999 }}>
+                      <span style={{ display: "inline-flex", alignItems: "center", height: 20, padding: "0 9px", background: st.bg, color: st.color, fontSize: 10.5, fontWeight: 700, borderRadius: 999, whiteSpace: "nowrap" }}>
                         {statusLabels[ticket.status || "new"]}
                       </span>
                     </div>

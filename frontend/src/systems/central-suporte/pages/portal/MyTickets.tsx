@@ -157,12 +157,12 @@ const MyTickets = () => {
                   <div style={{ fontSize: 13.5, fontWeight: 600, color: TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", paddingRight: 12 }}>{ticket.title}</div>
                   <div style={{ fontSize: 13, color: TEXT_SECONDARY }}>{ticket.category?.name || "—"}</div>
                   <div>
-                    <span style={{ display: "inline-flex", alignItems: "center", height: 21, padding: "0 9px", background: "var(--mg-color-bg-hover)", color: TEXT_PRIMARY, fontSize: 11, fontWeight: 600, borderRadius: 999 }}>
+                    <span style={{ display: "inline-flex", alignItems: "center", height: 21, padding: "0 9px", background: "var(--mg-color-bg-hover)", color: TEXT_PRIMARY, fontSize: 11, fontWeight: 600, borderRadius: 999, whiteSpace: "nowrap" }}>
                       {statusLabels[ticket.status || "new"]}
                     </span>
                   </div>
                   <div>
-                    <span style={{ display: "inline-flex", alignItems: "center", height: 21, padding: "0 9px", background: pr.bg, color: pr.color, fontSize: 11, fontWeight: 700, borderRadius: 999 }}>
+                    <span style={{ display: "inline-flex", alignItems: "center", height: 21, padding: "0 9px", background: pr.bg, color: pr.color, fontSize: 11, fontWeight: 700, borderRadius: 999, whiteSpace: "nowrap" }}>
                       {priorityLabels[ticket.priority || "p3"]}
                     </span>
                   </div>
