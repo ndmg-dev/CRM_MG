@@ -84,9 +84,14 @@ export const KanbanTicketCard = ({
   const slaUrgencyBorder = !isResolved && urgency ? slaBorderMap[urgency] : "";
 
   return (
-    <div onClick={onClick}>
+    // min-w-0: a coluna do Kanban é flex-col, e sem isso o card (item flex)
+    // usa min-width:auto — como a linha "Aberto por: X · Para: Y" é
+    // white-space:nowrap (por causa do truncate), o card se recusa a
+    // encolher abaixo da largura inteira do texto e estoura a coluna em vez
+    // de truncar com reticências.
+    <div onClick={onClick} className="min-w-0">
       <Card
-        className={`cursor-pointer transition-all h-[180px] flex flex-col ${borderColor ? `border-l-4 ${borderColor}` : ""} ${isDragging ? "shadow-lg ring-2 ring-primary/30 rotate-2" : "hover:border-primary/50"} ${isResolved ? "opacity-75 hover:opacity-100" : ""} ${slaUrgencyBorder}`}
+        className={`cursor-pointer transition-all h-[180px] flex flex-col min-w-0 ${borderColor ? `border-l-4 ${borderColor}` : ""} ${isDragging ? "shadow-lg ring-2 ring-primary/30 rotate-2" : "hover:border-primary/50"} ${isResolved ? "opacity-75 hover:opacity-100" : ""} ${slaUrgencyBorder}`}
       >
         <CardHeader className="p-3 pb-1 flex-none">
           <div className="flex justify-between items-start">
