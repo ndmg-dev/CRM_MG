@@ -127,10 +127,13 @@ const NewTicketTI = () => {
           body: { title, description, type: "request", category: categoryName, subcategory: subcategoryName },
         }).then(async ({ data: aiResult, error: aiError }) => {
           if (!aiError && aiResult?.priority && aiResult.priority !== "p3") {
+            // Só aplica se ninguém já tiver mudado a prioridade manualmente
+            // enquanto a IA processava.
             await supabase
               .from("tickets")
               .update({ priority: aiResult.priority as any })
-              .eq("id", ticket.id);
+              .eq("id", ticket.id)
+              .eq("priority", priority as any);
           }
         }).catch(console.error);
       }

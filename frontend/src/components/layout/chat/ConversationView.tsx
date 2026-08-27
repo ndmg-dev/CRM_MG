@@ -93,6 +93,15 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
   // Preview de imagem em modal em vez de abrir em nova aba — nova aba tira a
   // pessoa do chat pra ver um print; um modal por cima resolve sem sair daqui.
   const [previewImage, setPreviewImage] = useState<{ url: string; alt: string } | null>(null)
+
+  useEffect(() => {
+    if (!previewImage) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setPreviewImage(null)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [previewImage])
   // Grava status=closed na hora (ver closeChatMutation), mas mantém ESTA
   // instância da tela funcionando normalmente — sem o aviso "vai sumir da
   // aba" nem bloquear o input — até a TI sair da conversa. Na próxima vez
@@ -337,8 +346,18 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
       // preso lá mesmo depois de alguém já estar cuidando dele. Só a TI move
       // o card: uma mensagem do próprio solicitante (usuário comum) não deve
       // fingir que alguém já está tratando o chamado.
-      if (isStaff && ticket && ticketCategory(ticket.status) !== 'in_progress') {
-        await supabase.from('tickets').update({ status: 'pending' }).eq('id', ticketId)
+      // Busca o status na hora em vez de confiar no `ticket` do closure do
+      // render, que pode estar um render atrás de uma troca de status feita
+      // bem antes do envio.
+      if (isStaff) {
+        const { data: freshTicket } = await supabase
+          .from('tickets')
+          .select('status')
+          .eq('id', ticketId)
+          .single()
+        if (freshTicket && ticketCategory(freshTicket.status) !== 'in_progress') {
+          await supabase.from('tickets').update({ status: 'pending' }).eq('id', ticketId).is('archived_at', null)
+        }
       }
     },
     onSuccess: () => {
@@ -355,7 +374,7 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
   // Botões de status acima do input: a TI move o chamado sem sair do chat.
   const changeStatus = useMutation({
     mutationFn: async (status: ManualTicketStatus) => {
-      const { error } = await supabase.from('tickets').update({ status }).eq('id', ticketId)
+      const { error } = await supabase.from('tickets').update({ status }).eq('id', ticketId).is('archived_at', null)
       if (error) throw error
     },
     onSuccess: () => {
@@ -383,7 +402,7 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
         internal_only: false,
       })
       if (commentError) throw commentError
-      const { error: statusError } = await supabase.from('tickets').update({ status: 'closed' }).eq('id', ticketId)
+      const { error: statusError } = await supabase.from('tickets').update({ status: 'closed' }).eq('id', ticketId).is('archived_at', null)
       if (statusError) throw statusError
     },
     onSuccess: () => {
@@ -674,6 +693,9 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
       {/* Preview de imagem — mesmo padrão de overlay do modal de confirmação acima */}
       {previewImage && (
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={previewImage.alt}
           className="fixed inset-0 z-[140] flex items-center justify-center bg-black/80 p-4"
           onClick={() => setPreviewImage(null)}
         >

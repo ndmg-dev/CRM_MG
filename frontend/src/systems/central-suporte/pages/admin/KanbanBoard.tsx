@@ -65,7 +65,11 @@ const KanbanBoard = () => {
         // Other Coordinators/Viewer: see tickets in their sector only
         query = query.eq("target_sector_id", sector.sectorId);
       } else {
-        // Admin TI, support_agent, dev, etc.: only assigned to them
+        // support_agent, dev, etc. sem setor de coordenação: veem só o que
+        // já está atribuído a eles, MAIS o que ainda não tem responsável —
+        // proposital, pra qualquer um do time poder "pegar" um chamado
+        // órfão de qualquer setor em vez de ele ficar invisível até alguém
+        // com visão ampla (coordenador/direção) perceber e atribuir.
         query = query.or(`assignee_id.eq.${sector.userId},assignee_id.is.null`);
       }
 

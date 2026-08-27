@@ -98,6 +98,15 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
   // Preview de imagem em modal em vez de abrir em nova aba — nova aba tira o
   // agente do chamado só pra ver um print anexado.
   const [previewImage, setPreviewImage] = useState<{ url: string; alt: string } | null>(null);
+
+  useEffect(() => {
+    if (!previewImage) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPreviewImage(null);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [previewImage]);
   const [pendingSectorId, setPendingSectorId] = useState<string | null>(null);
   const [sectorAssigneeId, setSectorAssigneeId] = useState<string>("unassigned");
   const [isEditingRequester, setIsEditingRequester] = useState(false);
@@ -270,8 +279,30 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
       if (error) throw error;
       return data || [];
     },
-    enabled: open,
+    // readOnly (usuário comum vendo o próprio chamado) nunca mostra os
+    // selects de responsável/setor/solicitante que usam essa lista.
+    enabled: open && !readOnly,
   });
+
+  // IDs de quem tem qualquer role de staff — usado só pra tirar essas
+  // pessoas da lista de "Trocar solicitante". O chamado é sempre de um
+  // usuário comum; listar a TI ali é um convite a erro (setar o solicitante
+  // como um agente por engano).
+  const { data: staffUserIds } = useQuery({
+    queryKey: ["staff-user-ids"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("user_roles").select("user_id");
+      if (error) throw error;
+      return new Set((data || []).map((r) => r.user_id));
+    },
+    enabled: open && !readOnly && !!canEditRequester,
+  });
+
+  const requesterOptions = useMemo(() => {
+    if (!allProfiles) return [];
+    if (!staffUserIds) return allProfiles;
+    return allProfiles.filter((p) => !staffUserIds.has(p.id) || p.id === ticket?.requester_id);
+  }, [allProfiles, staffUserIds, ticket?.requester_id]);
 
   // Filter assignee options by ticket's target sector (show all if no sector)
   const staffProfiles = allProfiles?.filter((p) => {
@@ -296,7 +327,11 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
   });
 
   const { data: subcategories } = useQuery({
-    queryKey: ["subcategories", ticket?.category_id],
+    // Chave própria (não "subcategories" puro) — as telas de criação de
+    // chamado usam a mesma chave com `select("*")`; um cache compartilhado
+    // podia servir esse formato reduzido (id, name) pra quem esperava os
+    // campos completos (default_assignee_id, default_priority etc.).
+    queryKey: ["subcategories-brief", ticket?.category_id],
     queryFn: async () => {
       if (!ticket?.category_id) return [];
       const { data, error } = await supabase
@@ -384,8 +419,18 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
       // encerrado — sem isso só quem responde pelo widget rápido dispara a
       // mudança, e quem responde por aqui (o modal principal) deixa o
       // chamado preso em "A Fazer" mesmo depois de alguém já estar cuidando.
-      if (!isInternal && ticket && !isTicketClosed(ticket.status) && ticketCategory(ticket.status) !== "in_progress") {
-        await supabase.from("tickets").update({ status: "pending" }).eq("id", ticketId);
+      // Busca o status na hora (em vez de confiar no `ticket` do closure do
+      // render) — evita que uma troca de status rápida logo antes do envio
+      // do comentário seja ignorada por causa de um valor desatualizado.
+      if (!isInternal) {
+        const { data: freshTicket } = await supabase
+          .from("tickets")
+          .select("status")
+          .eq("id", ticketId)
+          .single();
+        if (freshTicket && !isTicketClosed(freshTicket.status) && ticketCategory(freshTicket.status) !== "in_progress") {
+          await supabase.from("tickets").update({ status: "pending" }).eq("id", ticketId).is("archived_at", null);
+        }
       }
     },
     onSuccess: () => {
@@ -520,7 +565,7 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
                         <SelectValue placeholder="Selecionar solicitante" />
                       </SelectTrigger>
                       <SelectContent>
-                        {allProfiles?.map((p) => (
+                        {requesterOptions.map((p) => (
                           <SelectItem key={p.id} value={p.id}>{p.full_name || p.email}</SelectItem>
                         ))}
                       </SelectContent>
@@ -999,6 +1044,9 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
         cima de tudo. */}
     {previewImage && (
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={previewImage.alt}
         className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4"
         onClick={() => setPreviewImage(null)}
       >
