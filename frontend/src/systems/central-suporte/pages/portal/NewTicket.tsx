@@ -9,6 +9,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@suporte/integrations/supabase/client";
 import { toast } from "sonner";
+import { fetchCategoriesBySector } from "@suporte/utils/fetchCategoriesBySector";
 
 const NewTicket = () => {
   const navigate = useNavigate();
@@ -43,37 +44,7 @@ const NewTicket = () => {
   // Fetch categories filtered by the selected sector
   const { data: categories } = useQuery({
     queryKey: ["categories-by-sector", selectedSector],
-    queryFn: async () => {
-      if (!selectedSector) return [];
-      // Get category IDs linked to this sector
-      const { data: catSectors, error: csError } = await supabase
-        .from("category_sectors")
-        .select("category_id")
-        .eq("sector_id", selectedSector);
-      if (csError) throw csError;
-
-      if (!catSectors || catSectors.length === 0) {
-        // Fallback: show categories with no sector link (unlinked = available to all)
-        const { data: allLinked, error: allError } = await supabase
-          .from("category_sectors")
-          .select("category_id");
-        if (allError) throw allError;
-        const linkedIds = new Set((allLinked || []).map(c => c.category_id));
-
-        const { data: allCats, error: catError } = await supabase.from("categories").select("*").order("name");
-        if (catError) throw catError;
-        return (allCats || []).filter(c => !linkedIds.has(c.id));
-      }
-
-      const categoryIds = catSectors.map(cs => cs.category_id);
-      const { data, error } = await supabase
-        .from("categories")
-        .select("*")
-        .in("id", categoryIds)
-        .order("name");
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => fetchCategoriesBySector(selectedSector),
     enabled: !!selectedSector,
   });
 
