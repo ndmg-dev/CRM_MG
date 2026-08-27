@@ -197,6 +197,12 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
     enabled: !!ticketId && open,
   });
 
+  // Limita a leitura a um número generoso, mas finito, de linhas — sem isso,
+  // um chamado antigo com centenas de idas e vindas recarrega e re-renderiza
+  // tudo a cada evento realtime, mesmo pra ver uma mensagem nova. Busca as
+  // mais recentes (desc) e inverte pra manter a ordem cronológica de leitura.
+  const RECENT_ROWS_LIMIT = 200;
+
   const { data: comments } = useQuery({
     queryKey: ["ticket-comments", ticketId],
     queryFn: async () => {
@@ -205,9 +211,10 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
         .from("comments")
         .select(`*, author:profiles!author_id(full_name)`)
         .eq("ticket_id", ticketId)
-        .order("created_at", { ascending: true });
+        .order("created_at", { ascending: false })
+        .limit(RECENT_ROWS_LIMIT);
       if (error) throw error;
-      return data;
+      return (data || []).slice().reverse();
     },
     enabled: !!ticketId && open,
   });
@@ -220,7 +227,8 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
         .from("attachments")
         .select("*")
         .eq("ticket_id", ticketId)
-        .order("created_at", { ascending: true });
+        .order("created_at", { ascending: false })
+        .limit(RECENT_ROWS_LIMIT);
       if (error) throw error;
       // Generate signed URLs
       const withUrls = await Promise.all(
@@ -231,7 +239,7 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
           return { ...att, signedUrl: urlData?.signedUrl || null };
         })
       );
-      return withUrls;
+      return withUrls.reverse();
     },
     enabled: !!ticketId && open,
   });

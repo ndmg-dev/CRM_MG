@@ -867,6 +867,10 @@ export type Database = {
         Args: { p_comment_ids: string[] }
         Returns: undefined
       }
+      get_recent_ticket_previews: {
+        Args: { p_limit?: number }
+        Returns: { ticket_id: string; last_content: string; last_created_at: string }[]
+      }
       archive_ticket: {
         Args: { _reason: string; _ticket_id: string }
         Returns: undefined
