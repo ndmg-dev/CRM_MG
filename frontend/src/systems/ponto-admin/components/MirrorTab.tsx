@@ -299,6 +299,13 @@ function DayCard({ row: r }: { row: MirrorRow }) {
 
 // ─── Aba Espelho de ponto ──────────────────────────────────────────────────
 
+// Removidos de propósito (não é regressão): os cards de resumo
+// (Previsto/Trabalhado/Abonado/Faltas/Saldo do mês) e os chips de filtro
+// (Todos/Com pendência/Faltas/Incompletos/Corrigidos) que existiam aqui
+// duplicavam informação já visível nos KPIs do topo da página de
+// Relatórios — decisão tomada no próprio satélite CRONOS_MG (commit
+// 323a413, "remove cards de resumo e filtros redundantes do espelho de
+// ponto") e replicada aqui. Badge Aberto/Homologado mantido.
 export default function MirrorTab({ data, employeeId, year, month, canManage, onExportPdf, onExportXlsx }: Props) {
   const [showAdjust, setShowAdjust] = useState(false)
   const homologarMutation = useHomologarMirror()
