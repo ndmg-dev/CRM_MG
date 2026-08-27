@@ -18,8 +18,17 @@ qualquer coisa nova nessa frente.
 ## ⚠️ Gotcha novo: PRs somem sozinhos entre uma ação e outra
 
 Nesta branch, várias vezes um PR recém-aberto já aparecia **mesclado** minutos depois, antes
-mesmo de eu confirmar a próxima ação (outra pessoa/processo mescla rápido). **Sempre confirme
-com `gh pr view <n> --json state,mergedAt` antes de decidir se dá pra continuar commitando no
+mesmo de eu confirmar a próxima ação. **Causa raiz confirmada, não é suposição**: a branch
+`main` do `CRM_MG` **não tem nenhuma proteção configurada** (`gh api
+repos/ndmg-dev/CRM_MG/branches/main/protection` retorna 404 "Branch not protected") —
+`allow_auto_merge` é `false` (não é um bot de auto-merge), então quem mescla é uma pessoa,
+só que sem nenhum gate de review obrigatório ou status check obrigatório barrando isso. Ou
+seja, qualquer PR pode ser mesclado por qualquer pessoa com acesso de escrita a qualquer
+momento, sem revisão. Isso é uma decisão de processo do time (pode ser deliberada, pra
+mover rápido), mas vale reportar ao usuário se ainda não tiver sido uma escolha consciente —
+não é algo pra "corrigir" sozinho (mexer em branch protection é decisão do dono do repo).
+Na prática, pra quem está codando aqui: **sempre confirme com
+`gh pr view <n> --json state,mergedAt` antes de decidir se dá pra continuar commitando no
 mesmo PR ou se precisa abrir um novo.** Se já foi mesclado, abra um PR novo pro commit
 seguinte — não dá pra assumir que um PR aberto há alguns minutos ainda está aberto.
 
@@ -154,8 +163,15 @@ volta pra apontar pro deploy Coolify em vez do Vercel.
      sistema tiver rotas fora desse prefixo que o frontend nativo precisa chamar (ex:
      `/empresas/lista` no ContAI, usado pelo seletor de empresa), elas ficam de fora do CORS
      por padrão e dão erro de preflight — precisa adicionar esse path também nos
-     `resources` do `CORS()`. Sistemas com `allow_origins=["*"]` (Consulta CNPJ, Analytics
-     DP) já cobrem isso de cara, sem mudança nenhuma.
+     `resources` do `CORS()`.
+   - **`allow_origins=["*"]` (Consulta CNPJ, Analytics DP) é um risco a reduzir, não só uma
+     conveniência**: como esses backends não têm nenhuma auth, `*` aberto pra qualquer
+     origem chamar a API é mais exposição do que precisa — bastaria liberar
+     `https://crmmg.mendoncagalvao.com.br` (e o domínio do próprio sistema, se ele ainda for
+     acessado standalone). Isso não foi corrigido nesta leva (ficou como estava no original,
+     por fidelidade ao sistema fonte) — é uma melhoria de segurança pendente nos backends
+     satélites, fora do escopo de código que o CRM controla; vale levar ao usuário como
+     recomendação de hardening antes de assumir que "já cobre isso de cara" é 100% positivo.
    - **Sistema sem nenhuma auth** (Documentação Contábil, Contábil Script, Consulta CNPJ):
      não inventar auth nova — só confirmar que o CORS do backend original libera a origem do
      CRM (`https://crmmg.mendoncagalvao.com.br`). Esses três não lidam com dado sensível
@@ -186,12 +202,28 @@ volta pra apontar pro deploy Coolify em vez do Vercel.
    (pergunta feita via AskUserQuestion nas migrações do TaskFlow).
 9. **Validar antes de commitar**: `cd frontend && npx tsc --noEmit -p tsconfig.app.json` e
    `npm run build` (com as `VITE_*` novas — e as de TODOS os outros sistemas nativos já
-   existentes — setadas como env temporária pra não falhar por variável ausente; a lista
-   cresce a cada sistema, ver os comandos usados nas migrações recentes como referência de
-   quais setar). **Sempre revalidar com tsc/build de novo depois de qualquer
-   merge/revert/cherry-pick** — um merge "limpo" (sem conflitos reportados pelo git) ainda
-   pode gerar erros de tipo/duplicação que só aparecem no tsc (ver gotcha do
-   `MonthlyReportTab.tsx` abaixo).
+   existentes — setadas como env temporária pra não falhar por variável ausente). **Sempre
+   revalidar com tsc/build de novo depois de qualquer merge/revert/cherry-pick** — um merge
+   "limpo" (sem conflitos reportados pelo git) ainda pode gerar erros de tipo/duplicação que
+   só aparecem no tsc (ver gotcha do `MonthlyReportTab.tsx` abaixo).
+
+   **Checklist rápido pra não esquecer nenhuma `VITE_*` no build de teste** (a lista cresce
+   a cada sistema, então não confie na memória): rode
+   `grep -oP 'ARG \KVITE_\w+' frontend/Dockerfile` — isso lista TODAS as env vars que o
+   build espera hoje, na ordem em que foram adicionadas. Compare com o comando `npm run
+   build` que você está prestes a rodar; qualquer `VITE_*` no grep que não estiver no seu
+   comando é uma variável que vai faltar (não quebra o build, mas o sistema correspondente
+   fica com a env vazia/undefined silenciosamente — o mesmo tipo de bug silencioso do item
+   5 abaixo). Depois de adicionar uma env var nova, confirme que ela chegou nos dois
+   arquivos com (testado, funciona mesmo com casos especiais tipo `VITE_API_BASE_URL`, que é
+   mapeada de outra variável `SERVICE_URL_BACKEND` no compose — **não** compare só a
+   contagem de linhas, ela não bate por causa desse caso):
+   ```sh
+   for v in $(grep -oP 'ARG \KVITE_\w+' frontend/Dockerfile); do
+     grep -q "$v" docker-compose.yml || echo "FALTA NO COMPOSE: $v"
+   done
+   ```
+   Sem saída = tudo presente nos dois arquivos.
 10. **Nunca inventar/inserir sistema novo no banco sem confirmar com o usuário** — sempre
     perguntar antes de rodar INSERT. Pra descobrir o slug real de um sistema que já existe
     (o `sistemas_seed.sql` do repo fica desatualizado), pedir pro usuário rodar no terminal
