@@ -84,16 +84,16 @@ export const KanbanTicketCard = ({
   const slaUrgencyBorder = !isResolved && urgency ? slaBorderMap[urgency] : "";
 
   return (
-    // min-w-0: a coluna do Kanban é flex-col, e sem isso o card (item flex)
-    // usa min-width:auto — como a linha "Aberto por: X · Para: Y" é
-    // white-space:nowrap (por causa do truncate), o card se recusa a
-    // encolher abaixo da largura inteira do texto e estoura a coluna em vez
-    // de truncar com reticências.
+    // min-w-0 (evita o card crescer pra caber o texto) + overflow-hidden no
+    // Card (trava qualquer vazamento visual na borda, mesmo que o cálculo
+    // interno de min-width do flexbox não seja suficiente sozinho) — a
+    // linha "Aberto por: X · Para: Y" é bem mais longa que só um nome e
+    // estourava pra cima da coluna vizinha em vez de truncar.
     <div onClick={onClick} className="min-w-0">
       <Card
-        className={`cursor-pointer transition-all h-[180px] flex flex-col min-w-0 ${borderColor ? `border-l-4 ${borderColor}` : ""} ${isDragging ? "shadow-lg ring-2 ring-primary/30 rotate-2" : "hover:border-primary/50"} ${isResolved ? "opacity-75 hover:opacity-100" : ""} ${slaUrgencyBorder}`}
+        className={`cursor-pointer transition-all h-[180px] flex flex-col min-w-0 overflow-hidden ${borderColor ? `border-l-4 ${borderColor}` : ""} ${isDragging ? "shadow-lg ring-2 ring-primary/30 rotate-2" : "hover:border-primary/50"} ${isResolved ? "opacity-75 hover:opacity-100" : ""} ${slaUrgencyBorder}`}
       >
-        <CardHeader className="p-3 pb-1 flex-none">
+        <CardHeader className="p-3 pb-1 flex-none min-w-0">
           <div className="flex justify-between items-start">
             <Badge variant="outline" className="text-xs">
               {String(ticket.ticket_code).padStart(3, "0")}
@@ -114,11 +114,11 @@ export const KanbanTicketCard = ({
               abriu o chamado em nome de outra pessoa pelo chat — chamado
               aberto pelo próprio solicitante mostra só o nome, como sempre. */}
           {ticket.opened_by_id && ticket.opened_by_id !== ticket.requester_id ? (
-            <span className="text-[11px] text-muted-foreground truncate block">
+            <span className="text-[11px] text-muted-foreground truncate block min-w-0">
               Aberto por: {ticket.opened_by?.full_name || "—"} · Para: {ticket.requester?.full_name || "—"}
             </span>
           ) : (
-            <span className="text-[11px] text-muted-foreground truncate block">
+            <span className="text-[11px] text-muted-foreground truncate block min-w-0">
               {ticket.requester?.full_name || "Solicitante não informado"}
             </span>
           )}
