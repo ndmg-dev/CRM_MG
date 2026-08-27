@@ -162,6 +162,11 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
     prevStatusRef.current = ticket.status
   }, [ticket, ticketId, currentUserId, queryClient])
 
+  // Mesmo limite/estratégia do TicketDetailDialog: busca as mais recentes
+  // (desc) e inverte, em vez de carregar o histórico inteiro de chamados
+  // antigos com muita conversa a cada evento realtime.
+  const RECENT_ROWS_LIMIT = 200
+
   const { data: comments = [] } = useQuery({
     queryKey: ['chat-widget-comments', ticketId],
     queryFn: async () => {
@@ -169,9 +174,10 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
         .from('comments')
         .select('*, author:profiles!author_id(full_name)')
         .eq('ticket_id', ticketId)
-        .order('created_at', { ascending: true })
+        .order('created_at', { ascending: false })
+        .limit(RECENT_ROWS_LIMIT)
       if (error) throw error
-      return data
+      return (data || []).slice().reverse()
     },
   })
 
@@ -183,7 +189,8 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
         .from('attachments')
         .select('*')
         .eq('ticket_id', ticketId)
-        .order('created_at', { ascending: true })
+        .order('created_at', { ascending: false })
+        .limit(RECENT_ROWS_LIMIT)
       if (error) throw error
       const withUrls = await Promise.all(
         (data || []).map(async (att: any) => {
@@ -193,7 +200,7 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
           return { ...att, signedUrl: urlData?.signedUrl || null }
         })
       )
-      return withUrls
+      return withUrls.reverse()
     },
   })
 

@@ -38,49 +38,38 @@ function useConversations() {
   return useQuery({
     queryKey: ['chat-widget-conversations'],
     queryFn: async (): Promise<ConversationRow[]> => {
-      // 1) Comentários recentes (visíveis, não internos) — o mais recente por
-      // chamado é o que aparece como prévia e define a ordenação.
-      const { data: recentComments, error } = await supabase
-        .from('comments')
-        .select('ticket_id, content, created_at')
-        .eq('internal_only', false)
-        .order('created_at', { ascending: false })
-        .limit(300)
+      // 1) Último comentário visível (não interno) de cada chamado não
+      // arquivado, já limitado aos 30 mais recentes — calculado no banco
+      // (DISTINCT ON) em vez de baixar centenas de linhas pra filtrar aqui.
+      // Ver migration 202608271200_recent_ticket_previews_rpc.sql.
+      const { data: previews, error } = await supabase.rpc('get_recent_ticket_previews', { p_limit: 30 })
       if (error) throw error
-
-      const lastByTicket = new Map<string, { content: string; created_at: string }>()
-      for (const c of recentComments || []) {
-        if (!c.ticket_id || lastByTicket.has(c.ticket_id)) continue
-        lastByTicket.set(c.ticket_id, { content: c.content || '', created_at: c.created_at! })
-      }
-      const ticketIds = Array.from(lastByTicket.keys()).slice(0, 30)
-      if (ticketIds.length === 0) return []
+      if (!previews || previews.length === 0) return []
 
       // 2) Dados do chamado (título, código, quem abriu) pros ids acima.
+      const ticketIds = previews.map((p) => p.ticket_id)
       const { data: tickets, error: tErr } = await supabase
         .from('tickets')
         .select('id, ticket_code, title, status, requester_id, opened_by_id, requester:profiles!requester_id(full_name), opened_by:profiles!opened_by_id(full_name)')
         .in('id', ticketIds)
-        .is('archived_at', null)
       if (tErr) throw tErr
 
       const ticketMap = new Map((tickets || []).map((t: any) => [t.id, t]))
-      return ticketIds
-        .filter((id) => ticketMap.has(id))
-        .map((id) => {
-          const t = ticketMap.get(id) as any
-          const last = lastByTicket.get(id)!
+      return previews
+        .filter((p) => ticketMap.has(p.ticket_id))
+        .map((p) => {
+          const t = ticketMap.get(p.ticket_id) as any
           // Só diferencia quando alguém abriu em nome de outra pessoa —
           // mesma regra usada no Kanban/TicketDetailDialog.
           const openedByOther = t.opened_by_id && t.opened_by_id !== t.requester_id
           return {
-            ticketId: id,
+            ticketId: p.ticket_id,
             ticketCode: t.ticket_code,
             title: t.title,
             requesterName: t.requester?.full_name || 'Desconhecido',
             openedByName: openedByOther ? (t.opened_by?.full_name || null) : null,
-            lastMessage: last.content,
-            lastMessageAt: last.created_at,
+            lastMessage: p.last_content,
+            lastMessageAt: p.last_created_at,
             category: ticketCategory(t.status),
           }
         })

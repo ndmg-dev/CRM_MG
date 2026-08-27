@@ -9,6 +9,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@suporte/integrations/supabase/client";
 import { toast } from "sonner";
+import { fetchCategoriesBySector } from "@suporte/utils/fetchCategoriesBySector";
 
 const TI_SECTOR_ID = "dd55f61b-0754-475e-8ea6-2eb0c79b68d6";
 
@@ -21,33 +22,7 @@ const NewTicketTI = () => {
 
   const { data: categories } = useQuery({
     queryKey: ["categories-by-sector", TI_SECTOR_ID],
-    queryFn: async () => {
-      const { data: catSectors, error: csError } = await supabase
-        .from("category_sectors")
-        .select("category_id")
-        .eq("sector_id", TI_SECTOR_ID);
-      if (csError) throw csError;
-
-      if (!catSectors || catSectors.length === 0) {
-        const { data: allLinked, error: allError } = await supabase
-          .from("category_sectors")
-          .select("category_id");
-        if (allError) throw allError;
-        const linkedIds = new Set((allLinked || []).map(c => c.category_id));
-        const { data: allCats, error: catError } = await supabase.from("categories").select("*").order("name");
-        if (catError) throw catError;
-        return (allCats || []).filter(c => !linkedIds.has(c.id));
-      }
-
-      const categoryIds = catSectors.map(cs => cs.category_id);
-      const { data, error } = await supabase
-        .from("categories")
-        .select("*")
-        .in("id", categoryIds)
-        .order("name");
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => fetchCategoriesBySector(TI_SECTOR_ID),
   });
 
   const { data: subcategories } = useQuery({
