@@ -37,6 +37,32 @@ const DEV_SAMPLE_SUBCATEGORIES: Record<string, { id: string; name: string; defau
   // é assim que dá pra testar o caminho que pula direto pra descrição.
 };
 
+const DEV_SAMPLE_SUBCATEGORIES_NAMES: Record<string, string[]> = Object.fromEntries(
+  Object.entries(DEV_SAMPLE_SUBCATEGORIES).map(([catId, subs]) => [catId, subs.map(s => s.name)])
+);
+
+// "Prova de burro" pro problema real de produção: chamado de monitor caindo
+// em "Outros" porque a pessoa não sabia que era "Hardware". Mostra exemplos
+// concretos embaixo de cada categoria pra tirar a dúvida ANTES do clique —
+// casada por nome (minúsculo, sem acento) pra tolerar variação de cadastro
+// tipo "Rede/Conectividade" vs "Rede e Conectividade". Sem hint cadastrado,
+// o chip aparece sem exemplo (nunca quebra por categoria nova/renomeada).
+const DIACRITICS_PATTERN = new RegExp("[̀-ͯ]", "g");
+function normalizeCategoryName(name: string): string {
+  return name.toLowerCase().normalize("NFD").replace(DIACRITICS_PATTERN, "").trim();
+}
+
+const CATEGORY_HINTS: Record<string, string> = {
+  "acessos": "senha, e-mail, Google Drive, login em sistema, permissão de pasta",
+  "hardware": "monitor, teclado, mouse, impressora, notebook, computador, fone, cabo",
+  "equipamentos": "monitor, teclado, mouse, impressora, notebook, computador, fone, cabo",
+  "rede/conectividade": "Wi-Fi, internet lenta ou fora do ar, VPN, cabo de rede",
+  "rede e conectividade": "Wi-Fi, internet lenta ou fora do ar, VPN, cabo de rede",
+  "sistemas": "sistema jurídico, ERP, sistema de terceiro, erro ao logar/usar um sistema",
+  "desenvolvimento": "automação, integração entre sistemas, relatório sob medida, bug em algo feito internamente",
+  "outros": "só escolha esta se nenhuma das anteriores tiver relação com o problema",
+};
+
 /** Etapas do fluxo conversacional, em ordem. `done` = chamado já criado. */
 type Step = "category" | "subcategory" | "description" | "attachments" | "creating" | "done";
 
@@ -49,13 +75,12 @@ interface ChatEntry {
  * se distinguem pelo tamanho, e nome+tamanho basta pra chavear a miniatura. */
 const fileKey = (f: File) => `${f.name}:${f.size}`;
 
-/** Assunto do chamado = categoria + descrição. Usa só a primeira linha do
- * relato e corta em 80 caracteres pra não estourar a coluna de título nas
- * listagens; a descrição completa vai no corpo do chamado de qualquer jeito. */
-function buildTitle(categoryName: string | undefined, description: string): string {
-  const firstLine = description.trim().split("\n")[0].trim();
-  const resumo = firstLine.length > 80 ? `${firstLine.slice(0, 80).trimEnd()}...` : firstLine;
-  return [categoryName, resumo].filter(Boolean).join(" — ");
+/** Assunto do chamado = categoria + subcategoria (ex.: "Equipamentos -
+ * Monitor"). Sem subcategoria (categoria que pula direto pra descrição),
+ * fica só a categoria — a descrição completa do problema vai no corpo do
+ * chamado, não precisa duplicar no título. */
+function buildTitle(categoryName: string | undefined, subcategoryName: string | undefined): string {
+  return [categoryName, subcategoryName].filter(Boolean).join(" - ");
 }
 
 /** Snapshot pra desfazer uma resposta e voltar um passo do fluxo. */
@@ -92,6 +117,28 @@ const Chip = ({ label, onClick }: { label: string; onClick: () => void }) => (
     className="rounded-full border border-primary/40 bg-primary/5 px-4 py-1.5 text-sm font-medium text-primary transition-colors hover:border-primary hover:bg-primary/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
   >
     {label}
+  </button>
+);
+
+/** Categoria com exemplo embaixo — "prova de burro" pro caso real de
+ * produção (chamado de monitor foi aberto como "Outros" por falta de
+ * contexto). "Outros" vem visualmente apagado de propósito, pra não ser o
+ * clique óbvio de quem está com pressa/dúvida. */
+const CategoryChip = ({ label, hint, muted, onClick }: { label: string; hint?: string; muted?: boolean; onClick: () => void }) => (
+  <button
+    onClick={onClick}
+    // h-full + grid (o pai é `grid`) deixa todos os cards da mesma altura,
+    // não importa se a lista de subcategorias de um é maior que a de outro.
+    // line-clamp-2 corta a prévia em vez de esticar o card quando a
+    // categoria tem muita subcategoria cadastrada.
+    className={`flex h-full flex-col items-start gap-0.5 rounded-xl border px-4 py-2.5 text-left transition-colors ${
+      muted
+        ? "border-border bg-transparent text-muted-foreground hover:border-primary/40 hover:text-foreground"
+        : "border-primary/40 bg-primary/5 text-primary hover:border-primary hover:bg-primary/15"
+    } focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary`}
+  >
+    <span className="text-sm font-semibold">{label}</span>
+    {hint && <span className="line-clamp-2 text-xs font-normal opacity-80">{hint}</span>}
   </button>
 );
 
@@ -158,6 +205,31 @@ const NewTicketChat = () => {
       import.meta.env.DEV && (!data || data.length === 0) ? (DEV_SAMPLE_CATEGORIES as typeof data) : data,
   });
 
+  // Subcategorias de TODAS as categorias, só pra mostrar como prévia embaixo
+  // de cada card na etapa de categoria — é o que resolve de vez o caso do
+  // monitor virar "Outros": a pessoa já vê "monitor, teclado, mouse..."
+  // embaixo de "Hardware" antes de escolher, sem precisar entrar e voltar.
+  const categoryIds = (categories ?? []).map(c => c.id).filter(id => !id.startsWith("dev-"));
+  const { data: allSubcategories } = useQuery({
+    queryKey: ["subcategories-preview", categoryIds],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("subcategories")
+        .select("category_id, name")
+        .in("category_id", categoryIds)
+        .order("name");
+      if (error) throw error;
+      return data;
+    },
+    enabled: categoryIds.length > 0,
+  });
+
+  const subcategoryPreviewByCategory: Record<string, string[]> = { ...DEV_SAMPLE_SUBCATEGORIES_NAMES };
+  for (const s of allSubcategories ?? []) {
+    if (!s.category_id) continue;
+    (subcategoryPreviewByCategory[s.category_id] ??= []).push(s.name);
+  }
+
   const { data: subcategories, error: subsError } = useQuery({
     queryKey: ["subcategories", selectedCategory],
     queryFn: async () => {
@@ -179,6 +251,16 @@ const NewTicketChat = () => {
   });
 
   const categoryLabel = categories?.find(c => c.id === selectedCategory)?.name;
+  const subcategoryLabel = subcategories?.find(s => s.id === selectedSubcategory)?.name;
+
+  // "Outros" sempre por último — não é pra ser a opção mais visível/fácil de
+  // bater o olho quando a pessoa está em dúvida.
+  const orderedCategories = [...(categories ?? [])].sort((a, b) => {
+    const aOutros = normalizeCategoryName(a.name) === "outros";
+    const bOutros = normalizeCategoryName(b.name) === "outros";
+    if (aOutros === bOutros) return 0;
+    return aOutros ? 1 : -1;
+  });
 
   // Primeira fala do bot — espera o nome carregar pra não cumprimentar vazio.
   useEffect(() => {
@@ -322,10 +404,9 @@ const NewTicketChat = () => {
       const categoryName = categories?.find(c => c.id === selectedCategory)?.name;
       const subcategoryName = subcategories?.find(s => s.id === selectedSubcategory)?.name;
       // O chat não pergunta "Assunto": ele é montado como categoria +
-      // descrição. A categoria vem de uma escolha guiada (sempre válida) e a
-      // descrição dá o contexto — junto isso lê melhor na fila da TI do que
-      // um assunto digitado às pressas.
-      const title = buildTitle(categoryName, description);
+      // subcategoria (ambas vêm de escolha guiada, sempre válidas) — a
+      // descrição do problema vai só no corpo do chamado.
+      const title = buildTitle(categoryName, subcategoryName);
 
       const { data: ticket, error: ticketError } = await supabase
         .from("tickets")
@@ -414,10 +495,25 @@ const NewTicketChat = () => {
 
         <div className="border-t border-border bg-muted/20 p-4">
           {step === "category" && (
-            <div className="flex flex-wrap gap-2">
-              {categories?.map(cat => (
-                <Chip key={cat.id} label={cat.name} onClick={() => pickCategory(cat.id, cat.name)} />
-              ))}
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {orderedCategories.map(cat => {
+                const key = normalizeCategoryName(cat.name);
+                const isOutros = key === "outros";
+                const realSubs = subcategoryPreviewByCategory[cat.id];
+                // Prévia real das subcategorias cadastradas; só cai pro texto
+                // genérico (CATEGORY_HINTS) quando a categoria não tem
+                // nenhuma — ex.: "Outros" nunca tem subcategoria própria.
+                const hint = realSubs?.length ? realSubs.join(", ") : CATEGORY_HINTS[key];
+                return (
+                  <CategoryChip
+                    key={cat.id}
+                    label={cat.name}
+                    hint={hint}
+                    muted={isOutros}
+                    onClick={() => pickCategory(cat.id, cat.name)}
+                  />
+                );
+              })}
               {/* Estados separados de propósito: "carregando", "falhou" e
                   "nenhuma categoria cadastrada" são problemas diferentes e
                   precisam de mensagens diferentes pra dar pra diagnosticar. */}
@@ -557,9 +653,9 @@ const NewTicketChat = () => {
               </Button>
             )}
           </div>
-          {(step === "description" || step === "attachments") && categoryLabel && description.trim() && (
+          {(step === "description" || step === "attachments") && categoryLabel && (
             <span className="text-xs text-muted-foreground">
-              Assunto: <span className="text-foreground">{buildTitle(categoryLabel, description)}</span>
+              Assunto: <span className="text-foreground">{buildTitle(categoryLabel, subcategoryLabel)}</span>
             </span>
           )}
         </div>

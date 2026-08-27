@@ -29,7 +29,7 @@ import { Separator } from "@suporte/components/ui/separator";
 import { ScrollArea } from "@suporte/components/ui/scroll-area";
 import { Switch } from "@suporte/components/ui/switch";
 import { Label } from "@suporte/components/ui/label";
-import { Clock, User, MessageSquare, Send, Tag, Trash2, Paperclip, Download, FileText, Image, Upload, CalendarIcon, RotateCcw } from "lucide-react";
+import { Clock, User, MessageSquare, Send, Tag, Trash2, Paperclip, Download, FileText, Image, Upload, CalendarIcon, RotateCcw, Pencil, X as XIcon } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@suporte/components/ui/popover";
 import { Calendar } from "@suporte/components/ui/calendar";
 import { format } from "date-fns";
@@ -38,6 +38,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@suporte/integrations/supabase/client";
 import { toast } from "sonner";
 import { markCommentNotificationsRead } from "@suporte/hooks/useUnreadComments";
+import { ticketCategory, isTicketClosed } from "@suporte/utils/ticketStatus";
 
 interface TicketDetailDialogProps {
   ticketId: string | null;
@@ -96,6 +97,13 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pendingSectorId, setPendingSectorId] = useState<string | null>(null);
   const [sectorAssigneeId, setSectorAssigneeId] = useState<string>("unassigned");
+  const [isEditingRequester, setIsEditingRequester] = useState(false);
+
+  // Sem isso, trocar de chamado com o Select do solicitante ainda aberto
+  // deixa a edição "vazando" pro próximo ticket exibido.
+  useEffect(() => {
+    setIsEditingRequester(false);
+  }, [ticketId]);
 
   // Abriu o chamado: some com a bolinha de comentário não lido no card.
   useEffect(() => {
@@ -132,6 +140,24 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
         .in("role", ["admin_ti", "direction"]);
       return (data?.length ?? 0) > 0;
     },
+  });
+
+  // Trocar o solicitante é sensível (afeta quem a TI enxerga como "dono" do
+  // problema) — só Admin TI mexe aqui, diferente das outras trocas (status,
+  // prioridade, setor) que qualquer membro da TI pode fazer.
+  const { data: canEditRequester } = useQuery({
+    queryKey: ["can-edit-requester"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return false;
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "admin_ti");
+      return (data?.length ?? 0) > 0;
+    },
+    enabled: open && !readOnly,
   });
 
   const { data: ticket } = useQuery({
@@ -348,6 +374,15 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
         });
         if (attError) throw attError;
       }
+
+      // Mesma regra do chat flutuante rápido (ConversationView.tsx): resposta
+      // da TI move o chamado pra "Em Andamento" sozinha, exceto se já estiver
+      // encerrado — sem isso só quem responde pelo widget rápido dispara a
+      // mudança, e quem responde por aqui (o modal principal) deixa o
+      // chamado preso em "A Fazer" mesmo depois de alguém já estar cuidando.
+      if (!isInternal && ticket && !isTicketClosed(ticket.status) && ticketCategory(ticket.status) !== "in_progress") {
+        await supabase.from("tickets").update({ status: "pending" }).eq("id", ticketId);
+      }
     },
     onSuccess: () => {
       setCommentText("");
@@ -356,6 +391,8 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
       if (fileInputRef.current) fileInputRef.current.value = "";
       queryClient.invalidateQueries({ queryKey: ["ticket-comments", ticketId] });
       queryClient.invalidateQueries({ queryKey: ["ticket-attachments", ticketId] });
+      queryClient.invalidateQueries({ queryKey: ["ticket-detail", ticketId] });
+      queryClient.invalidateQueries({ queryKey: ["kanban-tickets"] });
       toast.success("Comentário adicionado");
     },
     onError: () => toast.error("Erro ao adicionar comentário"),
@@ -465,8 +502,46 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
             {/* Metadata */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
               <div className="flex items-center gap-2 text-muted-foreground">
-                <User className="h-4 w-4" />
-                <span>Solicitante: <strong className="text-foreground">{ticket.requester?.full_name || "—"}</strong></span>
+                <User className="h-4 w-4 shrink-0" />
+                {isEditingRequester ? (
+                  <div className="flex flex-1 items-center gap-1">
+                    <Select
+                      value={ticket.requester_id || undefined}
+                      onValueChange={(v) => {
+                        updateTicket.mutate({ requester_id: v });
+                        setIsEditingRequester(false);
+                      }}
+                    >
+                      <SelectTrigger className="h-8 flex-1 border-2 border-primary text-sm">
+                        <SelectValue placeholder="Selecionar solicitante" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {allProfiles?.map((p) => (
+                          <SelectItem key={p.id} value={p.id}>{p.full_name || p.email}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0"
+                      onClick={() => setIsEditingRequester(false)}
+                    >
+                      <XIcon className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <span>
+                    Solicitante: <strong className="text-foreground">{ticket.requester?.full_name || "—"}</strong>
+                    {canEditRequester && (
+                      <Button
+                        type="button" variant="ghost" size="icon" className="ml-1 h-6 w-6 align-middle"
+                        title="Trocar solicitante (Admin TI)"
+                        onClick={() => setIsEditingRequester(true)}
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Clock className="h-4 w-4" />
