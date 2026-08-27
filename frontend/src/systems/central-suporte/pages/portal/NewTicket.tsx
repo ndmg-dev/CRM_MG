@@ -123,7 +123,7 @@ const NewTicket = () => {
       const formData = new FormData(e.currentTarget);
       const title = formData.get("subject") as string;
       const description = formData.get("description") as string;
-      const type = formData.get("type") as "incident" | "request";
+      const type = "request" as const;
       
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
@@ -225,14 +225,11 @@ const NewTicket = () => {
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label>Tipo de Solicitação</Label>
-                <Select name="type" required defaultValue="request">
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="request">Requisição</SelectItem>
-                  </SelectContent>
-                </Select>
+                {/* Única opção existente hoje — sem dropdown falso pra
+                    escolher algo que não tem outra alternativa. */}
+                <div className="flex h-10 items-center rounded-md border border-input bg-muted/30 px-3 text-sm text-muted-foreground">
+                  Requisição
+                </div>
               </div>
 
               <div className="space-y-2">

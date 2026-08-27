@@ -12,6 +12,7 @@ interface ConversationRow {
   ticketCode: number | string | null
   title: string
   requesterName: string
+  openedByName: string | null
   lastMessage: string
   lastMessageAt: string | null
   category: TicketCategory
@@ -58,7 +59,7 @@ function useConversations() {
       // 2) Dados do chamado (título, código, quem abriu) pros ids acima.
       const { data: tickets, error: tErr } = await supabase
         .from('tickets')
-        .select('id, ticket_code, title, status, requester:profiles!requester_id(full_name)')
+        .select('id, ticket_code, title, status, requester_id, opened_by_id, requester:profiles!requester_id(full_name), opened_by:profiles!opened_by_id(full_name)')
         .in('id', ticketIds)
         .is('archived_at', null)
       if (tErr) throw tErr
@@ -69,11 +70,15 @@ function useConversations() {
         .map((id) => {
           const t = ticketMap.get(id) as any
           const last = lastByTicket.get(id)!
+          // Só diferencia quando alguém abriu em nome de outra pessoa —
+          // mesma regra usada no Kanban/TicketDetailDialog.
+          const openedByOther = t.opened_by_id && t.opened_by_id !== t.requester_id
           return {
             ticketId: id,
             ticketCode: t.ticket_code,
             title: t.title,
             requesterName: t.requester?.full_name || 'Desconhecido',
+            openedByName: openedByOther ? (t.opened_by?.full_name || null) : null,
             lastMessage: last.content,
             lastMessageAt: last.created_at,
             category: ticketCategory(t.status),
@@ -287,7 +292,9 @@ export function ConversationList() {
                     </div>
                     <span className="shrink-0 text-[11px] text-text-muted">{formatPreviewTime(c.lastMessageAt)}</span>
                   </div>
-                  <p className="mt-0.5 truncate text-xs text-text-muted">{c.requesterName}</p>
+                  <p className="mt-0.5 truncate text-xs text-text-muted">
+                    {c.openedByName ? `${c.openedByName} → ${c.requesterName}` : c.requesterName}
+                  </p>
                   <div className="mt-1 flex items-center justify-between gap-2">
                     <p className="truncate text-[13px] text-text-secondary">{c.lastMessage || 'Sem mensagens de texto'}</p>
                     {unread > 0 && (

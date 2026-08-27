@@ -93,6 +93,15 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
   // Preview de imagem em modal em vez de abrir em nova aba — nova aba tira a
   // pessoa do chat pra ver um print; um modal por cima resolve sem sair daqui.
   const [previewImage, setPreviewImage] = useState<{ url: string; alt: string } | null>(null)
+
+  useEffect(() => {
+    if (!previewImage) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setPreviewImage(null)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [previewImage])
   // Grava status=closed na hora (ver closeChatMutation), mas mantém ESTA
   // instância da tela funcionando normalmente — sem o aviso "vai sumir da
   // aba" nem bloquear o input — até a TI sair da conversa. Na próxima vez
@@ -684,6 +693,9 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
       {/* Preview de imagem — mesmo padrão de overlay do modal de confirmação acima */}
       {previewImage && (
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={previewImage.alt}
           className="fixed inset-0 z-[140] flex items-center justify-center bg-black/80 p-4"
           onClick={() => setPreviewImage(null)}
         >

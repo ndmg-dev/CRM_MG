@@ -98,6 +98,15 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
   // Preview de imagem em modal em vez de abrir em nova aba — nova aba tira o
   // agente do chamado só pra ver um print anexado.
   const [previewImage, setPreviewImage] = useState<{ url: string; alt: string } | null>(null);
+
+  useEffect(() => {
+    if (!previewImage) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPreviewImage(null);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [previewImage]);
   const [pendingSectorId, setPendingSectorId] = useState<string | null>(null);
   const [sectorAssigneeId, setSectorAssigneeId] = useState<string>("unassigned");
   const [isEditingRequester, setIsEditingRequester] = useState(false);
@@ -270,7 +279,9 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
       if (error) throw error;
       return data || [];
     },
-    enabled: open,
+    // readOnly (usuário comum vendo o próprio chamado) nunca mostra os
+    // selects de responsável/setor/solicitante que usam essa lista.
+    enabled: open && !readOnly,
   });
 
   // IDs de quem tem qualquer role de staff — usado só pra tirar essas
@@ -316,7 +327,11 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
   });
 
   const { data: subcategories } = useQuery({
-    queryKey: ["subcategories", ticket?.category_id],
+    // Chave própria (não "subcategories" puro) — as telas de criação de
+    // chamado usam a mesma chave com `select("*")`; um cache compartilhado
+    // podia servir esse formato reduzido (id, name) pra quem esperava os
+    // campos completos (default_assignee_id, default_priority etc.).
+    queryKey: ["subcategories-brief", ticket?.category_id],
     queryFn: async () => {
       if (!ticket?.category_id) return [];
       const { data, error } = await supabase
@@ -1029,6 +1044,9 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
         cima de tudo. */}
     {previewImage && (
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={previewImage.alt}
         className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4"
         onClick={() => setPreviewImage(null)}
       >
