@@ -110,18 +110,14 @@ export const KanbanTicketCard = ({
           <CardTitle className={`text-sm mt-1 line-clamp-1 ${isResolved ? "line-through text-muted-foreground" : ""}`}>
             {ticket.title}
           </CardTitle>
-          {/* opened_by só existe (e só difere do requester) quando alguém
-              abriu o chamado em nome de outra pessoa pelo chat — chamado
-              aberto pelo próprio solicitante mostra só o nome, como sempre. */}
-          {ticket.opened_by_id && ticket.opened_by_id !== ticket.requester_id ? (
-            <span className="text-[11px] text-muted-foreground truncate block min-w-0">
-              Aberto por: {ticket.opened_by?.full_name || "—"} · Para: {ticket.requester?.full_name || "—"}
-            </span>
-          ) : (
-            <span className="text-[11px] text-muted-foreground truncate block min-w-0">
-              {ticket.requester?.full_name || "Solicitante não informado"}
-            </span>
-          )}
+          {/* Card mostra só o nome de pra quem é (requester) — mesmo linha
+              única de sempre, mesmo quando alguém abriu em nome de outra
+              pessoa. O "Aberto por: X · Para: Y" completo fica só no modal
+              de detalhes, que tem espaço de sobra; no card, a linha dupla
+              estourava a coluna vizinha (card tem altura/largura fixas). */}
+          <span className="text-[11px] text-muted-foreground truncate block">
+            {ticket.requester?.full_name || "Solicitante não informado"}
+          </span>
         </CardHeader>
         <CardContent className="p-3 pt-0 flex-1 flex flex-col justify-end">
           {slaInfo?.deadline && !isResolved && (
