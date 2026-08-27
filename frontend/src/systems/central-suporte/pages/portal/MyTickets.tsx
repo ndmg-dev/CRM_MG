@@ -1,60 +1,49 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@suporte/components/ui/card";
-import { Badge } from "@suporte/components/ui/badge";
-import { Button } from "@suporte/components/ui/button";
-import { Input } from "@suporte/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@suporte/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@suporte/components/ui/table";
-import { Search, PlusCircle, Clock, Eye } from "lucide-react";
+import { PlusCircle, Clock, Eye, Search } from "lucide-react";
 import { useNavigate } from "@suporte/lib/router-shim";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@suporte/integrations/supabase/client";
 import { TicketDetailDialog } from "@suporte/components/admin/TicketDetailDialog";
 
+// Tokens — ver frontend/packages/@mg/tokens/build/tokens.css. Handoff:
+// Meus Chamados.dc.html.
+const GOLD = "var(--mg-color-gold-base)";
+const TEXT_PRIMARY = "var(--mg-color-text-primary)";
+const TEXT_SECONDARY = "var(--mg-color-text-secondary)";
+const TEXT_MUTED = "var(--mg-color-text-muted)";
+const BORDER_DEFAULT = "var(--mg-color-border-default)";
+const INFO = "var(--mg-color-status-info)";
+const SUCCESS = "var(--mg-color-status-success)";
+const ERROR = "var(--mg-color-status-error)";
+const WARNING = "var(--mg-color-status-warning)";
+
+const CARD_CLASS = "bg-[var(--mg-color-bg-card)] border border-[var(--mg-color-border-default)] rounded-xl";
+
+// Mesmo mapeamento canônico usado no Kanban/TicketDetailDialog: new/open =
+// "A Fazer", pending = "Em Andamento" — NÃO reintroduzir a versão antiga
+// (que tinha "open" como "Em Andamento") sem checar o Kanban antes.
 const statusLabels: Record<string, string> = {
-  new: "Novo",
-  open: "Em Andamento",
-  pending: "Aguardando",
+  new: "A Fazer",
+  open: "A Fazer",
+  pending: "Em Andamento",
+  parado: "Parado",
   testing: "Em Teste",
-  resolved: "Resolvido",
-  closed: "Fechado",
+  resolved: "Concluído",
+  closed: "Concluído",
   canceled: "Cancelado",
 };
 
-const statusColors: Record<string, string> = {
-  new: "bg-blue-500/10 text-blue-500",
-  open: "bg-green-500/10 text-green-500",
-  pending: "bg-yellow-500/10 text-yellow-500",
-  testing: "bg-orange-500/10 text-orange-500",
-  resolved: "bg-muted text-muted-foreground",
-  closed: "bg-muted text-muted-foreground",
-  canceled: "bg-destructive/10 text-destructive",
-};
-
-const priorityLabels: Record<string, string> = {
-  p0: "Crítica",
-  p1: "Alta",
-  p2: "Média",
-  p3: "Baixa",
+const priorityLabels: Record<string, string> = { p0: "Crítica", p1: "Alta", p2: "Média", p3: "Baixa" };
+const priorityStyle: Record<string, { color: string; bg: string }> = {
+  p0: { color: ERROR, bg: "rgba(239,102,102,0.10)" },
+  p1: { color: ERROR, bg: "rgba(239,102,102,0.10)" },
+  p2: { color: WARNING, bg: "rgba(216,174,66,0.10)" },
+  p3: { color: SUCCESS, bg: "rgba(85,217,165,0.10)" },
 };
 
 const MyTickets = () => {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
 
   const { data: tickets, isLoading } = useQuery({
@@ -77,149 +66,114 @@ const MyTickets = () => {
     },
   });
 
-  const filtered = tickets?.filter((t) => {
-    if (statusFilter !== "all" && t.status !== statusFilter) return false;
-    if (search) {
-      const q = search.toLowerCase();
-      return (
-        t.title.toLowerCase().includes(q) ||
-        String(t.ticket_code).includes(q)
-      );
-    }
-    return true;
-  }) || [];
+  const filtered = (tickets ?? []).filter((t) => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return t.title.toLowerCase().includes(q) || String(t.ticket_code).includes(q);
+  });
 
   const counts = {
     total: tickets?.length || 0,
-    open: tickets?.filter(t => t.status === "open" || t.status === "new").length || 0,
-    pending: tickets?.filter(t => t.status === "pending").length || 0,
-    resolved: tickets?.filter(t => t.status === "resolved" || t.status === "closed").length || 0,
+    open: tickets?.filter((t) => t.status === "open" || t.status === "new").length || 0,
+    pending: tickets?.filter((t) => t.status === "pending").length || 0,
+    resolved: tickets?.filter((t) => t.status === "resolved" || t.status === "closed").length || 0,
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-5">
+      <div className="flex items-end justify-between flex-wrap gap-4">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Meus Chamados</h2>
-          <p className="text-muted-foreground text-sm">Acompanhe todas as suas solicitações</p>
+          <h1 style={{ color: TEXT_PRIMARY, fontSize: 24, fontWeight: 700, letterSpacing: "-0.02em", margin: "0 0 4px" }}>Meus Chamados</h1>
+          <p style={{ color: TEXT_SECONDARY, fontSize: 13, margin: 0 }}>Acompanhe todas as suas solicitações</p>
         </div>
-        <Button onClick={() => navigate("/portal/new-ticket")}>
-          <PlusCircle className="h-4 w-4 mr-2" /> Chamado Interno
-        </Button>
+        <button
+          type="button"
+          onClick={() => navigate("/portal/new-ticket")}
+          className="flex items-center gap-2"
+          style={{ height: 40, padding: "0 18px", background: GOLD, color: "var(--mg-color-bg-base)", border: "none", borderRadius: 8, fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}
+        >
+          <PlusCircle className="h-4 w-4" /> Chamado Interno
+        </button>
       </div>
 
-      {/* Summary cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs text-muted-foreground font-medium">Total</CardTitle>
-          </CardHeader>
-          <CardContent><span className="text-2xl font-bold">{counts.total}</span></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs text-muted-foreground font-medium">Abertos</CardTitle>
-          </CardHeader>
-          <CardContent><span className="text-2xl font-bold text-blue-500">{counts.open}</span></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs text-muted-foreground font-medium">Aguardando</CardTitle>
-          </CardHeader>
-          <CardContent><span className="text-2xl font-bold text-yellow-500">{counts.pending}</span></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs text-muted-foreground font-medium">Concluídos</CardTitle>
-          </CardHeader>
-          <CardContent><span className="text-2xl font-bold text-green-500">{counts.resolved}</span></CardContent>
-        </Card>
+      <div className="grid grid-cols-2 gap-3.5 md:grid-cols-4">
+        <div className={CARD_CLASS} style={{ padding: "16px 18px" }}>
+          <div style={{ fontSize: 12.5, color: TEXT_SECONDARY, marginBottom: 8 }}>Total</div>
+          <div style={{ fontSize: 26, fontWeight: 700, color: TEXT_PRIMARY }}>{counts.total}</div>
+        </div>
+        <div className={CARD_CLASS} style={{ padding: "16px 18px" }}>
+          <div style={{ fontSize: 12.5, color: TEXT_SECONDARY, marginBottom: 8 }}>Abertos</div>
+          <div style={{ fontSize: 26, fontWeight: 700, color: INFO }}>{counts.open}</div>
+        </div>
+        <div className={CARD_CLASS} style={{ padding: "16px 18px" }}>
+          <div style={{ fontSize: 12.5, color: TEXT_SECONDARY, marginBottom: 8 }}>Aguardando</div>
+          <div style={{ fontSize: 26, fontWeight: 700, color: GOLD }}>{counts.pending}</div>
+        </div>
+        <div className={CARD_CLASS} style={{ padding: "16px 18px" }}>
+          <div style={{ fontSize: 12.5, color: TEXT_SECONDARY, marginBottom: 8 }}>Concluídos</div>
+          <div style={{ fontSize: 26, fontWeight: 700, color: SUCCESS }}>{counts.resolved}</div>
+        </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por título ou código..."
+      <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2" style={{ flex: 1, maxWidth: 340, height: 38, padding: "0 12px", background: "var(--mg-color-bg-card)", border: `0.5px solid ${BORDER_DEFAULT}`, borderRadius: 8 }}>
+          <Search className="h-3.5 w-3.5" style={{ color: TEXT_MUTED }} />
+          <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
+            placeholder="Buscar por título ou código..."
+            style={{ border: "none", background: "transparent", color: TEXT_PRIMARY, fontSize: 13, outline: "none", flex: 1, fontFamily: "inherit" }}
           />
         </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[160px]">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
-            {Object.entries(statusLabels).map(([k, v]) => (
-              <SelectItem key={k} value={k}>{v}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
       </div>
 
-      {/* Table */}
-      <Card>
-        <CardContent className="p-0">
-          {isLoading ? (
-            <p className="text-sm text-muted-foreground p-6">Carregando...</p>
-          ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-              <Clock className="h-10 w-10 mb-3 opacity-30" />
-              <p className="text-sm">Nenhum chamado encontrado</p>
+      <div className={CARD_CLASS} style={{ overflow: "hidden" }}>
+        {isLoading ? (
+          <p style={{ fontSize: 13, color: TEXT_MUTED, padding: 24 }}>Carregando...</p>
+        ) : filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center" style={{ padding: "48px 0", color: TEXT_MUTED }}>
+            <Clock className="h-8 w-8 mb-3" style={{ opacity: 0.3 }} />
+            <p style={{ fontSize: 13 }}>Nenhum chamado encontrado</p>
+          </div>
+        ) : (
+          <>
+            <div className="hidden md:grid" style={{ gridTemplateColumns: "90px 1fr 140px 110px 100px 110px 40px", padding: "12px 18px", fontSize: 12, color: TEXT_SECONDARY, borderBottom: `0.5px solid ${BORDER_DEFAULT}` }}>
+              <div>Código</div><div>Título</div><div>Categoria</div><div>Status</div><div>Prioridade</div><div>Data</div><div />
             </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[100px]">Código</TableHead>
-                  <TableHead>Título</TableHead>
-                  <TableHead className="hidden md:table-cell">Categoria</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="hidden md:table-cell">Prioridade</TableHead>
-                  <TableHead className="hidden md:table-cell">Data</TableHead>
-                  <TableHead className="w-[50px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.map((ticket) => (
-                  <TableRow
-                    key={ticket.id}
-                    className="cursor-pointer hover:bg-accent/5"
-                    onClick={() => setSelectedTicketId(ticket.id)}
-                  >
-                    <TableCell>
-                      <Badge variant="outline" className="text-xs font-mono"><Badge variant="outline" className="text-xs font-mono">{String(ticket.ticket_code).padStart(3, '0')}</Badge></Badge>
-                    </TableCell>
-                    <TableCell className="font-medium">{ticket.title}</TableCell>
-                    <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
-                      {ticket.category?.name || "—"}
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={`text-[10px] font-medium ${statusColors[ticket.status || "new"]} border-0`}>
-                        {statusLabels[ticket.status || "new"]}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      <Badge variant={ticket.priority === "p0" || ticket.priority === "p1" ? "destructive" : "secondary"} className="text-[10px]">
-                        {priorityLabels[ticket.priority || "p3"]}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell text-xs text-muted-foreground">
-                      {new Date(ticket.created_at!).toLocaleDateString("pt-BR")}
-                    </TableCell>
-                    <TableCell>
-                      <Eye className="h-4 w-4 text-muted-foreground" />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+            {filtered.map((ticket) => {
+              const pr = priorityStyle[ticket.priority || "p3"];
+              return (
+                <div
+                  key={ticket.id}
+                  onClick={() => setSelectedTicketId(ticket.id)}
+                  className="grid grid-cols-1 md:grid-cols-[90px_1fr_140px_110px_100px_110px_40px] items-center hover:bg-[var(--mg-color-bg-hover)] cursor-pointer gap-1 md:gap-0"
+                  style={{ padding: "14px 18px", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}
+                >
+                  <div>
+                    <span style={{ display: "inline-flex", alignItems: "center", height: 22, padding: "0 9px", background: "rgba(210,170,63,0.14)", color: GOLD, fontSize: 11.5, fontWeight: 700, borderRadius: 999 }}>
+                      {String(ticket.ticket_code).padStart(3, "0")}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 13.5, fontWeight: 600, color: TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", paddingRight: 12 }}>{ticket.title}</div>
+                  <div style={{ fontSize: 13, color: TEXT_SECONDARY }}>{ticket.category?.name || "—"}</div>
+                  <div>
+                    <span style={{ display: "inline-flex", alignItems: "center", height: 21, padding: "0 9px", background: "var(--mg-color-bg-hover)", color: TEXT_PRIMARY, fontSize: 11, fontWeight: 600, borderRadius: 999 }}>
+                      {statusLabels[ticket.status || "new"]}
+                    </span>
+                  </div>
+                  <div>
+                    <span style={{ display: "inline-flex", alignItems: "center", height: 21, padding: "0 9px", background: pr.bg, color: pr.color, fontSize: 11, fontWeight: 700, borderRadius: 999 }}>
+                      {priorityLabels[ticket.priority || "p3"]}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 12.5, color: TEXT_SECONDARY }}>{new Date(ticket.created_at!).toLocaleDateString("pt-BR")}</div>
+                  <div style={{ color: TEXT_MUTED }}><Eye className="h-4 w-4" /></div>
+                </div>
+              );
+            })}
+          </>
+        )}
+      </div>
 
       <TicketDetailDialog
         ticketId={selectedTicketId}
@@ -232,5 +186,3 @@ const MyTickets = () => {
 };
 
 export default MyTickets;
-
-
