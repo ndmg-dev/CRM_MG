@@ -6,6 +6,7 @@ import { useChatWidgetStore } from '@/stores/chatWidgetStore'
 import { supabase } from '@/systems/central-suporte/integrations/supabase/client'
 import { isTicketClosed, ticketCategory } from '@/systems/central-suporte/utils/ticketStatus'
 import { useUserSector } from '@/systems/central-suporte/hooks/useUserSector'
+import { REOPEN_NOTE_PREFIX } from '@/systems/central-suporte/utils/reopenTicket'
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024 // 10MB — mesmo limite do TicketDetailDialog
 
@@ -53,13 +54,14 @@ function formatTime(dateStr: string): string {
 // reconhece como nota de sistema — numa constante só pra não desalinhar
 // silenciosamente se um dos dois lados mudar sozinho.
 const CLOSE_NOTE_PREFIX = 'Este chat foi encerrado'
-const REOPEN_NOTE = 'Este chat foi reaberto.'
 
 // Comentários automáticos de evento (transferência, mudança de status etc.)
 // não têm uma coluna própria pra marcar isso — só dá pra reconhecer pelo
-// texto. Viram um separador central, não uma bolha de conversa.
+// texto. Viram um separador central, não uma bolha de conversa. A nota de
+// reabertura (REOPEN_NOTE_PREFIX) agora é gravada com o motivo obrigatório
+// direto no Kanban/TicketDetailDialog — ver utils/reopenTicket.ts.
 const SYSTEM_NOTE_PATTERN = new RegExp(
-  `^(transferido de .+ para .+|categoria alterada|status alterado|prioridade alterada|${CLOSE_NOTE_PREFIX}|${REOPEN_NOTE.replace(/\.$/, '')})`,
+  `^(transferido de .+ para .+|categoria alterada|status alterado|prioridade alterada|${CLOSE_NOTE_PREFIX}|${REOPEN_NOTE_PREFIX})`,
   'i',
 )
 function isSystemNote(content: string): boolean {
@@ -133,34 +135,20 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
   const isClosed = isTicketClosed(ticket?.status)
   const isBlocked = isClosed && !justClosed
 
-  // Detecta reabertura mesmo quando ela acontece fora do chat (dropdown de
-  // status do TicketDetailDialog, Kanban etc.) — sem isso, o histórico fica
-  // com "Este chat foi encerrado" e nada avisando que voltou a aceitar
-  // mensagem, mesmo com o input já liberado de novo.
+  // Destrava o input desta tela quando o chamado é reaberto fora do chat
+  // (dropdown do TicketDetailDialog, Kanban etc.) — a nota de reabertura em
+  // si (com o motivo obrigatório) já é gravada na origem, ver
+  // utils/reopenTicket.ts; não duplica aqui.
   const prevStatusRef = useRef<string | null | undefined>(undefined)
   useEffect(() => {
     if (!ticket) return
-    // Espera currentUserId carregar (busca assíncrona separada) antes de
-    // decidir — sem isso, se a reabertura acontecer bem no primeiro render,
-    // o comentário sai com author_id nulo. Não atualiza prevStatusRef aqui:
-    // assim que currentUserId chegar, o efeito roda de novo com o mesmo
-    // prevStatus guardado e ainda pega a transição corretamente.
-    if (currentUserId === null) return
     const prevStatus = prevStatusRef.current
     const wasClosed = prevStatus !== undefined && isTicketClosed(prevStatus)
     if (wasClosed && !isTicketClosed(ticket.status)) {
       setJustClosed(false)
-      supabase.from('comments').insert({
-        ticket_id: ticketId,
-        content: REOPEN_NOTE,
-        author_id: currentUserId,
-        internal_only: false,
-      }).then(({ error }) => {
-        if (!error) queryClient.invalidateQueries({ queryKey: ['chat-widget-comments', ticketId] })
-      })
     }
     prevStatusRef.current = ticket.status
-  }, [ticket, ticketId, currentUserId, queryClient])
+  }, [ticket])
 
   // Mesmo limite/estratégia do TicketDetailDialog: busca as mais recentes
   // (desc) e inverte, em vez de carregar o histórico inteiro de chamados

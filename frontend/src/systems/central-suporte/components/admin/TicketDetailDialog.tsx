@@ -39,6 +39,8 @@ import { supabase } from "@suporte/integrations/supabase/client";
 import { toast } from "sonner";
 import { markCommentNotificationsRead } from "@suporte/hooks/useUnreadComments";
 import { ticketCategory, isTicketClosed } from "@suporte/utils/ticketStatus";
+import { reopenTicketWithReason } from "@suporte/utils/reopenTicket";
+import { ReopenReasonDialog } from "@suporte/components/admin/ReopenReasonDialog";
 
 interface TicketDetailDialogProps {
   ticketId: string | null;
@@ -110,6 +112,10 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
   const [pendingSectorId, setPendingSectorId] = useState<string | null>(null);
   const [sectorAssigneeId, setSectorAssigneeId] = useState<string>("unassigned");
   const [isEditingRequester, setIsEditingRequester] = useState(false);
+  // Status pra onde o Select estava indo quando detectamos que é uma
+  // reabertura (chamado já concluído/cancelado voltando a ficar ativo) —
+  // segura a troca até o motivo ser preenchido no ReopenReasonDialog.
+  const [pendingReopenStatus, setPendingReopenStatus] = useState<string | null>(null);
 
   // Sem isso, trocar de chamado com o Select do solicitante ainda aberto
   // deixa a edição "vazando" pro próximo ticket exibido.
@@ -387,6 +393,21 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
     onError: () => toast.error("Erro ao atualizar ticket"),
   });
 
+  const reopenTicket = useMutation({
+    mutationFn: async ({ targetStatus, reason }: { targetStatus: string; reason: string }) => {
+      if (!ticketId) return;
+      await reopenTicketWithReason(ticketId, targetStatus, reason);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ticket-detail", ticketId] });
+      queryClient.invalidateQueries({ queryKey: ["ticket-comments", ticketId] });
+      queryClient.invalidateQueries({ queryKey: ["kanban-tickets"] });
+      setPendingReopenStatus(null);
+      toast.success("Chamado reaberto");
+    },
+    onError: () => toast.error("Erro ao reabrir chamado"),
+  });
+
   const addComment = useMutation({
     mutationFn: async () => {
       if (!ticketId || (!commentText.trim() && !commentFile)) return;
@@ -644,7 +665,17 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
                       : ticket.status === "resolved" || ticket.status === "closed" ? "closed"
                       : ticket.status || "open"
                     }
-                    onValueChange={(v) => updateTicket.mutate({ status: v })}
+                    onValueChange={(v) => {
+                      // Reabertura (chamado já concluído/cancelado voltando a
+                      // ficar ativo) exige motivo — segura a troca até o
+                      // ReopenReasonDialog ser preenchido em vez de aplicar
+                      // direto como qualquer outra mudança de status.
+                      if (isTicketClosed(ticket.status) && v !== "closed") {
+                        setPendingReopenStatus(v);
+                      } else {
+                        updateTicket.mutate({ status: v });
+                      }
+                    }}
                   >
                     <SelectTrigger className="h-9 border-2 border-primary">
                       <SelectValue />
@@ -1044,6 +1075,15 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+
+    <ReopenReasonDialog
+      open={pendingReopenStatus !== null}
+      onOpenChange={(o) => { if (!o) setPendingReopenStatus(null); }}
+      isPending={reopenTicket.isPending}
+      onConfirm={(reason) => {
+        if (pendingReopenStatus) reopenTicket.mutate({ targetStatus: pendingReopenStatus, reason });
+      }}
+    />
 
     {/* Preview de imagem — fora do <Dialog> de propósito: DialogContent usa
         transform (translate-x/y) pra centralizar, o que cria um containing

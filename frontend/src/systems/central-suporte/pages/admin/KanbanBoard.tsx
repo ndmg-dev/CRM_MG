@@ -15,6 +15,9 @@ import { ViewerAudioUnlock } from "@suporte/components/admin/ViewerAudioUnlock";
 import { TaskDetailDialog } from "@suporte/components/admin/TaskDetailDialog";
 import { useUserSector } from "@suporte/hooks/useUserSector";
 import { useUnreadComments } from "@suporte/hooks/useUnreadComments";
+import { isTicketClosed } from "@suporte/utils/ticketStatus";
+import { reopenTicketWithReason } from "@suporte/utils/reopenTicket";
+import { ReopenReasonDialog } from "@suporte/components/admin/ReopenReasonDialog";
 
 
 type ColumnId = "tasks" | "open" | "pending" | "parado" | "testing" | "resolved";
@@ -36,6 +39,9 @@ const KanbanBoard = () => {
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [manualOrder, setManualOrder] = useState<Record<string, string[]>>({});
+  // Card arrastado pra fora de "Concluído" — segura o movimento até o motivo
+  // ser preenchido no ReopenReasonDialog, em vez de reabrir na hora.
+  const [pendingReopen, setPendingReopen] = useState<{ ticketId: string; targetStatus: string } | null>(null);
 
   const sector = useUserSector();
   const unreadComments = useUnreadComments();
@@ -189,6 +195,18 @@ const KanbanBoard = () => {
     },
   });
 
+  const reopenTicket = useMutation({
+    mutationFn: async ({ ticketId, targetStatus, reason }: { ticketId: string; targetStatus: string; reason: string }) => {
+      await reopenTicketWithReason(ticketId, targetStatus, reason);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["kanban-tickets"] });
+      setPendingReopen(null);
+      toast.success("Chamado reaberto");
+    },
+    onError: () => toast.error("Erro ao reabrir chamado"),
+  });
+
   const priorityOrder: Record<string, number> = { p0: 0, p1: 1, p2: 2, p3: 3 };
 
   const sortByPriorityThenAge = (items: typeof filteredTickets) =>
@@ -263,6 +281,14 @@ const KanbanBoard = () => {
 
     if (ticket.status === newStatus) return;
     const finalStatus = newStatus === "resolved" ? "closed" : newStatus;
+
+    // Saindo de "Concluído" pra qualquer outra coluna = reabertura — exige
+    // motivo em vez de mover na hora como qualquer outro drag.
+    if (isTicketClosed(ticket.status) && finalStatus !== "closed") {
+      setPendingReopen({ ticketId: draggableId, targetStatus: finalStatus });
+      return;
+    }
+
     updateStatus.mutate({ ticketId: draggableId, status: finalStatus });
     toast.success(`Ticket movido para "${columnConfig.find(c => c.id === newStatus)?.label}"`);
   };
@@ -393,6 +419,14 @@ const KanbanBoard = () => {
         taskId={selectedTaskId}
         open={!!selectedTaskId}
         onOpenChange={(open) => !open && setSelectedTaskId(null)}
+      />
+      <ReopenReasonDialog
+        open={pendingReopen !== null}
+        onOpenChange={(o) => { if (!o) setPendingReopen(null); }}
+        isPending={reopenTicket.isPending}
+        onConfirm={(reason) => {
+          if (pendingReopen) reopenTicket.mutate({ ...pendingReopen, reason });
+        }}
       />
     </div>
   );
