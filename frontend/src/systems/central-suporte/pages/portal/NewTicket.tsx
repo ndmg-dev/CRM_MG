@@ -144,6 +144,9 @@ const NewTicket = () => {
           subcategory_id: selectedSubcategory || null,
           target_sector_id: selectedSector || null,
           assignee_id: selectedAssignee || null,
+          // Este formulário legado não pergunta "pra você ou outra pessoa"
+          // (só o NewTicketChat faz isso) — requester_id e opened_by_id são
+          // sempre o mesmo aqui, de propósito.
           requester_id: user.id,
           opened_by_id: user.id,
           status: "new",

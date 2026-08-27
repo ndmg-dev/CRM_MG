@@ -107,6 +107,9 @@ const NewTicketTI = () => {
           subcategory_id: selectedSubcategory || null,
           target_sector_id: TI_SECTOR_ID,
           assignee_id: assigneeId,
+          // Formulário fallback (rota "-formulario", fora do menu) — não tem
+          // a etapa "pra você ou outra pessoa" do NewTicketChat, então
+          // requester_id e opened_by_id são sempre o mesmo aqui, de propósito.
           requester_id: user.id,
           opened_by_id: user.id,
           status: "new",
