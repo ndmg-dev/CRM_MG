@@ -391,12 +391,17 @@ export default function Header({ onMenuClick }: HeaderProps) {
                 transition={{ duration: 0.15 }}
                 className="absolute right-0 mt-2 w-80 overflow-hidden rounded-xl border border-border bg-card shadow-2xl"
               >
-                <div className="flex items-center justify-between border-b border-border bg-surface-raised px-4 py-3">
-                  <h3 className="text-sm font-semibold text-text-primary">Mensagens</h3>
+                <div className="flex items-center justify-between gap-2 border-b border-border bg-surface-raised px-4 py-3">
+                  <h3 className="shrink-0 text-sm font-semibold text-text-primary">Mensagens</h3>
                   {unreadMessages > 0 && (
-                    <button className="text-xs text-gold hover:underline" onClick={markAllMessagesRead}>
-                      Marcar tudo como lido
-                    </button>
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span className="shrink-0 whitespace-nowrap rounded-full bg-gold/10 px-2 py-0.5 text-xs font-medium text-gold">
+                        {unreadMessages} novas
+                      </span>
+                      <button className="shrink-0 whitespace-nowrap text-xs text-gold hover:underline" onClick={markAllMessagesRead}>
+                        Marcar tudo
+                      </button>
+                    </div>
                   )}
                 </div>
                 <div className="max-h-[400px] overflow-y-auto">
@@ -410,18 +415,23 @@ export default function Header({ onMenuClick }: HeaderProps) {
                       {messageNotifs.map((n) => (
                         <div
                           key={n.id}
-                          className={`relative flex items-start gap-3 p-4 transition-colors hover:bg-surface-hover cursor-pointer ${!n.is_read ? 'bg-surface-raised/50' : ''}`}
+                          className={`relative flex items-start gap-3 p-4 transition-colors hover:bg-surface-hover cursor-pointer ${!n.is_read ? 'bg-gold/[0.06]' : ''}`}
                           onClick={() => {
                             markMessageRead(n.id)
                             setShowMessages(false)
                             if (n.ticket_id) openConversation(n.ticket_id)
                           }}
                         >
-                          {!n.is_read && <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-gold" />}
-                          <div className={`flex-1 space-y-1 ${!n.is_read ? 'ml-0' : 'ml-5'}`}>
-                            <p className={`text-sm ${!n.is_read ? 'font-medium text-text-primary' : 'text-text-secondary'}`}>
-                              {n.title}
-                            </p>
+                          <div className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full bg-gold-muted text-gold">
+                            <MessageSquare className="h-3.5 w-3.5" />
+                          </div>
+                          <div className="min-w-0 flex-1 space-y-1">
+                            <div className="flex items-center gap-1.5">
+                              <p className={`text-sm ${!n.is_read ? 'font-medium text-text-primary' : 'text-text-secondary'}`}>
+                                {n.title}
+                              </p>
+                              {!n.is_read && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-gold" />}
+                            </div>
                             {n.message && <p className="text-xs text-text-muted line-clamp-2">{n.message}</p>}
                             <p className="text-[10px] text-border-emphasis">{formatDateTime(n.created_at)}</p>
                           </div>
