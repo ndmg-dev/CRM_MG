@@ -2,8 +2,6 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
 } from "@suporte/components/ui/dialog";
 import {
   AlertDialog,
@@ -15,21 +13,17 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@suporte/components/ui/alert-dialog";
-import { Badge } from "@suporte/components/ui/badge";
-import { Button } from "@suporte/components/ui/button";
 import { Textarea } from "@suporte/components/ui/textarea";
 import {
-  Select,
+  Select as ShadSelect,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@suporte/components/ui/select";
-import { Separator } from "@suporte/components/ui/separator";
-import { ScrollArea } from "@suporte/components/ui/scroll-area";
-import { Switch } from "@suporte/components/ui/switch";
+import { Select, Badge, Tabs, Avatar } from "@mg/ui";
 import { Label } from "@suporte/components/ui/label";
-import { Clock, User, MessageSquare, Send, Tag, Trash2, Paperclip, Download, FileText, Image, Upload, CalendarIcon, RotateCcw, Pencil, X as XIcon } from "lucide-react";
+import { Clock, Tag, Trash2, Paperclip, Download, FileText, Image, Upload, CalendarIcon, RotateCcw, Pencil, X as XIcon, Send, Users } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@suporte/components/ui/popover";
 import { Calendar } from "@suporte/components/ui/calendar";
 import { format } from "date-fns";
@@ -39,6 +33,9 @@ import { supabase } from "@suporte/integrations/supabase/client";
 import { toast } from "sonner";
 import { markCommentNotificationsRead } from "@suporte/hooks/useUnreadComments";
 import { ticketCategory, isTicketClosed } from "@suporte/utils/ticketStatus";
+import { reopenTicketWithReason } from "@suporte/utils/reopenTicket";
+import { ReopenReasonDialog } from "@suporte/components/admin/ReopenReasonDialog";
+import { isSystemNote } from "@suporte/utils/systemNote";
 
 interface TicketDetailDialogProps {
   ticketId: string | null;
@@ -48,23 +45,22 @@ interface TicketDetailDialogProps {
   archivedMode?: boolean;
 }
 
-const priorityLabels: Record<string, string> = {
-  p0: "Crítica",
-  p1: "Alta",
-  p2: "Média",
-  p3: "Baixa",
-};
+// Tokens — ver frontend/packages/@mg/tokens/build/tokens.css. Handoff:
+// Modal Chamado.dc.html.
+const GOLD = "var(--mg-color-gold-base)";
+const TEXT_PRIMARY = "var(--mg-color-text-primary)";
+const TEXT_SECONDARY = "var(--mg-color-text-secondary)";
+const TEXT_MUTED = "var(--mg-color-text-muted)";
+const BORDER_DEFAULT = "var(--mg-color-border-default)";
+const BG_CARD = "var(--mg-color-bg-card)";
+const BG_SURFACE = "var(--mg-color-bg-surface)";
+const ERROR = "var(--mg-color-status-error)";
+// Cor legível pra descrição/corpo de texto — mais clara que text-secondary,
+// pro texto do chamado não ficar apagado demais dentro da caixa escura.
+const BODY_TEXT = "rgba(245,245,245,0.82)";
 
-const statusBadgeClass: Record<string, string> = {
-  new: "border-blue-400/50 bg-blue-400/10 text-blue-300",
-  open: "border-blue-400/50 bg-blue-400/10 text-blue-300",
-  pending: "border-yellow-400/50 bg-yellow-400/10 text-yellow-300",
-  parado: "border-slate-400/50 bg-slate-400/10 text-slate-300",
-  testing: "border-orange-400/50 bg-orange-400/10 text-orange-300",
-  resolved: "border-emerald-400/50 bg-emerald-400/10 text-emerald-300",
-  closed: "border-emerald-400/50 bg-emerald-400/10 text-emerald-300",
-  canceled: "border-red-400/50 bg-red-400/10 text-red-300",
-};
+const priorityLabels: Record<string, string> = { p0: "Crítica", p1: "Alta", p2: "Média", p3: "Baixa" };
+const priorityVariant: Record<string, "err" | "warn" | "ok"> = { p0: "err", p1: "err", p2: "warn", p3: "ok" };
 
 const statusLabels: Record<string, string> = {
   new: "A Fazer",
@@ -85,6 +81,28 @@ const statusDropdownOptions = [
   { value: "closed", label: "Concluído" },
 ];
 
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return <div style={{ fontSize: 11.5, color: TEXT_SECONDARY, marginBottom: 6 }}>{children}</div>;
+}
+
+function StaticField({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      style={{
+        height: 36, display: "flex", alignItems: "center", gap: 6, padding: "0 10px",
+        background: BG_CARD, border: `0.5px solid ${BORDER_DEFAULT}`, borderRadius: 8,
+        fontSize: 13, color: TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function formatTime(dateStr: string): string {
+  return new Date(dateStr).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+}
+
 export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = false, archivedMode = false }: TicketDetailDialogProps) {
   const queryClient = useQueryClient();
   const [commentText, setCommentText] = useState("");
@@ -95,6 +113,7 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
   const [restoreReason, setRestoreReason] = useState("");
   const [commentFile, setCommentFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [activeTab, setActiveTab] = useState("details");
   // Preview de imagem em modal em vez de abrir em nova aba — nova aba tira o
   // agente do chamado só pra ver um print anexado.
   const [previewImage, setPreviewImage] = useState<{ url: string; alt: string } | null>(null);
@@ -110,11 +129,16 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
   const [pendingSectorId, setPendingSectorId] = useState<string | null>(null);
   const [sectorAssigneeId, setSectorAssigneeId] = useState<string>("unassigned");
   const [isEditingRequester, setIsEditingRequester] = useState(false);
+  // Status pra onde o Select estava indo quando detectamos que é uma
+  // reabertura (chamado já concluído/cancelado voltando a ficar ativo) —
+  // segura a troca até o motivo ser preenchido no ReopenReasonDialog.
+  const [pendingReopenStatus, setPendingReopenStatus] = useState<string | null>(null);
 
   // Sem isso, trocar de chamado com o Select do solicitante ainda aberto
   // deixa a edição "vazando" pro próximo ticket exibido.
   useEffect(() => {
     setIsEditingRequester(false);
+    setActiveTab("details");
   }, [ticketId]);
 
   // Abriu o chamado: some com a bolinha de comentário não lido no card.
@@ -125,6 +149,14 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
       });
     }
   }, [open, ticketId, queryClient]);
+
+  const { data: currentUserId } = useQuery({
+    queryKey: ["current-user-id"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      return user?.id || null;
+    },
+  });
 
   const { data: canDelete } = useQuery({
     queryKey: ["can-delete-ticket"],
@@ -324,35 +356,6 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
     return allProfiles.filter((p) => p.sector_id === pendingSectorId);
   }, [pendingSectorId, allProfiles]);
 
-  const { data: categories } = useQuery({
-    queryKey: ["categories"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("categories").select("id, name").order("name");
-      if (error) throw error;
-      return data;
-    },
-    enabled: open && !readOnly,
-  });
-
-  const { data: subcategories } = useQuery({
-    // Chave própria (não "subcategories" puro) — as telas de criação de
-    // chamado usam a mesma chave com `select("*")`; um cache compartilhado
-    // podia servir esse formato reduzido (id, name) pra quem esperava os
-    // campos completos (default_assignee_id, default_priority etc.).
-    queryKey: ["subcategories-brief", ticket?.category_id],
-    queryFn: async () => {
-      if (!ticket?.category_id) return [];
-      const { data, error } = await supabase
-        .from("subcategories")
-        .select("id, name")
-        .eq("category_id", ticket.category_id)
-        .order("name");
-      if (error) throw error;
-      return data;
-    },
-    enabled: open && !readOnly && !!ticket?.category_id,
-  });
-
   const updateTicket = useMutation({
     mutationFn: async (updates: Record<string, any>) => {
       if (!ticketId) return;
@@ -385,6 +388,21 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
       }
     },
     onError: () => toast.error("Erro ao atualizar ticket"),
+  });
+
+  const reopenTicket = useMutation({
+    mutationFn: async ({ targetStatus, reason }: { targetStatus: string; reason: string }) => {
+      if (!ticketId) return;
+      await reopenTicketWithReason(ticketId, targetStatus, reason);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ticket-detail", ticketId] });
+      queryClient.invalidateQueries({ queryKey: ["ticket-comments", ticketId] });
+      queryClient.invalidateQueries({ queryKey: ["kanban-tickets"] });
+      setPendingReopenStatus(null);
+      toast.success("Chamado reaberto");
+    },
+    onError: () => toast.error("Erro ao reabrir chamado"),
   });
 
   const addComment = useMutation({
@@ -506,440 +524,444 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
 
   if (!ticket) return null;
 
+  const detailsTabContent = (
+    <div>
+      <div className="grid grid-cols-2 gap-3" style={{ marginBottom: 18 }}>
+        <div>
+          <FieldLabel>Status</FieldLabel>
+          {readOnly ? (
+            <StaticField>{statusLabels[ticket.status || "new"]}</StaticField>
+          ) : (
+            <Select
+              aria-label="Status"
+              value={
+                ticket.status === "new" || ticket.status === "open" ? "open"
+                : ticket.status === "resolved" || ticket.status === "closed" ? "closed"
+                : ticket.status || "open"
+              }
+              options={statusDropdownOptions}
+              onValueChange={(v) => {
+                // Reabertura (chamado já concluído/cancelado voltando a
+                // ficar ativo) exige motivo — segura a troca até o
+                // ReopenReasonDialog ser preenchido em vez de aplicar
+                // direto como qualquer outra mudança de status.
+                if (isTicketClosed(ticket.status) && v !== "closed") {
+                  setPendingReopenStatus(v);
+                } else {
+                  updateTicket.mutate({ status: v });
+                }
+              }}
+            />
+          )}
+        </div>
+        <div>
+          <FieldLabel>Setor</FieldLabel>
+          {readOnly ? (
+            <StaticField>{sectors?.find((s) => s.id === ticket.target_sector_id)?.name || "—"}</StaticField>
+          ) : (
+            <Select
+              aria-label="Setor"
+              value={ticket.target_sector_id || "none"}
+              options={[{ value: "none", label: "Nenhum" }, ...((sectors ?? []).map((s) => ({ value: s.id, label: s.name })))]}
+              onValueChange={(v) => {
+                const newSectorId = v === "none" ? null : v;
+                if (newSectorId !== ticket.target_sector_id) {
+                  if (!newSectorId) {
+                    updateTicket.mutate({ target_sector_id: null });
+                  } else {
+                    setPendingSectorId(newSectorId);
+                    setSectorAssigneeId("unassigned");
+                  }
+                }
+              }}
+            />
+          )}
+        </div>
+        <div>
+          <FieldLabel>Data Limite</FieldLabel>
+          {readOnly ? (
+            <StaticField>
+              <CalendarIcon className="h-3 w-3" style={{ color: TEXT_SECONDARY }} />
+              {ticket.due_date ? format(new Date(ticket.due_date), "dd/MM/yyyy") : "—"}
+            </StaticField>
+          ) : (
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  style={{
+                    height: 36, width: "100%", display: "flex", alignItems: "center", gap: 6, padding: "0 10px",
+                    background: BG_SURFACE, border: `0.5px solid ${BORDER_DEFAULT}`, borderRadius: 8,
+                    fontSize: 13, color: ticket.due_date ? TEXT_PRIMARY : TEXT_MUTED, cursor: "pointer",
+                  }}
+                >
+                  <CalendarIcon className="h-3.5 w-3.5" style={{ color: TEXT_SECONDARY }} />
+                  {ticket.due_date ? format(new Date(ticket.due_date), "dd/MM/yyyy") : "Definir prazo"}
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={ticket.due_date ? new Date(ticket.due_date) : undefined}
+                  onSelect={(date) => updateTicket.mutate({ due_date: date ? date.toISOString() : null })}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
+          )}
+        </div>
+        <div>
+          <FieldLabel>Responsável</FieldLabel>
+          {readOnly ? (
+            <StaticField>
+              {ticket.assignee?.full_name ? <Avatar name={ticket.assignee.full_name} size="sm" /> : null}
+              {ticket.assignee?.full_name || "Não atribuído"}
+            </StaticField>
+          ) : (
+            <Select
+              aria-label="Responsável"
+              value={ticket.assignee_id || "unassigned"}
+              options={[{ value: "unassigned", label: "Nenhum" }, ...(staffProfiles?.map((p) => ({ value: p.id, label: p.full_name || p.email || "" })) ?? [])]}
+              onValueChange={(v) => updateTicket.mutate({ assignee_id: v === "unassigned" ? null : v })}
+            />
+          )}
+        </div>
+      </div>
+      {!readOnly && (
+        <p style={{ fontSize: 12, color: TEXT_SECONDARY, margin: 0 }}>
+          Editar status, setor, responsável e prazo direto pelos campos acima. Prioridade fica no cabeçalho.
+        </p>
+      )}
+    </div>
+  );
+
+  const attachmentsTabContent = (
+    <div>
+      {attachments && attachments.length > 0 ? (
+        <div className="grid grid-cols-2 gap-2.5">
+          {attachments.map((att) => {
+            const isImg = att.file_type?.startsWith("image/");
+            return (
+              <button
+                key={att.id}
+                type="button"
+                onClick={() => {
+                  if (isImg && att.signedUrl) setPreviewImage({ url: att.signedUrl, alt: att.file_name });
+                  else if (att.signedUrl) window.open(att.signedUrl, "_blank", "noopener,noreferrer");
+                }}
+                style={{ background: BG_CARD, border: `0.5px solid ${BORDER_DEFAULT}`, borderRadius: 10, overflow: "hidden", textAlign: "left", cursor: "pointer" }}
+              >
+                {isImg && att.signedUrl ? (
+                  <img src={att.signedUrl} alt={att.file_name} style={{ height: 100, width: "100%", objectFit: "cover" }} />
+                ) : (
+                  <div
+                    style={{
+                      height: 100, display: "flex", alignItems: "center", justifyContent: "center",
+                      background: "repeating-linear-gradient(135deg, var(--mg-color-bg-hover), var(--mg-color-bg-hover) 10px, var(--mg-color-bg-card) 10px, var(--mg-color-bg-card) 20px)",
+                    }}
+                  >
+                    <FileText className="h-5 w-5" style={{ color: TEXT_MUTED }} />
+                  </div>
+                )}
+                <div className="flex items-center justify-between" style={{ padding: "8px 10px" }}>
+                  <span style={{ fontSize: 12, color: TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{att.file_name}</span>
+                  <Download className="h-3.5 w-3.5" style={{ color: TEXT_SECONDARY, flexShrink: 0, marginLeft: 8 }} />
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      ) : (
+        <p style={{ fontSize: 13, color: TEXT_MUTED, textAlign: "center", padding: "24px 0" }}>Nenhum anexo</p>
+      )}
+    </div>
+  );
+
+  const messagesTabContent = (
+    <div className="flex flex-col" style={{ gap: 10 }}>
+      {comments?.map((c, i) => {
+        const commentAtts = attachments?.filter((a) => a.comment_id === c.id) || [];
+        if (isSystemNote(c.content)) {
+          return (
+            <div key={c.id} className="flex items-center gap-1.5" style={{ fontSize: 11.5, color: TEXT_MUTED, padding: "4px 2px" }}>
+              <span>{c.author?.full_name || "Sistema"} · {c.content}</span>
+              <span style={{ marginLeft: "auto" }}>{formatTime(c.created_at!)}</span>
+            </div>
+          );
+        }
+        const mine = c.author_id === currentUserId;
+        const prev = comments[i - 1];
+        const showAuthor = !prev || prev.author_id !== c.author_id || isSystemNote(prev.content);
+        return (
+          <div key={c.id} className="flex flex-col" style={{ alignItems: mine ? "flex-end" : "flex-start" }}>
+            <div
+              style={{
+                maxWidth: "78%",
+                background: mine ? "rgba(210,170,63,0.16)" : BG_CARD,
+                border: `0.5px solid ${mine ? "rgba(210,170,63,0.32)" : BORDER_DEFAULT}`,
+                borderRadius: 12,
+                padding: "10px 13px",
+              }}
+            >
+              {showAuthor && (
+                <div style={{ fontSize: 11.5, fontWeight: 600, color: mine ? GOLD : TEXT_SECONDARY, marginBottom: 4 }}>
+                  {c.author?.full_name || "Desconhecido"}
+                  {c.internal_only && <Badge variant="warn">Interno</Badge>}
+                </div>
+              )}
+              <div style={{ fontSize: 13, lineHeight: 1.5, color: mine ? TEXT_PRIMARY : BODY_TEXT }}>{c.content}</div>
+              {commentAtts.map((att) => (
+                <button
+                  key={att.id}
+                  type="button"
+                  onClick={() => att.signedUrl && (att.file_type?.startsWith("image/") ? setPreviewImage({ url: att.signedUrl, alt: att.file_name }) : window.open(att.signedUrl, "_blank", "noopener,noreferrer"))}
+                  style={{
+                    marginTop: 8, display: "inline-flex", alignItems: "center", gap: 6,
+                    background: "rgba(0,0,0,0.18)", border: `0.5px solid ${mine ? "rgba(210,170,63,0.32)" : BORDER_DEFAULT}`,
+                    borderRadius: 8, padding: "6px 10px", fontSize: 12, color: mine ? TEXT_PRIMARY : BODY_TEXT, cursor: "pointer",
+                  }}
+                >
+                  {att.file_type?.startsWith("image/") ? <Image className="h-3.5 w-3.5" /> : <FileText className="h-3.5 w-3.5" />}
+                  {att.file_name}
+                </button>
+              ))}
+              <div style={{ fontSize: 10, color: mine ? "rgba(245,245,245,0.5)" : TEXT_MUTED, marginTop: 5, textAlign: "right" }}>
+                {formatTime(c.created_at!)}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+      {(!comments || comments.length === 0) && (
+        <p style={{ fontSize: 13, color: TEXT_MUTED, textAlign: "center", padding: "24px 0" }}>Nenhuma mensagem ainda</p>
+      )}
+    </div>
+  );
+
   return (
     <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] sm:max-h-[85vh] overflow-y-auto">
-        {!archivedMode && canDelete && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute right-12 top-4 h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10 rounded-sm opacity-70 hover:opacity-100"
-            onClick={() => setShowDeleteConfirm(true)}
-            title="Arquivar chamado"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        )}
-        {archivedMode && canRestore && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute right-12 top-4 h-6 w-6 text-primary hover:text-primary rounded-sm"
-            onClick={() => setShowRestoreConfirm(true)}
-            title="Restaurar chamado"
-          >
-            <RotateCcw className="h-4 w-4" />
-          </Button>
-        )}
-        <DialogHeader>
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="border-primary/50 text-primary font-semibold">
-              {String(ticket.ticket_code).padStart(3, '0')}
-            </Badge>
-            <Badge variant={ticket.priority === "p0" || ticket.priority === "p1" ? "destructive" : "secondary"}>
-              {priorityLabels[ticket.priority || "p3"]}
-            </Badge>
-            <Badge
-              variant="outline"
-              className={cn(statusBadgeClass[ticket.status || "new"], "animate-pulse")}
-            >
-              {statusLabels[ticket.status || "new"]}
-            </Badge>
-          </div>
-          <DialogTitle className="text-lg mt-2">{ticket.title}</DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-5">
-            {/* Description */}
-            {ticket.description && (
-              <div className="rounded-lg bg-muted/50 p-3 text-sm">{ticket.description}</div>
+      <DialogContent
+        className="w-[95vw] max-w-[720px] p-0 gap-0 overflow-hidden [&>button:last-child]:hidden"
+        style={{ background: BG_SURFACE, border: `0.5px solid ${BORDER_DEFAULT}`, maxHeight: "92vh", display: "flex", flexDirection: "column" }}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between" style={{ padding: "14px 22px", borderBottom: `0.5px solid ${BORDER_DEFAULT}`, flexShrink: 0 }}>
+          <div className="flex items-center gap-2.5">
+            <span style={{ fontFamily: "ui-monospace, monospace", fontSize: 12, color: TEXT_MUTED, background: BG_CARD, border: `0.5px solid ${BORDER_DEFAULT}`, padding: "3px 9px", borderRadius: 6 }}>
+              #{String(ticket.ticket_code).padStart(3, "0")}
+            </span>
+            {readOnly ? (
+              <Badge variant={priorityVariant[ticket.priority || "p3"]}>{priorityLabels[ticket.priority || "p3"]}</Badge>
+            ) : (
+              // Native <select> estilizado como pílula — o Select do @mg/ui
+              // tem largura mínima fixa (200px) e não cabe no header ao lado
+              // do id; aqui só precisa ficar do tamanho da própria etiqueta.
+              <select
+                value={ticket.priority || "p3"}
+                onChange={(e) => updateTicket.mutate({ priority: e.target.value })}
+                aria-label="Prioridade"
+                style={{
+                  appearance: "none", WebkitAppearance: "none", cursor: "pointer",
+                  fontSize: 11.5, fontWeight: 700, textTransform: "uppercase",
+                  border: `0.5px solid ${priorityVariant[ticket.priority || "p3"] === "err" ? "rgba(239,68,68,0.28)" : priorityVariant[ticket.priority || "p3"] === "warn" ? "rgba(245,158,11,0.28)" : "rgba(34,197,94,0.28)"}`,
+                  background: priorityVariant[ticket.priority || "p3"] === "err" ? "rgba(239,68,68,0.10)" : priorityVariant[ticket.priority || "p3"] === "warn" ? "rgba(245,158,11,0.10)" : "rgba(34,197,94,0.10)",
+                  color: priorityVariant[ticket.priority || "p3"] === "err" ? ERROR : priorityVariant[ticket.priority || "p3"] === "warn" ? "var(--mg-color-status-warning)" : "var(--mg-color-status-success)",
+                  borderRadius: 999, padding: "3px 22px 3px 10px",
+                }}
+              >
+                {Object.entries(priorityLabels).map(([k, v]) => (
+                  <option key={k} value={k} style={{ background: BG_CARD, color: TEXT_PRIMARY }}>{v}</option>
+                ))}
+              </select>
             )}
+          </div>
+          <div className="flex items-center gap-1.5">
+            {!archivedMode && canDelete && (
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(true)}
+                title="Arquivar chamado"
+                className="hover:bg-red-500/10 hover:text-red-400"
+                style={{ width: 30, height: 30, borderRadius: 8, border: "none", background: "transparent", color: TEXT_MUTED, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            )}
+            {archivedMode && canRestore && (
+              <button
+                type="button"
+                onClick={() => setShowRestoreConfirm(true)}
+                title="Restaurar chamado"
+                style={{ width: 30, height: 30, borderRadius: 8, border: "none", background: "transparent", color: GOLD, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => onOpenChange(false)}
+              aria-label="Fechar"
+              style={{ width: 30, height: 30, borderRadius: 8, border: "none", background: "transparent", color: TEXT_SECONDARY, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+            >
+              <XIcon className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
 
-            {/* Metadata */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <User className="h-4 w-4 shrink-0" />
-                {isEditingRequester ? (
-                  <div className="flex flex-1 items-center gap-1">
-                    <Select
-                      value={ticket.requester_id || undefined}
-                      onValueChange={(v) => {
-                        updateTicket.mutate({ requester_id: v });
-                        setIsEditingRequester(false);
-                      }}
-                    >
-                      <SelectTrigger className="h-8 flex-1 border-2 border-primary text-sm">
-                        <SelectValue placeholder="Selecionar solicitante" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {requesterOptions.map((p) => (
-                          <SelectItem key={p.id} value={p.id}>{p.full_name || p.email}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0"
-                      onClick={() => setIsEditingRequester(false)}
-                    >
-                      <XIcon className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ) : ticket.opened_by_id && ticket.opened_by_id !== ticket.requester_id ? (
-                  // Só diferencia "aberto por" quando alguém abriu em nome de
-                  // outra pessoa (ver migration ticket_opened_by) — o caso
-                  // comum (chamado pra si mesmo) continua com a linha única
-                  // de sempre, no bloco abaixo.
-                  <span>
-                    Aberto por: <strong className="text-foreground">{ticket.opened_by?.full_name || "—"}</strong>
-                    {" · "}Para: <strong className="text-foreground">{ticket.requester?.full_name || "—"}</strong>
-                    {canEditRequester && (
-                      <Button
-                        type="button" variant="ghost" size="icon" className="ml-1 h-6 w-6 align-middle"
-                        title="Trocar solicitante (Admin TI)"
-                        onClick={() => setIsEditingRequester(true)}
-                      >
-                        <Pencil className="h-3 w-3" />
-                      </Button>
-                    )}
-                  </span>
-                ) : (
-                  <span>
-                    Solicitante: <strong className="text-foreground">{ticket.requester?.full_name || "—"}</strong>
-                    {canEditRequester && (
-                      <Button
-                        type="button" variant="ghost" size="icon" className="ml-1 h-6 w-6 align-middle"
-                        title="Trocar solicitante (Admin TI)"
-                        onClick={() => setIsEditingRequester(true)}
-                      >
-                        <Pencil className="h-3 w-3" />
-                      </Button>
-                    )}
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Clock className="h-4 w-4" />
-                <span>Criado: <strong className="text-foreground">{new Date(ticket.created_at!).toLocaleString("pt-BR")}</strong></span>
-              </div>
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Tag className="h-4 w-4" />
-                <span>Categoria: <strong className="text-foreground">{ticket.category?.name || "—"}{ticket.subcategory?.name ? ` / ${ticket.subcategory.name}` : ""}</strong></span>
-              </div>
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <span className="text-xs">Tipo: <strong className="text-foreground">{ticket.type === "incident" ? "Incidente" : "Requisição"}</strong></span>
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Actions - only for staff */}
-            {!readOnly && (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <Label className="text-xs text-muted-foreground mb-1 block">Status</Label>
-                  <Select
-                    value={
-                      ticket.status === "new" || ticket.status === "open" ? "open"
-                      : ticket.status === "resolved" || ticket.status === "closed" ? "closed"
-                      : ticket.status || "open"
-                    }
-                    onValueChange={(v) => updateTicket.mutate({ status: v })}
-                  >
-                    <SelectTrigger className="h-9 border-2 border-primary">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {statusDropdownOptions.map(({ value, label }) => (
-                        <SelectItem key={value} value={value}>{label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label className="text-xs text-muted-foreground mb-1 block">Prioridade</Label>
-                  <Select
-                    value={ticket.priority || "p3"}
-                    onValueChange={(v) => updateTicket.mutate({ priority: v })}
-                  >
-                    <SelectTrigger className="h-9 border-2 border-primary">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(priorityLabels).map(([k, v]) => (
-                        <SelectItem key={k} value={k}>{v}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label className="text-xs text-muted-foreground mb-1 block">Setor</Label>
-                  <Select
-                    value={ticket.target_sector_id || "none"}
+        {/* Título + meta */}
+        <div style={{ padding: "14px 22px 6px", flexShrink: 0 }}>
+          <h2 style={{ margin: "0 0 6px", fontSize: 18, fontWeight: 700, color: TEXT_PRIMARY }}>{ticket.title}</h2>
+          {ticket.description && (
+            <p style={{ margin: "0 0 10px", fontSize: 13, lineHeight: 1.5, color: BODY_TEXT }}>{ticket.description}</p>
+          )}
+          <div className="flex flex-wrap items-center" style={{ gap: 20, fontSize: 12, color: TEXT_SECONDARY }}>
+            <span className="flex items-center gap-1.5">
+              {isEditingRequester ? (
+                <span className="flex items-center gap-1" style={{ display: "inline-flex" }}>
+                  <ShadSelect
+                    value={ticket.requester_id || undefined}
                     onValueChange={(v) => {
-                      const newSectorId = v === "none" ? null : v;
-                      if (newSectorId !== ticket.target_sector_id) {
-                        if (!newSectorId) {
-                          updateTicket.mutate({ target_sector_id: null });
-                        } else {
-                          setPendingSectorId(newSectorId);
-                          setSectorAssigneeId("unassigned");
-                        }
-                      }
+                      updateTicket.mutate({ requester_id: v });
+                      setIsEditingRequester(false);
                     }}
                   >
-                    <SelectTrigger className="h-9 border-2 border-primary">
-                      <SelectValue placeholder="Nenhum" />
+                    <SelectTrigger className="h-8 border-2 border-primary text-sm" style={{ minWidth: 200 }}>
+                      <SelectValue placeholder="Selecionar solicitante" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">Nenhum</SelectItem>
-                      {sectors?.map((s) => (
-                        <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label className="text-xs text-muted-foreground mb-1 block">Responsável</Label>
-                  <Select
-                    value={ticket.assignee_id || "unassigned"}
-                    onValueChange={(v) => updateTicket.mutate({ assignee_id: v === "unassigned" ? null : v })}
-                  >
-                    <SelectTrigger className="h-9 border-2 border-primary">
-                      <SelectValue placeholder="Nenhum" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="unassigned">Nenhum</SelectItem>
-                      {staffProfiles?.map((p) => (
+                      {requesterOptions.map((p) => (
                         <SelectItem key={p.id} value={p.id}>{p.full_name || p.email}</SelectItem>
                       ))}
                     </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label className="text-xs text-muted-foreground mb-1 block">Data Limite</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn("h-9 w-full justify-start text-left font-normal border-2 border-primary", !ticket.due_date && "text-muted-foreground")}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {ticket.due_date ? format(new Date(ticket.due_date), "dd/MM/yyyy") : "Definir prazo"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={ticket.due_date ? new Date(ticket.due_date) : undefined}
-                        onSelect={(date) => updateTicket.mutate({ due_date: date ? date.toISOString() : null })}
-                        initialFocus
-                        className={cn("p-3 pointer-events-auto")}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </div>
-            )}
-
-            {/* Read-only info for users */}
-            {readOnly && (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
-                <div>
-                  <Label className="text-xs text-muted-foreground mb-1 block">Status</Label>
-                  <Badge variant="outline" className={statusBadgeClass[ticket.status || "new"]}>{statusLabels[ticket.status || "new"]}</Badge>
-                </div>
-                <div>
-                  <Label className="text-xs text-muted-foreground mb-1 block">Prioridade</Label>
-                  <Badge variant={ticket.priority === "p0" || ticket.priority === "p1" ? "destructive" : "secondary"}>
-                    {priorityLabels[ticket.priority || "p3"]}
-                  </Badge>
-                </div>
-                <div>
-                  <Label className="text-xs text-muted-foreground mb-1 block">Responsável</Label>
-                  <span className="text-foreground">{ticket.assignee?.full_name || "Não atribuído"}</span>
-                </div>
-              </div>
-            )}
-
-            {/* Attachments */}
-            {attachments && attachments.length > 0 && (
-              <div>
-                <h4 className="font-semibold text-sm flex items-center gap-2 mb-3">
-                  <Paperclip className="h-4 w-4" /> Anexos ({attachments.length})
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {attachments.map((att) => {
-                    const isImage = att.file_type?.startsWith("image/");
-                    return (
-                      <div key={att.id} className="flex items-center gap-2 rounded-lg border bg-muted/30 p-2 text-sm">
-                        {isImage ? <Image className="h-4 w-4 text-blue-400 shrink-0" /> : <FileText className="h-4 w-4 text-muted-foreground shrink-0" />}
-                        <span className="truncate flex-1" title={att.file_name}>{att.file_name}</span>
-                        {att.signedUrl && (
-                          <a href={att.signedUrl} target="_blank" rel="noopener noreferrer" title="Baixar anexo">
-                            <Button variant="ghost" size="icon" className="h-7 w-7">
-                              <Download className="h-3.5 w-3.5" />
-                            </Button>
-                          </a>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-                {/* Image previews */}
-                {attachments.filter(a => a.file_type?.startsWith("image/") && a.signedUrl).map((att) => (
-                  <button
-                    key={att.id}
-                    type="button"
-                    onClick={() => setPreviewImage({ url: att.signedUrl!, alt: att.file_name })}
-                    className="block mt-2 w-full cursor-zoom-in"
-                  >
-                    <img
-                      src={att.signedUrl!}
-                      alt={att.file_name}
-                      className="rounded-lg border max-h-48 object-contain w-full"
-                    />
+                  </ShadSelect>
+                  <button type="button" onClick={() => setIsEditingRequester(false)} style={{ color: TEXT_MUTED, background: "none", border: "none", cursor: "pointer" }}>
+                    <XIcon className="h-3.5 w-3.5" />
                   </button>
-                ))}
+                </span>
+              ) : ticket.opened_by_id && ticket.opened_by_id !== ticket.requester_id ? (
+                // Só diferencia "aberto por" quando alguém abriu em nome de
+                // outra pessoa (ver migration ticket_opened_by) — o caso
+                // comum (chamado pra si mesmo) continua com a linha única
+                // de sempre, no bloco abaixo.
+                <span>
+                  Aberto por: <b style={{ color: TEXT_PRIMARY, fontWeight: 600 }}>{ticket.opened_by?.full_name || "—"}</b>
+                  {" · "}Para: <b style={{ color: TEXT_PRIMARY, fontWeight: 600 }}>{ticket.requester?.full_name || "—"}</b>
+                  {canEditRequester && (
+                    <button type="button" title="Trocar solicitante (Admin TI)" onClick={() => setIsEditingRequester(true)} style={{ marginLeft: 4, color: TEXT_MUTED, background: "none", border: "none", cursor: "pointer", verticalAlign: "middle" }}>
+                      <Pencil className="h-3 w-3" />
+                    </button>
+                  )}
+                </span>
+              ) : (
+                <span>
+                  Solicitante: <b style={{ color: TEXT_PRIMARY, fontWeight: 600 }}>{ticket.requester?.full_name || "—"}</b>
+                  {canEditRequester && (
+                    <button type="button" title="Trocar solicitante (Admin TI)" onClick={() => setIsEditingRequester(true)} style={{ marginLeft: 4, color: TEXT_MUTED, background: "none", border: "none", cursor: "pointer", verticalAlign: "middle" }}>
+                      <Pencil className="h-3 w-3" />
+                    </button>
+                  )}
+                </span>
+              )}
+            </span>
+            <span>Criado: <b style={{ color: TEXT_PRIMARY, fontWeight: 600 }}>{new Date(ticket.created_at!).toLocaleString("pt-BR")}</b></span>
+            <span>Categoria: <b style={{ color: TEXT_PRIMARY, fontWeight: 600 }}>{ticket.category?.name || "—"}{ticket.subcategory?.name ? ` / ${ticket.subcategory.name}` : ""}</b></span>
+            <span>Tipo: <b style={{ color: TEXT_PRIMARY, fontWeight: 600 }}>{ticket.type === "incident" ? "Incidente" : "Requisição"}</b></span>
+          </div>
+        </div>
+
+        {/* Tabs + conteúdo com scroll próprio */}
+        <div style={{ padding: "0 22px", flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            items={[
+              { value: "details", label: "Detalhes", content: detailsTabContent },
+              { value: "anexos", label: `Anexos (${attachments?.length || 0})`, content: attachmentsTabContent },
+              { value: "mensagens", label: `Mensagens (${comments?.length || 0})`, content: messagesTabContent },
+            ]}
+          />
+        </div>
+
+        {/* Composer */}
+        {activeTab === "mensagens" && (
+          <div style={{ borderTop: `0.5px solid ${BORDER_DEFAULT}`, padding: "14px 22px", flexShrink: 0 }}>
+            <Textarea
+              placeholder="Escreva um comentário... (Enter para enviar, Shift+Enter para nova linha)"
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  if ((commentText.trim() || commentFile) && !addComment.isPending) {
+                    addComment.mutate();
+                  }
+                }
+              }}
+              rows={2}
+              style={{ background: BG_CARD, borderColor: BORDER_DEFAULT, color: TEXT_PRIMARY }}
+            />
+            {commentFile && (
+              <div className="flex items-center gap-2" style={{ fontSize: 12, background: BG_CARD, borderRadius: 6, padding: 8, marginTop: 8 }}>
+                <Paperclip className="h-3 w-3" style={{ color: TEXT_SECONDARY }} />
+                <span className="truncate flex-1" style={{ color: TEXT_PRIMARY }}>{commentFile.name}</span>
+                <button type="button" onClick={() => { setCommentFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }} style={{ background: "none", border: "none", color: TEXT_MUTED, cursor: "pointer" }}>
+                  <Trash2 className="h-3 w-3" />
+                </button>
               </div>
             )}
-
-            <Separator />
-
-            {/* Comments */}
-            <div>
-              <h4 className="font-semibold text-sm flex items-center gap-2 mb-3">
-                <MessageSquare className="h-4 w-4" /> Comentários ({comments?.length || 0})
-              </h4>
-              <div className="space-y-3">
-                {comments?.map((c) => {
-                  const commentAtts = attachments?.filter(a => a.comment_id === c.id) || [];
-                  return (
-                    <div key={c.id} className={`rounded-lg p-3 text-sm ${c.internal_only ? "bg-yellow-500/10 border border-yellow-500/20" : "bg-muted/50"}`}>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-medium text-xs">
-                          {c.author?.full_name || "Desconhecido"}
-                          {c.internal_only && <Badge variant="outline" className="ml-2 text-[10px] text-yellow-500">Interno</Badge>}
-                        </span>
-                        <span className="text-[10px] text-muted-foreground">
-                          {new Date(c.created_at!).toLocaleString("pt-BR")}
-                        </span>
-                      </div>
-                      <p className="text-muted-foreground">{c.content}</p>
-                      {commentAtts.length > 0 && (
-                        <div className="mt-2 space-y-1">
-                          {commentAtts.map((att) => {
-                            const isImg = att.file_type?.startsWith("image/");
-                            return (
-                              <div key={att.id}>
-                                <div className="flex items-center gap-2 text-xs">
-                                  {isImg ? <Image className="h-3 w-3 text-blue-400" /> : <FileText className="h-3 w-3 text-muted-foreground" />}
-                                  <span className="truncate">{att.file_name}</span>
-                                  {att.signedUrl && (
-                                    <a href={att.signedUrl} target="_blank" rel="noopener noreferrer">
-                                      <Download className="h-3 w-3 text-primary hover:text-primary/80" />
-                                    </a>
-                                  )}
-                                </div>
-                                {isImg && att.signedUrl && (
-                                  <button
-                                    type="button"
-                                    onClick={() => setPreviewImage({ url: att.signedUrl!, alt: att.file_name })}
-                                    className="block cursor-zoom-in"
-                                  >
-                                    <img src={att.signedUrl} alt={att.file_name} className="rounded border max-h-32 object-contain mt-1" />
-                                  </button>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-                {(!comments || comments.length === 0) && (
-                  <p className="text-xs text-muted-foreground text-center py-4">Nenhum comentário ainda</p>
+            <input
+              type="file"
+              ref={fileInputRef}
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  if (file.size > 10 * 1024 * 1024) {
+                    toast.error("Arquivo deve ter no máximo 10MB");
+                    return;
+                  }
+                  setCommentFile(file);
+                }
+              }}
+            />
+            <div className="flex items-center justify-between" style={{ marginTop: 10 }}>
+              <div className="flex items-center gap-3">
+                {!readOnly && (
+                  <label className="flex items-center gap-2" style={{ fontSize: 12.5, color: isInternal ? "var(--mg-color-status-warning)" : TEXT_SECONDARY, cursor: "pointer" }}>
+                    <span
+                      onClick={() => setIsInternal((v) => !v)}
+                      style={{
+                        width: 32, height: 18, borderRadius: 999, position: "relative", display: "inline-block",
+                        background: isInternal ? "var(--mg-color-status-warning)" : BORDER_DEFAULT, transition: "background 120ms ease",
+                      }}
+                    >
+                      <span style={{ position: "absolute", top: 2, left: isInternal ? 16 : 2, width: 14, height: 14, borderRadius: "50%", background: TEXT_PRIMARY, transition: "left 120ms ease" }} />
+                    </span>
+                    Nota interna
+                  </label>
                 )}
+                <button type="button" onClick={() => fileInputRef.current?.click()} title="Anexar arquivo" style={{ background: "none", border: "none", color: TEXT_SECONDARY, cursor: "pointer", display: "flex", alignItems: "center" }}>
+                  <Upload className="h-3.5 w-3.5" />
+                </button>
               </div>
-
-              {/* New comment */}
-              <div className="mt-4 space-y-2">
-                <Textarea
-                  placeholder="Escreva um comentário... (Enter para enviar, Shift+Enter para nova linha)"
-                  value={commentText}
-                  onChange={(e) => setCommentText(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      if ((commentText.trim() || commentFile) && !addComment.isPending) {
-                        addComment.mutate();
-                      }
-                    }
-                  }}
-                  rows={2}
-                  className="border-2 border-primary focus-visible:ring-primary/40"
-                />
-                {commentFile && (
-                  <div className="flex items-center gap-2 text-xs bg-muted/50 rounded p-2">
-                    <Paperclip className="h-3 w-3" />
-                    <span className="truncate flex-1">{commentFile.name}</span>
-                    <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => { setCommentFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}>
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                )}
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      if (file.size > 10 * 1024 * 1024) {
-                        toast.error("Arquivo deve ter no máximo 10MB");
-                        return;
-                      }
-                      setCommentFile(file);
-                    }
-                  }}
-                />
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    {!readOnly && (
-                      <>
-                        <Switch
-                          id="internal"
-                          checked={isInternal}
-                          onCheckedChange={setIsInternal}
-                          className="border-2 border-muted-foreground/40 data-[state=checked]:bg-amber-500 data-[state=unchecked]:bg-muted"
-                        />
-                        <Label
-                          htmlFor="internal"
-                          className={cn(
-                            "text-xs",
-                            isInternal ? "text-amber-400 font-semibold" : "text-muted-foreground"
-                          )}
-                        >
-                          Nota interna
-                        </Label>
-                      </>
-                    )}
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => fileInputRef.current?.click()} title="Anexar arquivo">
-                      <Upload className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                  <Button
-                    size="sm"
-                    onClick={() => addComment.mutate()}
-                    disabled={(!commentText.trim() && !commentFile) || addComment.isPending}
-                  >
-                    <Send className="h-3 w-3 mr-1" /> Enviar
-                  </Button>
-                </div>
-              </div>
+              <button
+                type="button"
+                onClick={() => addComment.mutate()}
+                disabled={(!commentText.trim() && !commentFile) || addComment.isPending}
+                style={{
+                  height: 36, padding: "0 18px", background: GOLD, color: "var(--mg-color-bg-base)", border: "none",
+                  borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 8,
+                  opacity: (!commentText.trim() && !commentFile) || addComment.isPending ? 0.5 : 1,
+                }}
+              >
+                Enviar <Send className="h-3.5 w-3.5" />
+              </button>
             </div>
-        </div>
+          </div>
+        )}
+        {activeTab !== "mensagens" && <div style={{ paddingBottom: 22 }} />}
       </DialogContent>
     </Dialog>
 
@@ -1013,7 +1035,7 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
         </AlertDialogHeader>
         <div className="py-3">
           <Label className="text-xs text-muted-foreground mb-1 block">Responsável</Label>
-          <Select value={sectorAssigneeId} onValueChange={setSectorAssigneeId}>
+          <ShadSelect value={sectorAssigneeId} onValueChange={setSectorAssigneeId}>
             <SelectTrigger className="h-9">
               <SelectValue placeholder="Selecione um responsável" />
             </SelectTrigger>
@@ -1023,7 +1045,7 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
                 <SelectItem key={p.id} value={p.id}>{p.full_name || p.email}</SelectItem>
               ))}
             </SelectContent>
-          </Select>
+          </ShadSelect>
           {pendingSectorProfiles.length === 0 && (
             <p className="text-xs text-muted-foreground mt-2">Nenhum usuário encontrado neste setor.</p>
           )}
@@ -1044,6 +1066,15 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+
+    <ReopenReasonDialog
+      open={pendingReopenStatus !== null}
+      onOpenChange={(o) => { if (!o) setPendingReopenStatus(null); }}
+      isPending={reopenTicket.isPending}
+      onConfirm={(reason) => {
+        if (pendingReopenStatus) reopenTicket.mutate({ targetStatus: pendingReopenStatus, reason });
+      }}
+    />
 
     {/* Preview de imagem — fora do <Dialog> de propósito: DialogContent usa
         transform (translate-x/y) pra centralizar, o que cria um containing
@@ -1076,4 +1107,3 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
     </>
   );
 }
-

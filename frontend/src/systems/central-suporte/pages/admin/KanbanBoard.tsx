@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect } from "react";
-import { Badge } from "@suporte/components/ui/badge";
 import { ScrollArea } from "@suporte/components/ui/scroll-area";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@suporte/integrations/supabase/client";
@@ -15,18 +14,31 @@ import { ViewerAudioUnlock } from "@suporte/components/admin/ViewerAudioUnlock";
 import { TaskDetailDialog } from "@suporte/components/admin/TaskDetailDialog";
 import { useUserSector } from "@suporte/hooks/useUserSector";
 import { useUnreadComments } from "@suporte/hooks/useUnreadComments";
+import { isTicketClosed } from "@suporte/utils/ticketStatus";
+import { reopenTicketWithReason } from "@suporte/utils/reopenTicket";
+import { ReopenReasonDialog } from "@suporte/components/admin/ReopenReasonDialog";
 
 
 type ColumnId = "tasks" | "open" | "pending" | "parado" | "testing" | "resolved";
 
+// Tokens — ver frontend/packages/@mg/tokens/build/tokens.css. Handoff:
+// Painel de Chamados.dc.html.
+const TEXT_PRIMARY = "var(--mg-color-text-primary)";
+const TEXT_SECONDARY = "var(--mg-color-text-secondary)";
+const TEXT_MUTED = "var(--mg-color-text-muted)";
+const BG_HOVER = "var(--mg-color-bg-hover)";
+const WARNING = "var(--mg-color-status-warning)";
 
-const columnConfig: { id: ColumnId; label: string; color: string; borderColor: string; badgeClass: string }[] = [
-  { id: "tasks", label: "Tarefas", color: "bg-purple-500/10 border-purple-500/20", borderColor: "border-l-purple-500", badgeClass: "bg-purple-500/20 text-purple-400 hover:bg-purple-500/30" },
-  { id: "open", label: "A Fazer", color: "bg-blue-500/10 border-blue-500/20", borderColor: "border-l-blue-500", badgeClass: "bg-blue-500/20 text-blue-400 hover:bg-blue-500/30" },
-  { id: "pending", label: "Em Andamento", color: "bg-yellow-500/10 border-yellow-500/20", borderColor: "border-l-yellow-500", badgeClass: "bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30" },
-  { id: "parado", label: "Parados", color: "bg-slate-500/10 border-slate-500/20", borderColor: "border-l-slate-500", badgeClass: "bg-slate-500/20 text-slate-400 hover:bg-slate-500/30" },
-  { id: "testing", label: "Em Teste", color: "bg-orange-500/10 border-orange-500/20", borderColor: "border-l-orange-500", badgeClass: "bg-orange-500/20 text-orange-400 hover:bg-orange-500/30" },
-  { id: "resolved", label: "Concluído", color: "bg-green-500/10 border-green-500/20", borderColor: "border-l-green-500", badgeClass: "bg-green-500/20 text-green-400 hover:bg-green-500/30" },
+// color/borderColor/badgeClass continuam existindo só porque o modo TV
+// (ViewerCarousel.tsx) ainda depende deles — não são usados no header de
+// coluna novo do board normal (abaixo), que usa `dot`/`warn`.
+const columnConfig: { id: ColumnId; label: string; color: string; borderColor: string; badgeClass: string; dot: string; warn?: boolean }[] = [
+  { id: "tasks", label: "Tarefas", color: "bg-purple-500/10 border-purple-500/20", borderColor: "border-l-purple-500", badgeClass: "bg-purple-500/20 text-purple-400 hover:bg-purple-500/30", dot: "var(--mg-color-accent-purple)" },
+  { id: "open", label: "A Fazer", color: "bg-blue-500/10 border-blue-500/20", borderColor: "border-l-blue-500", badgeClass: "bg-blue-500/20 text-blue-400 hover:bg-blue-500/30", dot: "var(--mg-color-status-info)" },
+  { id: "pending", label: "Em Andamento", color: "bg-yellow-500/10 border-yellow-500/20", borderColor: "border-l-yellow-500", badgeClass: "bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30", dot: "var(--mg-color-status-success)" },
+  { id: "parado", label: "Parados", color: "bg-slate-500/10 border-slate-500/20", borderColor: "border-l-slate-500", badgeClass: "bg-slate-500/20 text-slate-400 hover:bg-slate-500/30", dot: WARNING, warn: true },
+  { id: "testing", label: "Em Teste", color: "bg-orange-500/10 border-orange-500/20", borderColor: "border-l-orange-500", badgeClass: "bg-orange-500/20 text-orange-400 hover:bg-orange-500/30", dot: "var(--mg-color-status-info)" },
+  { id: "resolved", label: "Concluído", color: "bg-green-500/10 border-green-500/20", borderColor: "border-l-green-500", badgeClass: "bg-green-500/20 text-green-400 hover:bg-green-500/30", dot: TEXT_MUTED },
 ];
 
 const KanbanBoard = () => {
@@ -36,6 +48,9 @@ const KanbanBoard = () => {
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [manualOrder, setManualOrder] = useState<Record<string, string[]>>({});
+  // Card arrastado pra fora de "Concluído" — segura o movimento até o motivo
+  // ser preenchido no ReopenReasonDialog, em vez de reabrir na hora.
+  const [pendingReopen, setPendingReopen] = useState<{ ticketId: string; targetStatus: string } | null>(null);
 
   const sector = useUserSector();
   const unreadComments = useUnreadComments();
@@ -189,6 +204,18 @@ const KanbanBoard = () => {
     },
   });
 
+  const reopenTicket = useMutation({
+    mutationFn: async ({ ticketId, targetStatus, reason }: { ticketId: string; targetStatus: string; reason: string }) => {
+      await reopenTicketWithReason(ticketId, targetStatus, reason);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["kanban-tickets"] });
+      setPendingReopen(null);
+      toast.success("Chamado reaberto");
+    },
+    onError: () => toast.error("Erro ao reabrir chamado"),
+  });
+
   const priorityOrder: Record<string, number> = { p0: 0, p1: 1, p2: 2, p3: 3 };
 
   const sortByPriorityThenAge = (items: typeof filteredTickets) =>
@@ -263,6 +290,14 @@ const KanbanBoard = () => {
 
     if (ticket.status === newStatus) return;
     const finalStatus = newStatus === "resolved" ? "closed" : newStatus;
+
+    // Saindo de "Concluído" pra qualquer outra coluna = reabertura — exige
+    // motivo em vez de mover na hora como qualquer outro drag.
+    if (isTicketClosed(ticket.status) && finalStatus !== "closed") {
+      setPendingReopen({ ticketId: draggableId, targetStatus: finalStatus });
+      return;
+    }
+
     updateStatus.mutate({ ticketId: draggableId, status: finalStatus });
     toast.success(`Ticket movido para "${columnConfig.find(c => c.id === newStatus)?.label}"`);
   };
@@ -300,10 +335,10 @@ const KanbanBoard = () => {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between flex-wrap gap-3">
+      <div className="flex items-end justify-between flex-wrap gap-4">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Painel de Chamados</h2>
-          <p className="text-muted-foreground text-sm">Arraste os cards para alterar o status • Clique para detalhes</p>
+          <h1 style={{ color: TEXT_PRIMARY, fontSize: 24, fontWeight: 700, letterSpacing: "-0.02em", margin: "0 0 4px" }}>Painel de Chamados</h1>
+          <p style={{ color: TEXT_SECONDARY, fontSize: 13, margin: 0 }}>Arraste os cards para alterar o status · Clique para detalhes</p>
         </div>
         <KanbanFilters filters={filters} onChange={setFilters} isCoordinator={isCoordinator} isCoordinatorTI={isCoordinatorTI} isDirection={sector.isDirection} isAdmin={isAdminTI} />
       </div>
@@ -317,17 +352,28 @@ const KanbanBoard = () => {
           a ser só o <main> do Layout (como o resto do CRM); cada coluna
           rola por conta própria via max-h no ScrollArea abaixo. */}
       <DragDropContext onDragEnd={onDragEnd}>
-        <div className="overflow-x-auto">
-          <div className="flex gap-4 min-w-[1200px]">
+        <div className="overflow-x-auto pb-2">
+          <div className="flex gap-3">
             {columnConfig.map((col) => {
               const items = getOrderedItems(col.id);
+              const countIsWarn = col.warn && items.length > 0;
               return (
-                <div key={col.id} className="flex-1 min-w-[300px] flex flex-col gap-4">
-                  <div className={`flex items-center justify-between p-2 rounded-lg border ${col.color}`}>
-                    <span className="font-semibold">{col.label}</span>
-                    <Badge className={col.badgeClass || undefined} variant={col.badgeClass ? undefined : "secondary"}>
+                <div key={col.id} style={{ width: 272, flexShrink: 0 }} className="flex flex-col gap-2.5">
+                  <div className="flex items-center justify-between" style={{ padding: "4px 2px" }}>
+                    <div className="flex items-center gap-2">
+                      <span style={{ width: 8, height: 8, borderRadius: "50%", background: col.dot }} />
+                      <span style={{ fontSize: 13.5, fontWeight: 600, color: TEXT_PRIMARY }}>{col.label}</span>
+                    </div>
+                    <span
+                      style={{
+                        fontSize: 11.5, fontWeight: 700, minWidth: 20, height: 20, padding: "0 6px",
+                        borderRadius: 999, display: "inline-flex", alignItems: "center", justifyContent: "center",
+                        color: countIsWarn ? WARNING : TEXT_SECONDARY,
+                        background: countIsWarn ? "rgba(245,158,11,0.12)" : BG_HOVER,
+                      }}
+                    >
                       {items.length}
-                    </Badge>
+                    </span>
                   </div>
                   <Droppable droppableId={col.id}>
                     {(provided, snapshot) => (
@@ -371,6 +417,16 @@ const KanbanBoard = () => {
                               )}
                             </Draggable>
                           ))}
+                          {items.length === 0 && (
+                            <div
+                              style={{
+                                border: `1px dashed var(--mg-color-border-default)`, borderRadius: 10,
+                                padding: "20px 12px", textAlign: "center", fontSize: 12, color: TEXT_MUTED,
+                              }}
+                            >
+                              Nenhum chamado
+                            </div>
+                          )}
                           {provided.placeholder}
                         </div>
                       </ScrollArea>
@@ -393,6 +449,14 @@ const KanbanBoard = () => {
         taskId={selectedTaskId}
         open={!!selectedTaskId}
         onOpenChange={(open) => !open && setSelectedTaskId(null)}
+      />
+      <ReopenReasonDialog
+        open={pendingReopen !== null}
+        onOpenChange={(o) => { if (!o) setPendingReopen(null); }}
+        isPending={reopenTicket.isPending}
+        onConfirm={(reason) => {
+          if (pendingReopen) reopenTicket.mutate({ ...pendingReopen, reason });
+        }}
       />
     </div>
   );
