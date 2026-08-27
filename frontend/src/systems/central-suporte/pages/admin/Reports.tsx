@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@suporte/integrations/supabase/client";
 import { useMemo, useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, CartesianGrid } from "recharts";
-import { format, subDays, isAfter, isBefore, startOfDay, endOfDay } from "date-fns";
+import { format, subDays, addDays, isAfter, isBefore, startOfDay, endOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useUserSector } from "@suporte/hooks/useUserSector";
 import { Button } from "@suporte/components/ui/button";
@@ -71,12 +71,13 @@ const Reports = () => {
     },
   });
 
-  const filteredTickets = useMemo(() => {
-    if (!tickets) return [];
-    return tickets.filter((t) => {
-      if (!t.created_at) return false;
-      const created = new Date(t.created_at);
-      // If custom dates are set, use them; otherwise use period dropdown
+  // Mesmo critério usado pelos chamados e pelos incidentes (abaixo) — extraído
+  // pra função só, em vez de repetir a lógica de data em cada filtro.
+  const isInSelectedPeriod = useMemo(() => {
+    return (dateStr: string | null) => {
+      if (!dateStr) return false;
+      const created = new Date(dateStr);
+      // Se datas customizadas estão definidas, usa elas; senão, o dropdown de período
       if (dateFrom || dateTo) {
         if (dateFrom && isBefore(created, startOfDay(dateFrom))) return false;
         if (dateTo && isAfter(created, endOfDay(dateTo))) return false;
@@ -84,8 +85,21 @@ const Reports = () => {
       }
       const cutoff = subDays(new Date(), parseInt(period));
       return isAfter(created, cutoff);
-    });
-  }, [tickets, period, dateFrom, dateTo]);
+    };
+  }, [period, dateFrom, dateTo]);
+
+  const filteredTickets = useMemo(() => {
+    if (!tickets) return [];
+    return tickets.filter((t) => isInSelectedPeriod(t.created_at));
+  }, [tickets, isInSelectedPeriod]);
+
+  const filteredIncidents = useMemo(() => {
+    if (!incidents) return [];
+    // Nota: "incidents" não tem coluna de setor, então só dá pra aplicar o
+    // filtro de período aqui — o filtro de setor (quando Direção seleciona
+    // um setor específico) não tem como ser replicado nesta tabela.
+    return incidents.filter((i) => isInSelectedPeriod(i.created_at));
+  }, [incidents, isInSelectedPeriod]);
 
   // Calculado somente sobre chamados ativos/não arquivados carregados acima.
   const metrics = useMemo(() => {
@@ -158,24 +172,41 @@ const Reports = () => {
       .sort((a, b) => b.count - a.count);
   }, [filteredTickets]);
 
-  // Daily volume for line chart
+  // Daily volume for line chart — os "baldes" de dias precisam cobrir o
+  // MESMO intervalo usado pra filtrar os chamados (dateFrom/dateTo, se
+  // definidos; senão o dropdown de período). Antes, o gráfico sempre usava
+  // o dropdown de período pra montar os dias, mesmo com uma data customizada
+  // mais antiga selecionada — chamados fora dessa janela de "período"
+  // simplesmente desapareciam do gráfico sem erro nenhum.
   const dailyData = useMemo(() => {
-    const days: Record<string, number> = {};
-    const numDays = parseInt(period);
-    for (let i = 0; i < numDays; i++) {
-      const d = format(subDays(new Date(), i), "dd/MM");
-      days[d] = 0;
+    const end = dateTo ? endOfDay(dateTo) : endOfDay(new Date());
+    const start = dateFrom
+      ? startOfDay(dateFrom)
+      : startOfDay(subDays(dateTo ?? new Date(), parseInt(period)));
+
+    // Trava um intervalo absurdamente grande (ex.: só "Data fim" escolhida,
+    // sem início) de virar centenas de pontos ilegíveis no gráfico.
+    const MAX_BUCKETS = 366;
+    const spanDays = Math.round((end.getTime() - start.getTime()) / 86_400_000) + 1;
+    const boundedStart = spanDays > MAX_BUCKETS ? subDays(end, MAX_BUCKETS - 1) : start;
+
+    // Rótulo "dd/MM" colide entre anos diferentes (15/03/2025 e 15/03/2026
+    // viravam o mesmo ponto, somando as contagens) — inclui o ano só quando
+    // o intervalo realmente cruza um ano, pra não poluir o eixo à toa.
+    const showYear = end.getFullYear() !== boundedStart.getFullYear();
+    const labelFormat = showYear ? "dd/MM/yy" : "dd/MM";
+
+    const buckets = new Map<string, { label: string; count: number }>();
+    for (let d = boundedStart; d <= end; d = addDays(d, 1)) {
+      buckets.set(format(d, "yyyy-MM-dd"), { label: format(d, labelFormat), count: 0 });
     }
     filteredTickets.forEach((t) => {
-      if (t.created_at) {
-        const d = format(new Date(t.created_at), "dd/MM");
-        if (days[d] !== undefined) days[d]++;
-      }
+      if (!t.created_at) return;
+      const bucket = buckets.get(format(new Date(t.created_at), "yyyy-MM-dd"));
+      if (bucket) bucket.count++;
     });
-    return Object.entries(days)
-      .reverse()
-      .map(([date, chamados]) => ({ date, chamados }));
-  }, [filteredTickets, period]);
+    return Array.from(buckets.values()).map((b) => ({ date: b.label, chamados: b.count }));
+  }, [filteredTickets, period, dateFrom, dateTo]);
 
   // Top agents
   const agentData = useMemo(() => {
@@ -457,22 +488,25 @@ const Reports = () => {
           <CardTitle className="text-base flex items-center gap-2">
             <AlertTriangle className="h-4 w-4 text-red-400" /> Resumo de Incidentes
           </CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Filtrado pelo mesmo período acima{canFilterSector ? " — sem filtro de setor (incidentes não têm setor cadastrado)" : ""}
+          </p>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-3">
             <div className="text-center p-4 rounded-lg border border-border">
-              <p className="text-2xl font-bold">{incidents?.length || 0}</p>
+              <p className="text-2xl font-bold">{filteredIncidents.length}</p>
               <p className="text-xs text-muted-foreground mt-1">Total de Incidentes</p>
             </div>
             <div className="text-center p-4 rounded-lg border border-red-500/20">
               <p className="text-2xl font-bold text-red-400">
-                {incidents?.filter((i) => !["resolved", "closed"].includes(i.status || "")).length || 0}
+                {filteredIncidents.filter((i) => !["resolved", "closed"].includes(i.status || "")).length}
               </p>
               <p className="text-xs text-muted-foreground mt-1">Ativos</p>
             </div>
             <div className="text-center p-4 rounded-lg border border-green-500/20">
               <p className="text-2xl font-bold text-green-400">
-                {incidents?.filter((i) => ["resolved", "closed"].includes(i.status || "")).length || 0}
+                {filteredIncidents.filter((i) => ["resolved", "closed"].includes(i.status || "")).length}
               </p>
               <p className="text-xs text-muted-foreground mt-1">Resolvidos</p>
             </div>
