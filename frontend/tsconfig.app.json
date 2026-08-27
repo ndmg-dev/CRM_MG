@@ -34,7 +34,8 @@
       "@doccontabil/*": ["./src/systems/documentacao-contabil/*"],
       "@cnpj/*": ["./src/systems/consulta-cnpj/*"],
       "@taskflow/*": ["./src/systems/taskflow/*"],
-      "@analyticsdp/*": ["./src/systems/analytics-dp/*"]
+      "@analyticsdp/*": ["./src/systems/analytics-dp/*"],
+      "@dashrh/*": ["./src/systems/dash-rh/*"]
     },
 
     /* Bundler mode */

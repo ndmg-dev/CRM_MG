@@ -44,6 +44,7 @@ export default defineConfig(({ mode }) => {
         '@cnpj': path.resolve(__dirname, './src/systems/consulta-cnpj'),
         '@taskflow': path.resolve(__dirname, './src/systems/taskflow'),
         '@analyticsdp': path.resolve(__dirname, './src/systems/analytics-dp'),
+        '@dashrh': path.resolve(__dirname, './src/systems/dash-rh'),
       },
     },
     server: {
