@@ -105,9 +105,18 @@ export const KanbanTicketCard = ({
           <CardTitle className={`text-sm mt-1 line-clamp-1 ${isResolved ? "line-through text-muted-foreground" : ""}`}>
             {ticket.title}
           </CardTitle>
-          <span className="text-[11px] text-muted-foreground truncate block">
-            {ticket.requester?.full_name || "Solicitante não informado"}
-          </span>
+          {/* opened_by só existe (e só difere do requester) quando alguém
+              abriu o chamado em nome de outra pessoa pelo chat — chamado
+              aberto pelo próprio solicitante mostra só o nome, como sempre. */}
+          {ticket.opened_by_id && ticket.opened_by_id !== ticket.requester_id ? (
+            <span className="text-[11px] text-muted-foreground truncate block">
+              Aberto por: {ticket.opened_by?.full_name || "—"} · Para: {ticket.requester?.full_name || "—"}
+            </span>
+          ) : (
+            <span className="text-[11px] text-muted-foreground truncate block">
+              {ticket.requester?.full_name || "Solicitante não informado"}
+            </span>
+          )}
         </CardHeader>
         <CardContent className="p-3 pt-0 flex-1 flex flex-col justify-end">
           {slaInfo?.deadline && !isResolved && (

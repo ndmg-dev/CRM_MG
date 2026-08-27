@@ -716,6 +716,7 @@ export type Database = {
           due_date: string | null
           id: string
           incident_id: string | null
+          opened_by_id: string | null
           priority: Database["public"]["Enums"]["ticket_priority"] | null
           requester_id: string | null
           resolved_at: string | null
@@ -739,6 +740,7 @@ export type Database = {
           due_date?: string | null
           id?: string
           incident_id?: string | null
+          opened_by_id?: string | null
           priority?: Database["public"]["Enums"]["ticket_priority"] | null
           requester_id?: string | null
           resolved_at?: string | null
@@ -762,6 +764,7 @@ export type Database = {
           due_date?: string | null
           id?: string
           incident_id?: string | null
+          opened_by_id?: string | null
           priority?: Database["public"]["Enums"]["ticket_priority"] | null
           requester_id?: string | null
           resolved_at?: string | null
@@ -799,6 +802,13 @@ export type Database = {
           {
             foreignKeyName: "tickets_requester_id_fkey"
             columns: ["requester_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_opened_by_id_fkey"
+            columns: ["opened_by_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]

@@ -108,6 +108,7 @@ const NewTicketTI = () => {
           target_sector_id: TI_SECTOR_ID,
           assignee_id: assigneeId,
           requester_id: user.id,
+          opened_by_id: user.id,
           status: "new",
           priority: priority as any,
         } as any)

@@ -95,6 +95,9 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
   const [restoreReason, setRestoreReason] = useState("");
   const [commentFile, setCommentFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Preview de imagem em modal em vez de abrir em nova aba — nova aba tira o
+  // agente do chamado só pra ver um print anexado.
+  const [previewImage, setPreviewImage] = useState<{ url: string; alt: string } | null>(null);
   const [pendingSectorId, setPendingSectorId] = useState<string | null>(null);
   const [sectorAssigneeId, setSectorAssigneeId] = useState<string>("unassigned");
   const [isEditingRequester, setIsEditingRequester] = useState(false);
@@ -170,6 +173,7 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
           *,
           assignee:profiles!assignee_id(id, full_name, email),
           requester:profiles!requester_id(full_name, email),
+          opened_by:profiles!opened_by_id(full_name),
           category:categories!category_id(name),
           subcategory:subcategories!subcategory_id(name)
         `)
@@ -528,6 +532,24 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
                       <XIcon className="h-4 w-4" />
                     </Button>
                   </div>
+                ) : ticket.opened_by_id && ticket.opened_by_id !== ticket.requester_id ? (
+                  // Só diferencia "aberto por" quando alguém abriu em nome de
+                  // outra pessoa (ver migration ticket_opened_by) — o caso
+                  // comum (chamado pra si mesmo) continua com a linha única
+                  // de sempre, no bloco abaixo.
+                  <span>
+                    Aberto por: <strong className="text-foreground">{ticket.opened_by?.full_name || "—"}</strong>
+                    {" · "}Para: <strong className="text-foreground">{ticket.requester?.full_name || "—"}</strong>
+                    {canEditRequester && (
+                      <Button
+                        type="button" variant="ghost" size="icon" className="ml-1 h-6 w-6 align-middle"
+                        title="Trocar solicitante (Admin TI)"
+                        onClick={() => setIsEditingRequester(true)}
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </span>
                 ) : (
                   <span>
                     Solicitante: <strong className="text-foreground">{ticket.requester?.full_name || "—"}</strong>
@@ -713,13 +735,18 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
                 </div>
                 {/* Image previews */}
                 {attachments.filter(a => a.file_type?.startsWith("image/") && a.signedUrl).map((att) => (
-                  <a key={att.id} href={att.signedUrl!} target="_blank" rel="noopener noreferrer" className="block mt-2">
+                  <button
+                    key={att.id}
+                    type="button"
+                    onClick={() => setPreviewImage({ url: att.signedUrl!, alt: att.file_name })}
+                    className="block mt-2 w-full cursor-zoom-in"
+                  >
                     <img
                       src={att.signedUrl!}
                       alt={att.file_name}
                       className="rounded-lg border max-h-48 object-contain w-full"
                     />
-                  </a>
+                  </button>
                 ))}
               </div>
             )}
@@ -762,9 +789,13 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
                                   )}
                                 </div>
                                 {isImg && att.signedUrl && (
-                                  <a href={att.signedUrl} target="_blank" rel="noopener noreferrer">
+                                  <button
+                                    type="button"
+                                    onClick={() => setPreviewImage({ url: att.signedUrl!, alt: att.file_name })}
+                                    className="block cursor-zoom-in"
+                                  >
                                     <img src={att.signedUrl} alt={att.file_name} className="rounded border max-h-32 object-contain mt-1" />
-                                  </a>
+                                  </button>
                                 )}
                               </div>
                             );
@@ -960,6 +991,32 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+
+    {/* Preview de imagem — fora do <Dialog> de propósito: DialogContent usa
+        transform (translate-x/y) pra centralizar, o que cria um containing
+        block novo e prende qualquer `fixed` de dentro nele em vez do
+        viewport inteiro. Como sibling no fragmento, fica de verdade por
+        cima de tudo. */}
+    {previewImage && (
+      <div
+        className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4"
+        onClick={() => setPreviewImage(null)}
+      >
+        <button
+          onClick={() => setPreviewImage(null)}
+          aria-label="Fechar"
+          className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70"
+        >
+          <XIcon className="h-5 w-5" />
+        </button>
+        <img
+          src={previewImage.url}
+          alt={previewImage.alt}
+          onClick={(e) => e.stopPropagation()}
+          className="max-h-full max-w-full rounded-lg object-contain"
+        />
+      </div>
+    )}
     </>
   );
 }

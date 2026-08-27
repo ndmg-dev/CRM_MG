@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useChatWidgetStore } from '@/stores/chatWidgetStore'
 import { supabase } from '@/systems/central-suporte/integrations/supabase/client'
 import { useUnreadComments } from '@/systems/central-suporte/hooks/useUnreadComments'
+import { useUserSector } from '@/systems/central-suporte/hooks/useUserSector'
 import { ticketCategory, type TicketCategory } from '@/systems/central-suporte/utils/ticketStatus'
 
 interface ConversationRow {
@@ -108,7 +109,12 @@ export function ConversationList() {
   const queryClient = useQueryClient()
   const { data: conversations = [], isLoading } = useConversations()
   const unreadCounts = useUnreadComments()
+  // Só a TI lida com o funil A fazer/Em Andamento/Outros — quem só abre
+  // chamado (requester comum) não precisa entender essa divisão interna,
+  // só se o chamado dele está aberto ou já foi resolvido.
+  const { isStaff } = useUserSector()
   const [tab, setTab] = useState<TicketCategory>('todo')
+  const [simpleTab, setSimpleTab] = useState<'open' | 'closed'>('open')
   const [otherMenuOpen, setOtherMenuOpen] = useState(false)
   const otherMenuRef = useRef<HTMLDivElement>(null)
 
@@ -135,10 +141,10 @@ export function ConversationList() {
   // vai encontrar ao abrir o dropdown).
   const otherTotal = OTHER_OPTIONS.reduce((sum, o) => sum + categoryCounts[o.key], 0)
 
-  const visibleConversations = useMemo(
-    () => conversations.filter((c) => c.category === tab),
-    [conversations, tab]
-  )
+  const visibleConversations = useMemo(() => {
+    if (!isStaff) return conversations.filter((c) => (c.category === 'closed') === (simpleTab === 'closed'))
+    return conversations.filter((c) => c.category === tab)
+  }, [conversations, tab, simpleTab, isStaff])
 
   // Realtime: qualquer comentário novo em qualquer chamado pode mudar a
   // ordem/prévia da lista — invalida em vez de tentar reconciliar campo a
@@ -173,6 +179,29 @@ export function ConversationList() {
         </button>
       </div>
 
+      {!isStaff ? (
+        <div className="flex items-center gap-1 border-b border-border px-2 pt-2">
+          {(
+            [
+              { key: 'open' as const, label: 'Abertos', count: conversations.length - categoryCounts.closed },
+              { key: 'closed' as const, label: 'Encerrados', count: categoryCounts.closed },
+            ]
+          ).map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setSimpleTab(t.key)}
+              className={`flex items-center gap-1.5 rounded-t-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                simpleTab === t.key
+                  ? 'border-b-2 border-gold text-text-primary'
+                  : 'border-b-2 border-transparent text-text-muted hover:text-text-secondary'
+              }`}
+            >
+              {t.label}
+              {t.count > 0 && <span className="text-[10px] text-text-muted">{t.count}</span>}
+            </button>
+          ))}
+        </div>
+      ) : (
       <div className="flex items-center gap-1 border-b border-border px-2 pt-2">
         {MAIN_TABS.map((t) => (
           <button
@@ -231,6 +260,7 @@ export function ConversationList() {
           )}
         </div>
       </div>
+      )}
 
       <div className="flex-1 overflow-y-auto">
         {isLoading ? (

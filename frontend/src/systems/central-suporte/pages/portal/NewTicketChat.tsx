@@ -2,11 +2,13 @@ import { useNavigate } from "@suporte/lib/router-shim";
 import { Button } from "@suporte/components/ui/button";
 import { Input } from "@suporte/components/ui/input";
 import { Textarea } from "@suporte/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@suporte/components/ui/select";
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@suporte/integrations/supabase/client";
 import { toast } from "sonner";
-import { Headset, Paperclip, Undo2, CheckCircle2 } from "lucide-react";
+import { Headset, Paperclip, Undo2, CheckCircle2, User, Pencil } from "lucide-react";
+import { KanbanTicketCard } from "@suporte/components/admin/KanbanTicketCard";
 
 const TI_SECTOR_ID = "dd55f61b-0754-475e-8ea6-2eb0c79b68d6";
 
@@ -41,6 +43,13 @@ const DEV_SAMPLE_SUBCATEGORIES_NAMES: Record<string, string[]> = Object.fromEntr
   Object.entries(DEV_SAMPLE_SUBCATEGORIES).map(([catId, subs]) => [catId, subs.map(s => s.name)])
 );
 
+// Idem, pra testar "abrir pra outra pessoa" sem sessão real.
+const DEV_SAMPLE_PEOPLE = [
+  { id: "dev-person-1", full_name: "Maria Silva" },
+  { id: "dev-person-2", full_name: "João Pereira" },
+  { id: "dev-person-3", full_name: "Ana Costa" },
+];
+
 // "Prova de burro" pro problema real de produção: chamado de monitor caindo
 // em "Outros" porque a pessoa não sabia que era "Hardware". Mostra exemplos
 // concretos embaixo de cada categoria pra tirar a dúvida ANTES do clique —
@@ -63,8 +72,12 @@ const CATEGORY_HINTS: Record<string, string> = {
   "outros": "só escolha esta se nenhuma das anteriores tiver relação com o problema",
 };
 
-/** Etapas do fluxo conversacional, em ordem. `done` = chamado já criado. */
-type Step = "category" | "subcategory" | "description" | "attachments" | "creating" | "done";
+/** Etapas do fluxo conversacional, em ordem. `done` = chamado já criado.
+ * "requester"/"requester_person" resolvem quem é o dono do chamado ANTES da
+ * categoria — é o problema real que motivou essa etapa: chamado aberto por
+ * alguém em nome de outra pessoa ficava sempre parametrizado com quem abriu,
+ * não com quem realmente precisa da TI. */
+type Step = "requester" | "requester_person" | "category" | "subcategory" | "description" | "attachments" | "creating" | "done";
 
 interface ChatEntry {
   from: "bot" | "user";
@@ -87,6 +100,8 @@ function buildTitle(categoryName: string | undefined, subcategoryName: string | 
 interface StepSnapshot {
   step: Step;
   historyLength: number;
+  selectedRequesterId: string;
+  selectedRequesterName: string;
   selectedCategory: string;
   selectedSubcategory: string;
 }
@@ -146,6 +161,8 @@ const NewTicketChat = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState<Step>("category");
   const [history, setHistory] = useState<ChatEntry[]>([]);
+  const [selectedRequesterId, setSelectedRequesterId] = useState<string>("");
+  const [selectedRequesterName, setSelectedRequesterName] = useState<string>("");
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>("");
   const [description, setDescription] = useState("");
@@ -164,12 +181,26 @@ const NewTicketChat = () => {
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return null;
-      const { data } = await supabase.from("profiles").select("full_name").eq("id", user.id).single();
+      const { data } = await supabase.from("profiles").select("id, full_name").eq("id", user.id).single();
       return data;
     },
   });
   const firstName = (profile?.full_name || "").trim().split(" ")[0];
 
+  // Lista pra "abrir pra outra pessoa" — mesma fonte que o admin usa em
+  // TicketDetailDialog pra reatribuir chamado, então já respeita a mesma
+  // RLS de quem pode ver quem.
+  const { data: allProfiles } = useQuery({
+    queryKey: ["all-profiles-for-requester"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("profiles").select("id, full_name").order("full_name");
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: step === "requester_person",
+    select: (data) =>
+      import.meta.env.DEV && (!data || data.length === 0) ? (DEV_SAMPLE_PEOPLE as typeof data) : data,
+  });
   const { data: categories, isLoading: catsLoading, error: catsError } = useQuery({
     queryKey: ["categories-by-sector", TI_SECTOR_ID],
     queryFn: async () => {
@@ -279,7 +310,10 @@ const NewTicketChat = () => {
 
   /** Guarda o estado ANTES de responder, pra poder desfazer depois. */
   function snapshot() {
-    setUndoStack(s => [...s, { step, historyLength: history.length, selectedCategory, selectedSubcategory }]);
+    setUndoStack(s => [...s, {
+      step, historyLength: history.length,
+      selectedRequesterId, selectedRequesterName, selectedCategory, selectedSubcategory,
+    }]);
   }
 
   function goBack() {
@@ -287,9 +321,55 @@ const NewTicketChat = () => {
     if (!prev) return;
     setUndoStack(s => s.slice(0, -1));
     setHistory(h => h.slice(0, prev.historyLength));
+    setSelectedRequesterId(prev.selectedRequesterId);
+    setSelectedRequesterName(prev.selectedRequesterName);
     setSelectedCategory(prev.selectedCategory);
     setSelectedSubcategory(prev.selectedSubcategory);
     setStep(prev.step);
+  }
+
+  /** Pergunta de descrição muda pelo nome de quem vai usar — só faz sentido
+   * perguntar "descreva o SEU problema" se o chamado for pra quem está no
+   * chat; pra outra pessoa, fica na 3ª pessoa. Único ponto que avança pro
+   * passo "description", chamado pelos dois caminhos do passo "requester". */
+  function askDescriptionQuestion(forSelf: boolean, name: string) {
+    say("bot", forSelf
+      ? "Descreva o problema com o máximo de detalhe que conseguir."
+      : `Descreva o problema de ${name} com o máximo de detalhe que conseguir.`);
+    setStep("description");
+  }
+
+  function pickRequesterSelf() {
+    snapshot();
+    const id = profile?.id ?? "";
+    const name = profile?.full_name || firstName || "Você";
+    setSelectedRequesterId(id);
+    setSelectedRequesterName(name);
+    say("user", "Para mim");
+    askDescriptionQuestion(true, name);
+  }
+
+  function pickRequesterOther() {
+    snapshot();
+    say("user", "Para outra pessoa");
+    say("bot", "Selecione a pessoa:");
+    setStep("requester_person");
+  }
+
+  function pickRequesterPerson(id: string, name: string) {
+    snapshot();
+    setSelectedRequesterId(id);
+    setSelectedRequesterName(name);
+    say("user", name);
+    askDescriptionQuestion(false, name);
+  }
+
+  /** Etapa "para quem é o chamado" — entre categoria/subcategoria e a
+   * descrição do problema (ver useEffect de subcategoria e pickSubcategory,
+   * os dois pontos que levam pra cá em vez de ir direto pra descrição). */
+  function askRequesterQuestion() {
+    say("bot", "Você está abrindo esse chamado para você ou para outra pessoa?");
+    setStep("requester");
   }
 
   function pickCategory(id: string, name: string) {
@@ -311,8 +391,7 @@ const NewTicketChat = () => {
       say("bot", "Certo. Qual dessas opções descreve melhor?");
       setStep("subcategory");
     } else {
-      say("bot", "Entendi. Descreva o problema com o máximo de detalhe que conseguir.");
-      setStep("description");
+      askRequesterQuestion();
     }
   }, [selectedCategory, subcategories, subsError, step]);
 
@@ -320,8 +399,7 @@ const NewTicketChat = () => {
     snapshot();
     setSelectedSubcategory(id);
     say("user", name);
-    say("bot", "Entendi. Descreva o problema com o máximo de detalhe que conseguir.");
-    setStep("description");
+    askRequesterQuestion();
   }
 
   function submitDescription() {
@@ -418,7 +496,16 @@ const NewTicketChat = () => {
           subcategory_id: selectedSubcategory || null,
           target_sector_id: TI_SECTOR_ID,
           assignee_id: assigneeId,
-          requester_id: user.id,
+          // Solicitante escolhido na etapa "para você ou outra pessoa" —
+          // não é sempre quem está logado: o problema real que motivou essa
+          // pergunta era chamado aberto em nome de outra pessoa saindo sempre
+          // parametrizado com quem abriu. Fallback pro próprio usuário só
+          // por segurança (nunca deveria faltar depois da etapa "requester").
+          requester_id: selectedRequesterId || user.id,
+          // Quem de fato submeteu o chamado — só diferente de requester_id
+          // quando é "para outra pessoa" (ver comentário na migration
+          // 202608262000_ticket_opened_by.sql).
+          opened_by_id: user.id,
           status: "new",
           priority: priority as any,
         } as any)
@@ -539,6 +626,35 @@ const NewTicketChat = () => {
             </div>
           )}
 
+          {step === "requester" && (
+            <div className="flex flex-wrap gap-2">
+              <Chip label="Para mim" onClick={pickRequesterSelf} />
+              <Chip label="Para outra pessoa" onClick={pickRequesterOther} />
+            </div>
+          )}
+
+          {step === "requester_person" && (
+            // Dropdown em vez de balões — com dezenas de pessoas cadastradas,
+            // uma parede de chips vira bagunça. O Select do Radix já deixa
+            // digitar pra pular pro nome, então não precisa de busca própria.
+            <Select onValueChange={(id) => {
+              const p = (allProfiles ?? []).find(x => x.id === id);
+              pickRequesterPerson(id, p?.full_name || "Sem nome");
+            }}>
+              <SelectTrigger autoFocus className="w-full">
+                <SelectValue placeholder="Selecione a pessoa..." />
+              </SelectTrigger>
+              <SelectContent>
+                {(allProfiles ?? []).map(p => (
+                  <SelectItem key={p.id} value={p.id}>{p.full_name || "Sem nome"}</SelectItem>
+                ))}
+                {allProfiles !== undefined && allProfiles.length === 0 && (
+                  <p className="px-2 py-1.5 text-sm text-muted-foreground">Nenhuma pessoa encontrada.</p>
+                )}
+              </SelectContent>
+            </Select>
+          )}
+
           {step === "description" && (
             <div className="space-y-2">
               <Textarea
@@ -641,6 +757,61 @@ const NewTicketChat = () => {
           )}
         </div>
       </div>
+
+      {/* PROTÓTIPO / SÓ EM DEV: preview do card real do Kanban (mesmo
+          componente, não uma reprodução) com os dados que acabaram de ser
+          escolhidos — dá pra ver "Aberto por: X · Para: Y" (ou só o nome,
+          se for pra si mesmo) sem precisar de sessão real nem da migration
+          de opened_by_id já aplicada. Remover junto com o resto do
+          protótipo de dados de exemplo. */}
+      {import.meta.env.DEV && step === "done" && (
+        <div className="space-y-1.5 rounded-xl border border-dashed border-primary/30 p-3">
+          <p className="text-xs text-muted-foreground">Prévia (dev) — como este chamado apareceria no Kanban:</p>
+          <div className="max-w-[260px]">
+            <KanbanTicketCard
+              ticket={{
+                ticket_code: 999,
+                priority: "p3",
+                title: buildTitle(categoryLabel, subcategoryLabel) || "Assunto do chamado",
+                opened_by_id: profile?.id || "opener",
+                requester_id: selectedRequesterId || profile?.id || "opener",
+                opened_by: { full_name: profile?.full_name || firstName || "Você" },
+                requester: { full_name: selectedRequesterName || profile?.full_name || firstName || "Você" },
+              }}
+              columnId="open"
+              borderColor=""
+              isDragging={false}
+              onClick={() => {}}
+            />
+          </div>
+
+          {/* Mesma linha "Solicitante"/"Aberto por · Para" do modal de
+              detalhes (TicketDetailDialog) — não dá pra renderizar o modal
+              inteiro aqui porque ele busca o chamado direto do Supabase por
+              id, não aceita um objeto injetado como o card do Kanban aceita.
+              Reproduz o JSX exato (mesmas classes) só dessa linha. */}
+          <p className="pt-2 text-xs text-muted-foreground">E assim no modal de detalhes:</p>
+          <div className="flex items-center gap-2 rounded-lg border border-border bg-card p-3 text-sm text-muted-foreground">
+            <User className="h-4 w-4 shrink-0" />
+            {selectedRequesterId && selectedRequesterId !== profile?.id ? (
+              <span>
+                Aberto por: <strong className="text-foreground">{profile?.full_name || firstName || "Você"}</strong>
+                {" · "}Para: <strong className="text-foreground">{selectedRequesterName || "—"}</strong>
+                <button type="button" title="Trocar solicitante (Admin TI)" className="ml-1 align-middle text-muted-foreground hover:text-foreground">
+                  <Pencil className="inline h-3 w-3" />
+                </button>
+              </span>
+            ) : (
+              <span>
+                Solicitante: <strong className="text-foreground">{profile?.full_name || firstName || "Você"}</strong>
+                <button type="button" title="Trocar solicitante (Admin TI)" className="ml-1 align-middle text-muted-foreground hover:text-foreground">
+                  <Pencil className="inline h-3 w-3" />
+                </button>
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
       {step !== "done" && step !== "creating" && (
         <div className="flex items-center justify-between">
