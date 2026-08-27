@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { useChatWidgetStore } from '@/stores/chatWidgetStore'
 import { supabase } from '@/systems/central-suporte/integrations/supabase/client'
 import { isTicketClosed, ticketCategory } from '@/systems/central-suporte/utils/ticketStatus'
+import { useUserSector } from '@/systems/central-suporte/hooks/useUserSector'
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024 // 10MB — mesmo limite do TicketDetailDialog
 
@@ -79,12 +80,19 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
   const minimizeChat = useChatWidgetStore((s) => s.minimize)
   const backToList = useChatWidgetStore((s) => s.backToList)
   const queryClient = useQueryClient()
+  // Só quem é da TI (support_agent/dev/admin_ti/coordenador) move status ou
+  // encerra o chat — quem só abre chamado (requester comum) nunca vê esses
+  // controles, só a conversa em si.
+  const { isStaff } = useUserSector()
   const [text, setText] = useState('')
   const [pendingImage, setPendingImage] = useState<File | null>(null)
   const [pendingImagePreview, setPendingImagePreview] = useState<string | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [newDividerIndex, setNewDividerIndex] = useState<number | null>(null)
   const [closeModalOpen, setCloseModalOpen] = useState(false)
+  // Preview de imagem em modal em vez de abrir em nova aba — nova aba tira a
+  // pessoa do chat pra ver um print; um modal por cima resolve sem sair daqui.
+  const [previewImage, setPreviewImage] = useState<{ url: string; alt: string } | null>(null)
   // Grava status=closed na hora (ver closeChatMutation), mas mantém ESTA
   // instância da tela funcionando normalmente — sem o aviso "vai sumir da
   // aba" nem bloquear o input — até a TI sair da conversa. Na próxima vez
@@ -123,6 +131,12 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
   const prevStatusRef = useRef<string | null | undefined>(undefined)
   useEffect(() => {
     if (!ticket) return
+    // Espera currentUserId carregar (busca assíncrona separada) antes de
+    // decidir — sem isso, se a reabertura acontecer bem no primeiro render,
+    // o comentário sai com author_id nulo. Não atualiza prevStatusRef aqui:
+    // assim que currentUserId chegar, o efeito roda de novo com o mesmo
+    // prevStatus guardado e ainda pega a transição corretamente.
+    if (currentUserId === null) return
     const prevStatus = prevStatusRef.current
     const wasClosed = prevStatus !== undefined && isTicketClosed(prevStatus)
     if (wasClosed && !isTicketClosed(ticket.status)) {
@@ -320,8 +334,10 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
 
       // Resposta da TI move o chamado pra "Em Andamento" (status `pending`)
       // sozinha — sem isso, um chamado "A fazer"/"Em teste"/"Parado" fica
-      // preso lá mesmo depois de alguém já estar cuidando dele.
-      if (ticket && ticketCategory(ticket.status) !== 'in_progress') {
+      // preso lá mesmo depois de alguém já estar cuidando dele. Só a TI move
+      // o card: uma mensagem do próprio solicitante (usuário comum) não deve
+      // fingir que alguém já está tratando o chamado.
+      if (isStaff && ticket && ticketCategory(ticket.status) !== 'in_progress') {
         await supabase.from('tickets').update({ status: 'pending' }).eq('id', ticketId)
       }
     },
@@ -480,13 +496,18 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
                         <span className="mb-0.5 px-1 text-[10px] text-text-muted">{authorName}</span>
                       )}
                       {imageAtts.map((att) => (
-                        <a key={att.id} href={att.signedUrl || undefined} target="_blank" rel="noopener noreferrer" className="mb-1 block">
+                        <button
+                          key={att.id}
+                          type="button"
+                          onClick={() => att.signedUrl && setPreviewImage({ url: att.signedUrl, alt: att.file_name })}
+                          className="mb-1 block cursor-zoom-in"
+                        >
                           <img
                             src={att.signedUrl}
                             alt={att.file_name}
                             className="max-h-48 max-w-full rounded-xl border border-border object-contain"
                           />
-                        </a>
+                        </button>
                       ))}
                       {c.content && (
                         <div
@@ -518,8 +539,8 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
         )}
       </div>
 
-      {/* Barra de status: TI move o chamado sem sair do chat */}
-      {!isBlocked && (
+      {/* Barra de status: só a TI move o chamado ou encerra o chat */}
+      {isStaff && !isBlocked && (
         <div className="flex flex-wrap items-center gap-1.5 border-t border-border px-2.5 pt-2">
           {STATUS_BUTTONS.map((b) => {
             const isCurrent = ticket?.status === b.status
@@ -647,6 +668,28 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Preview de imagem — mesmo padrão de overlay do modal de confirmação acima */}
+      {previewImage && (
+        <div
+          className="fixed inset-0 z-[140] flex items-center justify-center bg-black/80 p-4"
+          onClick={() => setPreviewImage(null)}
+        >
+          <button
+            onClick={() => setPreviewImage(null)}
+            aria-label="Fechar"
+            className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70"
+          >
+            <X className="h-5 w-5" />
+          </button>
+          <img
+            src={previewImage.url}
+            alt={previewImage.alt}
+            onClick={(e) => e.stopPropagation()}
+            className="max-h-full max-w-full rounded-lg object-contain"
+          />
         </div>
       )}
     </div>

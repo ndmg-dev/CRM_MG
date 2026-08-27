@@ -145,6 +145,7 @@ const NewTicket = () => {
           target_sector_id: selectedSector || null,
           assignee_id: selectedAssignee || null,
           requester_id: user.id,
+          opened_by_id: user.id,
           status: "new",
           priority: "p3",
         } as any)

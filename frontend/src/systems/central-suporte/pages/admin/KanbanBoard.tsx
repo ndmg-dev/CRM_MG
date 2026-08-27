@@ -53,7 +53,8 @@ const KanbanBoard = () => {
         .select(`
           *,
           assignee:profiles!assignee_id(full_name),
-          requester:profiles!requester_id(full_name)
+          requester:profiles!requester_id(full_name),
+          opened_by:profiles!opened_by_id(full_name)
         `)
         .is("archived_at", null)
         .order("created_at", { ascending: false });
