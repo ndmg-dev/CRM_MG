@@ -10,7 +10,7 @@ qualquer coisa nova nessa frente.
   pra `main` a cada leva de commits prontos pra revisão (não ficamos numa branch por sistema).
 - Repos satélite clonados localmente em `C:\Users\User\Projetos\`: `COPILOT_CONTABIL`,
   `BIBM-MG` (BIMG), `ContAI_PRO`, `GERADOR_DE_NOTAS`, `PROJETO-CARNE-LEAO`,
-  `CONSULTA-SOCIETARIO`, `TASK_MANANGER`, `ANALYTICS-DP`, `CRONOS_MG`. **`TASK_MANANGER`
+  `CONSULTA-SOCIETARIO`, `TASK_MANANGER`, `ANALYTICS-DP`, `CRONOS_MG`, `HR-DASH-MG`. **`TASK_MANANGER`
   está grafado assim mesmo** (com o typo) — é o nome real do repo em
   `github.com/ndmg-dev/TASK_MANANGER`, não um erro nosso; mantenha a grafia idêntica ao
   clonar/referenciar, "corrigir" pra `TASK_MANAGER` só quebraria o path do clone.
@@ -56,6 +56,7 @@ e pergunte ao usuário antes de decidir qual versão prevalece se encontrar sobr
 | TaskFlow (NDMG Task Manager) | `taskflow` | TASK_MANANGER | Supabase próprio, SSO via `signInWithIdToken` |
 | Analytics DP | `analytics-dp` | ANALYTICS-DP | Gate de senha compartilhada, embutido no sistema, fora do SSO do CRM |
 | Ponto Admin (Cronos) | `ponto-admin` | CRONOS_MG | Bearer próprio (`mg_token`), sem SSO — API do Cronos via `VITE_CRONOS_API_URL` |
+| Dash RH | `dash-rh` | HR-DASH-MG | Sem Supabase — Bearer JWT do próprio CRM (padrão ContAI). Backend FastAPI. Área Restrita: allowlist de e-mail no backend (`HR_CONFIDENTIAL_ALLOWLIST`) no lugar do header de senha em texto puro original |
 
 **Desativado** (não abolir do banco, só `ativo = false`): Portal do Colaborador
 (`portal-do-colaborador`) — decisão do usuário, sistema abandonado.
@@ -322,9 +323,31 @@ CRM, é preciso reaplicar só o delta:
 
 ## Próximos sistemas / pendências em aberto
 
-- Nenhum sistema novo identificado no momento — os últimos quatro (Consulta CNPJ, TaskFlow,
-  Analytics DP, sync do Ponto Admin) foram concluídos e mesclados nesta leva.
+- Nenhum sistema novo identificado no momento. Última leva: Dash RH (iframe → nativo),
+  CRM PR #85 e satélite `ndmg-dev/HR-DASH-MG` PR #1.
+- **Gotcha do Dash RH — sistema 100% JavaScript (sem TS)**: o satélite HR-DASH-MG não tem
+  `tsconfig` nenhum, é tudo `.jsx`/`.js`. Foi portado mantendo os arquivos como `.jsx`
+  (decisão travada com o usuário) — o `tsconfig.app.json` do CRM não tem `allowJs`, então
+  **nenhum arquivo de `systems/dash-rh/` é checado pelo `tsc`**; só o entrypoint
+  `DashRhApp.tsx` (com `// @ts-nocheck`) e o `Topbar.tsx`. Se for sincronizar features
+  desse satélite depois, lembrar que o `tsc` não vai pegar erro nenhum dentro do sistema —
+  confiar no `npm run build` (Vite compila o JSX) e em teste manual.
+- **Gotcha do Dash RH — auth era ZERO**: o dashboard original não tinha auth nenhuma e a
+  Área Restrita (nomes + salários individuais) usava só um header `X-Confidential-Auth` com
+  senha compartilhada em texto puro. Como expõe dado sensível de pessoa, foi aplicado o
+  padrão ContAI (Bearer JWT do CRM em todo `/api/*`) + allowlist de e-mail no backend pra
+  Área Restrita — ver item 6 do playbook ("sistema futuro sem auth lidando com dado
+  sensível = parar e perguntar"). Backend do satélite mudou (PR #1): `app/auth.py`,
+  dependency global em `app/api/router.py`, `HR_CRM_JWT_SECRET`/`HR_CONFIDENTIAL_ALLOWLIST`.
 - Pendências externas (não são código, são configuração/infra que o usuário precisa aplicar):
+  - Dash RH: `VITE_DASHRH_API_URL` (= `https://dashrh.nucleodigital.cloud`) no build do
+    frontend do CRM no Coolify.
+  - Dash RH: `HR_CRM_JWT_SECRET` no Coolify do HR-DASH **exatamente igual** ao `JWT_SECRET`
+    do `backend-fastapi` do CRM; e `HR_CONFIDENTIAL_ALLOWLIST` (e-mails que podem ver o
+    detalhamento nominal — vazio libera pra qualquer usuário autenticado pelo CRM).
+  - Dash RH: o CRM não carrega a fonte **JetBrains Mono** — `--font-mono` (valores de
+    métrica/salário no Dash RH) cai no fallback `monospace`. TODO marcado no CSS gerado
+    (`systems/dash-rh/styles/dash-rh.css`). Se incomodar, adicionar a fonte no CRM.
   - TaskFlow: confirmar que `CORS_ORIGINS` no Coolify do TaskFlow inclui
     `https://crmmg.mendoncagalvao.com.br` (default no código é só localhost).
   - TaskFlow: Client ID do Google do CRM liberado no Supabase do TaskFlow (Authentication →
@@ -355,6 +378,10 @@ CRM, é preciso reaplicar só o delta:
 - `frontend/src/systems/ponto-admin/` — referência de CSS prefixado via
   `postcss-prefix-selector` (script Node temporário) em vez de prefixação manual, útil
   quando o CSS original é grande/complexo demais pra regex.
+- `frontend/src/systems/dash-rh/` — referência de sistema portado 100% em `.jsx` (satélite
+  sem TypeScript), reusando libs já presentes no CRM (recharts/react-feather/framer-motion)
+  sem adicionar nem trocar nada, e de CSS grande escopado via `postcss-prefix-selector` com
+  rename manual de `@keyframes`.
 - `frontend/src/lib/unifiedAuth.ts` — todos os blocos de SSO via Supabase num só lugar.
 - `frontend/src/hooks/useNativeSystemBase.ts` — hook de navegação obrigatório pra qualquer
   sistema com rotas internas.
