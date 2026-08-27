@@ -374,7 +374,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
             aria-expanded={showMessages}
             className="relative flex h-9 w-9 items-center justify-center rounded-lg text-text-secondary transition-colors hover:bg-surface hover:text-text-primary"
           >
-            <MessageSquare className="h-[18px] w-[18px]" />
+            <MessageSquare className="h-4 w-4" />
             {unreadMessages > 0 && (
               <span className="absolute right-1 top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-error px-1 text-[9px] font-bold text-background">
                 {unreadMessages}
@@ -447,7 +447,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
             aria-expanded={showNotif}
             className="relative flex h-9 w-9 items-center justify-center rounded-lg text-text-secondary transition-colors hover:bg-surface hover:text-text-primary"
           >
-            <Bell className="h-[18px] w-[18px]" />
+            <Bell className="h-4 w-4" />
             {unreadCount > 0 && (
               <span className="absolute right-1 top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-error px-1 text-[9px] font-bold text-background">
                 {unreadCount}
@@ -492,14 +492,14 @@ export default function Header({ onMenuClick }: HeaderProps) {
                       {merged.map((notif) => (
                         <div
                           key={`${notif.source}-${notif.id}`}
-                          className={`relative flex items-start gap-3 p-4 transition-colors hover:bg-surface-hover ${notif.source !== 'crm' ? 'cursor-pointer' : ''} ${!notif.lida ? 'bg-surface-raised/50' : ''
+                          className={`relative flex items-start gap-3 p-4 transition-colors hover:bg-surface-hover ${notif.source !== 'crm' ? 'cursor-pointer' : ''} ${!notif.lida ? 'bg-gold/[0.06]' : ''
                             }`}
                           onClick={() => notif.source !== 'crm' && handleNotifClick(notif)}
                         >
-                          {!notif.lida && (
-                            <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-gold" />
-                          )}
-                          <div className={`flex-1 space-y-1 ${!notif.lida ? 'ml-0' : 'ml-5'}`}>
+                          <div className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full bg-gold-muted text-gold">
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                          </div>
+                          <div className={`flex-1 space-y-1`}>
                             <p className={`text-sm ${!notif.lida ? 'font-medium text-text-primary' : 'text-text-secondary'}`}>
                               {notif.titulo}
                             </p>

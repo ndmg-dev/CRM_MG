@@ -1,6 +1,4 @@
-import { Badge } from "@suporte/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@suporte/components/ui/card";
-import { Button } from "@suporte/components/ui/button";
+import { Badge } from "@mg/ui";
 import { ShieldAlert, AlertTriangle, Clock, CheckCircle2, Eye } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@suporte/integrations/supabase/client";
@@ -11,19 +9,30 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@suporte/compo
 import { ScrollArea } from "@suporte/components/ui/scroll-area";
 import { Separator } from "@suporte/components/ui/separator";
 
-const severityConfig: Record<string, { label: string; className: string }> = {
-  p0: { label: "Crítico", className: "bg-red-500/20 text-red-400 border-red-500/30" },
-  p1: { label: "Alto", className: "bg-orange-500/20 text-orange-400 border-orange-500/30" },
-  p2: { label: "Médio", className: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30" },
-  p3: { label: "Baixo", className: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
+// Tokens — ver frontend/packages/@mg/tokens/build/tokens.css. Handoff:
+// Gestao Incidentes.dc.html.
+const TEXT_PRIMARY = "var(--mg-color-text-primary)";
+const TEXT_SECONDARY = "var(--mg-color-text-secondary)";
+const TEXT_MUTED = "var(--mg-color-text-muted)";
+const ERROR = "var(--mg-color-status-error)";
+const SUCCESS = "var(--mg-color-status-success)";
+const WARNING = "var(--mg-color-status-warning)";
+
+const CARD_CLASS = "bg-[var(--mg-color-bg-card)] border border-[var(--mg-color-border-default)] rounded-xl";
+
+const severityConfig: Record<string, { label: string; variant: "err" | "warn" | "ok" | "neutral" }> = {
+  p0: { label: "Crítico", variant: "err" },
+  p1: { label: "Alto", variant: "err" },
+  p2: { label: "Médio", variant: "warn" },
+  p3: { label: "Baixo", variant: "neutral" },
 };
 
-const statusConfig: Record<string, { label: string; icon: React.ElementType; className: string }> = {
-  new: { label: "Novo", icon: ShieldAlert, className: "text-red-400" },
-  open: { label: "Aberto", icon: AlertTriangle, className: "text-orange-400" },
-  pending: { label: "Em Análise", icon: Clock, className: "text-yellow-400" },
-  resolved: { label: "Resolvido", icon: CheckCircle2, className: "text-green-400" },
-  closed: { label: "Fechado", icon: CheckCircle2, className: "text-muted-foreground" },
+const statusConfig: Record<string, { label: string; icon: React.ElementType; color: string }> = {
+  new: { label: "Novo", icon: ShieldAlert, color: ERROR },
+  open: { label: "Aberto", icon: AlertTriangle, color: WARNING },
+  pending: { label: "Em Análise", icon: Clock, color: WARNING },
+  resolved: { label: "Resolvido", icon: CheckCircle2, color: SUCCESS },
+  closed: { label: "Fechado", icon: CheckCircle2, color: TEXT_MUTED },
 };
 
 const Incidents = () => {
@@ -63,104 +72,71 @@ const Incidents = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Carregando incidentes...</p>
+        <p style={{ color: TEXT_MUTED }}>Carregando incidentes...</p>
       </div>
     );
   }
 
+  const kpis = [
+    { label: "Ativos", value: activeIncidents.length, color: ERROR, icon: <ShieldAlert className="h-[18px] w-[18px]" /> },
+    { label: "Resolvidos", value: resolvedIncidents.length, color: SUCCESS, icon: <CheckCircle2 className="h-[18px] w-[18px]" /> },
+    { label: "Total", value: incidents?.length || 0, color: TEXT_PRIMARY, icon: <AlertTriangle className="h-[18px] w-[18px]" style={{ color: WARNING }} /> },
+    { label: "Tickets Afetados", value: "—", color: TEXT_PRIMARY, icon: <Clock className="h-[18px] w-[18px]" style={{ color: TEXT_MUTED }} /> },
+  ];
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight">Incidentes</h2>
-        <p className="text-muted-foreground">
-          Monitoramento de incidentes detectados automaticamente
-        </p>
+        <h1 style={{ color: TEXT_PRIMARY, fontSize: 24, fontWeight: 700, letterSpacing: "-0.02em", margin: "0 0 4px" }}>Incidentes</h1>
+        <p style={{ color: TEXT_SECONDARY, fontSize: 13, margin: 0 }}>Monitoramento de incidentes detectados automaticamente</p>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card className="border-red-500/20">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Ativos</CardTitle>
-            <ShieldAlert className="h-4 w-4 text-red-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-400">{activeIncidents.length}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Resolvidos</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-green-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-400">{resolvedIncidents.length}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{incidents?.length || 0}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Tickets Afetados</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-muted-foreground">—</div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-2 gap-3.5 md:grid-cols-4">
+        {kpis.map((k) => (
+          <div key={k.label} className={CARD_CLASS} style={{ padding: "16px 18px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div>
+              <div style={{ fontSize: 12.5, color: TEXT_SECONDARY, marginBottom: 8 }}>{k.label}</div>
+              <div style={{ fontSize: 26, fontWeight: 700, color: k.color }}>{k.value}</div>
+            </div>
+            {k.icon}
+          </div>
+        ))}
       </div>
 
-      {/* Active Incidents */}
       {activeIncidents.length > 0 && (
         <div className="space-y-3">
-          <h3 className="text-lg font-semibold text-red-400 flex items-center gap-2">
-            <ShieldAlert className="h-5 w-5" /> Incidentes Ativos
+          <h3 className="flex items-center gap-2" style={{ fontSize: 15, fontWeight: 600, color: ERROR }}>
+            <ShieldAlert className="h-4 w-4" /> Incidentes Ativos
           </h3>
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             {activeIncidents.map((incident) => (
-              <IncidentCard
-                key={incident.id}
-                incident={incident}
-                onView={() => setSelectedIncident(incident)}
-              />
+              <IncidentCard key={incident.id} incident={incident} onView={() => setSelectedIncident(incident)} />
             ))}
           </div>
         </div>
       )}
 
-      {/* Resolved Incidents */}
       {resolvedIncidents.length > 0 && (
         <div className="space-y-3">
-          <h3 className="text-lg font-semibold text-muted-foreground">Histórico de Incidentes</h3>
-          <div className="space-y-3">
+          <h3 style={{ fontSize: 15, fontWeight: 600, color: TEXT_SECONDARY }}>Histórico de Incidentes</h3>
+          <div className="space-y-2.5">
             {resolvedIncidents.map((incident) => (
-              <IncidentCard
-                key={incident.id}
-                incident={incident}
-                onView={() => setSelectedIncident(incident)}
-              />
+              <IncidentCard key={incident.id} incident={incident} onView={() => setSelectedIncident(incident)} />
             ))}
           </div>
         </div>
       )}
 
       {incidents?.length === 0 && (
-        <Card className="border-dashed">
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <CheckCircle2 className="h-12 w-12 text-green-400 mb-4" />
-            <p className="text-lg font-medium">Nenhum incidente registrado</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Incidentes são criados automaticamente quando 5+ chamados da mesma categoria surgem em 10 minutos.
-            </p>
-          </CardContent>
-        </Card>
+        <div className={CARD_CLASS} style={{ padding: "60px 20px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
+          <div style={{ width: 48, height: 48, borderRadius: "50%", border: `1.5px solid ${SUCCESS}`, color: SUCCESS, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}>
+            <CheckCircle2 className="h-5 w-5" />
+          </div>
+          <p style={{ fontSize: 16, fontWeight: 700, color: TEXT_PRIMARY, margin: "0 0 6px" }}>Nenhum incidente registrado</p>
+          <p style={{ margin: 0, fontSize: 13, color: TEXT_SECONDARY, maxWidth: 420 }}>
+            Incidentes são criados automaticamente quando 5+ chamados da mesma categoria surgem em 10 minutos.
+          </p>
+        </div>
       )}
 
       {/* Incident Detail Dialog */}
@@ -168,19 +144,19 @@ const Incidents = () => {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <ShieldAlert className="h-5 w-5 text-red-400" />
+              <ShieldAlert className="h-5 w-5" style={{ color: ERROR }} />
               {selectedIncident?.title}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="flex gap-2">
               {selectedIncident?.severity && (
-                <Badge className={severityConfig[selectedIncident.severity]?.className}>
+                <Badge variant={severityConfig[selectedIncident.severity]?.variant}>
                   {severityConfig[selectedIncident.severity]?.label}
                 </Badge>
               )}
               {selectedIncident?.status && (
-                <Badge variant="outline">
+                <Badge variant="neutral">
                   {statusConfig[selectedIncident.status]?.label || selectedIncident.status}
                 </Badge>
               )}
@@ -209,15 +185,13 @@ const Incidents = () => {
                         className="flex items-center justify-between p-3 rounded-lg border border-border bg-card"
                       >
                         <div>
-                          <p className="text-sm font-medium"><p className="text-sm font-medium">{String(ticket.ticket_code).padStart(3, '0')}</p></p>
+                          <p className="text-sm font-medium">{String(ticket.ticket_code).padStart(3, '0')}</p>
                           <p className="text-xs text-muted-foreground">{ticket.title}</p>
                           <p className="text-xs text-muted-foreground mt-1">
                             {ticket.requester?.full_name || ticket.requester?.email}
                           </p>
                         </div>
-                        <Badge variant="outline" className="text-xs">
-                          {ticket.status}
-                        </Badge>
+                        <Badge variant="neutral">{ticket.status}</Badge>
                       </div>
                     ))
                   ) : (
@@ -239,31 +213,27 @@ function IncidentCard({ incident, onView }: { incident: any; onView: () => void 
   const StatusIcon = status?.icon || ShieldAlert;
 
   return (
-    <Card className="hover:border-primary/30 transition-colors">
-      <CardContent className="flex items-center justify-between p-4">
-        <div className="flex items-center gap-4">
-          <div className={`p-2 rounded-lg bg-card ${status?.className}`}>
-            <StatusIcon className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="font-semibold">{incident.title}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {incident.created_at &&
-                format(new Date(incident.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-            </p>
-          </div>
+    <div className={CARD_CLASS} style={{ padding: 16, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div className="flex items-center gap-3.5">
+        <div style={{ padding: 8, borderRadius: 8, background: "var(--mg-color-bg-hover)", color: status?.color }}>
+          <StatusIcon className="h-4 w-4" />
         </div>
-        <div className="flex items-center gap-3">
-          <Badge className={severity?.className}>{severity?.label}</Badge>
-          <Badge variant="outline">{status?.label}</Badge>
-          <Button variant="ghost" size="icon" onClick={onView}>
-            <Eye className="h-4 w-4" />
-          </Button>
+        <div>
+          <p style={{ fontSize: 13.5, fontWeight: 600, color: TEXT_PRIMARY, margin: 0 }}>{incident.title}</p>
+          <p style={{ fontSize: 11.5, color: TEXT_MUTED, margin: "2px 0 0" }}>
+            {incident.created_at && format(new Date(incident.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+          </p>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+      <div className="flex items-center gap-2.5">
+        <Badge variant={severity?.variant}>{severity?.label}</Badge>
+        <Badge variant="neutral">{status?.label}</Badge>
+        <button type="button" onClick={onView} style={{ background: "none", border: "none", color: TEXT_MUTED, cursor: "pointer", display: "flex" }}>
+          <Eye className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
   );
 }
 
 export default Incidents;
-

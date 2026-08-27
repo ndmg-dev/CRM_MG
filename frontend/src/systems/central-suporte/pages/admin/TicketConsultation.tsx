@@ -5,45 +5,49 @@ import { format } from "date-fns";
 import { useUserSector } from "@suporte/hooks/useUserSector";
 import { ptBR } from "date-fns/locale";
 import { CalendarIcon, Search, X } from "lucide-react";
-import { cn } from "@suporte/lib/utils";
-import { Button } from "@suporte/components/ui/button";
-import { Input } from "@suporte/components/ui/input";
-import { Badge } from "@suporte/components/ui/badge";
 import { Calendar } from "@suporte/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@suporte/components/ui/popover";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@suporte/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@suporte/components/ui/table";
-import { Card, CardContent, CardHeader, CardTitle } from "@suporte/components/ui/card";
+import { Popover, PopoverContent, PopoverTrigger } from "@suporte/components/ui/popover";
+import { Select } from "@mg/ui";
 import { TicketDetailDialog } from "@suporte/components/admin/TicketDetailDialog";
-import { Switch } from "@suporte/components/ui/switch";
-import { Label } from "@suporte/components/ui/label";
 
+// Tokens — ver frontend/packages/@mg/tokens/build/tokens.css. Handoff:
+// Gestao Consulta de Chamados.dc.html.
+const GOLD = "var(--mg-color-gold-base)";
+const TEXT_PRIMARY = "var(--mg-color-text-primary)";
+const TEXT_SECONDARY = "var(--mg-color-text-secondary)";
+const TEXT_MUTED = "var(--mg-color-text-muted)";
+const BORDER_DEFAULT = "var(--mg-color-border-default)";
+const BG_CARD = "var(--mg-color-bg-card)";
+const SUCCESS = "var(--mg-color-status-success)";
+const WARNING = "var(--mg-color-status-warning)";
+const ERROR = "var(--mg-color-status-error)";
+const INFO = "var(--mg-color-status-info)";
+
+const CARD_CLASS = "bg-[var(--mg-color-bg-card)] border border-[var(--mg-color-border-default)] rounded-xl";
+const DATE_TRIGGER_CLASS =
+  "flex items-center gap-2 h-[38px] px-3 rounded-lg text-[13px] bg-[var(--mg-color-bg-hover)] border border-[var(--mg-color-border-default)] text-[var(--mg-color-text-secondary)] hover:border-[var(--mg-color-border-strong)] transition-colors w-full";
+
+// Mesmo mapeamento canônico usado no Kanban/TicketDetailDialog/MyTickets:
+// new/open = "A Fazer", pending = "Em Andamento".
 const statusLabels: Record<string, string> = {
-  new: "Novo",
-  open: "Aberto",
-  pending: "Pendente",
+  new: "A Fazer",
+  open: "A Fazer",
+  pending: "Em Andamento",
   parado: "Parado",
   testing: "Em Teste",
-  resolved: "Resolvido",
-  closed: "Fechado",
+  resolved: "Concluído",
+  closed: "Concluído",
   canceled: "Cancelado",
+};
+const statusStyle: Record<string, { color: string; bg: string }> = {
+  new: { color: INFO, bg: "rgba(92,148,239,0.12)" },
+  open: { color: INFO, bg: "rgba(92,148,239,0.12)" },
+  pending: { color: WARNING, bg: "rgba(216,174,66,0.12)" },
+  parado: { color: TEXT_SECONDARY, bg: "var(--mg-color-bg-hover)" },
+  testing: { color: INFO, bg: "rgba(92,148,239,0.12)" },
+  resolved: { color: SUCCESS, bg: "rgba(85,217,165,0.12)" },
+  closed: { color: SUCCESS, bg: "rgba(85,217,165,0.12)" },
+  canceled: { color: TEXT_SECONDARY, bg: "var(--mg-color-bg-hover)" },
 };
 
 const priorityLabels: Record<string, string> = {
@@ -52,21 +56,11 @@ const priorityLabels: Record<string, string> = {
   p2: "P2 - Média",
   p3: "P3 - Baixa",
 };
-
-const priorityColors: Record<string, string> = {
-  p0: "bg-destructive/20 text-destructive",
-  p1: "bg-orange-500/20 text-orange-500",
-  p2: "bg-yellow-500/20 text-yellow-500",
-  p3: "bg-muted text-muted-foreground",
-};
-
-const statusColors: Record<string, string> = {
-  new: "bg-blue-500/20 text-blue-400",
-  open: "bg-blue-500/20 text-blue-400",
-  pending: "bg-yellow-500/20 text-yellow-400",
-  resolved: "bg-green-500/20 text-green-400",
-  closed: "bg-green-500/20 text-green-400",
-  canceled: "bg-muted text-muted-foreground",
+const priorityStyle: Record<string, { color: string; bg: string }> = {
+  p0: { color: ERROR, bg: "rgba(239,102,102,0.10)" },
+  p1: { color: ERROR, bg: "rgba(239,102,102,0.10)" },
+  p2: { color: WARNING, bg: "rgba(216,174,66,0.10)" },
+  p3: { color: TEXT_SECONDARY, bg: "var(--mg-color-bg-hover)" },
 };
 
 const TicketConsultation = () => {
@@ -82,10 +76,7 @@ const TicketConsultation = () => {
   const { data: categories } = useQuery({
     queryKey: ["categories"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("categories")
-        .select("id, name")
-        .order("name");
+      const { data, error } = await supabase.from("categories").select("id, name").order("name");
       if (error) throw error;
       return data;
     },
@@ -101,10 +92,7 @@ const TicketConsultation = () => {
       if (rolesError) throw rolesError;
       if (!roles?.length) return [];
       const uniqueIds = [...new Set(roles.map(r => r.user_id))];
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, full_name, email")
-        .in("id", uniqueIds);
+      const { data, error } = await supabase.from("profiles").select("id, full_name, email").in("id", uniqueIds);
       if (error) throw error;
       return data || [];
     },
@@ -123,11 +111,8 @@ const TicketConsultation = () => {
         `)
         .order("created_at", { ascending: false });
 
-      query = showArchived
-        ? query.not("archived_at", "is", null)
-        : query.is("archived_at", null);
+      query = showArchived ? query.not("archived_at", "is", null) : query.is("archived_at", null);
 
-      // Direction, Coordinator TI, and Admin TI see all sectors (no filter)
       const isCoordinatorTI = sector.roles.includes("coordinator");
       const isAdminTI = sector.roles.includes("admin_ti");
       if (!sector.isDirection && !isCoordinatorTI && !isAdminTI) {
@@ -191,235 +176,150 @@ const TicketConsultation = () => {
     setSearchText("");
   };
 
+  const canSeeArchivedToggle = sector.isDirection || sector.roles.includes("admin_ti");
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight">Consulta de Chamados</h2>
-        <p className="text-muted-foreground">
-          Pesquise e filtre chamados por data, categoria ou usuário
-        </p>
+        <h1 style={{ color: TEXT_PRIMARY, fontSize: 24, fontWeight: 700, letterSpacing: "-0.02em", margin: "0 0 4px" }}>Consulta de Chamados</h1>
+        <p style={{ color: TEXT_SECONDARY, fontSize: 13, margin: 0 }}>Pesquise e filtre chamados por data, categoria ou usuário</p>
       </div>
 
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Search className="h-5 w-5" />
-            Filtros
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-3 items-end">
-            {/* Search */}
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">Buscar</label>
-              <Input
-                placeholder="Código, título ou usuário..."
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                className="w-[220px] h-9 text-sm"
-              />
-            </div>
-
-            {/* Date from */}
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">Data inicial</label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-[150px] h-9 justify-start text-left text-sm font-normal",
-                      !dateFrom && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="h-4 w-4 mr-1" />
-                    {dateFrom ? format(dateFrom, "dd/MM/yyyy") : "De"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={dateFrom}
-                    onSelect={setDateFrom}
-                    locale={ptBR}
-                    className="p-3 pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            {/* Date to */}
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">Data final</label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-[150px] h-9 justify-start text-left text-sm font-normal",
-                      !dateTo && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="h-4 w-4 mr-1" />
-                    {dateTo ? format(dateTo, "dd/MM/yyyy") : "Até"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={dateTo}
-                    onSelect={setDateTo}
-                    locale={ptBR}
-                    className="p-3 pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            {/* Category */}
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">Categoria</label>
-              <Select
-                value={categoryId || "all"}
-                onValueChange={(v) => setCategoryId(v === "all" ? "" : v)}
-              >
-                <SelectTrigger className="w-[180px] h-9 text-sm">
-                  <SelectValue placeholder="Categoria" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas categorias</SelectItem>
-                  {categories?.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Assignee */}
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">Responsável</label>
-              <Select
-                value={assigneeId || "all"}
-                onValueChange={(v) => setAssigneeId(v === "all" ? "" : v)}
-              >
-                <SelectTrigger className="w-[200px] h-9 text-sm">
-                  <SelectValue placeholder="Responsável" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos responsáveis</SelectItem>
-                  <SelectItem value="unassigned">Sem responsável</SelectItem>
-                  {staffProfiles?.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.full_name || p.email}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {hasFilters && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearFilters}
-                className="h-9 text-sm"
-              >
-                <X className="h-3 w-3 mr-1" /> Limpar
-              </Button>
-            )}
+      <div className={CARD_CLASS} style={{ padding: 18 }}>
+        <div className="flex items-center gap-2" style={{ fontSize: 14, fontWeight: 700, color: TEXT_PRIMARY, marginBottom: 16 }}>
+          <Search className="h-3.5 w-3.5" style={{ color: GOLD }} />
+          Filtros
+        </div>
+        <div className="grid gap-3" style={{ gridTemplateColumns: "1.6fr 1fr 1fr 1fr 1fr" }}>
+          <div>
+            <div style={{ fontSize: 11.5, color: TEXT_SECONDARY, marginBottom: 6 }}>Buscar</div>
+            <input
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              placeholder="Código, título ou usuário..."
+              style={{ width: "100%", height: 38, padding: "0 12px", background: BG_CARD, border: `0.5px solid ${BORDER_DEFAULT}`, borderRadius: 8, color: TEXT_PRIMARY, fontSize: 13, fontFamily: "inherit", outline: "none" }}
+            />
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Results */}
-      <Card>
-        {(sector.isDirection || sector.roles.includes("admin_ti")) && (
-          <CardHeader className="pb-0">
-            <div className="flex items-center gap-2">
-              <Switch
-                id="show-archived-tickets"
-                checked={showArchived}
-                onCheckedChange={(checked) => {
-                  setShowArchived(checked);
-                  setSelectedTicketId(null);
-                }}
-              />
-              <Label htmlFor="show-archived-tickets">Consultar chamados arquivados</Label>
-            </div>
-          </CardHeader>
+          <div>
+            <div style={{ fontSize: 11.5, color: TEXT_SECONDARY, marginBottom: 6 }}>Data inicial</div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <button type="button" className={DATE_TRIGGER_CLASS}>
+                  <CalendarIcon className="h-3.5 w-3.5" />
+                  {dateFrom ? format(dateFrom, "dd/MM/yyyy") : "De"}
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar mode="single" selected={dateFrom} onSelect={setDateFrom} locale={ptBR} className="p-3 pointer-events-auto" />
+              </PopoverContent>
+            </Popover>
+          </div>
+          <div>
+            <div style={{ fontSize: 11.5, color: TEXT_SECONDARY, marginBottom: 6 }}>Data final</div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <button type="button" className={DATE_TRIGGER_CLASS}>
+                  <CalendarIcon className="h-3.5 w-3.5" />
+                  {dateTo ? format(dateTo, "dd/MM/yyyy") : "Até"}
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar mode="single" selected={dateTo} onSelect={setDateTo} locale={ptBR} className="p-3 pointer-events-auto" disabled={(date) => dateFrom ? date < dateFrom : false} />
+              </PopoverContent>
+            </Popover>
+          </div>
+          <div>
+            <div style={{ fontSize: 11.5, color: TEXT_SECONDARY, marginBottom: 6 }}>Categoria</div>
+            <Select
+              options={[{ value: "all", label: "Todas categorias" }, ...((categories ?? []).map((c) => ({ value: c.id, label: c.name })))]}
+              value={categoryId || "all"}
+              onValueChange={(v) => setCategoryId(v === "all" ? "" : v)}
+              aria-label="Filtrar por categoria"
+            />
+          </div>
+          <div>
+            <div style={{ fontSize: 11.5, color: TEXT_SECONDARY, marginBottom: 6 }}>Responsável</div>
+            <Select
+              options={[
+                { value: "all", label: "Todos responsáveis" },
+                { value: "unassigned", label: "Sem responsável" },
+                ...((staffProfiles ?? []).map((p) => ({ value: p.id, label: p.full_name || p.email || "" }))),
+              ]}
+              value={assigneeId || "all"}
+              onValueChange={(v) => setAssigneeId(v === "all" ? "" : v)}
+              aria-label="Filtrar por responsável"
+            />
+          </div>
+        </div>
+        {hasFilters && (
+          <button
+            type="button"
+            onClick={clearFilters}
+            className="flex items-center gap-1.5"
+            style={{ marginTop: 12, background: "none", border: "none", color: TEXT_MUTED, fontSize: 13, cursor: "pointer", padding: 0 }}
+          >
+            <X className="h-3 w-3" /> Limpar
+          </button>
         )}
-        <CardContent className="p-0">
-          {isLoading ? (
-            <div className="p-8 text-center text-muted-foreground">
-              Carregando chamados...
-            </div>
-          ) : filteredTickets.length === 0 ? (
-            <div className="p-8 text-center text-muted-foreground">
-              Nenhum chamado encontrado com os filtros selecionados.
-            </div>
-          ) : (
-            <>
-              <div className="px-4 py-2 border-b text-xs text-muted-foreground">
-                {filteredTickets.length} chamado{filteredTickets.length !== 1 ? "s" : ""} encontrado{filteredTickets.length !== 1 ? "s" : ""}
+      </div>
+
+      {canSeeArchivedToggle && (
+        <div className="flex items-center gap-3">
+          <span
+            onClick={() => { setShowArchived((v) => !v); setSelectedTicketId(null); }}
+            style={{ width: 38, height: 22, borderRadius: 999, background: showArchived ? GOLD : BORDER_DEFAULT, position: "relative", cursor: "pointer", transition: "background 150ms ease" }}
+          >
+            <span style={{ position: "absolute", top: 2, left: showArchived ? 18 : 2, width: 18, height: 18, borderRadius: "50%", background: TEXT_PRIMARY, transition: "left 150ms ease" }} />
+          </span>
+          <span style={{ fontSize: 13.5, fontWeight: 600, color: TEXT_PRIMARY }}>Consultar chamados arquivados</span>
+        </div>
+      )}
+      <div style={{ fontSize: 12.5, color: TEXT_SECONDARY }}>{filteredTickets.length} chamados encontrados</div>
+
+      <div className={CARD_CLASS} style={{ overflow: "hidden" }}>
+        {isLoading ? (
+          <p style={{ fontSize: 13, color: TEXT_MUTED, padding: 24 }}>Carregando chamados...</p>
+        ) : filteredTickets.length === 0 ? (
+          <p style={{ fontSize: 13, color: TEXT_MUTED, padding: 24, textAlign: "center" }}>Nenhum chamado encontrado com os filtros selecionados.</p>
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <div className="min-w-[900px]">
+              <div style={{ display: "grid", gridTemplateColumns: "70px 1fr 140px 140px 130px 100px 90px 140px", padding: "12px 18px", fontSize: 12, color: TEXT_SECONDARY, borderBottom: `0.5px solid ${BORDER_DEFAULT}` }}>
+                <div>Código</div><div>Título</div><div>Solicitante</div><div>Responsável</div><div>Categoria</div><div>Prioridade</div><div>Status</div><div>Data</div>
               </div>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[80px]">Código</TableHead>
-                    <TableHead>Título</TableHead>
-                    <TableHead>Solicitante</TableHead>
-                    <TableHead>Responsável</TableHead>
-                    <TableHead>Categoria</TableHead>
-                    <TableHead>Prioridade</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Data</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredTickets.map((ticket) => (
-                    <TableRow
-                      key={ticket.id}
-                      className="cursor-pointer"
-                      onClick={() => setSelectedTicketId(ticket.id)}
-                    >
-                      <TableCell className="font-mono font-bold">
-                        #{String(ticket.ticket_code).padStart(3, "0")}
-                      </TableCell>
-                      <TableCell className="max-w-[250px] truncate font-medium">
-                        {ticket.title}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {(ticket.requester as any)?.full_name || (ticket.requester as any)?.email || "—"}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {(ticket.assignee as any)?.full_name || (ticket.assignee as any)?.email || "—"}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {(ticket.category as any)?.name || "—"}
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={priorityColors[ticket.priority || "p3"]}>
-                          {priorityLabels[ticket.priority || "p3"]}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={statusColors[ticket.status || "new"]}>
-                          {statusLabels[ticket.status || "new"]}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                        {format(new Date(ticket.created_at!), "dd/MM/yyyy HH:mm")}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </>
-          )}
-        </CardContent>
-      </Card>
+              {filteredTickets.map((ticket) => {
+                const pr = priorityStyle[ticket.priority || "p3"];
+                const st = statusStyle[ticket.status || "new"];
+                return (
+                  <div
+                    key={ticket.id}
+                    onClick={() => setSelectedTicketId(ticket.id)}
+                    className="hover:bg-[var(--mg-color-bg-hover)] cursor-pointer"
+                    style={{ display: "grid", gridTemplateColumns: "70px 1fr 140px 140px 130px 100px 90px 140px", alignItems: "center", padding: "13px 18px", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}
+                  >
+                    <div style={{ fontSize: 13, color: TEXT_SECONDARY, fontFamily: "ui-monospace, monospace" }}>#{String(ticket.ticket_code).padStart(3, "0")}</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", paddingRight: 12 }}>{ticket.title}</div>
+                    <div style={{ fontSize: 12.5, color: TEXT_SECONDARY }}>{(ticket.requester as any)?.full_name || (ticket.requester as any)?.email || "—"}</div>
+                    <div style={{ fontSize: 12.5, color: TEXT_SECONDARY }}>{(ticket.assignee as any)?.full_name || (ticket.assignee as any)?.email || "—"}</div>
+                    <div style={{ fontSize: 12.5, color: TEXT_SECONDARY }}>{(ticket.category as any)?.name || "—"}</div>
+                    <div>
+                      <span style={{ display: "inline-flex", alignItems: "center", height: 20, padding: "0 8px", background: pr.bg, color: pr.color, fontSize: 10.5, fontWeight: 700, borderRadius: 999 }}>
+                        {priorityLabels[ticket.priority || "p3"]}
+                      </span>
+                    </div>
+                    <div>
+                      <span style={{ display: "inline-flex", alignItems: "center", height: 20, padding: "0 9px", background: st.bg, color: st.color, fontSize: 10.5, fontWeight: 700, borderRadius: 999 }}>
+                        {statusLabels[ticket.status || "new"]}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 12, color: TEXT_MUTED, whiteSpace: "nowrap" }}>{format(new Date(ticket.created_at!), "dd/MM/yyyy HH:mm")}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
 
       <TicketDetailDialog
         ticketId={selectedTicketId}
@@ -433,4 +333,3 @@ const TicketConsultation = () => {
 };
 
 export default TicketConsultation;
-
