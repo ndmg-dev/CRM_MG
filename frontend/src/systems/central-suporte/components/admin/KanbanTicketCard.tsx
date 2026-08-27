@@ -1,30 +1,26 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@suporte/components/ui/card";
-import { Badge } from "@suporte/components/ui/badge";
-import { Progress } from "@suporte/components/ui/progress";
-import { Clock, CheckCircle2, AlertTriangle, ChevronUp, ChevronDown } from "lucide-react";
+import { Badge, Avatar } from "@mg/ui";
+import { Clock, AlertTriangle, ChevronUp, ChevronDown } from "lucide-react";
 import { SlaInfo, SlaTimer, SlaUrgency } from "@suporte/hooks/useSlaStatus";
 import { Button } from "@suporte/components/ui/button";
 
-const priorityLabels: Record<string, string> = { p0: "Crítico", p1: "Alta", p2: "Média", p3: "Baixa" };
-const priorityColors: Record<string, string> = {
-  p0: "bg-red-600/30 text-red-300 border-red-500/50 animate-pulse",
-  p1: "bg-red-500/20 text-red-400",
-  p2: "bg-yellow-500/20 text-yellow-400",
-  p3: "bg-green-500/20 text-green-400",
-};
+// Tokens — ver frontend/packages/@mg/tokens/build/tokens.css (importado
+// globalmente em main.tsx). Handoff: Painel de Chamados.dc.html.
+const GOLD = "var(--mg-color-gold-base)";
+const TEXT_PRIMARY = "var(--mg-color-text-primary)";
+const TEXT_SECONDARY = "var(--mg-color-text-secondary)";
+const TEXT_MUTED = "var(--mg-color-text-muted)";
+const BORDER_DEFAULT = "var(--mg-color-border-default)";
+const BORDER_STRONG = "var(--mg-color-border-strong)";
+const BG_CARD = "var(--mg-color-bg-card)";
+const ERROR = "var(--mg-color-status-error)";
 
-const slaProgressColors: Record<SlaUrgency, string> = {
-  ok: "[&>div]:bg-green-500",
-  warning: "[&>div]:bg-yellow-500",
-  critical: "[&>div]:bg-orange-500",
-  breached: "[&>div]:bg-red-500",
-};
-
-const urgencyTextColors: Record<SlaUrgency, string> = {
-  ok: "text-muted-foreground",
-  warning: "text-yellow-400",
-  critical: "text-orange-400",
-  breached: "text-red-400",
+const priorityLabels: Record<string, string> = { p0: "Crítica", p1: "Alta", p2: "Média", p3: "Baixa" };
+// Mapeia p0/p1 -> erro (vermelho), p2 -> aviso, p3 -> sucesso — o handoff
+// só previa 3 níveis (Alta/Média/Baixa); p0 (crítico) herda a cor de Alta
+// mas mantém o pulso extra que já existia.
+const priorityVariant: Record<string, "err" | "warn" | "ok"> = { p0: "err", p1: "err", p2: "warn", p3: "ok" };
+const priorityBorderColor: Record<string, string> = {
+  p0: ERROR, p1: ERROR, p2: "var(--mg-color-status-warning)", p3: "var(--mg-color-status-success)",
 };
 
 interface KanbanTicketCardProps {
@@ -42,19 +38,16 @@ interface KanbanTicketCardProps {
 }
 
 function DeadlineDisplay({ timer }: { timer: SlaTimer }) {
+  const barColor = timer.urgency === "breached" || timer.urgency === "critical" ? ERROR : GOLD;
   return (
-    <div className="space-y-1">
-      <div className="flex items-center justify-between text-[10px]">
-        <span className={`flex items-center gap-1 font-medium ${urgencyTextColors[timer.urgency]}`}>
-          <Clock className="h-3 w-3" />
-          <span className="text-muted-foreground/70">Prazo:</span> {timer.label}
-        </span>
-        <span className="text-muted-foreground">{Math.round(timer.percentUsed)}%</span>
+    <div style={{ marginBottom: 10 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5, color: barColor, marginBottom: 5 }}>
+        <span>Prazo: {timer.label}</span>
+        <span style={{ fontWeight: 600 }}>{Math.round(timer.percentUsed)}%</span>
       </div>
-      <Progress
-        value={Math.min(100, timer.percentUsed)}
-        className={`h-1 ${slaProgressColors[timer.urgency]}`}
-      />
+      <div style={{ height: 4, background: BORDER_DEFAULT, borderRadius: 999, overflow: "hidden" }}>
+        <div style={{ height: "100%", width: `${Math.min(100, timer.percentUsed)}%`, background: barColor, borderRadius: 999 }} />
+      </div>
     </div>
   );
 }
@@ -62,7 +55,6 @@ function DeadlineDisplay({ timer }: { timer: SlaTimer }) {
 export const KanbanTicketCard = ({
   ticket,
   columnId,
-  borderColor,
   isDragging,
   slaInfo,
   unreadComments,
@@ -73,101 +65,126 @@ export const KanbanTicketCard = ({
   canMoveDown,
 }: KanbanTicketCardProps) => {
   const isResolved = columnId === "resolved";
+  const priority = ticket.priority || "p3";
+  const dueSource = ticket.due_date || ticket.created_at;
+  const isOverdue = !isResolved && !!ticket.due_date && new Date(ticket.due_date) < new Date();
 
   const urgency = slaInfo?.deadline?.urgency ?? null;
-  const slaBorderMap: Record<SlaUrgency, string> = {
-    ok: "",
-    warning: "ring-1 ring-yellow-500/40",
-    critical: "ring-2 ring-orange-500/60",
-    breached: "ring-2 ring-red-500/80 shadow-red-500/20 shadow-lg",
+  const slaRing: Record<SlaUrgency, string> = {
+    ok: "none",
+    warning: `1px solid rgba(245,158,11,0.4)`,
+    critical: `2px solid rgba(245,158,11,0.6)`,
+    breached: `2px solid rgba(239,68,68,0.8)`,
   };
-  const slaUrgencyBorder = !isResolved && urgency ? slaBorderMap[urgency] : "";
+  const outline = !isResolved && urgency ? slaRing[urgency] : "none";
 
   return (
-    // min-w-0 (evita o card crescer pra caber o texto) + overflow-hidden no
-    // Card (trava qualquer vazamento visual na borda, mesmo que o cálculo
-    // interno de min-width do flexbox não seja suficiente sozinho) — a
-    // linha "Aberto por: X · Para: Y" é bem mais longa que só um nome e
-    // estourava pra cima da coluna vizinha em vez de truncar.
-    <div onClick={onClick} className="min-w-0">
-      <Card
-        className={`cursor-pointer transition-all h-[180px] flex flex-col min-w-0 overflow-hidden ${borderColor ? `border-l-4 ${borderColor}` : ""} ${isDragging ? "shadow-lg ring-2 ring-primary/30 rotate-2" : "hover:border-primary/50"} ${isResolved ? "opacity-75 hover:opacity-100" : ""} ${slaUrgencyBorder}`}
+    <div onClick={onClick} style={{ minWidth: 0, cursor: "pointer" }}>
+      <div
+        style={{
+          background: BG_CARD,
+          border: `0.5px solid ${BORDER_DEFAULT}`,
+          borderLeft: `3px solid ${isResolved ? BORDER_STRONG : priorityBorderColor[priority]}`,
+          borderRadius: 10,
+          padding: "14px 14px 14px 12px",
+          height: 180,
+          display: "flex",
+          flexDirection: "column",
+          minWidth: 0,
+          overflow: "hidden",
+          outline,
+          outlineOffset: outline !== "none" ? -1 : undefined,
+          boxShadow: isDragging ? "0 12px 28px rgba(0,0,0,0.4)" : undefined,
+          opacity: isResolved ? 0.85 : 1,
+          transition: "border-color 120ms ease",
+        }}
       >
-        <CardHeader className="p-3 pb-1 flex-none min-w-0">
-          <div className="flex justify-between items-start">
-            <Badge variant="outline" className="text-xs">
-              {String(ticket.ticket_code).padStart(3, "0")}
-            </Badge>
-            {isResolved ? (
-              <CheckCircle2 className="h-4 w-4 text-green-500" />
-            ) : (
-              <Badge className={`text-[10px] ${priorityColors[ticket.priority || "p3"]}`}>
-                {ticket.priority === "p0" && <AlertTriangle className="h-3 w-3 mr-1" />}
-                {priorityLabels[ticket.priority || "p3"]}
-              </Badge>
-            )}
-          </div>
-          <CardTitle className={`text-sm mt-1 line-clamp-1 ${isResolved ? "line-through text-muted-foreground" : ""}`}>
-            {ticket.title}
-          </CardTitle>
-          {/* Card mostra só o nome de pra quem é (requester) — mesmo linha
-              única de sempre, mesmo quando alguém abriu em nome de outra
-              pessoa. O "Aberto por: X · Para: Y" completo fica só no modal
-              de detalhes, que tem espaço de sobra; no card, a linha dupla
-              estourava a coluna vizinha (card tem altura/largura fixas). */}
-          <span className="text-[11px] text-muted-foreground truncate block">
+        <div className="flex justify-between items-center" style={{ marginBottom: 8, flexShrink: 0 }}>
+          <span style={{ fontFamily: "ui-monospace, monospace", fontSize: 11, color: TEXT_MUTED }}>
+            #{String(ticket.ticket_code).padStart(3, "0")}
+          </span>
+          {!isResolved && (
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+              {priority === "p0" && <AlertTriangle className="h-3 w-3 animate-pulse" style={{ color: ERROR }} />}
+              <Badge variant={priorityVariant[priority]}>{priorityLabels[priority]}</Badge>
+            </span>
+          )}
+        </div>
+
+        <div
+          style={{
+            fontSize: 13.5,
+            fontWeight: 600,
+            lineHeight: 1.35,
+            marginBottom: 8,
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+            textDecoration: isResolved ? "line-through" : "none",
+            color: isResolved ? TEXT_MUTED : TEXT_PRIMARY,
+          }}
+        >
+          {ticket.title}
+        </div>
+
+        {/* Card mostra só o nome de pra quem é (requester) — mesmo quando
+            alguém abriu em nome de outra pessoa. O "Aberto por: X · Para: Y"
+            completo fica só no modal de detalhes, que tem espaço de sobra. */}
+        <div className="flex items-center gap-1.5" style={{ marginBottom: 10 }}>
+          <Avatar name={ticket.requester?.full_name || "?"} size="sm" />
+          <span style={{ fontSize: 12, color: TEXT_SECONDARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {ticket.requester?.full_name || "Solicitante não informado"}
           </span>
-        </CardHeader>
-        <CardContent className="p-3 pt-0 flex-1 flex flex-col justify-end">
-          {slaInfo?.deadline && !isResolved && (
-            <div className="mb-1">
-              <DeadlineDisplay timer={slaInfo.deadline} />
-            </div>
-          )}
+        </div>
 
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <Clock className="h-3 w-3" /> {new Date(ticket.created_at!).toLocaleDateString()}
-            </span>
-            <div className="flex items-center gap-1">
-              {(canMoveUp || canMoveDown) && (
-                <div className="flex flex-col">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-5 w-5"
-                    disabled={!canMoveUp}
-                    onClick={(e) => { e.stopPropagation(); onMoveUp?.(); }}
-                  >
-                    <ChevronUp className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-5 w-5"
-                    disabled={!canMoveDown}
-                    onClick={(e) => { e.stopPropagation(); onMoveDown?.(); }}
-                  >
-                    <ChevronDown className="h-3 w-3" />
-                  </Button>
-                </div>
-              )}
-              {!!unreadComments && (
-                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white animate-pulse">
-                  {unreadComments > 9 ? "9+" : unreadComments}
-                </span>
-              )}
-              {ticket.assignee?.full_name && (
-                <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center text-[10px] text-primary font-bold">
-                  {ticket.assignee.full_name.charAt(0)}
-                </div>
-              )}
-            </div>
+        <div style={{ flex: 1 }} />
+
+        {slaInfo?.deadline && !isResolved && <DeadlineDisplay timer={slaInfo.deadline} />}
+
+        <div className="flex items-center justify-between" style={{ flexShrink: 0 }}>
+          <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11.5, color: isOverdue ? ERROR : TEXT_MUTED }}>
+            <Clock className="h-3 w-3" />
+            {dueSource ? new Date(dueSource).toLocaleDateString() : "—"}
+            {isOverdue && <span style={{ fontWeight: 700, marginLeft: 2 }}>· atrasado</span>}
+          </span>
+          <div className="flex items-center gap-1">
+            {(canMoveUp || canMoveDown) && (
+              <div className="flex flex-col">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5"
+                  disabled={!canMoveUp}
+                  onClick={(e) => { e.stopPropagation(); onMoveUp?.(); }}
+                >
+                  <ChevronUp className="h-3 w-3" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5"
+                  disabled={!canMoveDown}
+                  onClick={(e) => { e.stopPropagation(); onMoveDown?.(); }}
+                >
+                  <ChevronDown className="h-3 w-3" />
+                </Button>
+              </div>
+            )}
+            {!!unreadComments && (
+              <span
+                style={{
+                  display: "flex", height: 20, minWidth: 20, alignItems: "center", justifyContent: "center",
+                  borderRadius: 999, background: ERROR, padding: "0 4px", fontSize: 10, fontWeight: 700, color: "#fff",
+                }}
+                className="animate-pulse"
+              >
+                {unreadComments > 9 ? "9+" : unreadComments}
+              </span>
+            )}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };
-

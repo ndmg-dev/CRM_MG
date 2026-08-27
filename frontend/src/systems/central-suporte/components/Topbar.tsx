@@ -199,7 +199,7 @@ export function Topbar() {
           <div className="relative">
             <button
               type="button"
-              className={itemClasses(openTicketActive)}
+              className={itemClasses(openTicketActive || openDropdown === "open-ticket")}
               aria-haspopup="true"
               aria-expanded={openDropdown === "open-ticket"}
               onClick={() =>
@@ -237,7 +237,7 @@ export function Topbar() {
             <div className="relative">
               <button
                 type="button"
-                className={itemClasses(managementActive)}
+                className={itemClasses(managementActive || openDropdown === "management")}
                 aria-haspopup="true"
                 aria-expanded={openDropdown === "management"}
                 onClick={() =>

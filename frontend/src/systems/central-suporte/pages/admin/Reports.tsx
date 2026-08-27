@@ -1,20 +1,55 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@suporte/components/ui/card";
-import { Badge } from "@suporte/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@suporte/components/ui/select";
+import { Select, Badge, Avatar } from "@mg/ui";
 import { BarChart3, TrendingUp, Clock, CheckCircle2, AlertTriangle, Users, Timer, CalendarIcon } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@suporte/integrations/supabase/client";
 import { useMemo, useState } from "react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, CartesianGrid } from "recharts";
+import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LabelList } from "recharts";
 import { format, subDays, addDays, isAfter, isBefore, startOfDay, endOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useUserSector } from "@suporte/hooks/useUserSector";
-import { Button } from "@suporte/components/ui/button";
 import { Calendar } from "@suporte/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@suporte/components/ui/popover";
 import { cn } from "@suporte/lib/utils";
 
-const COLORS = ["hsl(45,93%,47%)", "hsl(200,80%,50%)", "hsl(140,60%,45%)", "hsl(0,62%,50%)", "hsl(270,60%,55%)", "hsl(30,80%,55%)"];
+// Tokens de @mg/tokens (frontend/packages/@mg/tokens/build/tokens.css,
+// importado globalmente em main.tsx) — nunca hardcodar hex aqui, sempre
+// referenciar a variável CSS pra acompanhar o design system automaticamente.
+const GOLD = "var(--mg-color-gold-base)";
+const SUCCESS = "var(--mg-color-status-success)";
+const WARNING = "var(--mg-color-status-warning)";
+const ERROR = "var(--mg-color-status-error)";
+const INFO = "var(--mg-color-status-info)";
+const ACCENT_PURPLE = "var(--mg-color-accent-purple)";
+const ACCENT_CYAN = "var(--mg-color-accent-cyan)";
+const ACCENT_PINK = "var(--mg-color-accent-pink)";
+const TEXT_PRIMARY = "var(--mg-color-text-primary)";
+const TEXT_MUTED = "var(--mg-color-text-muted)";
+const BORDER_DEFAULT = "var(--mg-color-border-default)";
+const BG_CARD = "var(--mg-color-bg-card)";
+
+// Cor por status do chamado no donut — os 3 status do handoff original
+// (Fechado=dourado, Parado=success, Pendente=info) mais os demais valores
+// possíveis que a tabela real pode ter e o protótipo não previa.
+const STATUS_COLORS: Record<string, string> = {
+  resolved: GOLD,
+  closed: GOLD,
+  parado: SUCCESS,
+  pending: INFO,
+  new: ACCENT_PURPLE,
+  open: ACCENT_PURPLE,
+  testing: ACCENT_CYAN,
+  canceled: ACCENT_PINK,
+};
+
+const CARD_CLASS = "bg-[var(--mg-color-bg-card)] border border-[var(--mg-color-border-default)] rounded-xl";
+const DATE_TRIGGER_CLASS =
+  "flex items-center gap-2 h-9 px-3.5 rounded-[10px] text-[13px] bg-[var(--mg-color-bg-surface)] border border-[var(--mg-color-border-default)] text-[var(--mg-color-text-secondary)] hover:border-[var(--mg-color-border-strong)] transition-colors";
+
+const PERIOD_OPTIONS = [
+  { value: "7", label: "Últimos 7 dias" },
+  { value: "30", label: "Últimos 30 dias" },
+  { value: "90", label: "Últimos 90 dias" },
+];
 
 const Reports = () => {
   const [period, setPeriod] = useState("30");
@@ -43,6 +78,11 @@ const Reports = () => {
   }, [sector, selectedSector]);
 
   const canFilterSector = sector.isDirection;
+
+  const sectorOptions = useMemo(
+    () => [{ value: "all", label: "Todos os setores" }, ...((sectors ?? []).map((s) => ({ value: s.id, label: s.name })))],
+    [sectors]
+  );
 
   const { data: tickets, isLoading } = useQuery({
     queryKey: ["report-tickets", effectiveSectorId],
@@ -144,7 +184,7 @@ const Reports = () => {
     return { total, resolved, open };
   }, [filteredTickets]);
 
-  // Status distribution for pie chart
+  // Status distribution for donut chart
   const statusData = useMemo(() => {
     const counts: Record<string, number> = {};
     const labels: Record<string, string> = {
@@ -155,10 +195,12 @@ const Reports = () => {
       const s = t.status || "new";
       counts[s] = (counts[s] || 0) + 1;
     });
-    return Object.entries(counts).map(([key, value]) => ({
-      name: labels[key] || key, value,
-    }));
+    return Object.entries(counts)
+      .map(([key, value]) => ({ key, name: labels[key] || key, value, color: STATUS_COLORS[key] || TEXT_MUTED }))
+      .sort((a, b) => b.value - a.value);
   }, [filteredTickets]);
+
+  const statusTotal = statusData.reduce((sum, s) => sum + s.value, 0);
 
   // Category distribution for bar chart
   const categoryData = useMemo(() => {
@@ -172,7 +214,7 @@ const Reports = () => {
       .sort((a, b) => b.count - a.count);
   }, [filteredTickets]);
 
-  // Daily volume for line chart — os "baldes" de dias precisam cobrir o
+  // Daily volume for area chart — os "baldes" de dias precisam cobrir o
   // MESMO intervalo usado pra filtrar os chamados (dateFrom/dateTo, se
   // definidos; senão o dropdown de período). Antes, o gráfico sempre usava
   // o dropdown de período pra montar os dias, mesmo com uma data customizada
@@ -225,297 +267,255 @@ const Reports = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Carregando relatórios...</p>
+        <p style={{ color: TEXT_MUTED }}>Carregando relatórios...</p>
       </div>
     );
   }
 
+  const kpis: { label: string; value: string | number; color: string; icon: React.ReactNode }[] = [
+    { label: "Total", value: stats.total, color: TEXT_PRIMARY, icon: <BarChart3 className="h-3.5 w-3.5" /> },
+    { label: "Em Aberto", value: stats.open, color: WARNING, icon: <AlertTriangle className="h-3.5 w-3.5" /> },
+    { label: "Resolvidos", value: stats.resolved, color: SUCCESS, icon: <CheckCircle2 className="h-3.5 w-3.5" /> },
+    { label: "TM Resposta", value: metrics?.avg_response_hours ? `${metrics.avg_response_hours}h` : "—", color: INFO, icon: <Timer className="h-3.5 w-3.5" /> },
+    { label: "TM Resolução", value: metrics?.avg_resolution_hours ? `${metrics.avg_resolution_hours}h` : "—", color: TEXT_PRIMARY, icon: <Clock className="h-3.5 w-3.5" /> },
+    { label: "Atrasados", value: overdueCount, color: overdueCount > 0 ? ERROR : TEXT_MUTED, icon: <AlertTriangle className="h-3.5 w-3.5" /> },
+  ];
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
+    <div style={{ fontFamily: "var(--mg-font-family-base)" }} className="space-y-5">
+      {/* Header */}
+      <div className="flex items-end justify-between flex-wrap gap-5">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Relatórios</h2>
-          <p className="text-muted-foreground">
+          <h1 style={{ color: TEXT_PRIMARY, fontSize: 28, fontWeight: 700, letterSpacing: "-0.02em", margin: 0 }}>Relatórios</h1>
+          <p style={{ color: TEXT_MUTED, fontSize: 14, margin: "6px 0 0" }}>
             Métricas e indicadores de desempenho
-            {!canFilterSector && sector.sectorName && (
-              <span className="ml-1">— {sector.sectorName}</span>
-            )}
+            {!canFilterSector && sector.sectorName && <span> — {sector.sectorName}</span>}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2 items-center">
+        <div className="flex flex-wrap items-center gap-2.5">
           {canFilterSector && (
-            <Select value={selectedSector} onValueChange={setSelectedSector}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Todos os setores" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os setores</SelectItem>
-                {sectors?.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Select
+              options={sectorOptions}
+              value={selectedSector}
+              onValueChange={setSelectedSector}
+              aria-label="Filtrar por setor"
+            />
           )}
-          <Select value={period} onValueChange={(v) => { setPeriod(v); setDateFrom(undefined); setDateTo(undefined); }}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7">Últimos 7 dias</SelectItem>
-              <SelectItem value="30">Últimos 30 dias</SelectItem>
-              <SelectItem value="90">Últimos 90 dias</SelectItem>
-            </SelectContent>
-          </Select>
+          <Select
+            options={PERIOD_OPTIONS}
+            value={period}
+            onValueChange={(v) => { setPeriod(v); setDateFrom(undefined); setDateTo(undefined); }}
+            aria-label="Filtrar por período"
+          />
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" className={cn("w-[140px] justify-start text-left font-normal", !dateFrom && "text-muted-foreground")}>
-                <CalendarIcon className="mr-2 h-4 w-4" />
+              <button type="button" className={cn(DATE_TRIGGER_CLASS, !dateFrom && "opacity-80")}>
+                <CalendarIcon className="h-3.5 w-3.5" />
                 {dateFrom ? format(dateFrom, "dd/MM/yyyy") : "Data início"}
-              </Button>
+              </button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
-              <Calendar mode="single" selected={dateFrom} onSelect={(d) => { setDateFrom(d); }} locale={ptBR} initialFocus className="p-3 pointer-events-auto" />
+              <Calendar mode="single" selected={dateFrom} onSelect={(d) => setDateFrom(d)} locale={ptBR} initialFocus className="p-3 pointer-events-auto" />
             </PopoverContent>
           </Popover>
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" className={cn("w-[140px] justify-start text-left font-normal", !dateTo && "text-muted-foreground")}>
-                <CalendarIcon className="mr-2 h-4 w-4" />
+              <button type="button" className={cn(DATE_TRIGGER_CLASS, !dateTo && "opacity-80")}>
+                <CalendarIcon className="h-3.5 w-3.5" />
                 {dateTo ? format(dateTo, "dd/MM/yyyy") : "Data fim"}
-              </Button>
+              </button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
-              <Calendar mode="single" selected={dateTo} onSelect={(d) => { setDateTo(d); }} locale={ptBR} initialFocus className="p-3 pointer-events-auto" disabled={(date) => dateFrom ? isBefore(date, dateFrom) : false} />
+              <Calendar mode="single" selected={dateTo} onSelect={(d) => setDateTo(d)} locale={ptBR} initialFocus className="p-3 pointer-events-auto" disabled={(date) => dateFrom ? isBefore(date, dateFrom) : false} />
             </PopoverContent>
           </Popover>
           {(dateFrom || dateTo) && (
-            <Button variant="ghost" size="sm" onClick={() => { setDateFrom(undefined); setDateTo(undefined); }}>
+            <button
+              type="button"
+              onClick={() => { setDateFrom(undefined); setDateTo(undefined); }}
+              style={{ color: TEXT_MUTED, fontSize: 13 }}
+              className="hover:underline"
+            >
               Limpar datas
-            </Button>
+            </button>
           )}
         </div>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total</CardTitle>
-            <BarChart3 className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Em Aberto</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-orange-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-400">{stats.open}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Resolvidos</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-green-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-400">{stats.resolved}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">TM Resposta</CardTitle>
-            <Timer className="h-4 w-4 text-blue-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-400">
-              {metrics?.avg_response_hours ? `${metrics.avg_response_hours}h` : "—"}
+      <div className="grid gap-3.5" style={{ gridTemplateColumns: "repeat(6, 1fr)" }}>
+        {kpis.map((k) => (
+          <div key={k.label} className={CARD_CLASS} style={{ padding: 18, minWidth: 0 }}>
+            <div className="flex items-center justify-between" style={{ marginBottom: 14 }}>
+              <span style={{ fontSize: 12.5, color: TEXT_MUTED, fontWeight: 500 }}>{k.label}</span>
+              <span style={{ color: k.color, display: "flex" }}>{k.icon}</span>
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">TM Resolução</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {metrics?.avg_resolution_hours ? `${metrics.avg_resolution_hours}h` : "—"}
-            </div>
-          </CardContent>
-        </Card>
-        <Card className={overdueCount > 0 ? "border-destructive/50 bg-destructive/5" : ""}>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Atrasados</CardTitle>
-            <AlertTriangle className={`h-4 w-4 ${overdueCount > 0 ? "text-destructive animate-pulse" : "text-muted-foreground"}`} />
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${overdueCount > 0 ? "text-destructive" : ""}`}>
-              {overdueCount}
-            </div>
-          </CardContent>
-        </Card>
+            <div style={{ fontSize: 26, fontWeight: 700, color: k.color, letterSpacing: "-0.01em" }}>{k.value}</div>
+          </div>
+        ))}
       </div>
 
-      {/* Charts Row */}
-      <div className="grid gap-4 md:grid-cols-2">
+      {/* Charts Row 1 */}
+      <div className="grid gap-3.5" style={{ gridTemplateColumns: "1.6fr 1fr" }}>
         {/* Daily Volume */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-primary" /> Volume Diário
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={dailyData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(0,0%,20%)" />
-                <XAxis dataKey="date" fontSize={11} stroke="hsl(0,0%,65%)" />
-                <YAxis fontSize={11} stroke="hsl(0,0%,65%)" allowDecimals={false} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: "hsl(0,0%,5%)", border: "1px solid hsl(0,0%,20%)", borderRadius: "8px" }}
-                  labelStyle={{ color: "hsl(0,0%,95%)" }}
-                />
-                <Line type="monotone" dataKey="chamados" stroke="hsl(45,93%,47%)" strokeWidth={2} dot={false} />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        <div className={CARD_CLASS} style={{ padding: 22 }}>
+          <div className="flex items-center gap-2" style={{ marginBottom: 18 }}>
+            <TrendingUp className="h-3.5 w-3.5" style={{ color: GOLD }} />
+            <span style={{ fontSize: 14.5, fontWeight: 600, color: TEXT_PRIMARY }}>Volume Diário</span>
+          </div>
+          <ResponsiveContainer width="100%" height={250}>
+            <AreaChart data={dailyData}>
+              <defs>
+                <linearGradient id="dailyVolumeGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={GOLD} stopOpacity={0.28} />
+                  <stop offset="100%" stopColor={GOLD} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <XAxis dataKey="date" fontSize={10.5} stroke={TEXT_MUTED} tickLine={false} axisLine={false} interval="preserveStartEnd" />
+              <YAxis fontSize={10.5} stroke={TEXT_MUTED} tickLine={false} axisLine={false} allowDecimals={false} width={28} />
+              <Tooltip
+                contentStyle={{ backgroundColor: BG_CARD, border: `0.5px solid ${BORDER_DEFAULT}`, borderRadius: 8, fontSize: 12.5 }}
+                labelStyle={{ color: TEXT_PRIMARY }}
+              />
+              <Area type="monotone" dataKey="chamados" stroke={GOLD} strokeWidth={2.2} fill="url(#dailyVolumeGradient)" dot={false} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
 
         {/* Status Distribution */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Distribuição por Status</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {statusData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={250}>
-                <PieChart>
-                  <Pie
-                    data={statusData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={90}
-                    dataKey="value"
-                    label={({ name, value }) => `${name}: ${value}`}
-                    labelLine={false}
-                  >
-                    {statusData.map((_, i) => (
-                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex items-center justify-center h-[250px] text-muted-foreground">
-                Sem dados no período
+        <div className={CARD_CLASS} style={{ padding: 22, display: "flex", flexDirection: "column" }}>
+          <div style={{ fontSize: 14.5, fontWeight: 600, marginBottom: 18, color: TEXT_PRIMARY }}>Distribuição por Status</div>
+          {statusData.length > 0 ? (
+            <div className="flex items-center gap-7 flex-1">
+              <div style={{ position: "relative", width: 150, height: 150, flexShrink: 0 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={statusData} cx="50%" cy="50%" innerRadius={52} outerRadius={75} dataKey="value" stroke="none">
+                      {statusData.map((s) => (
+                        <Cell key={s.key} fill={s.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{ backgroundColor: BG_CARD, border: `0.5px solid ${BORDER_DEFAULT}`, borderRadius: 8, fontSize: 12.5 }}
+                      labelStyle={{ color: TEXT_PRIMARY }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div
+                  style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}
+                >
+                  <span style={{ fontSize: 22, fontWeight: 700, color: TEXT_PRIMARY }}>{statusTotal}</span>
+                  <span style={{ fontSize: 10.5, color: TEXT_MUTED }}>total</span>
+                </div>
               </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Category Distribution */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Chamados por Categoria</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {categoryData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={categoryData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(0,0%,20%)" />
-                  <XAxis dataKey="name" fontSize={11} stroke="hsl(0,0%,65%)" />
-                  <YAxis fontSize={11} stroke="hsl(0,0%,65%)" allowDecimals={false} />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: "hsl(0,0%,5%)", border: "1px solid hsl(0,0%,20%)", borderRadius: "8px" }}
-                    labelStyle={{ color: "hsl(0,0%,95%)" }}
-                  />
-                  <Bar dataKey="count" fill="hsl(45,93%,47%)" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex items-center justify-center h-[250px] text-muted-foreground">
-                Sem dados no período
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Top Agents */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Users className="h-4 w-4 text-primary" /> Top Agentes
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {agentData.length > 0 ? (
-              <div className="space-y-4">
-                {agentData.map((agent, i) => (
-                  <div key={i} className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
-                        {agent.name.charAt(0)}
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium">{agent.name}</p>
-                        <p className="text-xs text-muted-foreground">{agent.total} chamados atribuídos</p>
-                      </div>
+              <div className="flex flex-col gap-3.5 flex-1">
+                {statusData.map((s) => (
+                  <div key={s.key} className="flex items-center justify-between gap-2.5">
+                    <div className="flex items-center gap-2">
+                      <span style={{ width: 9, height: 9, borderRadius: 3, background: s.color, flexShrink: 0 }} />
+                      <span style={{ fontSize: 13.5, color: TEXT_PRIMARY }}>{s.name}</span>
                     </div>
-                    <Badge variant="outline" className="text-green-400 border-green-500/30">
-                      {agent.resolved} resolvidos
-                    </Badge>
+                    <span style={{ fontSize: 13.5, fontWeight: 600, color: TEXT_PRIMARY }}>{s.value}</span>
                   </div>
                 ))}
               </div>
-            ) : (
-              <div className="flex items-center justify-center h-[200px] text-muted-foreground">
-                Nenhum agente com chamados no período
-              </div>
-            )}
-          </CardContent>
-        </Card>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-[250px]" style={{ color: TEXT_MUTED }}>
+              Sem dados no período
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Charts Row 2 */}
+      <div className="grid gap-3.5" style={{ gridTemplateColumns: "1.6fr 1fr" }}>
+        {/* Category Distribution */}
+        <div className={CARD_CLASS} style={{ padding: 22 }}>
+          <div style={{ fontSize: 14.5, fontWeight: 600, marginBottom: 18, color: TEXT_PRIMARY }}>Chamados por Categoria</div>
+          {categoryData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={categoryData} margin={{ top: 20, right: 0, left: 0, bottom: 0 }}>
+                <XAxis dataKey="name" fontSize={10.5} stroke={TEXT_MUTED} tickLine={false} axisLine={false} interval={0} angle={-15} textAnchor="end" height={40} />
+                <YAxis fontSize={10.5} stroke={TEXT_MUTED} tickLine={false} axisLine={false} allowDecimals={false} width={28} />
+                <Tooltip
+                  contentStyle={{ backgroundColor: BG_CARD, border: `0.5px solid ${BORDER_DEFAULT}`, borderRadius: 8, fontSize: 12.5 }}
+                  labelStyle={{ color: TEXT_PRIMARY }}
+                  cursor={{ fill: "var(--mg-color-bg-hover)" }}
+                />
+                <Bar dataKey="count" fill={GOLD} radius={[4, 4, 0, 0]}>
+                  <LabelList dataKey="count" position="top" fill={TEXT_MUTED} fontSize={11} />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex items-center justify-center h-[250px]" style={{ color: TEXT_MUTED }}>
+              Sem dados no período
+            </div>
+          )}
+        </div>
+
+        {/* Top Agents */}
+        <div className={CARD_CLASS} style={{ padding: 22 }}>
+          <div className="flex items-center gap-2" style={{ marginBottom: 16 }}>
+            <Users className="h-3.5 w-3.5" style={{ color: GOLD }} />
+            <span style={{ fontSize: 14.5, fontWeight: 600, color: TEXT_PRIMARY }}>Top Agentes</span>
+          </div>
+          {agentData.length > 0 ? (
+            <div className="flex flex-col">
+              {agentData.map((agent, i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-3"
+                  style={{ padding: "10px 0", borderBottom: i < agentData.length - 1 ? `1px solid ${BORDER_DEFAULT}` : "none" }}
+                >
+                  <Avatar name={agent.name} size="md" />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13.5, fontWeight: 600, color: TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{agent.name}</div>
+                    <div style={{ fontSize: 12, color: TEXT_MUTED }}>{agent.total} chamados atribuídos</div>
+                  </div>
+                  <Badge variant="ok">{agent.resolved} resolvidos</Badge>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-[200px]" style={{ color: TEXT_MUTED }}>
+              Nenhum agente com chamados no período
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Incidents Summary */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-red-400" /> Resumo de Incidentes
-          </CardTitle>
-          <p className="text-xs text-muted-foreground">
-            Filtrado pelo mesmo período acima{canFilterSector ? " — sem filtro de setor (incidentes não têm setor cadastrado)" : ""}
-          </p>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="text-center p-4 rounded-lg border border-border">
-              <p className="text-2xl font-bold">{filteredIncidents.length}</p>
-              <p className="text-xs text-muted-foreground mt-1">Total de Incidentes</p>
-            </div>
-            <div className="text-center p-4 rounded-lg border border-red-500/20">
-              <p className="text-2xl font-bold text-red-400">
-                {filteredIncidents.filter((i) => !["resolved", "closed"].includes(i.status || "")).length}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">Ativos</p>
-            </div>
-            <div className="text-center p-4 rounded-lg border border-green-500/20">
-              <p className="text-2xl font-bold text-green-400">
-                {filteredIncidents.filter((i) => ["resolved", "closed"].includes(i.status || "")).length}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">Resolvidos</p>
-            </div>
+      <div className={CARD_CLASS} style={{ padding: 22 }}>
+        <div className="flex items-center gap-2" style={{ marginBottom: 4 }}>
+          <AlertTriangle className="h-3.5 w-3.5" style={{ color: ERROR }} />
+          <span style={{ fontSize: 14.5, fontWeight: 600, color: TEXT_PRIMARY }}>Resumo de Incidentes</span>
+        </div>
+        <p style={{ fontSize: 11.5, color: TEXT_MUTED, margin: "0 0 18px" }}>
+          Filtrado pelo mesmo período acima{canFilterSector ? " — sem filtro de setor (incidentes não têm setor cadastrado)" : ""}
+        </p>
+        <div className="grid gap-3.5" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
+          <div style={{ background: "var(--mg-color-bg-surface)", border: `1px solid ${BORDER_DEFAULT}`, borderRadius: "var(--mg-radius-md)", padding: 20, textAlign: "center" }}>
+            <div style={{ fontSize: 26, fontWeight: 700, color: TEXT_PRIMARY }}>{filteredIncidents.length}</div>
+            <div style={{ fontSize: 12.5, color: TEXT_MUTED, marginTop: 6 }}>Total de Incidentes</div>
           </div>
-        </CardContent>
-      </Card>
+          <div style={{ background: "var(--mg-color-bg-surface)", border: `1px solid ${BORDER_DEFAULT}`, borderRadius: "var(--mg-radius-md)", padding: 20, textAlign: "center" }}>
+            <div style={{ fontSize: 26, fontWeight: 700, color: ERROR }}>
+              {filteredIncidents.filter((i) => !["resolved", "closed"].includes(i.status || "")).length}
+            </div>
+            <div style={{ fontSize: 12.5, color: TEXT_MUTED, marginTop: 6 }}>Ativos</div>
+          </div>
+          <div style={{ background: "var(--mg-color-bg-surface)", border: `1px solid ${BORDER_DEFAULT}`, borderRadius: "var(--mg-radius-md)", padding: 20, textAlign: "center" }}>
+            <div style={{ fontSize: 26, fontWeight: 700, color: SUCCESS }}>
+              {filteredIncidents.filter((i) => ["resolved", "closed"].includes(i.status || "")).length}
+            </div>
+            <div style={{ fontSize: 12.5, color: TEXT_MUTED, marginTop: 6 }}>Resolvidos</div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
 
 export default Reports;
-

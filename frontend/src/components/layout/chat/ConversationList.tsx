@@ -18,16 +18,15 @@ interface ConversationRow {
   category: TicketCategory
 }
 
-/** As três primeiras categorias têm aba própria; as demais só existem
- * dentro do dropdown "Outros". */
-const MAIN_TABS: { key: TicketCategory; label: string }[] = [
-  { key: 'todo', label: 'A fazer' },
-  { key: 'in_progress', label: 'Em Andamento' },
-]
-const OTHER_OPTIONS: { key: TicketCategory; label: string }[] = [
-  { key: 'closed', label: 'Encerrados' },
-  { key: 'testing', label: 'Em teste' },
+/** "Abertos" agrupa novo + em andamento (o que ainda precisa de alguma ação
+ * da TI); "Encerrados" é só o que já foi fechado; "Outros" (dropdown) junta
+ * o que está pausado/em teste — não é nem "aberto" no sentido normal, nem
+ * "encerrado" de fato. */
+type ViewTab = 'abertos' | 'testing' | 'parado' | 'closed'
+const ABERTOS_CATEGORIES: TicketCategory[] = ['todo', 'in_progress']
+const OTHER_OPTIONS: { key: Extract<ViewTab, 'testing' | 'parado'>; label: string }[] = [
   { key: 'parado', label: 'Parados' },
+  { key: 'testing', label: 'Em teste' },
 ]
 
 /** Lista de conversas do chat flutuante: um chamado por linha, ordenado pela
@@ -107,7 +106,7 @@ export function ConversationList() {
   // chamado (requester comum) não precisa entender essa divisão interna,
   // só se o chamado dele está aberto ou já foi resolvido.
   const { isStaff } = useUserSector()
-  const [tab, setTab] = useState<TicketCategory>('todo')
+  const [tab, setTab] = useState<ViewTab>('abertos')
   const [simpleTab, setSimpleTab] = useState<'open' | 'closed'>('open')
   const [otherMenuOpen, setOtherMenuOpen] = useState(false)
   const otherMenuRef = useRef<HTMLDivElement>(null)
@@ -129,14 +128,16 @@ export function ConversationList() {
     return counts
   }, [conversations])
 
-  // Soma das 3 sub-categorias do dropdown — o botão "Outros" (fechado)
+  // Soma das 2 sub-categorias do dropdown — o botão "Outros" (fechado)
   // precisa mostrar o total agrupado ali, não só a contagem da sub-aba
   // selecionada por último (senão o número não bate com o que a pessoa
   // vai encontrar ao abrir o dropdown).
   const otherTotal = OTHER_OPTIONS.reduce((sum, o) => sum + categoryCounts[o.key], 0)
+  const abertosTotal = ABERTOS_CATEGORIES.reduce((sum, c) => sum + categoryCounts[c], 0)
 
   const visibleConversations = useMemo(() => {
     if (!isStaff) return conversations.filter((c) => (c.category === 'closed') === (simpleTab === 'closed'))
+    if (tab === 'abertos') return conversations.filter((c) => ABERTOS_CATEGORIES.includes(c.category))
     return conversations.filter((c) => c.category === tab)
   }, [conversations, tab, simpleTab, isStaff])
 
@@ -197,26 +198,20 @@ export function ConversationList() {
         </div>
       ) : (
       <div className="flex items-center gap-1 border-b border-border px-2 pt-2">
-        {MAIN_TABS.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={`flex items-center gap-1.5 rounded-t-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
-              tab === t.key
-                ? 'border-b-2 border-gold text-text-primary'
-                : 'border-b-2 border-transparent text-text-muted hover:text-text-secondary'
-            }`}
-          >
-            {t.label}
-            {categoryCounts[t.key] > 0 && (
-              <span className="text-[10px] text-text-muted">{categoryCounts[t.key]}</span>
-            )}
-          </button>
-        ))}
+        <button
+          onClick={() => setTab('abertos')}
+          className={`flex items-center gap-1.5 rounded-t-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
+            tab === 'abertos'
+              ? 'border-b-2 border-gold text-text-primary'
+              : 'border-b-2 border-transparent text-text-muted hover:text-text-secondary'
+          }`}
+        >
+          Abertos
+          {abertosTotal > 0 && <span className="text-[10px] text-text-muted">{abertosTotal}</span>}
+        </button>
 
-        {/* "Outros" agrupa as categorias de menor volume (encerrados, em
-            teste, parados) num único dropdown — evita poluir a barra de
-            abas com mais 3 itens. */}
+        {/* "Outros" agrupa parado + em teste — nem "aberto" no sentido
+            normal (precisa de ação), nem "encerrado" de fato. */}
         <div ref={otherMenuRef} className="relative">
           <button
             onClick={() => setOtherMenuOpen((o) => !o)}
@@ -227,8 +222,8 @@ export function ConversationList() {
             }`}
           >
             {isOtherTab ? OTHER_OPTIONS.find((o) => o.key === tab)?.label : 'Outros'}
-            {(isOtherTab ? categoryCounts[tab] : otherTotal) > 0 && (
-              <span className="text-[10px] text-text-muted">{isOtherTab ? categoryCounts[tab] : otherTotal}</span>
+            {(isOtherTab ? categoryCounts[tab as TicketCategory] : otherTotal) > 0 && (
+              <span className="text-[10px] text-text-muted">{isOtherTab ? categoryCounts[tab as TicketCategory] : otherTotal}</span>
             )}
             <ChevronDown className="h-3 w-3" />
           </button>
@@ -253,6 +248,18 @@ export function ConversationList() {
             </div>
           )}
         </div>
+
+        <button
+          onClick={() => setTab('closed')}
+          className={`flex items-center gap-1.5 rounded-t-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
+            tab === 'closed'
+              ? 'border-b-2 border-gold text-text-primary'
+              : 'border-b-2 border-transparent text-text-muted hover:text-text-secondary'
+          }`}
+        >
+          Encerrados
+          {categoryCounts.closed > 0 && <span className="text-[10px] text-text-muted">{categoryCounts.closed}</span>}
+        </button>
       </div>
       )}
 
@@ -286,11 +293,7 @@ export function ConversationList() {
                   </p>
                   <div className="mt-1 flex items-center justify-between gap-2">
                     <p className="truncate text-[13px] text-text-secondary">{c.lastMessage || 'Sem mensagens de texto'}</p>
-                    {unread > 0 && (
-                      <span className="flex h-5 min-w-[20px] shrink-0 items-center justify-center rounded-full bg-gold px-1 text-[10px] font-bold text-background">
-                        {unread > 99 ? '99+' : unread}
-                      </span>
-                    )}
+                    {unread > 0 && <span className="h-2 w-2 shrink-0 rounded-full bg-gold" aria-label={`${unread} não lidas`} />}
                   </div>
                 </div>
               </button>

@@ -259,6 +259,21 @@ const NewTicketChat = () => {
   const categoryLabel = categories?.find(c => c.id === selectedCategory)?.name;
   const subcategoryLabel = subcategories?.find(s => s.id === selectedSubcategory)?.name;
 
+  // Barra de progresso + trilha de resumo: caminho "canônico" (a maioria das
+  // categorias tem subcategoria e ninguém abre pra outra pessoa é o caso raro)
+  // só pra dar uma noção de "quanto falta" — etapas puladas (sem subcategoria,
+  // "para mim") não vão pra trás o número, só andam mais rápido.
+  const STEP_ORDER: Step[] = ["category", "subcategory", "requester", "requester_person", "description", "attachments", "done"];
+  const TOTAL_STEPS = 6;
+  const stepNumber = Math.min(TOTAL_STEPS, STEP_ORDER.indexOf(step) + 1 || 1);
+  const isForSelf = !!selectedRequesterId && selectedRequesterId === profile?.id;
+  const summaryTrail = [
+    categoryLabel,
+    subcategoryLabel,
+    selectedRequesterId ? (isForSelf ? "Para mim" : selectedRequesterName) : null,
+  ].filter((v): v is string => !!v);
+  const ticketTitlePreview = buildTitle(categoryLabel, subcategoryLabel);
+
   // "Outros" sempre por último — não é pra ser a opção mais visível/fácil de
   // bater o olho quando a pessoa está em dúvida.
   const orderedCategories = [...(categories ?? [])].sort((a, b) => {
@@ -543,6 +558,34 @@ const NewTicketChat = () => {
         <p className="text-muted-foreground">Responda as perguntas e a TI recebe tudo já classificado.</p>
       </div>
 
+      {step !== "creating" && step !== "done" && (
+        <>
+          <div className="flex items-center gap-2.5">
+            <div className="h-1 flex-1 overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full bg-primary transition-[width] duration-200"
+                style={{ width: `${Math.min(100, (stepNumber / TOTAL_STEPS) * 100)}%` }}
+              />
+            </div>
+            <span className="whitespace-nowrap text-xs text-muted-foreground">Etapa {stepNumber} de {TOTAL_STEPS}</span>
+          </div>
+          {ticketTitlePreview && (
+            <p className="text-xs text-muted-foreground">
+              Título do chamado: <span className="font-semibold text-foreground">{ticketTitlePreview}</span>
+            </p>
+          )}
+          {summaryTrail.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {summaryTrail.map((s, i) => (
+                <span key={i} className="rounded-full border border-primary/28 bg-primary/10 px-2.5 py-1 text-xs text-primary">
+                  {s}
+                </span>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
       <div className="overflow-hidden rounded-xl border border-primary/25 bg-card shadow-lg shadow-black/20">
         {/* Faixa dourada do topo — mesma linguagem visual do resto do sistema */}
         <div className="flex items-center gap-2.5 border-b border-primary/20 bg-primary/5 px-4 py-3">
@@ -806,11 +849,6 @@ const NewTicketChat = () => {
               </Button>
             )}
           </div>
-          {(step === "description" || step === "attachments") && categoryLabel && (
-            <span className="text-xs text-muted-foreground">
-              Assunto: <span className="text-foreground">{buildTitle(categoryLabel, subcategoryLabel)}</span>
-            </span>
-          )}
         </div>
       )}
 

@@ -6,7 +6,7 @@ import { useChatWidgetStore } from '@/stores/chatWidgetStore'
 import { supabase } from '@/systems/central-suporte/integrations/supabase/client'
 import { isTicketClosed, ticketCategory } from '@/systems/central-suporte/utils/ticketStatus'
 import { useUserSector } from '@/systems/central-suporte/hooks/useUserSector'
-import { REOPEN_NOTE_PREFIX } from '@/systems/central-suporte/utils/reopenTicket'
+import { CLOSE_NOTE_PREFIX, isSystemNote } from '@/systems/central-suporte/utils/systemNote'
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024 // 10MB — mesmo limite do TicketDetailDialog
 
@@ -50,24 +50,9 @@ function formatTime(dateStr: string): string {
   return new Date(dateStr).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 }
 
-// Textos usados tanto pra montar o comentário quanto pro regex abaixo que o
-// reconhece como nota de sistema — numa constante só pra não desalinhar
-// silenciosamente se um dos dois lados mudar sozinho.
-const CLOSE_NOTE_PREFIX = 'Este chat foi encerrado'
-
-// Comentários automáticos de evento (transferência, mudança de status etc.)
-// não têm uma coluna própria pra marcar isso — só dá pra reconhecer pelo
-// texto. Viram um separador central, não uma bolha de conversa. A nota de
-// reabertura (REOPEN_NOTE_PREFIX) agora é gravada com o motivo obrigatório
-// direto no Kanban/TicketDetailDialog — ver utils/reopenTicket.ts.
-const SYSTEM_NOTE_PATTERN = new RegExp(
-  `^(transferido de .+ para .+|categoria alterada|status alterado|prioridade alterada|${CLOSE_NOTE_PREFIX}|${REOPEN_NOTE_PREFIX})`,
-  'i',
-)
-function isSystemNote(content: string): boolean {
-  const stripped = (content || '').trim().replace(/^[^\p{L}]+/u, '')
-  return SYSTEM_NOTE_PATTERN.test(stripped)
-}
+// CLOSE_NOTE_PREFIX e isSystemNote agora vêm de utils/systemNote.ts,
+// compartilhado com o TicketDetailDialog (mesma detecção de nota de
+// sistema nos dois lugares que mostram a conversa do chamado).
 
 function isImageFile(file: File): boolean {
   return file.type.startsWith('image/')
