@@ -273,6 +273,26 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
     enabled: open,
   });
 
+  // IDs de quem tem qualquer role de staff — usado só pra tirar essas
+  // pessoas da lista de "Trocar solicitante". O chamado é sempre de um
+  // usuário comum; listar a TI ali é um convite a erro (setar o solicitante
+  // como um agente por engano).
+  const { data: staffUserIds } = useQuery({
+    queryKey: ["staff-user-ids"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("user_roles").select("user_id");
+      if (error) throw error;
+      return new Set((data || []).map((r) => r.user_id));
+    },
+    enabled: open && !readOnly && !!canEditRequester,
+  });
+
+  const requesterOptions = useMemo(() => {
+    if (!allProfiles) return [];
+    if (!staffUserIds) return allProfiles;
+    return allProfiles.filter((p) => !staffUserIds.has(p.id) || p.id === ticket?.requester_id);
+  }, [allProfiles, staffUserIds, ticket?.requester_id]);
+
   // Filter assignee options by ticket's target sector (show all if no sector)
   const staffProfiles = allProfiles?.filter((p) => {
     if (!ticket?.target_sector_id) return true;
@@ -384,8 +404,18 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
       // encerrado — sem isso só quem responde pelo widget rápido dispara a
       // mudança, e quem responde por aqui (o modal principal) deixa o
       // chamado preso em "A Fazer" mesmo depois de alguém já estar cuidando.
-      if (!isInternal && ticket && !isTicketClosed(ticket.status) && ticketCategory(ticket.status) !== "in_progress") {
-        await supabase.from("tickets").update({ status: "pending" }).eq("id", ticketId);
+      // Busca o status na hora (em vez de confiar no `ticket` do closure do
+      // render) — evita que uma troca de status rápida logo antes do envio
+      // do comentário seja ignorada por causa de um valor desatualizado.
+      if (!isInternal) {
+        const { data: freshTicket } = await supabase
+          .from("tickets")
+          .select("status")
+          .eq("id", ticketId)
+          .single();
+        if (freshTicket && !isTicketClosed(freshTicket.status) && ticketCategory(freshTicket.status) !== "in_progress") {
+          await supabase.from("tickets").update({ status: "pending" }).eq("id", ticketId).is("archived_at", null);
+        }
       }
     },
     onSuccess: () => {
@@ -520,7 +550,7 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
                         <SelectValue placeholder="Selecionar solicitante" />
                       </SelectTrigger>
                       <SelectContent>
-                        {allProfiles?.map((p) => (
+                        {requesterOptions.map((p) => (
                           <SelectItem key={p.id} value={p.id}>{p.full_name || p.email}</SelectItem>
                         ))}
                       </SelectContent>

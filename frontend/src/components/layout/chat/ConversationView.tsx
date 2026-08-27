@@ -337,8 +337,18 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
       // preso lá mesmo depois de alguém já estar cuidando dele. Só a TI move
       // o card: uma mensagem do próprio solicitante (usuário comum) não deve
       // fingir que alguém já está tratando o chamado.
-      if (isStaff && ticket && ticketCategory(ticket.status) !== 'in_progress') {
-        await supabase.from('tickets').update({ status: 'pending' }).eq('id', ticketId)
+      // Busca o status na hora em vez de confiar no `ticket` do closure do
+      // render, que pode estar um render atrás de uma troca de status feita
+      // bem antes do envio.
+      if (isStaff) {
+        const { data: freshTicket } = await supabase
+          .from('tickets')
+          .select('status')
+          .eq('id', ticketId)
+          .single()
+        if (freshTicket && ticketCategory(freshTicket.status) !== 'in_progress') {
+          await supabase.from('tickets').update({ status: 'pending' }).eq('id', ticketId).is('archived_at', null)
+        }
       }
     },
     onSuccess: () => {
@@ -355,7 +365,7 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
   // Botões de status acima do input: a TI move o chamado sem sair do chat.
   const changeStatus = useMutation({
     mutationFn: async (status: ManualTicketStatus) => {
-      const { error } = await supabase.from('tickets').update({ status }).eq('id', ticketId)
+      const { error } = await supabase.from('tickets').update({ status }).eq('id', ticketId).is('archived_at', null)
       if (error) throw error
     },
     onSuccess: () => {
@@ -383,7 +393,7 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
         internal_only: false,
       })
       if (commentError) throw commentError
-      const { error: statusError } = await supabase.from('tickets').update({ status: 'closed' }).eq('id', ticketId)
+      const { error: statusError } = await supabase.from('tickets').update({ status: 'closed' }).eq('id', ticketId).is('archived_at', null)
       if (statusError) throw statusError
     },
     onSuccess: () => {

@@ -522,7 +522,11 @@ const NewTicketChat = () => {
           body: { title, description, type: "request", category: categoryName, subcategory: subcategoryName },
         }).then(async ({ data: aiResult, error: aiError }) => {
           if (!aiError && aiResult?.priority && aiResult.priority !== "p3") {
-            await supabase.from("tickets").update({ priority: aiResult.priority as any }).eq("id", ticket.id);
+            // Só aplica se a prioridade continuar exatamente a que foi
+            // gravada na criação — se um admin já mexeu nela enquanto a IA
+            // ainda processava, essa atualização não bate a condição e não
+            // faz nada, em vez de pisar na escolha manual.
+            await supabase.from("tickets").update({ priority: aiResult.priority as any }).eq("id", ticket.id).eq("priority", priority as any);
           }
         }).catch(console.error);
       }
@@ -645,7 +649,10 @@ const NewTicketChat = () => {
                 <SelectValue placeholder="Selecione a pessoa..." />
               </SelectTrigger>
               <SelectContent>
-                {(allProfiles ?? []).map(p => (
+                {/* Filtra o próprio usuário — essa etapa só existe pra "outra
+                    pessoa"; se ele quisesse pra si, teria clicado em "Para
+                    mim" na etapa anterior. */}
+                {(allProfiles ?? []).filter(p => p.id !== profile?.id).map(p => (
                   <SelectItem key={p.id} value={p.id}>{p.full_name || "Sem nome"}</SelectItem>
                 ))}
                 {allProfiles !== undefined && allProfiles.length === 0 && (
