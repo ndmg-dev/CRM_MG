@@ -85,6 +85,10 @@ export const systemRegistry: Record<string, LazyExoticComponent<ComponentType>> 
   // https://analyticsdp.mendoncagalvao.com.br — passa a renderizar nativo
   // automaticamente, sem precisar mudar nada no banco.
   'analytics-dp': lazy(() => import('@analyticsdp/AnalyticsDpApp')),
+  // Slug já cadastrado no banco (setor RESTRITO) apontando pro iframe de
+  // https://dashrh.nucleodigital.cloud/ — passa a renderizar nativo
+  // automaticamente, sem precisar mudar nada no banco.
+  'dash-rh': lazy(() => import('@dashrh/DashRhApp')),
 }
 
 /**
