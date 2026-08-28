@@ -121,6 +121,7 @@ export const KanbanTicketCard = ({
             WebkitLineClamp: 2,
             WebkitBoxOrient: "vertical",
             overflow: "hidden",
+            textOverflow: "ellipsis",
             textDecoration: isResolved ? "line-through" : "none",
             color: isResolved ? TEXT_MUTED : TEXT_PRIMARY,
           }}
