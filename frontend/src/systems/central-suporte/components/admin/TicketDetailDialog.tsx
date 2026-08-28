@@ -695,11 +695,12 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
           <div key={c.id} className="flex flex-col" style={{ alignItems: mine ? "flex-end" : "flex-start" }}>
             <div
               style={{
-                maxWidth: "78%",
+                maxWidth: "60%",
+                width: "fit-content",
                 background: mine ? "rgba(210,170,63,0.16)" : BG_CARD,
                 border: `0.5px solid ${mine ? "rgba(210,170,63,0.32)" : BORDER_DEFAULT}`,
                 borderRadius: 12,
-                padding: "10px 13px",
+                padding: "7px 10px",
               }}
             >
               {showAuthor && (
@@ -869,8 +870,11 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
           </div>
         </div>
 
-        {/* Tabs + conteúdo com scroll próprio */}
-        <div style={{ padding: "0 22px", flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
+        {/* Tabs + conteúdo com scroll próprio — overflowY é o que realmente
+            faz o conteúdo rolar aqui dentro; sem ele (bug anterior), o
+            texto só "vazava" pra fora e ficava cortado pelo overflow-hidden
+            do DialogContent, sem jeito de rolar até o resto. */}
+        <div style={{ padding: "0 22px", flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column" }}>
           <Tabs
             value={activeTab}
             onValueChange={setActiveTab}
