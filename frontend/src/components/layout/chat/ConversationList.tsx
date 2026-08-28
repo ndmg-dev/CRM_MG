@@ -200,7 +200,14 @@ export function ConversationList() {
       <div className="flex items-center border-b border-border px-2 pt-2">
         <button
           onClick={() => setTab('abertos')}
-          className={`flex flex-1 items-center justify-center gap-1.5 rounded-t-md px-2 py-1.5 text-xs font-medium transition-colors ${
+          // Larguras pesadas por importância, não estritamente iguais:
+          // "Abertos" e "Outros" são as abas de trabalho de verdade;
+          // "Encerrados" só serve pra consulta ocasional e não devia
+          // competir pelo mesmo espaço/atenção visual que elas, mesmo
+          // quando o contador dele (histórico acumulado) é o maior número
+          // da barra.
+          style={{ flex: "1.3 1 0%" }}
+          className={`flex items-center justify-center gap-1.5 rounded-t-md px-2 py-1.5 text-xs font-medium transition-colors ${
             tab === 'abertos'
               ? 'border-b-2 border-gold text-text-primary'
               : 'border-b-2 border-transparent text-text-muted hover:text-text-secondary'
@@ -212,7 +219,7 @@ export function ConversationList() {
 
         {/* "Outros" agrupa parado + em teste — nem "aberto" no sentido
             normal (precisa de ação), nem "encerrado" de fato. */}
-        <div ref={otherMenuRef} className="relative flex-1">
+        <div ref={otherMenuRef} className="relative" style={{ flex: "1.1 1 0%" }}>
           <button
             onClick={() => setOtherMenuOpen((o) => !o)}
             className={`flex w-full items-center justify-center gap-1 rounded-t-md px-2 py-1.5 text-xs font-medium transition-colors ${
@@ -251,7 +258,8 @@ export function ConversationList() {
 
         <button
           onClick={() => setTab('closed')}
-          className={`flex flex-1 items-center justify-center gap-1.5 rounded-t-md px-2 py-1.5 text-xs font-medium transition-colors ${
+          style={{ flex: "0.8 1 0%" }}
+          className={`flex items-center justify-center gap-1.5 rounded-t-md px-2 py-1.5 text-xs font-medium transition-colors ${
             tab === 'closed'
               ? 'border-b-2 border-gold text-text-primary'
               : 'border-b-2 border-transparent text-text-muted hover:text-text-secondary'

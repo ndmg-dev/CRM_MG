@@ -24,7 +24,7 @@ import {
 } from "@suporte/components/ui/select";
 import { Select, Badge, Tabs, Avatar } from "@mg/ui";
 import { Label } from "@suporte/components/ui/label";
-import { Clock, Tag, Trash2, Paperclip, Download, FileText, Image, Upload, CalendarIcon, RotateCcw, Pencil, X as XIcon, Send, Users } from "lucide-react";
+import { Clock, Tag, Trash2, Paperclip, Download, FileText, Image, Upload, CalendarIcon, RotateCcw, Pencil, X as XIcon, Send, Users, Check, CheckCheck } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@suporte/components/ui/popover";
 import { Calendar } from "@suporte/components/ui/calendar";
 import { format } from "date-fns";
@@ -248,6 +248,23 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
     },
     enabled: !!ticketId && open,
   });
+
+  // Marca como lido pra virar "✓✓ Lido às" na bolha de quem enviou — mesma
+  // lógica do chat flutuante (ConversationView.tsx), que o modal não tinha:
+  // aqui a mensagem enviada de um lado nunca mostrava se a outra pessoa já
+  // tinha visto. RPC em vez de UPDATE direto pelo mesmo motivo de lá: a RLS
+  // de comments só deixa o autor mexer na própria linha, e quem marca como
+  // lido é sempre quem recebeu.
+  useEffect(() => {
+    if (!ticketId || !open || !currentUserId || !comments) return;
+    const unreadFromOthers = comments.filter((c) => c.author_id !== currentUserId && !c.internal_only && !c.read_at);
+    if (unreadFromOthers.length === 0) return;
+    supabase.rpc("mark_comments_read", { p_comment_ids: unreadFromOthers.map((c) => c.id) })
+      .then(({ error }) => {
+        if (error) console.error("[ticket-detail] Falha ao marcar comentários como lidos:", error);
+        queryClient.invalidateQueries({ queryKey: ["ticket-comments", ticketId] });
+      });
+  }, [ticketId, open, currentUserId, comments, queryClient]);
 
   const { data: attachments } = useQuery({
     queryKey: ["ticket-attachments", ticketId],
@@ -736,7 +753,14 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
                 {c.content}
               </div>
             )}
-            <span style={{ margin: "2px 4px 0", fontSize: 9, color: TEXT_MUTED }}>{formatTime(c.created_at!)}</span>
+            <span className="flex items-center gap-1" style={{ margin: "2px 4px 0", fontSize: 9, color: TEXT_MUTED }}>
+              {mine && (
+                c.read_at
+                  ? <CheckCheck className="h-2.5 w-2.5" style={{ color: GOLD }} />
+                  : <Check className="h-2.5 w-2.5" />
+              )}
+              {mine && c.read_at ? `Lido às ${formatTime(c.read_at)}` : formatTime(c.created_at!)}
+            </span>
           </div>
         );
       })}
