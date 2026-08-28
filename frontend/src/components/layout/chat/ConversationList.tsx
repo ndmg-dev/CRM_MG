@@ -175,7 +175,7 @@ export function ConversationList() {
       </div>
 
       {!isStaff ? (
-        <div className="flex items-center gap-1 border-b border-border px-2 pt-2">
+        <div className="flex items-center border-b border-border px-2 pt-2">
           {(
             [
               { key: 'open' as const, label: 'Abertos', count: conversations.length - categoryCounts.closed },
@@ -185,7 +185,7 @@ export function ConversationList() {
             <button
               key={t.key}
               onClick={() => setSimpleTab(t.key)}
-              className={`flex items-center gap-1.5 rounded-t-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
+              className={`flex flex-1 items-center justify-center gap-1.5 rounded-t-md px-2 py-1.5 text-xs font-medium transition-colors ${
                 simpleTab === t.key
                   ? 'border-b-2 border-gold text-text-primary'
                   : 'border-b-2 border-transparent text-text-muted hover:text-text-secondary'

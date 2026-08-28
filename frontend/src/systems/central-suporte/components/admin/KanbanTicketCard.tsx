@@ -162,6 +162,14 @@ export const KanbanTicketCard = ({
             {isOverdue && <span style={{ fontWeight: 700, marginLeft: 2 }}>· atrasado</span>}
           </span>
           <div className="flex items-center gap-1">
+            {/* Quem está com o chamado — sumiu na reescrita do card, staff
+                não tinha mais como bater o olho e saber quem está cuidando
+                sem abrir o modal. */}
+            {ticket.assignee?.full_name && (
+              <span title={ticket.assignee.full_name} style={{ display: "flex" }}>
+                <Avatar name={ticket.assignee.full_name} size="sm" />
+              </span>
+            )}
             {(canMoveUp || canMoveDown) && (
               <div className="flex flex-col">
                 <Button
