@@ -145,7 +145,7 @@ export const KanbanTicketCard = ({
             alguém abriu em nome de outra pessoa. O "Aberto por: X · Para: Y"
             completo fica só no modal de detalhes, que tem espaço de sobra. */}
         <div className="flex items-center gap-1.5" style={{ marginBottom: 10, flexShrink: 0 }}>
-          <Avatar name={ticket.requester?.full_name || "?"} size="sm" />
+          <Avatar name={ticket.requester?.full_name || "?"} src={ticket.requester?.foto_url ?? undefined} size="sm" />
           <span style={{ fontSize: 12, color: TEXT_SECONDARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {ticket.requester?.full_name || "Solicitante não informado"}
           </span>
@@ -162,6 +162,14 @@ export const KanbanTicketCard = ({
             {isOverdue && <span style={{ fontWeight: 700, marginLeft: 2 }}>· atrasado</span>}
           </span>
           <div className="flex items-center gap-1">
+            {/* Quem está com o chamado — sumiu na reescrita do card, staff
+                não tinha mais como bater o olho e saber quem está cuidando
+                sem abrir o modal. */}
+            {ticket.assignee?.full_name && (
+              <span title={ticket.assignee.full_name} style={{ display: "flex" }}>
+                <Avatar name={ticket.assignee.full_name} src={ticket.assignee?.foto_url ?? undefined} size="sm" />
+              </span>
+            )}
             {(canMoveUp || canMoveDown) && (
               <div className="flex flex-col">
                 <Button

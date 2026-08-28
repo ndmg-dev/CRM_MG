@@ -12,6 +12,7 @@ interface ConversationRow {
   ticketCode: number | string | null
   title: string
   requesterName: string
+  requesterPhoto: string | null
   openedByName: string | null
   lastMessage: string
   lastMessageAt: string | null
@@ -49,7 +50,7 @@ function useConversations() {
       const ticketIds = previews.map((p) => p.ticket_id)
       const { data: tickets, error: tErr } = await supabase
         .from('tickets')
-        .select('id, ticket_code, title, status, requester_id, opened_by_id, requester:profiles!requester_id(full_name), opened_by:profiles!opened_by_id(full_name)')
+        .select('id, ticket_code, title, status, requester_id, opened_by_id, requester:profiles!requester_id(full_name, foto_url), opened_by:profiles!opened_by_id(full_name)')
         .in('id', ticketIds)
       if (tErr) throw tErr
 
@@ -66,6 +67,7 @@ function useConversations() {
             ticketCode: t.ticket_code,
             title: t.title,
             requesterName: t.requester?.full_name || 'Desconhecido',
+            requesterPhoto: t.requester?.foto_url || null,
             openedByName: openedByOther ? (t.opened_by?.full_name || null) : null,
             lastMessage: p.last_content,
             lastMessageAt: p.last_created_at,
@@ -87,8 +89,17 @@ function formatPreviewTime(dateStr: string | null): string {
   return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
 }
 
-function Avatar({ name }: { name: string }) {
+function Avatar({ name, src }: { name: string; src?: string | null }) {
   const letter = (name || '?').trim().charAt(0).toUpperCase()
+  if (src) {
+    return (
+      <img
+        src={src}
+        alt={name}
+        className="h-11 w-11 shrink-0 rounded-full border border-gold-border object-cover"
+      />
+    )
+  }
   return (
     <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gold-muted border border-gold-border text-sm font-bold text-gold">
       {letter}
@@ -175,7 +186,7 @@ export function ConversationList() {
       </div>
 
       {!isStaff ? (
-        <div className="flex items-center gap-1 border-b border-border px-2 pt-2">
+        <div className="flex items-center border-b border-border px-2 pt-2">
           {(
             [
               { key: 'open' as const, label: 'Abertos', count: conversations.length - categoryCounts.closed },
@@ -185,7 +196,7 @@ export function ConversationList() {
             <button
               key={t.key}
               onClick={() => setSimpleTab(t.key)}
-              className={`flex items-center gap-1.5 rounded-t-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
+              className={`flex flex-1 items-center justify-center gap-1.5 rounded-t-md px-2 py-1.5 text-xs font-medium transition-colors ${
                 simpleTab === t.key
                   ? 'border-b-2 border-gold text-text-primary'
                   : 'border-b-2 border-transparent text-text-muted hover:text-text-secondary'
@@ -197,10 +208,17 @@ export function ConversationList() {
           ))}
         </div>
       ) : (
-      <div className="flex items-center gap-1 border-b border-border px-2 pt-2">
+      <div className="flex items-center border-b border-border px-2 pt-2">
         <button
           onClick={() => setTab('abertos')}
-          className={`flex items-center gap-1.5 rounded-t-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
+          // Larguras pesadas por importância, não estritamente iguais:
+          // "Abertos" e "Outros" são as abas de trabalho de verdade;
+          // "Encerrados" só serve pra consulta ocasional e não devia
+          // competir pelo mesmo espaço/atenção visual que elas, mesmo
+          // quando o contador dele (histórico acumulado) é o maior número
+          // da barra.
+          style={{ flex: "1.3 1 0%" }}
+          className={`flex items-center justify-center gap-1.5 rounded-t-md px-2 py-1.5 text-xs font-medium transition-colors ${
             tab === 'abertos'
               ? 'border-b-2 border-gold text-text-primary'
               : 'border-b-2 border-transparent text-text-muted hover:text-text-secondary'
@@ -212,10 +230,10 @@ export function ConversationList() {
 
         {/* "Outros" agrupa parado + em teste — nem "aberto" no sentido
             normal (precisa de ação), nem "encerrado" de fato. */}
-        <div ref={otherMenuRef} className="relative">
+        <div ref={otherMenuRef} className="relative" style={{ flex: "1.1 1 0%" }}>
           <button
             onClick={() => setOtherMenuOpen((o) => !o)}
-            className={`flex items-center gap-1 rounded-t-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
+            className={`flex w-full items-center justify-center gap-1 rounded-t-md px-2 py-1.5 text-xs font-medium transition-colors ${
               isOtherTab
                 ? 'border-b-2 border-gold text-text-primary'
                 : 'border-b-2 border-transparent text-text-muted hover:text-text-secondary'
@@ -229,7 +247,7 @@ export function ConversationList() {
           </button>
 
           {otherMenuOpen && (
-            <div className="absolute right-0 top-full z-10 mt-1 min-w-[140px] rounded-lg border border-border bg-card py-1 shadow-2xl">
+            <div className="absolute left-1/2 top-full z-10 mt-1 min-w-[140px] -translate-x-1/2 rounded-lg border border-border bg-card py-1 shadow-2xl">
               {OTHER_OPTIONS.map((o) => (
                 <button
                   key={o.key}
@@ -251,7 +269,8 @@ export function ConversationList() {
 
         <button
           onClick={() => setTab('closed')}
-          className={`flex items-center gap-1.5 rounded-t-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
+          style={{ flex: "0.8 1 0%" }}
+          className={`flex items-center justify-center gap-1.5 rounded-t-md px-2 py-1.5 text-xs font-medium transition-colors ${
             tab === 'closed'
               ? 'border-b-2 border-gold text-text-primary'
               : 'border-b-2 border-transparent text-text-muted hover:text-text-secondary'
@@ -277,7 +296,7 @@ export function ConversationList() {
                 onClick={() => openConversation(c.ticketId)}
                 className="flex w-full items-start gap-3 border-b border-border/60 px-3.5 py-3.5 text-left transition-colors hover:bg-surface"
               >
-                <Avatar name={c.requesterName} />
+                <Avatar name={c.requesterName} src={c.requesterPhoto} />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex min-w-0 items-center gap-1.5">

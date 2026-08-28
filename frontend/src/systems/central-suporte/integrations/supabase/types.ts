@@ -350,6 +350,7 @@ export type Database = {
           created_at: string
           department: string | null
           email: string
+          foto_url: string | null
           full_name: string | null
           id: string
           sector_id: string | null
@@ -359,6 +360,7 @@ export type Database = {
           created_at?: string
           department?: string | null
           email: string
+          foto_url?: string | null
           full_name?: string | null
           id: string
           sector_id?: string | null
@@ -368,6 +370,7 @@ export type Database = {
           created_at?: string
           department?: string | null
           email?: string
+          foto_url?: string | null
           full_name?: string | null
           id?: string
           sector_id?: string | null

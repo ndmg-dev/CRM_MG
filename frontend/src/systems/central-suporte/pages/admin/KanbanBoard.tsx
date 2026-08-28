@@ -67,8 +67,8 @@ const KanbanBoard = () => {
         .from("tickets")
         .select(`
           *,
-          assignee:profiles!assignee_id(full_name),
-          requester:profiles!requester_id(full_name),
+          assignee:profiles!assignee_id(full_name, foto_url),
+          requester:profiles!requester_id(full_name, foto_url),
           opened_by:profiles!opened_by_id(full_name)
         `)
         .is("archived_at", null)

@@ -19,12 +19,16 @@ import MyTickets from "./pages/portal/MyTickets";
 import NotFound from "./pages/NotFound";
 import { requestBrowserNotificationPermission } from "@suporte/hooks/useBrowserNotifications";
 import { SupportSessionGate } from "@suporte/components/auth/SupportSessionGate";
+import { useSyncProfilePhoto } from "@suporte/hooks/useSyncProfilePhoto";
 const queryClient = new QueryClient();
 
 const App = () => {
   useEffect(() => {
     requestBrowserNotificationPermission();
   }, []);
+  // Sincroniza a foto do Google pra `profiles` a cada abertura do sistema —
+  // ver hooks/useSyncProfilePhoto.ts.
+  useSyncProfilePhoto();
 
   return (
   <div className="suporte-root min-h-screen bg-background text-foreground">
