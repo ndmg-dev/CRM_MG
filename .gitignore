@@ -46,3 +46,4 @@ postgres_data/
 CHANGELOG_v*.md
 CHANGELOG_TODAS_ATUALIZACOES.md
 cadastro_release_v*.sql
+docs/INVENTARIO-COMPLETO.md
