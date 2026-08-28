@@ -239,7 +239,7 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
       if (!ticketId) return [];
       const { data, error } = await supabase
         .from("comments")
-        .select(`*, author:profiles!author_id(full_name)`)
+        .select(`*, author:profiles!author_id(full_name, foto_url)`)
         .eq("ticket_id", ticketId)
         .order("created_at", { ascending: false })
         .limit(RECENT_ROWS_LIMIT);
@@ -707,14 +707,30 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
         }
         const mine = c.author_id === currentUserId;
         const prev = comments[i - 1];
+        const next = comments[i + 1];
         const showAuthor = !prev || prev.author_id !== c.author_id || isSystemNote(prev.content);
+        // Avatar só na última mensagem do grupo (mesmo critério do chat
+        // flutuante, ConversationView.tsx) — evita repetir a foto em cada
+        // linha de uma sequência de mensagens seguidas da mesma pessoa.
+        const isLastInGroup = !next || next.author_id !== c.author_id || isSystemNote(next.content);
         // Mesmo padrão visual do chat flutuante (ConversationView.tsx):
         // bolha sólida (sem borda), nome fora/acima dela — não dentro —, e
         // cauda no canto de quem enviou. Antes essa bolha tinha um estilo
         // próprio (translúcida, com borda, nome dentro) que destoava do
-        // resto do sistema.
+        // resto do sistema. A foto de perfil (quando o usuário já sincronizou
+        // uma) some junto com o resto do agrupamento em vez de aparecer solta.
         return (
-          <div key={c.id} className="flex flex-col" style={{ alignItems: mine ? "flex-end" : "flex-start", maxWidth: "70%", ...(mine ? { alignSelf: "flex-end" } : { alignSelf: "flex-start" }) }}>
+          <div
+            key={c.id}
+            className="flex items-end"
+            style={{ gap: 6, flexDirection: mine ? "row-reverse" : "row", alignSelf: mine ? "flex-end" : "flex-start", maxWidth: "70%" }}
+          >
+            {isLastInGroup ? (
+              <Avatar name={c.author?.full_name || "?"} src={c.author?.foto_url ?? undefined} size="sm" />
+            ) : (
+              <div style={{ width: 24, flexShrink: 0 }} />
+            )}
+            <div className="flex flex-col" style={{ alignItems: mine ? "flex-end" : "flex-start", minWidth: 0 }}>
             {showAuthor && (
               <span style={{ margin: "0 4px 2px", fontSize: 10, color: TEXT_MUTED }}>
                 {c.author?.full_name || "Desconhecido"}
@@ -761,6 +777,7 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
               )}
               {mine && c.read_at ? `Lido às ${formatTime(c.read_at)}` : formatTime(c.created_at!)}
             </span>
+            </div>
           </div>
         );
       })}
