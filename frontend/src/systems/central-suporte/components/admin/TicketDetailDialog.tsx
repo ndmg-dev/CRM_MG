@@ -691,44 +691,52 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
         const mine = c.author_id === currentUserId;
         const prev = comments[i - 1];
         const showAuthor = !prev || prev.author_id !== c.author_id || isSystemNote(prev.content);
+        // Mesmo padrão visual do chat flutuante (ConversationView.tsx):
+        // bolha sólida (sem borda), nome fora/acima dela — não dentro —, e
+        // cauda no canto de quem enviou. Antes essa bolha tinha um estilo
+        // próprio (translúcida, com borda, nome dentro) que destoava do
+        // resto do sistema.
         return (
-          <div key={c.id} className="flex flex-col" style={{ alignItems: mine ? "flex-end" : "flex-start" }}>
-            <div
-              style={{
-                maxWidth: "60%",
-                width: "fit-content",
-                background: mine ? "rgba(210,170,63,0.16)" : BG_CARD,
-                border: `0.5px solid ${mine ? "rgba(210,170,63,0.32)" : BORDER_DEFAULT}`,
-                borderRadius: 12,
-                padding: "7px 10px",
-              }}
-            >
-              {showAuthor && (
-                <div style={{ fontSize: 11.5, fontWeight: 600, color: mine ? GOLD : TEXT_SECONDARY, marginBottom: 4 }}>
-                  {c.author?.full_name || "Desconhecido"}
-                  {c.internal_only && <Badge variant="warn">Interno</Badge>}
-                </div>
-              )}
-              <div style={{ fontSize: 13, lineHeight: 1.5, color: mine ? TEXT_PRIMARY : BODY_TEXT }}>{c.content}</div>
-              {commentAtts.map((att) => (
-                <button
-                  key={att.id}
-                  type="button"
-                  onClick={() => att.signedUrl && (att.file_type?.startsWith("image/") ? setPreviewImage({ url: att.signedUrl, alt: att.file_name }) : window.open(att.signedUrl, "_blank", "noopener,noreferrer"))}
-                  style={{
-                    marginTop: 8, display: "inline-flex", alignItems: "center", gap: 6,
-                    background: "rgba(0,0,0,0.18)", border: `0.5px solid ${mine ? "rgba(210,170,63,0.32)" : BORDER_DEFAULT}`,
-                    borderRadius: 8, padding: "6px 10px", fontSize: 12, color: mine ? TEXT_PRIMARY : BODY_TEXT, cursor: "pointer",
-                  }}
-                >
-                  {att.file_type?.startsWith("image/") ? <Image className="h-3.5 w-3.5" /> : <FileText className="h-3.5 w-3.5" />}
-                  {att.file_name}
-                </button>
-              ))}
-              <div style={{ fontSize: 10, color: mine ? "rgba(245,245,245,0.5)" : TEXT_MUTED, marginTop: 5, textAlign: "right" }}>
-                {formatTime(c.created_at!)}
+          <div key={c.id} className="flex flex-col" style={{ alignItems: mine ? "flex-end" : "flex-start", maxWidth: "70%", ...(mine ? { alignSelf: "flex-end" } : { alignSelf: "flex-start" }) }}>
+            {showAuthor && (
+              <span style={{ margin: "0 4px 2px", fontSize: 10, color: TEXT_MUTED }}>
+                {c.author?.full_name || "Desconhecido"}
+                {c.internal_only && <Badge variant="warn">Interno</Badge>}
+              </span>
+            )}
+            {commentAtts.map((att) => (
+              <button
+                key={att.id}
+                type="button"
+                onClick={() => att.signedUrl && (att.file_type?.startsWith("image/") ? setPreviewImage({ url: att.signedUrl, alt: att.file_name }) : window.open(att.signedUrl, "_blank", "noopener,noreferrer"))}
+                style={{
+                  marginBottom: 4, display: "inline-flex", alignItems: "center", gap: 6,
+                  background: BG_CARD, border: `0.5px solid ${BORDER_DEFAULT}`,
+                  borderRadius: 8, padding: "6px 10px", fontSize: 12, color: BODY_TEXT, cursor: "pointer",
+                }}
+              >
+                {att.file_type?.startsWith("image/") ? <Image className="h-3.5 w-3.5" /> : <FileText className="h-3.5 w-3.5" />}
+                {att.file_name}
+              </button>
+            ))}
+            {c.content && (
+              <div
+                style={{
+                  width: "fit-content",
+                  maxWidth: "100%",
+                  background: mine ? GOLD : BG_CARD,
+                  borderRadius: 16,
+                  borderBottomRightRadius: mine ? 4 : 16,
+                  borderBottomLeftRadius: mine ? 16 : 4,
+                  padding: "8px 12px",
+                  fontSize: 13,
+                  color: mine ? "var(--mg-color-bg-base)" : TEXT_PRIMARY,
+                }}
+              >
+                {c.content}
               </div>
-            </div>
+            )}
+            <span style={{ margin: "2px 4px 0", fontSize: 9, color: TEXT_MUTED }}>{formatTime(c.created_at!)}</span>
           </div>
         );
       })}
