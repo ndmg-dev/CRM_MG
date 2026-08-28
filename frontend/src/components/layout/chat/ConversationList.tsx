@@ -197,10 +197,10 @@ export function ConversationList() {
           ))}
         </div>
       ) : (
-      <div className="flex items-center gap-1 border-b border-border px-2 pt-2">
+      <div className="flex items-center border-b border-border px-2 pt-2">
         <button
           onClick={() => setTab('abertos')}
-          className={`flex items-center gap-1.5 rounded-t-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
+          className={`flex flex-1 items-center justify-center gap-1.5 rounded-t-md px-2 py-1.5 text-xs font-medium transition-colors ${
             tab === 'abertos'
               ? 'border-b-2 border-gold text-text-primary'
               : 'border-b-2 border-transparent text-text-muted hover:text-text-secondary'
@@ -212,10 +212,10 @@ export function ConversationList() {
 
         {/* "Outros" agrupa parado + em teste — nem "aberto" no sentido
             normal (precisa de ação), nem "encerrado" de fato. */}
-        <div ref={otherMenuRef} className="relative">
+        <div ref={otherMenuRef} className="relative flex-1">
           <button
             onClick={() => setOtherMenuOpen((o) => !o)}
-            className={`flex items-center gap-1 rounded-t-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
+            className={`flex w-full items-center justify-center gap-1 rounded-t-md px-2 py-1.5 text-xs font-medium transition-colors ${
               isOtherTab
                 ? 'border-b-2 border-gold text-text-primary'
                 : 'border-b-2 border-transparent text-text-muted hover:text-text-secondary'
@@ -229,7 +229,7 @@ export function ConversationList() {
           </button>
 
           {otherMenuOpen && (
-            <div className="absolute right-0 top-full z-10 mt-1 min-w-[140px] rounded-lg border border-border bg-card py-1 shadow-2xl">
+            <div className="absolute left-1/2 top-full z-10 mt-1 min-w-[140px] -translate-x-1/2 rounded-lg border border-border bg-card py-1 shadow-2xl">
               {OTHER_OPTIONS.map((o) => (
                 <button
                   key={o.key}
@@ -251,7 +251,7 @@ export function ConversationList() {
 
         <button
           onClick={() => setTab('closed')}
-          className={`flex items-center gap-1.5 rounded-t-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
+          className={`flex flex-1 items-center justify-center gap-1.5 rounded-t-md px-2 py-1.5 text-xs font-medium transition-colors ${
             tab === 'closed'
               ? 'border-b-2 border-gold text-text-primary'
               : 'border-b-2 border-transparent text-text-muted hover:text-text-secondary'
