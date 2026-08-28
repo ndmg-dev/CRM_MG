@@ -87,7 +87,12 @@ export const KanbanTicketCard = ({
           borderLeft: `3px solid ${isResolved ? BORDER_STRONG : priorityBorderColor[priority]}`,
           borderRadius: 10,
           padding: "14px 14px 14px 12px",
-          height: 180,
+          // minHeight em vez de height fixo: título de 2 linhas + barra de
+          // prazo juntos passavam dos 180px antigos, e como o card tinha
+          // altura travada + overflow:hidden, o rodapé (data/setas) é que
+          // acabava cortado. Com minHeight o card cresce o quanto precisar
+          // em vez de cortar qualquer parte do conteúdo.
+          minHeight: 180,
           display: "flex",
           flexDirection: "column",
           minWidth: 0,
