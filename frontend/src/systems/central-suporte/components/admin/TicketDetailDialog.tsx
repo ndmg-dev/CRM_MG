@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { createPortal } from "react-dom";
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
 } from "@suporte/components/ui/dialog";
 import {
   AlertDialog,
@@ -116,17 +116,14 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [activeTab, setActiveTab] = useState("details");
   // Preview de imagem em modal em vez de abrir em nova aba — nova aba tira o
-  // agente do chamado só pra ver um print anexado.
+  // agente do chamado só pra ver um print anexado. É um <Dialog> do Radix
+  // aninhado dentro do modal do chamado (não um <div fixed> na mão) —
+  // versões anteriores disso brigavam com o Radix (Esc/clique fechavam os
+  // dois juntos, ou o botão de fechar simplesmente não respondia por causa
+  // do FocusScope do Dialog de fora tentando reclamar o foco no meio do
+  // clique). Dialog aninhado é o padrão que o Radix já sabe resolver:
+  // cada camada só reage ao que é dela.
   const [previewImage, setPreviewImage] = useState<{ url: string; alt: string } | null>(null);
-
-  useEffect(() => {
-    if (!previewImage) return;
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setPreviewImage(null);
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [previewImage]);
   const [pendingSectorId, setPendingSectorId] = useState<string | null>(null);
   const [sectorAssigneeId, setSectorAssigneeId] = useState<string>("unassigned");
   const [isEditingRequester, setIsEditingRequester] = useState(false);
@@ -698,11 +695,12 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
           <div key={c.id} className="flex flex-col" style={{ alignItems: mine ? "flex-end" : "flex-start" }}>
             <div
               style={{
-                maxWidth: "78%",
+                maxWidth: "60%",
+                width: "fit-content",
                 background: mine ? "rgba(210,170,63,0.16)" : BG_CARD,
                 border: `0.5px solid ${mine ? "rgba(210,170,63,0.32)" : BORDER_DEFAULT}`,
                 borderRadius: 12,
-                padding: "10px 13px",
+                padding: "7px 10px",
               }}
             >
               {showAuthor && (
@@ -746,14 +744,6 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
       <DialogContent
         className="w-[95vw] max-w-[720px] p-0 gap-0 overflow-hidden [&>button:last-child]:hidden"
         style={{ background: BG_SURFACE, border: `0.5px solid ${BORDER_DEFAULT}`, maxHeight: "92vh", display: "flex", flexDirection: "column" }}
-        // O lightbox de imagem é portalizado pro <body> (fora deste
-        // DialogContent, ver comentário mais abaixo), então o Radix o
-        // enxerga como "fora" do modal — sem isso, apertar Esc ou clicar
-        // pra fechar a imagem também fechava o modal do chamado por baixo.
-        // Enquanto o preview está aberto, quem decide fechar é só ele
-        // mesmo (via seu próprio handler de Esc/clique); o Dialog ignora.
-        onEscapeKeyDown={(e) => { if (previewImage) e.preventDefault(); }}
-        onPointerDownOutside={(e) => { if (previewImage) e.preventDefault(); }}
       >
         {/* Header */}
         <div className="flex items-center justify-between" style={{ padding: "14px 22px", borderBottom: `0.5px solid ${BORDER_DEFAULT}`, flexShrink: 0 }}>
@@ -880,8 +870,11 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
           </div>
         </div>
 
-        {/* Tabs + conteúdo com scroll próprio */}
-        <div style={{ padding: "0 22px", flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
+        {/* Tabs + conteúdo com scroll próprio — overflowY é o que realmente
+            faz o conteúdo rolar aqui dentro; sem ele (bug anterior), o
+            texto só "vazava" pra fora e ficava cortado pelo overflow-hidden
+            do DialogContent, sem jeito de rolar até o resto. */}
+        <div style={{ padding: "0 22px", flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column" }}>
           <Tabs
             value={activeTab}
             onValueChange={setActiveTab}
@@ -1085,38 +1078,26 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
       }}
     />
 
-    {/* Preview de imagem — via createPortal direto pro <body>, não só
-        "sibling" no JSX. O <Dialog> do Radix já é portalizado pro body por
-        conta própria; um <div fixed> comum, sem portal, fica preso no
-        stacking context de qualquer ancestral no caminho (esta tela pode
-        abrir a partir de páginas diferentes — Kanban, notificação global
-        etc. — cada uma com sua própria árvore de containers), e aparecia
-        ATRÁS do modal em vez de por cima. Portal pro body garante que os
-        dois concorrem no mesmo nível, e aí o z-index realmente vale. */}
-    {previewImage && createPortal(
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={previewImage.alt}
-        className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4"
-        onClick={() => setPreviewImage(null)}
+    {/* Preview de imagem — Dialog do Radix aninhado dentro do modal do
+        chamado (não um <div fixed>/portal manual). Radix já sabe resolver
+        essa hierarquia direito: Esc ou clicar fora fecham só a camada de
+        cima, sem precisar de nenhum onEscapeKeyDown/onPointerDownOutside
+        na mão — o próprio Portal do Dialog vai pro <body>, então também
+        não sofre do problema de containing block do DialogContent de fora. */}
+    <Dialog open={!!previewImage} onOpenChange={(o) => { if (!o) setPreviewImage(null); }}>
+      <DialogContent
+        className="w-auto max-w-[95vw] border-none bg-transparent p-0 shadow-none [&>button]:h-9 [&>button]:w-9 [&>button]:rounded-full [&>button]:bg-black/50 [&>button]:text-white [&>button]:opacity-100 [&>button]:hover:bg-black/70 [&>button]:hover:text-white"
       >
-        <button
-          onClick={() => setPreviewImage(null)}
-          aria-label="Fechar"
-          className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70"
-        >
-          <XIcon className="h-5 w-5" />
-        </button>
-        <img
-          src={previewImage.url}
-          alt={previewImage.alt}
-          onClick={(e) => e.stopPropagation()}
-          className="max-h-full max-w-full rounded-lg object-contain"
-        />
-      </div>,
-      document.body
-    )}
+        <DialogTitle className="sr-only">{previewImage?.alt || "Visualizar imagem"}</DialogTitle>
+        {previewImage && (
+          <img
+            src={previewImage.url}
+            alt={previewImage.alt}
+            className="max-h-[85vh] max-w-full rounded-lg object-contain"
+          />
+        )}
+      </DialogContent>
+    </Dialog>
     </>
   );
 }
