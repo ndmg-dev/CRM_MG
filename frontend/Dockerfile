@@ -50,7 +50,16 @@ ENV VITE_TASKFLOW_SUPABASE_ANON_KEY=$VITE_TASKFLOW_SUPABASE_ANON_KEY
 ENV VITE_TASKFLOW_API_URL=$VITE_TASKFLOW_API_URL
 ENV VITE_ANALYTICS_DP_API_URL=$VITE_ANALYTICS_DP_API_URL
 ENV VITE_DASHRH_API_URL=$VITE_DASHRH_API_URL
-ENV NODE_OPTIONS="--max-old-space-size=3072"
+# Build local (fora do Docker, mesmo Node 22 e mesmo cap de 3072) passa sem
+# erro algum — o "npm run build" falhando no NDDEV com exit code 1 e
+# nenhuma mensagem real de erro no log (Coolify corta o stdout) é a
+# assinatura clássica de OOM-kill do container, não de um bug de código.
+# Isso só ajuda se o container do NDDEV tiver RAM física disponível acima
+# desse teto; se o limite físico do container for MENOR que isso, o V8 ainda
+# vai ser morto pelo OOM killer do host antes de estourar o heap sozinho —
+# nesse caso o ajuste real é no limite de memória do build no Coolify
+# (fora do Dockerfile), não aqui.
+ENV NODE_OPTIONS="--max-old-space-size=4608"
 COPY package*.json ./
 COPY packages/ ./packages/
 RUN npm install --no-audit --no-fund --legacy-peer-deps
