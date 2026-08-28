@@ -210,7 +210,7 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
         .from("tickets")
         .select(`
           *,
-          assignee:profiles!assignee_id(id, full_name, email),
+          assignee:profiles!assignee_id(id, full_name, email, foto_url),
           requester:profiles!requester_id(full_name, email),
           opened_by:profiles!opened_by_id(full_name),
           category:categories!category_id(name),
@@ -630,7 +630,7 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
           <FieldLabel>Responsável</FieldLabel>
           {readOnly ? (
             <StaticField>
-              {ticket.assignee?.full_name ? <Avatar name={ticket.assignee.full_name} size="sm" /> : null}
+              {ticket.assignee?.full_name ? <Avatar name={ticket.assignee.full_name} src={ticket.assignee.foto_url ?? undefined} size="sm" /> : null}
               {ticket.assignee?.full_name || "Não atribuído"}
             </StaticField>
           ) : (

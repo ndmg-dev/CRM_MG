@@ -89,7 +89,7 @@ const Reports = () => {
     queryFn: async () => {
       let query = supabase
         .from("tickets")
-        .select(`*, category:categories(name), assignee:profiles!assignee_id(full_name)`)
+        .select(`*, category:categories(name), assignee:profiles!assignee_id(full_name, foto_url)`)
         .is("archived_at", null)
         .order("created_at", { ascending: false });
       if (effectiveSectorId) {
@@ -252,11 +252,12 @@ const Reports = () => {
 
   // Top agents
   const agentData = useMemo(() => {
-    const counts: Record<string, { name: string; resolved: number; total: number }> = {};
+    const counts: Record<string, { name: string; photo: string | null; resolved: number; total: number }> = {};
     filteredTickets.forEach((t) => {
       if (t.assignee_id) {
         const name = t.assignee?.full_name || "Sem nome";
-        if (!counts[t.assignee_id]) counts[t.assignee_id] = { name, resolved: 0, total: 0 };
+        const photo = t.assignee?.foto_url || null;
+        if (!counts[t.assignee_id]) counts[t.assignee_id] = { name, photo, resolved: 0, total: 0 };
         counts[t.assignee_id].total++;
         if (["resolved", "closed"].includes(t.status || "")) counts[t.assignee_id].resolved++;
       }
@@ -469,7 +470,7 @@ const Reports = () => {
                   className="flex items-center gap-3"
                   style={{ padding: "10px 0", borderBottom: i < agentData.length - 1 ? `1px solid ${BORDER_DEFAULT}` : "none" }}
                 >
-                  <Avatar name={agent.name} size="md" />
+                  <Avatar name={agent.name} src={agent.photo ?? undefined} size="md" />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 13.5, fontWeight: 600, color: TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{agent.name}</div>
                     <div style={{ fontSize: 12, color: TEXT_MUTED }}>{agent.total} chamados atribuídos</div>

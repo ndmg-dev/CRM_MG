@@ -21,8 +21,17 @@ const STATUS_BUTTONS: { status: ManualTicketStatus; label: string }[] = [
   { status: 'parado', label: 'Parado' },
 ]
 
-function Avatar({ name }: { name: string }) {
+function Avatar({ name, src }: { name: string; src?: string | null }) {
   const letter = (name || '?').trim().charAt(0).toUpperCase()
+  if (src) {
+    return (
+      <img
+        src={src}
+        alt={name}
+        className="h-7 w-7 shrink-0 rounded-full border border-gold-border object-cover"
+      />
+    )
+  }
   return (
     <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gold-muted border border-gold-border text-[11px] font-bold text-gold">
       {letter}
@@ -145,7 +154,7 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('comments')
-        .select('*, author:profiles!author_id(full_name)')
+        .select('*, author:profiles!author_id(full_name, foto_url)')
         .eq('ticket_id', ticketId)
         .order('created_at', { ascending: false })
         .limit(RECENT_ROWS_LIMIT)
@@ -444,6 +453,7 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
           comments.map((c: any, idx: number) => {
             const isMine = c.author_id === currentUserId
             const authorName = c.author?.full_name || 'Usuário'
+            const authorPhoto = c.author?.foto_url as string | null | undefined
             const prev = comments[idx - 1] as any
             const next = comments[idx + 1] as any
             const showDayHeader = !prev || dayKey(prev.created_at) !== dayKey(c.created_at)
@@ -489,7 +499,7 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
                   </div>
                 ) : (
                   <div className={`flex items-end gap-2 ${isMine ? 'flex-row-reverse' : ''} ${isFirstInGroup ? 'mt-3' : 'mt-0.5'}`}>
-                    {isLastInGroup ? <Avatar name={authorName} /> : <div className="h-7 w-7 shrink-0" />}
+                    {isLastInGroup ? <Avatar name={authorName} src={authorPhoto} /> : <div className="h-7 w-7 shrink-0" />}
                     <div className={`flex max-w-[75%] flex-col ${isMine ? 'items-end' : 'items-start'}`}>
                       {isFirstInGroup && (
                         <span className="mb-0.5 px-1 text-[10px] text-text-muted">{authorName}</span>

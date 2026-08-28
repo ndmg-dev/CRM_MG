@@ -12,6 +12,7 @@ interface ConversationRow {
   ticketCode: number | string | null
   title: string
   requesterName: string
+  requesterPhoto: string | null
   openedByName: string | null
   lastMessage: string
   lastMessageAt: string | null
@@ -49,7 +50,7 @@ function useConversations() {
       const ticketIds = previews.map((p) => p.ticket_id)
       const { data: tickets, error: tErr } = await supabase
         .from('tickets')
-        .select('id, ticket_code, title, status, requester_id, opened_by_id, requester:profiles!requester_id(full_name), opened_by:profiles!opened_by_id(full_name)')
+        .select('id, ticket_code, title, status, requester_id, opened_by_id, requester:profiles!requester_id(full_name, foto_url), opened_by:profiles!opened_by_id(full_name)')
         .in('id', ticketIds)
       if (tErr) throw tErr
 
@@ -66,6 +67,7 @@ function useConversations() {
             ticketCode: t.ticket_code,
             title: t.title,
             requesterName: t.requester?.full_name || 'Desconhecido',
+            requesterPhoto: t.requester?.foto_url || null,
             openedByName: openedByOther ? (t.opened_by?.full_name || null) : null,
             lastMessage: p.last_content,
             lastMessageAt: p.last_created_at,
@@ -87,8 +89,17 @@ function formatPreviewTime(dateStr: string | null): string {
   return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
 }
 
-function Avatar({ name }: { name: string }) {
+function Avatar({ name, src }: { name: string; src?: string | null }) {
   const letter = (name || '?').trim().charAt(0).toUpperCase()
+  if (src) {
+    return (
+      <img
+        src={src}
+        alt={name}
+        className="h-11 w-11 shrink-0 rounded-full border border-gold-border object-cover"
+      />
+    )
+  }
   return (
     <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gold-muted border border-gold-border text-sm font-bold text-gold">
       {letter}
@@ -285,7 +296,7 @@ export function ConversationList() {
                 onClick={() => openConversation(c.ticketId)}
                 className="flex w-full items-start gap-3 border-b border-border/60 px-3.5 py-3.5 text-left transition-colors hover:bg-surface"
               >
-                <Avatar name={c.requesterName} />
+                <Avatar name={c.requesterName} src={c.requesterPhoto} />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex min-w-0 items-center gap-1.5">
