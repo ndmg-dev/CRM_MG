@@ -121,8 +121,16 @@ export const KanbanTicketCard = ({
             WebkitLineClamp: 2,
             WebkitBoxOrient: "vertical",
             overflow: "hidden",
+            textOverflow: "ellipsis",
             textDecoration: isResolved ? "line-through" : "none",
             color: isResolved ? TEXT_MUTED : TEXT_PRIMARY,
+            // Sem isso, quando a barra de prazo aparece (só chamados com
+            // due_date e ainda não resolvidos — por isso "sumia só ao mudar
+            // de coluna") o conteúdo espreme dentro da altura fixa do card
+            // e o flexbox encolhe justo o título até 0px: um elemento com
+            // overflow:hidden tem tamanho mínimo zero por padrão no
+            // flexbox, é sempre o primeiro a ser sacrificado.
+            flexShrink: 0,
           }}
         >
           {ticket.title}
@@ -131,7 +139,7 @@ export const KanbanTicketCard = ({
         {/* Card mostra só o nome de pra quem é (requester) — mesmo quando
             alguém abriu em nome de outra pessoa. O "Aberto por: X · Para: Y"
             completo fica só no modal de detalhes, que tem espaço de sobra. */}
-        <div className="flex items-center gap-1.5" style={{ marginBottom: 10 }}>
+        <div className="flex items-center gap-1.5" style={{ marginBottom: 10, flexShrink: 0 }}>
           <Avatar name={ticket.requester?.full_name || "?"} size="sm" />
           <span style={{ fontSize: 12, color: TEXT_SECONDARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {ticket.requester?.full_name || "Solicitante não informado"}

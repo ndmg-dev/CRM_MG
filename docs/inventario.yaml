@@ -1,0 +1,845 @@
+# Inventário de aplicações — Núcleo Digital (TI), Mendonça Galvão
+#
+# Fonte de verdade machine-readable. Os .md em docs/aplicacoes/, docs/setores/
+# e docs/README.md são gerados/mantidos manualmente a partir deste arquivo —
+# qualquer dado que apareça num .md tem que estar aqui também.
+#
+# Como foi levantado (para auditoria futura):
+#   - sistemas_seed.sql (raiz do repo) e frontend/src/systems/registry.tsx são
+#     a fonte primária de nome/slug/setor/url_producao — vêm do dump real da
+#     tabela `sistemas` do CRM, não foram adivinhados.
+#   - Stack/backend por sistema: inspeção de package.json raiz (stack
+#     compartilhada do monorepo frontend), grep por `VITE_*_API_URL` e
+#     `createClient` (Supabase) dentro de cada frontend/src/systems/<slug>/.
+#   - Nenhum valor de .env real foi lido — só .env.example.
+#   - Todo campo que não deu pra confirmar por essa via está DESCONHECIDO e
+#     tem uma pergunta correspondente em docs/PENDENCIAS.md.
+
+aplicacoes:
+  # ============================================================
+  # NÚCLEO — CRM shell (hub que hospeda os sistemas embutidos)
+  # ============================================================
+  - slug: crm-mg
+    nome: CRM Mendonça Galvão
+    status: producao
+    criticidade: alta
+    setores: [transversal]
+    setor_responsavel: ti-nucleo-digital
+    funcao: >
+      Shell/hub central do escritório: autenticação (Google OAuth), registro
+      e navegação entre todos os sistemas internos (embutidos nativamente ou
+      via iframe), gestão de usuários/setores/clientes, tarefas, auditoria e
+      notificações. Os 25 sistemas em frontend/src/systems/ rodam dentro
+      dele como módulos React lazy-loaded (ver registry.tsx).
+    repositorio: . (raiz deste workspace)
+    url_producao: DESCONHECIDO
+    stack:
+      frontend: { framework: React, versao: "19.2.6", linguagem: TypeScript, build: Vite 8 }
+      backend: { framework: FastAPI, versao: ">=0.111.0", linguagem: Python, runtime: ">=3.11" }
+      infra: { hospedagem: Coolify, containerizacao: Docker, proxy: DESCONHECIDO }
+      bibliotecas_chave: [radix-ui, "@tanstack/react-query", "@supabase/supabase-js", tailwindcss, "@mg/ui (workspace)", "@mg/tokens (workspace)"]
+    banco_de_dados:
+      - tipo: PostgreSQL
+        provedor: Docker Compose local (serviço `postgres`) / Coolify em produção
+        nome_logico: crm_mendonca_galvao
+        migrations: alembic
+        rls: nao
+        multi_tenant: nao_aplicavel
+        chave_isolamento: nao_aplicavel
+    autenticacao:
+      metodo: Google OAuth + JWT próprio (pyjwt, ver backend-fastapi)
+      rbac: sim
+      papeis: [DESCONHECIDO — ver app/models/user.py e user_system_access.py]
+    pwa:
+      perfil: DESCONHECIDO
+      manifest: DESCONHECIDO
+      service_worker: DESCONHECIDO
+      offline: DESCONHECIDO
+    dados_pessoais_lgpd:
+      trata_dados_pessoais: sim
+      categorias: [nome, email, dados_de_acesso]
+      retencao_definida: DESCONHECIDO
+    integracoes: ["Google OAuth", "OpenAI (OPENAI_API_KEY)", "Evolution API (WhatsApp)"]
+    dependencias_internas: [backend-fastapi, "todos os sistemas em frontend/src/systems/"]
+    porta_local: 3009  # HOST_FRONTEND_PORT (.env.example)
+    variaveis_ambiente:
+      - { nome: JWT_SECRET, obrigatoria: true, sensivel: true, descricao: "chave de assinatura dos tokens JWT do backend" }
+      - { nome: JWT_EXPIRATION_SECONDS, obrigatoria: true, sensivel: false, descricao: "TTL do token, default 604800 (7 dias)" }
+      - { nome: GOOGLE_CLIENT_ID, obrigatoria: true, sensivel: false, descricao: "client id do OAuth do Google" }
+      - { nome: OPENAI_API_KEY, obrigatoria: false, sensivel: true, descricao: "usada em features de IA (proxies/copilot)" }
+      - { nome: EVOLUTION_API_URL, obrigatoria: false, sensivel: false, descricao: "endpoint da integração WhatsApp" }
+      - { nome: EVOLUTION_API_KEY, obrigatoria: false, sensivel: true, descricao: "chave da Evolution API" }
+      - { nome: POSTGRES_PASSWORD, obrigatoria: true, sensivel: true, descricao: "senha do Postgres do backend" }
+
+  - slug: backend-fastapi
+    nome: "CRM MG Backend (API)"
+    status: producao
+    criticidade: alta
+    setores: [transversal]
+    setor_responsavel: ti-nucleo-digital
+    funcao: >
+      API FastAPI que sustenta o crm-mg: auth, usuários, setores, clientes,
+      registro de sistemas, tarefas, controle de acesso, dashboard, auditoria,
+      documentos, busca, sessões, releases. Também expõe rotas "proxy" para
+      5 sistemas embutidos (abertura-empresa, dashboard-dre, mg-prospect,
+      ouvidoria, fronteira) — ver app/api/v1/router.py.
+    repositorio: ./backend-fastapi
+    url_producao: DESCONHECIDO
+    stack:
+      backend: { framework: FastAPI, versao: ">=0.111.0", linguagem: Python, runtime: ">=3.11" }
+      infra: { hospedagem: Coolify, containerizacao: Docker (Dockerfile próprio), proxy: DESCONHECIDO }
+      bibliotecas_chave: [sqlalchemy, asyncpg, alembic, pyjwt, "google-auth", httpx, openai]
+    banco_de_dados:
+      - tipo: PostgreSQL
+        provedor: Docker Compose (`postgres`) / Coolify
+        nome_logico: crm_mendonca_galvao
+        migrations: alembic
+        rls: nao
+        multi_tenant: nao_aplicavel
+        chave_isolamento: nao_aplicavel
+    autenticacao:
+      metodo: "Google OAuth (google-auth) + JWT próprio (pyjwt)"
+      rbac: sim
+      papeis: DESCONHECIDO
+    pwa: { perfil: nao-aplicavel, manifest: nao, service_worker: nao, offline: nenhum }
+    dados_pessoais_lgpd:
+      trata_dados_pessoais: sim
+      categorias: [nome, email]
+      retencao_definida: DESCONHECIDO
+    integracoes: ["Google OAuth", "OpenAI"]
+    dependencias_internas: []
+    porta_local: 8089  # HOST_BACKEND_PORT (.env.example)
+    variaveis_ambiente:
+      - { nome: DATABASE_URL, obrigatoria: true, sensivel: true, descricao: "string de conexão asyncpg com o Postgres" }
+      - { nome: JWT_SECRET, obrigatoria: true, sensivel: true, descricao: "compartilhado com o crm-mg" }
+
+  # ============================================================
+  # TI — Núcleo Digital
+  # ============================================================
+  - slug: central-suporte
+    nome: Central de Suporte
+    status: producao
+    criticidade: alta
+    setores: [transversal]
+    setor_responsavel: ti-nucleo-digital
+    funcao: >
+      Sistema de chamados e suporte técnico interno: abertura conversacional
+      de chamado, Kanban, chat flutuante, relatórios, incidentes, tarefas
+      automatizadas, consulta/auditoria de chamados.
+    repositorio: ./frontend/src/systems/central-suporte
+    url_producao: https://chamados.mendoncagalvao.com.br
+    stack:
+      frontend: { framework: React (embutido no crm-mg), versao: "19.2.6", linguagem: TypeScript, build: Vite (compartilhado) }
+      backend: { framework: "Supabase (PostgREST + Realtime + Storage)", versao: DESCONHECIDO, runtime: DESCONHECIDO }
+      infra: { hospedagem: "Supabase (projeto próprio, hospedagem DESCONHECIDA — self-hosted ou cloud)", containerizacao: nao_aplicavel, proxy: DESCONHECIDO }
+      bibliotecas_chave: ["@supabase/supabase-js", "@hello-pangea/dnd", recharts, "@mg/ui"]
+    banco_de_dados:
+      - tipo: PostgreSQL (Supabase)
+        provedor: DESCONHECIDO (self-hosted Coolify ou Supabase Cloud)
+        nome_logico: central-suporte
+        migrations: "SQL solto em integrations/supabase/migrations/ — NÃO aplicado automaticamente, aplicação é manual via SQL Editor"
+        rls: parcial
+        multi_tenant: nao_aplicavel
+        chave_isolamento: nao_aplicavel
+    autenticacao:
+      metodo: Supabase Auth (Google OAuth)
+      rbac: sim
+      papeis: [admin_ti, direction, coordinator, "coordinator_sp/sc/sf/fn/rh", support_agent, dev, viewer, dp, fiscal, contabil, financeiro, societario, recepcao, rh]
+    pwa: { perfil: nao-aplicavel, manifest: nao, service_worker: nao, offline: nenhum }
+    dados_pessoais_lgpd:
+      trata_dados_pessoais: sim
+      categorias: [nome, email, conteudo_de_chamados_e_anexos]
+      retencao_definida: nao
+    integracoes: []
+    dependencias_internas: [crm-mg]
+    porta_local: DESCONHECIDO (compartilha porta do frontend, 3009)
+    variaveis_ambiente:
+      - { nome: VITE_SUPORTE_SUPABASE_URL, obrigatoria: true, sensivel: false, descricao: "URL do projeto Supabase" }
+      - { nome: VITE_SUPORTE_SUPABASE_PUBLISHABLE_KEY, obrigatoria: true, sensivel: false, descricao: "chave anon/publishable do Supabase" }
+
+  - slug: ponto-admin
+    nome: Ponto Admin
+    status: producao
+    criticidade: alta
+    setores: [ti-nucleo-digital, pessoal-dp]
+    setor_responsavel: ti-nucleo-digital
+    funcao: >
+      Administração do aplicativo de ponto eletrônico da empresa: gestão de
+      colaboradores, espelho de ponto, justificativas, férias — integrado
+      com um sistema externo chamado "Cronos".
+    repositorio: ./frontend/src/systems/ponto-admin
+    url_producao: https://pontoadmin.mendoncagalvao.com.br
+    stack:
+      frontend: { framework: React (embutido), versao: "19.2.6", linguagem: TypeScript, build: Vite }
+      backend: { framework: "API própria (VITE_CRONOS_API_URL)", versao: DESCONHECIDO, runtime: DESCONHECIDO }
+      infra: { hospedagem: DESCONHECIDO, containerizacao: DESCONHECIDO, proxy: DESCONHECIDO }
+      bibliotecas_chave: [DESCONHECIDO]
+    banco_de_dados:
+      - tipo: DESCONHECIDO
+        provedor: DESCONHECIDO (backend "Cronos" não está neste repositório)
+        nome_logico: DESCONHECIDO
+        migrations: nenhuma (não versionadas neste repo)
+        rls: DESCONHECIDO
+        multi_tenant: DESCONHECIDO
+        chave_isolamento: DESCONHECIDO
+    autenticacao: { metodo: DESCONHECIDO, rbac: DESCONHECIDO, papeis: [] }
+    pwa: { perfil: DESCONHECIDO, manifest: DESCONHECIDO, service_worker: DESCONHECIDO, offline: DESCONHECIDO }
+    dados_pessoais_lgpd:
+      trata_dados_pessoais: sim
+      categorias: [nome, dados_trabalhistas, ponto_eletronico]
+      retencao_definida: DESCONHECIDO
+    integracoes: ["Cronos (sistema de ponto externo)"]
+    dependencias_internas: [crm-mg]
+    porta_local: DESCONHECIDO
+    variaveis_ambiente:
+      - { nome: VITE_CRONOS_API_URL, obrigatoria: true, sensivel: false, descricao: "endpoint da API do Cronos" }
+
+  - slug: processar-ponto
+    nome: Processamento Ponto
+    status: producao
+    criticidade: media
+    setores: [pessoal-dp]
+    setor_responsavel: ti-nucleo-digital
+    funcao: >
+      Processamento e controle de ponto eletrônico — upload/leitura de
+      registros e geração de resumos.
+    repositorio: ./frontend/src/systems/processar-ponto
+    url_producao: https://processarponto.mendoncagalvao.com.br
+    stack:
+      frontend: { framework: React (embutido), versao: "19.2.6", linguagem: TypeScript, build: Vite }
+      backend: { framework: "API própria (VITE_PONTO_API_URL)", versao: DESCONHECIDO, runtime: DESCONHECIDO }
+      infra: { hospedagem: DESCONHECIDO, containerizacao: DESCONHECIDO, proxy: DESCONHECIDO }
+      bibliotecas_chave: [DESCONHECIDO]
+    banco_de_dados:
+      - { tipo: DESCONHECIDO, provedor: DESCONHECIDO, nome_logico: DESCONHECIDO, migrations: nenhuma, rls: DESCONHECIDO, multi_tenant: DESCONHECIDO, chave_isolamento: DESCONHECIDO }
+    autenticacao: { metodo: DESCONHECIDO, rbac: DESCONHECIDO, papeis: [] }
+    pwa: { perfil: DESCONHECIDO, manifest: DESCONHECIDO, service_worker: DESCONHECIDO, offline: DESCONHECIDO }
+    dados_pessoais_lgpd:
+      trata_dados_pessoais: sim
+      categorias: [nome, ponto_eletronico]
+      retencao_definida: DESCONHECIDO
+    integracoes: []
+    dependencias_internas: [crm-mg]
+    porta_local: DESCONHECIDO
+    variaveis_ambiente:
+      - { nome: VITE_PONTO_API_URL, obrigatoria: true, sensivel: false, descricao: "endpoint da API de processamento de ponto" }
+
+  - slug: taskflow
+    nome: TaskFlow
+    status: producao
+    criticidade: media
+    setores: [ti-nucleo-digital]
+    setor_responsavel: ti-nucleo-digital
+    funcao: >
+      Gestão de tarefas/fluxo de trabalho do time de TI (kanban próprio,
+      distinto do Kanban da Central de Suporte).
+    repositorio: ./frontend/src/systems/taskflow
+    url_producao: https://taskflow.nucleodigital.cloud
+    stack:
+      frontend: { framework: React (embutido), versao: "19.2.6", linguagem: TypeScript, build: Vite }
+      backend: { framework: "Supabase + API própria (VITE_TASKFLOW_API_URL)", versao: DESCONHECIDO, runtime: DESCONHECIDO }
+      infra: { hospedagem: DESCONHECIDO, containerizacao: DESCONHECIDO, proxy: DESCONHECIDO }
+      bibliotecas_chave: ["@supabase/supabase-js"]
+    banco_de_dados:
+      - { tipo: PostgreSQL (Supabase), provedor: DESCONHECIDO, nome_logico: taskflow, migrations: "nao versionadas neste repo", rls: DESCONHECIDO, multi_tenant: DESCONHECIDO, chave_isolamento: DESCONHECIDO }
+    autenticacao: { metodo: "Supabase Auth", rbac: DESCONHECIDO, papeis: [] }
+    pwa: { perfil: DESCONHECIDO, manifest: DESCONHECIDO, service_worker: DESCONHECIDO, offline: DESCONHECIDO }
+    dados_pessoais_lgpd: { trata_dados_pessoais: sim, categorias: [nome, email], retencao_definida: DESCONHECIDO }
+    integracoes: []
+    dependencias_internas: [crm-mg]
+    porta_local: DESCONHECIDO
+    variaveis_ambiente:
+      - { nome: VITE_TASKFLOW_SUPABASE_URL, obrigatoria: true, sensivel: false, descricao: "URL do projeto Supabase" }
+      - { nome: VITE_TASKFLOW_SUPABASE_ANON_KEY, obrigatoria: true, sensivel: false, descricao: "chave anon do Supabase" }
+      - { nome: VITE_TASKFLOW_API_URL, obrigatoria: false, sensivel: false, descricao: "endpoint de API própria complementar" }
+
+  - slug: mg-prospect
+    nome: MG Prospect
+    status: producao
+    criticidade: media
+    setores: [ti-nucleo-digital]
+    setor_responsavel: ti-nucleo-digital
+    funcao: >
+      Prospecção automática de clientes; páginas internas (staff) migradas
+      pro CRM nativo, páginas públicas (formulário de interesse, unsubscribe)
+      continuam no site original.
+    repositorio: ./frontend/src/systems/mg-prospect
+    url_producao: https://prospect.nucleodigital.cloud
+    stack:
+      frontend: { framework: React (embutido), versao: "19.2.6", linguagem: TypeScript, build: Vite }
+      backend: { framework: "Proxy via backend-fastapi (mgprospect_proxy)", versao: DESCONHECIDO, runtime: DESCONHECIDO }
+      infra: { hospedagem: DESCONHECIDO, containerizacao: DESCONHECIDO, proxy: backend-fastapi }
+      bibliotecas_chave: [DESCONHECIDO]
+    banco_de_dados:
+      - { tipo: DESCONHECIDO, provedor: DESCONHECIDO, nome_logico: DESCONHECIDO, migrations: nenhuma, rls: DESCONHECIDO, multi_tenant: DESCONHECIDO, chave_isolamento: DESCONHECIDO }
+    autenticacao: { metodo: DESCONHECIDO, rbac: DESCONHECIDO, papeis: [] }
+    pwa: { perfil: DESCONHECIDO, manifest: DESCONHECIDO, service_worker: DESCONHECIDO, offline: DESCONHECIDO }
+    dados_pessoais_lgpd: { trata_dados_pessoais: sim, categorias: [nome, email, telefone_de_leads], retencao_definida: DESCONHECIDO }
+    integracoes: []
+    dependencias_internas: [crm-mg, backend-fastapi]
+    porta_local: DESCONHECIDO
+    variaveis_ambiente: []
+
+  # ============================================================
+  # CONTÁBIL
+  # ============================================================
+  - slug: bimg
+    nome: "BIMG - Business Intelligence"
+    status: producao
+    criticidade: media
+    setores: [contabil]
+    setor_responsavel: DESCONHECIDO
+    funcao: "Plataforma de Business Intelligence e análise de dados (descrição do banco de sistemas)."
+    repositorio: ./frontend/src/systems/bimg
+    url_producao: https://bimg.nucleodigital.cloud
+    stack:
+      frontend: { framework: React (embutido), versao: "19.2.6", linguagem: TypeScript, build: Vite }
+      backend: { framework: "Supabase + API própria (VITE_BIMG_API_URL)", versao: DESCONHECIDO, runtime: DESCONHECIDO }
+      infra: { hospedagem: DESCONHECIDO, containerizacao: DESCONHECIDO, proxy: DESCONHECIDO }
+      bibliotecas_chave: ["@supabase/supabase-js"]
+    banco_de_dados:
+      - { tipo: PostgreSQL (Supabase), provedor: DESCONHECIDO, nome_logico: bimg, migrations: "nao versionadas neste repo", rls: DESCONHECIDO, multi_tenant: DESCONHECIDO, chave_isolamento: DESCONHECIDO }
+    autenticacao: { metodo: "Supabase Auth", rbac: DESCONHECIDO, papeis: [] }
+    pwa: { perfil: DESCONHECIDO, manifest: DESCONHECIDO, service_worker: DESCONHECIDO, offline: DESCONHECIDO }
+    dados_pessoais_lgpd: { trata_dados_pessoais: DESCONHECIDO, categorias: [], retencao_definida: DESCONHECIDO }
+    integracoes: []
+    dependencias_internas: [crm-mg]
+    porta_local: DESCONHECIDO
+    variaveis_ambiente:
+      - { nome: VITE_BIMG_SUPABASE_URL, obrigatoria: true, sensivel: false, descricao: "URL do projeto Supabase" }
+      - { nome: VITE_BIMG_SUPABASE_ANON_KEY, obrigatoria: true, sensivel: false, descricao: "chave anon do Supabase" }
+      - { nome: VITE_BIMG_API_URL, obrigatoria: false, sensivel: false, descricao: "endpoint de API própria complementar" }
+
+  - slug: contai
+    nome: ContAI
+    status: producao
+    criticidade: media
+    setores: [contabil]
+    setor_responsavel: DESCONHECIDO
+    funcao: "Assistente de IA para contabilidade (descrição do banco de sistemas)."
+    repositorio: ./frontend/src/systems/contai
+    url_producao: https://contai.mendoncagalvao.com.br
+    stack:
+      frontend: { framework: React (embutido), versao: "19.2.6", linguagem: TypeScript, build: Vite }
+      backend: { framework: "API própria (VITE_CONTAI_API_URL)", versao: DESCONHECIDO, runtime: DESCONHECIDO }
+      infra: { hospedagem: DESCONHECIDO, containerizacao: DESCONHECIDO, proxy: DESCONHECIDO }
+      bibliotecas_chave: [DESCONHECIDO]
+    banco_de_dados:
+      - { tipo: DESCONHECIDO, provedor: DESCONHECIDO, nome_logico: DESCONHECIDO, migrations: nenhuma, rls: DESCONHECIDO, multi_tenant: DESCONHECIDO, chave_isolamento: DESCONHECIDO }
+    autenticacao: { metodo: DESCONHECIDO, rbac: DESCONHECIDO, papeis: [] }
+    pwa: { perfil: DESCONHECIDO, manifest: DESCONHECIDO, service_worker: DESCONHECIDO, offline: DESCONHECIDO }
+    dados_pessoais_lgpd: { trata_dados_pessoais: DESCONHECIDO, categorias: [], retencao_definida: DESCONHECIDO }
+    integracoes: ["IA generativa (fornecedor DESCONHECIDO — não confirmado no front)"]
+    dependencias_internas: [crm-mg]
+    porta_local: DESCONHECIDO
+    variaveis_ambiente:
+      - { nome: VITE_CONTAI_API_URL, obrigatoria: true, sensivel: false, descricao: "endpoint da API do ContAI" }
+
+  - slug: copilot-contabil
+    nome: Copilot Contábil
+    status: producao
+    criticidade: media
+    setores: [contabil]
+    setor_responsavel: DESCONHECIDO
+    funcao: "Copiloto inteligente para tarefas contábeis (descrição do banco de sistemas)."
+    repositorio: ./frontend/src/systems/copilot-contabil
+    url_producao: https://copilot.mendoncagalvao.com.br
+    stack:
+      frontend: { framework: React (embutido), versao: "19.2.6", linguagem: "TypeScript/JavaScript (App em .jsx)", build: Vite }
+      backend: { framework: Supabase, versao: DESCONHECIDO, runtime: DESCONHECIDO }
+      infra: { hospedagem: DESCONHECIDO, containerizacao: DESCONHECIDO, proxy: DESCONHECIDO }
+      bibliotecas_chave: ["@supabase/supabase-js"]
+    banco_de_dados:
+      - { tipo: PostgreSQL (Supabase), provedor: DESCONHECIDO, nome_logico: copilot-contabil, migrations: "nao versionadas neste repo", rls: DESCONHECIDO, multi_tenant: DESCONHECIDO, chave_isolamento: DESCONHECIDO }
+    autenticacao: { metodo: "Supabase Auth", rbac: DESCONHECIDO, papeis: [] }
+    pwa: { perfil: DESCONHECIDO, manifest: DESCONHECIDO, service_worker: DESCONHECIDO, offline: DESCONHECIDO }
+    dados_pessoais_lgpd: { trata_dados_pessoais: DESCONHECIDO, categorias: [], retencao_definida: DESCONHECIDO }
+    integracoes: ["IA generativa (fornecedor DESCONHECIDO)"]
+    dependencias_internas: [crm-mg]
+    porta_local: DESCONHECIDO
+    variaveis_ambiente:
+      - { nome: VITE_COPILOT_SUPABASE_URL, obrigatoria: true, sensivel: false, descricao: "URL do projeto Supabase" }
+      - { nome: VITE_COPILOT_SUPABASE_ANON_KEY, obrigatoria: true, sensivel: false, descricao: "chave anon do Supabase" }
+      - { nome: VITE_COPILOT_API_URL, obrigatoria: false, sensivel: false, descricao: "endpoint de API própria complementar" }
+
+  - slug: dashboard-dre
+    nome: Dashboard DRE
+    status: producao
+    criticidade: media
+    setores: [contabil]
+    setor_responsavel: DESCONHECIDO
+    funcao: "Dashboard de métricas do DRE (Demonstração do Resultado do Exercício)."
+    repositorio: ./frontend/src/systems/dashboard-dre
+    url_producao: https://dash-razao.vercel.app
+    stack:
+      frontend: { framework: React (embutido), versao: "19.2.6", linguagem: TypeScript, build: Vite }
+      backend: { framework: "Proxy via backend-fastapi (dre_proxy)", versao: DESCONHECIDO, runtime: DESCONHECIDO }
+      infra: { hospedagem: "Vercel (url_producao aponta pra lá, além do proxy no Coolify)", containerizacao: DESCONHECIDO, proxy: backend-fastapi }
+      bibliotecas_chave: [DESCONHECIDO]
+    banco_de_dados:
+      - { tipo: DESCONHECIDO, provedor: DESCONHECIDO, nome_logico: DESCONHECIDO, migrations: nenhuma, rls: DESCONHECIDO, multi_tenant: DESCONHECIDO, chave_isolamento: DESCONHECIDO }
+    autenticacao: { metodo: DESCONHECIDO, rbac: DESCONHECIDO, papeis: [] }
+    pwa: { perfil: DESCONHECIDO, manifest: DESCONHECIDO, service_worker: DESCONHECIDO, offline: DESCONHECIDO }
+    dados_pessoais_lgpd: { trata_dados_pessoais: nao, categorias: [], retencao_definida: nao_aplicavel }
+    integracoes: []
+    dependencias_internas: [crm-mg, backend-fastapi]
+    porta_local: DESCONHECIDO
+    variaveis_ambiente: []
+
+  - slug: documentacao-contabil
+    nome: Documentação Contábil
+    status: producao
+    criticidade: media
+    setores: [contabil]
+    setor_responsavel: DESCONHECIDO
+    funcao: DESCONHECIDO (não confirmado no banco de sistemas fornecido; nome sugere gestão de documentos contábeis)
+    repositorio: ./frontend/src/systems/documentacao-contabil
+    url_producao: https://doccontabil.mendoncagalvao.com.br
+    stack:
+      frontend: { framework: React (embutido), versao: "19.2.6", linguagem: TypeScript, build: Vite }
+      backend: { framework: "API própria (VITE_DOCCONTABIL_API_URL)", versao: DESCONHECIDO, runtime: DESCONHECIDO }
+      infra: { hospedagem: DESCONHECIDO, containerizacao: DESCONHECIDO, proxy: DESCONHECIDO }
+      bibliotecas_chave: [DESCONHECIDO]
+    banco_de_dados:
+      - { tipo: DESCONHECIDO, provedor: DESCONHECIDO, nome_logico: DESCONHECIDO, migrations: nenhuma, rls: DESCONHECIDO, multi_tenant: DESCONHECIDO, chave_isolamento: DESCONHECIDO }
+    autenticacao: { metodo: DESCONHECIDO, rbac: DESCONHECIDO, papeis: [] }
+    pwa: { perfil: DESCONHECIDO, manifest: DESCONHECIDO, service_worker: DESCONHECIDO, offline: DESCONHECIDO }
+    dados_pessoais_lgpd: { trata_dados_pessoais: DESCONHECIDO, categorias: [], retencao_definida: DESCONHECIDO }
+    integracoes: []
+    dependencias_internas: [crm-mg]
+    porta_local: DESCONHECIDO
+    variaveis_ambiente:
+      - { nome: VITE_DOCCONTABIL_API_URL, obrigatoria: true, sensivel: false, descricao: "endpoint da API de documentação contábil" }
+
+  # ============================================================
+  # FISCAL
+  # ============================================================
+  - slug: conciliacao-fiscal
+    nome: "Conciliação Fiscal (FiscalMatch)"
+    status: producao
+    criticidade: alta
+    setores: [fiscal]
+    setor_responsavel: DESCONHECIDO
+    funcao: "Ferramenta para conciliação de notas e SPED contábil."
+    repositorio: ./frontend/src/systems/conciliacao-fiscal
+    url_producao: https://appfiscal.mendoncagalvao.com.br
+    stack:
+      frontend: { framework: React (embutido), versao: "19.2.6", linguagem: TypeScript, build: Vite }
+      backend: { framework: "API própria (VITE_FISCAL_API_BASE_URL)", versao: DESCONHECIDO, runtime: DESCONHECIDO }
+      infra: { hospedagem: DESCONHECIDO, containerizacao: DESCONHECIDO, proxy: DESCONHECIDO }
+      bibliotecas_chave: [DESCONHECIDO]
+    banco_de_dados:
+      - { tipo: DESCONHECIDO, provedor: DESCONHECIDO, nome_logico: DESCONHECIDO, migrations: nenhuma, rls: DESCONHECIDO, multi_tenant: DESCONHECIDO, chave_isolamento: DESCONHECIDO }
+    autenticacao: { metodo: DESCONHECIDO, rbac: DESCONHECIDO, papeis: [] }
+    pwa: { perfil: DESCONHECIDO, manifest: DESCONHECIDO, service_worker: DESCONHECIDO, offline: DESCONHECIDO }
+    dados_pessoais_lgpd: { trata_dados_pessoais: DESCONHECIDO, categorias: [dados_fiscais], retencao_definida: DESCONHECIDO }
+    integracoes: []
+    dependencias_internas: [crm-mg]
+    porta_local: DESCONHECIDO
+    variaveis_ambiente:
+      - { nome: VITE_FISCAL_API_BASE_URL, obrigatoria: true, sensivel: false, descricao: "endpoint da API de conciliação fiscal" }
+
+  - slug: fronteira
+    nome: "ICMS Fronteira"
+    status: homologacao
+    criticidade: alta
+    setores: [fiscal]
+    setor_responsavel: DESCONHECIDO
+    funcao: >
+      Cálculo de ICMS fronteira. Versão v8 (código vendorizado do repo
+      tnunes8/sistema-fronteira-v8) ainda em homologação contra o v7 Django
+      em produção — ver comentário em FronteiraApp.tsx antes de alterar.
+    repositorio: ./frontend/src/systems/fronteira
+    url_producao: https://fronteira.mendoncagalvao.com.br
+    stack:
+      frontend: { framework: React (embutido, código vendorizado v8), versao: "19.2.6", linguagem: TypeScript, build: Vite }
+      backend: { framework: "Proxy via backend-fastapi (fronteira_proxy) + backend Django v7 externo em producao", versao: DESCONHECIDO, runtime: DESCONHECIDO }
+      infra: { hospedagem: DESCONHECIDO, containerizacao: DESCONHECIDO, proxy: backend-fastapi }
+      bibliotecas_chave: [DESCONHECIDO]
+    banco_de_dados:
+      - { tipo: DESCONHECIDO, provedor: DESCONHECIDO, nome_logico: DESCONHECIDO, migrations: nenhuma, rls: DESCONHECIDO, multi_tenant: DESCONHECIDO, chave_isolamento: DESCONHECIDO }
+    autenticacao: { metodo: DESCONHECIDO, rbac: DESCONHECIDO, papeis: [] }
+    pwa: { perfil: DESCONHECIDO, manifest: DESCONHECIDO, service_worker: DESCONHECIDO, offline: DESCONHECIDO }
+    dados_pessoais_lgpd: { trata_dados_pessoais: DESCONHECIDO, categorias: [dados_fiscais], retencao_definida: DESCONHECIDO }
+    integracoes: []
+    dependencias_internas: [crm-mg, backend-fastapi]
+    porta_local: DESCONHECIDO
+    variaveis_ambiente: []
+
+  # ============================================================
+  # SOCIETÁRIO
+  # ============================================================
+  - slug: abertura-empresa
+    nome: "Abertura de Empresa"
+    status: producao
+    criticidade: media
+    setores: [societario]
+    setor_responsavel: DESCONHECIDO
+    funcao: "Gerenciamento de abertura de novas empresas."
+    repositorio: ./frontend/src/systems/abertura-empresa
+    url_producao: https://abrirempresa.mendoncagalvao.com.br
+    stack:
+      frontend: { framework: React (embutido), versao: "19.2.6", linguagem: TypeScript, build: Vite }
+      backend: { framework: "Proxy via backend-fastapi (abertura_empresa_proxy)", versao: DESCONHECIDO, runtime: DESCONHECIDO }
+      infra: { hospedagem: DESCONHECIDO, containerizacao: DESCONHECIDO, proxy: backend-fastapi }
+      bibliotecas_chave: [DESCONHECIDO]
+    banco_de_dados:
+      - { tipo: DESCONHECIDO, provedor: DESCONHECIDO, nome_logico: DESCONHECIDO, migrations: nenhuma, rls: DESCONHECIDO, multi_tenant: DESCONHECIDO, chave_isolamento: DESCONHECIDO }
+    autenticacao: { metodo: DESCONHECIDO, rbac: DESCONHECIDO, papeis: [] }
+    pwa: { perfil: DESCONHECIDO, manifest: DESCONHECIDO, service_worker: DESCONHECIDO, offline: DESCONHECIDO }
+    dados_pessoais_lgpd: { trata_dados_pessoais: sim, categorias: [nome, cpf, dados_societarios], retencao_definida: DESCONHECIDO }
+    integracoes: []
+    dependencias_internas: [crm-mg, backend-fastapi]
+    porta_local: DESCONHECIDO
+    variaveis_ambiente: []
+
+  - slug: consulta-cnpj
+    nome: "Consulta CNPJ"
+    status: producao
+    criticidade: baixa
+    setores: [societario]
+    setor_responsavel: DESCONHECIDO
+    funcao: DESCONHECIDO (não confirmado no banco de sistemas fornecido; nome sugere consulta de dados públicos de CNPJ)
+    repositorio: ./frontend/src/systems/consulta-cnpj
+    url_producao: https://consultacnpj.mendoncagalvao.com.br
+    stack:
+      frontend: { framework: React (embutido), versao: "19.2.6", linguagem: TypeScript, build: Vite }
+      backend: { framework: "API própria (VITE_CNPJ_API_URL)", versao: DESCONHECIDO, runtime: DESCONHECIDO }
+      infra: { hospedagem: DESCONHECIDO, containerizacao: DESCONHECIDO, proxy: DESCONHECIDO }
+      bibliotecas_chave: [DESCONHECIDO]
+    banco_de_dados:
+      - { tipo: DESCONHECIDO, provedor: DESCONHECIDO, nome_logico: DESCONHECIDO, migrations: nenhuma, rls: DESCONHECIDO, multi_tenant: DESCONHECIDO, chave_isolamento: DESCONHECIDO }
+    autenticacao: { metodo: DESCONHECIDO, rbac: DESCONHECIDO, papeis: [] }
+    pwa: { perfil: DESCONHECIDO, manifest: DESCONHECIDO, service_worker: DESCONHECIDO, offline: DESCONHECIDO }
+    dados_pessoais_lgpd: { trata_dados_pessoais: nao, categorias: [], retencao_definida: nao_aplicavel }
+    integracoes: ["API pública de CNPJ (provedor DESCONHECIDO)"]
+    dependencias_internas: [crm-mg]
+    porta_local: DESCONHECIDO
+    variaveis_ambiente:
+      - { nome: VITE_CNPJ_API_URL, obrigatoria: true, sensivel: false, descricao: "endpoint da API de consulta de CNPJ" }
+
+  - slug: carne-leao
+    nome: "Carnê-Leão (Contábil Script)"
+    status: producao
+    criticidade: baixa
+    setores: [societario]
+    setor_responsavel: DESCONHECIDO
+    funcao: DESCONHECIDO (repositório de backend real, PROJETO-CARNE-LEAO, não está neste workspace)
+    repositorio: ./frontend/src/systems/carne-leao (frontend apenas — backend em repositório externo)
+    url_producao: https://contabilscript.vercel.app
+    stack:
+      frontend: { framework: React (embutido), versao: "19.2.6", linguagem: TypeScript, build: Vite }
+      backend: { framework: "API própria (VITE_CARNE_LEAO_API_URL, repositório externo, hospedado na Vercel)", versao: DESCONHECIDO, runtime: DESCONHECIDO }
+      infra: { hospedagem: Vercel, containerizacao: DESCONHECIDO, proxy: DESCONHECIDO }
+      bibliotecas_chave: [DESCONHECIDO]
+    banco_de_dados:
+      - { tipo: DESCONHECIDO, provedor: DESCONHECIDO, nome_logico: DESCONHECIDO, migrations: nenhuma, rls: DESCONHECIDO, multi_tenant: DESCONHECIDO, chave_isolamento: DESCONHECIDO }
+    autenticacao: { metodo: DESCONHECIDO, rbac: DESCONHECIDO, papeis: [] }
+    pwa: { perfil: DESCONHECIDO, manifest: DESCONHECIDO, service_worker: DESCONHECIDO, offline: DESCONHECIDO }
+    dados_pessoais_lgpd: { trata_dados_pessoais: sim, categorias: [dados_fiscais_pessoais], retencao_definida: DESCONHECIDO }
+    integracoes: []
+    dependencias_internas: [crm-mg]
+    porta_local: DESCONHECIDO
+    variaveis_ambiente:
+      - { nome: VITE_CARNE_LEAO_API_URL, obrigatoria: true, sensivel: false, descricao: "endpoint do backend externo (repo PROJETO-CARNE-LEAO)" }
+
+  # ============================================================
+  # PESSOAL / DP
+  # ============================================================
+  - slug: agendamento-ferias
+    nome: "Agendamento de Férias"
+    status: producao
+    criticidade: media
+    setores: [pessoal-dp, transversal]
+    setor_responsavel: DESCONHECIDO
+    funcao: "Agendamento e controle de férias dos colaboradores."
+    repositorio: ./frontend/src/systems/agendamento-ferias
+    url_producao: https://ferias.nucleodigital.cloud
+    stack:
+      frontend: { framework: "React (embutido, App em .jsx)", versao: "19.2.6", linguagem: "JavaScript/JSX", build: Vite }
+      backend: { framework: Supabase, versao: DESCONHECIDO, runtime: DESCONHECIDO }
+      infra: { hospedagem: DESCONHECIDO, containerizacao: DESCONHECIDO, proxy: DESCONHECIDO }
+      bibliotecas_chave: ["@supabase/supabase-js", "@emailjs/browser"]
+    banco_de_dados:
+      - { tipo: PostgreSQL (Supabase), provedor: DESCONHECIDO, nome_logico: ferias, migrations: "nao versionadas neste repo", rls: DESCONHECIDO, multi_tenant: DESCONHECIDO, chave_isolamento: DESCONHECIDO }
+    autenticacao: { metodo: "Supabase Auth", rbac: DESCONHECIDO, papeis: [] }
+    pwa: { perfil: DESCONHECIDO, manifest: DESCONHECIDO, service_worker: DESCONHECIDO, offline: DESCONHECIDO }
+    dados_pessoais_lgpd: { trata_dados_pessoais: sim, categorias: [nome, dados_trabalhistas, ferias], retencao_definida: DESCONHECIDO }
+    integracoes: ["EmailJS (notificações por e-mail)"]
+    dependencias_internas: [crm-mg]
+    porta_local: DESCONHECIDO
+    variaveis_ambiente:
+      - { nome: VITE_FERIAS_SUPABASE_URL, obrigatoria: true, sensivel: false, descricao: "URL do projeto Supabase" }
+      - { nome: VITE_FERIAS_SUPABASE_ANON_KEY, obrigatoria: true, sensivel: false, descricao: "chave anon do Supabase" }
+      - { nome: VITE_FERIAS_EMAILJS_PUBLIC_KEY, obrigatoria: false, sensivel: false, descricao: "chave pública EmailJS" }
+      - { nome: VITE_FERIAS_EMAILJS_SERVICE_ID, obrigatoria: false, sensivel: false, descricao: "ID do serviço EmailJS" }
+      - { nome: VITE_FERIAS_EMAILJS_TEMPLATE_ID, obrigatoria: false, sensivel: false, descricao: "ID do template EmailJS" }
+
+  - slug: analytics-dp
+    nome: "Analytics DP"
+    status: producao
+    criticidade: media
+    setores: [pessoal-dp]
+    setor_responsavel: DESCONHECIDO
+    funcao: DESCONHECIDO (não confirmado no banco de sistemas fornecido; nome sugere analytics/dashboards de Departamento Pessoal)
+    repositorio: ./frontend/src/systems/analytics-dp
+    url_producao: https://analyticsdp.mendoncagalvao.com.br
+    stack:
+      frontend: { framework: React (embutido), versao: "19.2.6", linguagem: TypeScript, build: Vite }
+      backend: { framework: "API própria (VITE_ANALYTICS_DP_API_URL)", versao: DESCONHECIDO, runtime: DESCONHECIDO }
+      infra: { hospedagem: DESCONHECIDO, containerizacao: DESCONHECIDO, proxy: DESCONHECIDO }
+      bibliotecas_chave: [DESCONHECIDO]
+    banco_de_dados:
+      - { tipo: DESCONHECIDO, provedor: DESCONHECIDO, nome_logico: DESCONHECIDO, migrations: nenhuma, rls: DESCONHECIDO, multi_tenant: DESCONHECIDO, chave_isolamento: DESCONHECIDO }
+    autenticacao: { metodo: DESCONHECIDO, rbac: DESCONHECIDO, papeis: [] }
+    pwa: { perfil: DESCONHECIDO, manifest: DESCONHECIDO, service_worker: DESCONHECIDO, offline: DESCONHECIDO }
+    dados_pessoais_lgpd: { trata_dados_pessoais: sim, categorias: [dados_trabalhistas], retencao_definida: DESCONHECIDO }
+    integracoes: []
+    dependencias_internas: [crm-mg]
+    porta_local: DESCONHECIDO
+    variaveis_ambiente:
+      - { nome: VITE_ANALYTICS_DP_API_URL, obrigatoria: true, sensivel: false, descricao: "endpoint da API de analytics de DP" }
+
+  - slug: dash-rh
+    nome: "Dash RH"
+    status: producao
+    criticidade: media
+    setores: [pessoal-dp]
+    setor_responsavel: DESCONHECIDO
+    funcao: DESCONHECIDO (registrado no banco de sistemas como setor RESTRITO; sem descrição no seed disponível)
+    repositorio: ./frontend/src/systems/dash-rh
+    url_producao: https://dashrh.nucleodigital.cloud
+    stack:
+      frontend: { framework: React (embutido), versao: "19.2.6", linguagem: TypeScript, build: Vite }
+      backend: { framework: DESCONHECIDO, versao: DESCONHECIDO, runtime: DESCONHECIDO }
+      infra: { hospedagem: DESCONHECIDO, containerizacao: DESCONHECIDO, proxy: DESCONHECIDO }
+      bibliotecas_chave: [DESCONHECIDO]
+    banco_de_dados:
+      - { tipo: DESCONHECIDO, provedor: DESCONHECIDO, nome_logico: DESCONHECIDO, migrations: nenhuma, rls: DESCONHECIDO, multi_tenant: DESCONHECIDO, chave_isolamento: DESCONHECIDO }
+    autenticacao: { metodo: DESCONHECIDO, rbac: DESCONHECIDO, papeis: [] }
+    pwa: { perfil: DESCONHECIDO, manifest: DESCONHECIDO, service_worker: DESCONHECIDO, offline: DESCONHECIDO }
+    dados_pessoais_lgpd: { trata_dados_pessoais: sim, categorias: [dados_trabalhistas], retencao_definida: DESCONHECIDO }
+    integracoes: []
+    dependencias_internas: [crm-mg]
+    porta_local: DESCONHECIDO
+    variaveis_ambiente: []
+    observacao: "Setor RESTRITO no banco de sistemas — provável acesso sensível/restrito, confirmar com o time (ver PENDENCIAS.md)."
+
+  - slug: calculo-adiantamento
+    nome: "Cálculo Adiantamento"
+    status: producao
+    criticidade: baixa
+    setores: [pessoal-dp]
+    setor_responsavel: DESCONHECIDO
+    funcao: "Cálculo de adiantamentos salariais."
+    repositorio: ./frontend/src/systems/calculo-adiantamento
+    url_producao: https://adiantamento.mendoncagalvao.com.br
+    stack:
+      frontend: { framework: React (embutido), versao: "19.2.6", linguagem: TypeScript, build: Vite }
+      backend: { framework: Supabase, versao: DESCONHECIDO, runtime: DESCONHECIDO }
+      infra: { hospedagem: DESCONHECIDO, containerizacao: DESCONHECIDO, proxy: DESCONHECIDO }
+      bibliotecas_chave: ["@supabase/supabase-js"]
+    banco_de_dados:
+      - { tipo: PostgreSQL (Supabase), provedor: DESCONHECIDO, nome_logico: calculo-adiantamento, migrations: "nao versionadas neste repo", rls: DESCONHECIDO, multi_tenant: DESCONHECIDO, chave_isolamento: DESCONHECIDO }
+    autenticacao: { metodo: "Supabase Auth", rbac: DESCONHECIDO, papeis: [] }
+    pwa: { perfil: DESCONHECIDO, manifest: DESCONHECIDO, service_worker: DESCONHECIDO, offline: DESCONHECIDO }
+    dados_pessoais_lgpd: { trata_dados_pessoais: sim, categorias: [nome, dados_trabalhistas_salariais], retencao_definida: DESCONHECIDO }
+    integracoes: []
+    dependencias_internas: [crm-mg]
+    porta_local: DESCONHECIDO
+    variaveis_ambiente:
+      - { nome: VITE_ADIANTAMENTO_SUPABASE_URL, obrigatoria: DESCONHECIDO, sensivel: false, descricao: "nome exato da env var não confirmado — ver PENDENCIAS.md" }
+
+  - slug: aeronord
+    nome: "Aeronord - Convocações & Recibos"
+    status: producao
+    criticidade: baixa
+    setores: [pessoal-dp]
+    setor_responsavel: DESCONHECIDO
+    funcao: "Convocações e geração de recibos para o cliente Aeronord."
+    repositorio: ./frontend/src/systems/aeronord
+    url_producao: https://nordcv.lovable.app/cv
+    stack:
+      frontend: { framework: React (embutido), versao: "19.2.6", linguagem: TypeScript, build: Vite }
+      backend: { framework: DESCONHECIDO, versao: DESCONHECIDO, runtime: DESCONHECIDO }
+      infra: { hospedagem: "Lovable (url_producao aponta pra lovable.app)", containerizacao: DESCONHECIDO, proxy: DESCONHECIDO }
+      bibliotecas_chave: [DESCONHECIDO]
+    banco_de_dados:
+      - { tipo: DESCONHECIDO, provedor: DESCONHECIDO, nome_logico: DESCONHECIDO, migrations: nenhuma, rls: DESCONHECIDO, multi_tenant: DESCONHECIDO, chave_isolamento: DESCONHECIDO }
+    autenticacao: { metodo: DESCONHECIDO, rbac: DESCONHECIDO, papeis: [] }
+    pwa: { perfil: DESCONHECIDO, manifest: DESCONHECIDO, service_worker: DESCONHECIDO, offline: DESCONHECIDO }
+    dados_pessoais_lgpd: { trata_dados_pessoais: sim, categorias: [nome, dados_trabalhistas], retencao_definida: DESCONHECIDO }
+    integracoes: []
+    dependencias_internas: [crm-mg]
+    porta_local: DESCONHECIDO
+    variaveis_ambiente: []
+
+  - slug: calculadora-rescisao
+    nome: "Calculadora de Rescisão"
+    status: producao
+    criticidade: baixa
+    setores: [pessoal-dp]
+    setor_responsavel: DESCONHECIDO
+    funcao: "Cálculo de rescisões trabalhistas."
+    repositorio: ./frontend/src/systems/calculadora-rescisao
+    url_producao: https://calculadoramg.lovable.app
+    stack:
+      frontend: { framework: React (embutido), versao: "19.2.6", linguagem: TypeScript, build: Vite }
+      backend: { framework: "nenhum identificado — provavel calculo 100% client-side", versao: nao_aplicavel, runtime: nao_aplicavel }
+      infra: { hospedagem: "Lovable (url_producao) + embutido no crm-mg", containerizacao: DESCONHECIDO, proxy: DESCONHECIDO }
+      bibliotecas_chave: [DESCONHECIDO]
+    banco_de_dados: []
+    autenticacao: { metodo: DESCONHECIDO, rbac: nao, papeis: [] }
+    pwa: { perfil: DESCONHECIDO, manifest: DESCONHECIDO, service_worker: DESCONHECIDO, offline: DESCONHECIDO }
+    dados_pessoais_lgpd: { trata_dados_pessoais: nao, categorias: [], retencao_definida: nao_aplicavel }
+    integracoes: []
+    dependencias_internas: [crm-mg]
+    porta_local: DESCONHECIDO
+    variaveis_ambiente: []
+
+  - slug: calculo-comissao
+    nome: "Sistema de Cálculo de Comissão"
+    status: producao
+    criticidade: baixa
+    setores: [pessoal-dp]
+    setor_responsavel: DESCONHECIDO
+    funcao: "Cálculo de comissões de vendas."
+    repositorio: ./frontend/src/systems/calculo-comissao
+    url_producao: https://calculadp.lovable.app
+    stack:
+      frontend: { framework: React (embutido), versao: "19.2.6", linguagem: TypeScript, build: Vite }
+      backend: { framework: "nenhum identificado — provavel calculo 100% client-side", versao: nao_aplicavel, runtime: nao_aplicavel }
+      infra: { hospedagem: "Lovable (url_producao) + embutido no crm-mg", containerizacao: DESCONHECIDO, proxy: DESCONHECIDO }
+      bibliotecas_chave: [DESCONHECIDO]
+    banco_de_dados: []
+    autenticacao: { metodo: DESCONHECIDO, rbac: nao, papeis: [] }
+    pwa: { perfil: DESCONHECIDO, manifest: DESCONHECIDO, service_worker: DESCONHECIDO, offline: DESCONHECIDO }
+    dados_pessoais_lgpd: { trata_dados_pessoais: nao, categorias: [], retencao_definida: nao_aplicavel }
+    integracoes: []
+    dependencias_internas: [crm-mg]
+    porta_local: DESCONHECIDO
+    variaveis_ambiente: []
+
+  - slug: guia-dp
+    nome: "Guia DP"
+    status: producao
+    criticidade: baixa
+    setores: [pessoal-dp]
+    setor_responsavel: DESCONHECIDO
+    funcao: "Guia de Departamento Pessoal e Contabilidade para clientes."
+    repositorio: ./frontend/src/systems/guia-dp
+    url_producao: https://guiadp.mendoncagalvao.com.br
+    stack:
+      frontend: { framework: React (embutido), versao: "19.2.6", linguagem: TypeScript, build: Vite }
+      backend: { framework: "API própria (VITE_GUIADP_API_BASE_URL)", versao: DESCONHECIDO, runtime: DESCONHECIDO }
+      infra: { hospedagem: DESCONHECIDO, containerizacao: DESCONHECIDO, proxy: DESCONHECIDO }
+      bibliotecas_chave: [DESCONHECIDO]
+    banco_de_dados:
+      - { tipo: DESCONHECIDO, provedor: DESCONHECIDO, nome_logico: DESCONHECIDO, migrations: nenhuma, rls: DESCONHECIDO, multi_tenant: DESCONHECIDO, chave_isolamento: DESCONHECIDO }
+    autenticacao: { metodo: DESCONHECIDO, rbac: DESCONHECIDO, papeis: [] }
+    pwa: { perfil: DESCONHECIDO, manifest: DESCONHECIDO, service_worker: DESCONHECIDO, offline: DESCONHECIDO }
+    dados_pessoais_lgpd: { trata_dados_pessoais: DESCONHECIDO, categorias: [], retencao_definida: DESCONHECIDO }
+    integracoes: []
+    dependencias_internas: [crm-mg]
+    porta_local: DESCONHECIDO
+    variaveis_ambiente:
+      - { nome: VITE_GUIADP_API_BASE_URL, obrigatoria: true, sensivel: false, descricao: "endpoint da API do Guia DP" }
+
+  # ============================================================
+  # TRANSVERSAL (geral / múltiplos setores)
+  # ============================================================
+  - slug: obrigacoes
+    nome: "Obrigações Acessórias"
+    status: desenvolvimento
+    criticidade: media
+    setores: [transversal]
+    setor_responsavel: DESCONHECIDO
+    funcao: >
+      Controle de entrega de obrigações acessórias, com portal do cliente
+      (magic link, sessão separada do SSO do escritório). Sistema satélite
+      do CRM, Supabase próprio, multi-tenant real (dado de mais de uma
+      empresa-cliente na mesma tabela, isolado por RLS).
+    repositorio: ./frontend/src/systems/obrigacoes
+    url_producao: "# (nao implantado standalone — url no banco de sistemas é '#')"
+    stack:
+      frontend: { framework: React (embutido), versao: "19.2.6", linguagem: TypeScript, build: Vite }
+      backend: { framework: "Supabase + worker próprio (services/obrigacoes-recibo)", versao: DESCONHECIDO, runtime: DESCONHECIDO }
+      infra: { hospedagem: DESCONHECIDO, containerizacao: DESCONHECIDO, proxy: DESCONHECIDO }
+      bibliotecas_chave: ["@supabase/supabase-js"]
+    banco_de_dados:
+      - { tipo: PostgreSQL (Supabase), provedor: DESCONHECIDO, nome_logico: obrigacoes, migrations: "frontend/src/systems/obrigacoes/integrations/supabase/migrations/", rls: sim, multi_tenant: sim, chave_isolamento: "empresa (via JWT do cliente, nunca de rota/query string)" }
+    autenticacao:
+      metodo: "Supabase Auth — SSO Google (escritório) + magic link e-mail (portal do cliente), perímetros/rotas separados"
+      rbac: sim
+      papeis: [ADMIN, GESTOR, COLABORADOR]
+    pwa: { perfil: DESCONHECIDO, manifest: DESCONHECIDO, service_worker: DESCONHECIDO, offline: DESCONHECIDO }
+    dados_pessoais_lgpd: { trata_dados_pessoais: sim, categorias: [documentos_de_clientes], retencao_definida: DESCONHECIDO }
+    integracoes: []
+    dependencias_internas: [crm-mg, obrigacoes-recibo]
+    porta_local: DESCONHECIDO
+    variaveis_ambiente:
+      - { nome: VITE_OBRIGACOES_SUPABASE_URL, obrigatoria: false, sensivel: false, descricao: "URL do projeto Supabase — sem ela o modulo se declara indisponivel (fail-soft), nao quebra o CRM" }
+      - { nome: VITE_OBRIGACOES_SUPABASE_PUBLISHABLE_KEY, obrigatoria: false, sensivel: false, descricao: "chave anon/publishable do Supabase" }
+    observacao: "Requer configurar o Auth Hook 'custom_access_token' no Supabase (Authentication > Hooks) — sem isso todo login sai sem claims e a RLS nega tudo, tela abre vazia sem erro aparente. Ver docs/obrigacoes-readme.md (legado, mais detalhado)."
+
+  - slug: ouvidoria
+    nome: "Ouvidoria Interna (RH)"
+    status: producao
+    criticidade: media
+    setores: [transversal]
+    setor_responsavel: DESCONHECIDO
+    funcao: "Canal de ouvidoria interna para recursos humanos."
+    repositorio: ./frontend/src/systems/ouvidoria
+    url_producao: https://ouvidoria.mendoncagalvao.com.br
+    stack:
+      frontend: { framework: React (embutido), versao: "19.2.6", linguagem: TypeScript, build: Vite }
+      backend: { framework: "Supabase + Proxy via backend-fastapi (ouvidoria_proxy)", versao: DESCONHECIDO, runtime: DESCONHECIDO }
+      infra: { hospedagem: DESCONHECIDO, containerizacao: DESCONHECIDO, proxy: backend-fastapi }
+      bibliotecas_chave: ["@supabase/supabase-js"]
+    banco_de_dados:
+      - { tipo: PostgreSQL (Supabase), provedor: DESCONHECIDO, nome_logico: ouvidoria, migrations: "nao versionadas neste repo", rls: DESCONHECIDO, multi_tenant: DESCONHECIDO, chave_isolamento: DESCONHECIDO }
+    autenticacao: { metodo: "Supabase Auth", rbac: DESCONHECIDO, papeis: [] }
+    pwa: { perfil: DESCONHECIDO, manifest: DESCONHECIDO, service_worker: DESCONHECIDO, offline: DESCONHECIDO }
+    dados_pessoais_lgpd:
+      trata_dados_pessoais: sim
+      categorias: [nome, email, relato_sensivel_de_denuncia]
+      retencao_definida: DESCONHECIDO
+    integracoes: []
+    dependencias_internas: [crm-mg, backend-fastapi]
+    porta_local: DESCONHECIDO
+    variaveis_ambiente:
+      - { nome: VITE_OUVIDORIA_SUPABASE_URL, obrigatoria: true, sensivel: false, descricao: "URL do projeto Supabase" }
+      - { nome: VITE_OUVIDORIA_SUPABASE_ANON_KEY, obrigatoria: true, sensivel: false, descricao: "chave anon do Supabase" }
+    observacao: "Trata relato de denúncia — dado especialmente sensível de LGPD; ver PENDENCIAS.md."
+
+  # ============================================================
+  # SERVIÇOS AUXILIARES (fora do frontend/src/systems)
+  # ============================================================
+  - slug: obrigacoes-recibo
+    nome: "Obrigações — Worker de Recibos"
+    status: DESCONHECIDO
+    criticidade: baixa
+    setores: [transversal]
+    setor_responsavel: ti-nucleo-digital
+    funcao: "Serviço auxiliar do sistema Obrigações Acessórias — geração/processamento de recibos (nome do diretório; função exata não confirmada no código)."
+    repositorio: ./services/obrigacoes-recibo
+    url_producao: DESCONHECIDO
+    stack:
+      backend: { framework: DESCONHECIDO, versao: DESCONHECIDO, runtime: DESCONHECIDO }
+      infra: { hospedagem: DESCONHECIDO, containerizacao: DESCONHECIDO, proxy: DESCONHECIDO }
+      bibliotecas_chave: [DESCONHECIDO]
+    banco_de_dados: []
+    autenticacao: { metodo: DESCONHECIDO, rbac: DESCONHECIDO, papeis: [] }
+    pwa: { perfil: nao-aplicavel, manifest: nao, service_worker: nao, offline: nenhum }
+    dados_pessoais_lgpd: { trata_dados_pessoais: DESCONHECIDO, categorias: [], retencao_definida: DESCONHECIDO }
+    integracoes: []
+    dependencias_internas: [obrigacoes]
+    porta_local: DESCONHECIDO
+    variaveis_ambiente: []
+
+# ============================================================
+# Referenciados no banco de sistemas mas SEM código neste workspace
+# (não documentados como aplicação — ver PENDENCIAS.md)
+# ============================================================
+# - Portal do Colaborador (portal-do-colaborador) — https://portalcolabmg.lovable.app
+# - Cláusula AI (clausula-ai) — https://clausulaailp.nucleodigital.cloud
