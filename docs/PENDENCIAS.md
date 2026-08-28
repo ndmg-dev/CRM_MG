@@ -131,17 +131,28 @@ intrusão nem análise de todo o código de cada aplicação.
   vi confirmação de qual é o valor real em produção (deve vir de env var,
   não inspecionado por ser `.env` real).
 
+- **[ALTO] `service_role` key do Supabase de `obrigacoes` concentrada num
+  worker Python separado (`services/obrigacoes-recibo`)** — comprometer esse
+  worker (ou vazar seu `.env`) compromete o isolamento multi-tenant inteiro
+  do sistema `obrigacoes`, que trata documento de múltiplas empresas-cliente
+  na mesma base. Ver `docs/aplicacoes/obrigacoes-recibo/README.md`.
+
 ### Multi-tenant
 
-- **[NÃO APLICÁVEL / a confirmar]** Nenhuma das aplicações documentadas
-  aparenta ser multi-tenant no sentido clássico (um `tenant_id` isolando
-  dados de clientes diferentes do mesmo software) — é um único escritório
-  usando N sistemas internos. Marquei `nao_aplicavel` no YAML por padrão.
-  Exceção a confirmar: `conciliacao-fiscal`, `documentacao-contabil` e outros
-  sistemas voltados a "clientes" do escritório podem ter uma noção de
-  isolamento por cliente que não ficou visível só pelo frontend — **pergunta
-  para o time**: alguma dessas trata dado de múltiplos clientes/empresas na
-  mesma base sem segregação por tenant?
+- **[CONFIRMADO] `obrigacoes` é multi-tenant de verdade** — dado de mais de
+  uma empresa-cliente na mesma tabela, isolado por RLS usando a empresa
+  vinda do JWT do cliente (nunca de rota/query string). Documentação legada
+  (`docs/obrigacoes-readme.md`) confirma que a suíte de testes roda com dois
+  tenants pra provar isolamento — é a única aplicação deste inventário com
+  essa confirmação explícita e testada.
+- **[A CONFIRMAR]** As demais aplicações não têm multi-tenant confirmado ou
+  descartado — marquei `nao_aplicavel` no YAML como padrão pras que
+  claramente atendem só o escritório internamente, mas `conciliacao-fiscal`,
+  `documentacao-contabil`, `guia-dp` e outros sistemas voltados a "clientes"
+  do escritório podem ter uma noção de isolamento por cliente que não ficou
+  visível só pelo frontend — **pergunta para o time**: alguma dessas trata
+  dado de múltiplos clientes/empresas na mesma base sem segregação por
+  tenant, sem o mesmo nível de teste que `obrigacoes` tem?
 
 ### LGPD
 

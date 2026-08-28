@@ -754,7 +754,11 @@ aplicacoes:
     criticidade: media
     setores: [transversal]
     setor_responsavel: DESCONHECIDO
-    funcao: "Controle de entregas de obrigações acessórias, prazos e documentos do cliente."
+    funcao: >
+      Controle de entrega de obrigações acessórias, com portal do cliente
+      (magic link, sessão separada do SSO do escritório). Sistema satélite
+      do CRM, Supabase próprio, multi-tenant real (dado de mais de uma
+      empresa-cliente na mesma tabela, isolado por RLS).
     repositorio: ./frontend/src/systems/obrigacoes
     url_producao: "# (nao implantado standalone — url no banco de sistemas é '#')"
     stack:
@@ -763,14 +767,20 @@ aplicacoes:
       infra: { hospedagem: DESCONHECIDO, containerizacao: DESCONHECIDO, proxy: DESCONHECIDO }
       bibliotecas_chave: ["@supabase/supabase-js"]
     banco_de_dados:
-      - { tipo: PostgreSQL (Supabase), provedor: DESCONHECIDO, nome_logico: obrigacoes, migrations: "ver frontend/src/systems/obrigacoes/integrations/supabase", rls: DESCONHECIDO, multi_tenant: DESCONHECIDO, chave_isolamento: DESCONHECIDO }
-    autenticacao: { metodo: "Supabase Auth", rbac: DESCONHECIDO, papeis: [ADMIN, GESTOR, COLABORADOR] }
+      - { tipo: PostgreSQL (Supabase), provedor: DESCONHECIDO, nome_logico: obrigacoes, migrations: "frontend/src/systems/obrigacoes/integrations/supabase/migrations/", rls: sim, multi_tenant: sim, chave_isolamento: "empresa (via JWT do cliente, nunca de rota/query string)" }
+    autenticacao:
+      metodo: "Supabase Auth — SSO Google (escritório) + magic link e-mail (portal do cliente), perímetros/rotas separados"
+      rbac: sim
+      papeis: [ADMIN, GESTOR, COLABORADOR]
     pwa: { perfil: DESCONHECIDO, manifest: DESCONHECIDO, service_worker: DESCONHECIDO, offline: DESCONHECIDO }
     dados_pessoais_lgpd: { trata_dados_pessoais: sim, categorias: [documentos_de_clientes], retencao_definida: DESCONHECIDO }
     integracoes: []
     dependencias_internas: [crm-mg, obrigacoes-recibo]
     porta_local: DESCONHECIDO
-    variaveis_ambiente: []
+    variaveis_ambiente:
+      - { nome: VITE_OBRIGACOES_SUPABASE_URL, obrigatoria: false, sensivel: false, descricao: "URL do projeto Supabase — sem ela o modulo se declara indisponivel (fail-soft), nao quebra o CRM" }
+      - { nome: VITE_OBRIGACOES_SUPABASE_PUBLISHABLE_KEY, obrigatoria: false, sensivel: false, descricao: "chave anon/publishable do Supabase" }
+    observacao: "Requer configurar o Auth Hook 'custom_access_token' no Supabase (Authentication > Hooks) — sem isso todo login sai sem claims e a RLS nega tudo, tela abre vazia sem erro aparente. Ver docs/obrigacoes-readme.md (legado, mais detalhado)."
 
   - slug: ouvidoria
     nome: "Ouvidoria Interna (RH)"
