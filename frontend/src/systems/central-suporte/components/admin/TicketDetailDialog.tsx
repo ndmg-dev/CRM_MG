@@ -746,6 +746,14 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
       <DialogContent
         className="w-[95vw] max-w-[720px] p-0 gap-0 overflow-hidden [&>button:last-child]:hidden"
         style={{ background: BG_SURFACE, border: `0.5px solid ${BORDER_DEFAULT}`, maxHeight: "92vh", display: "flex", flexDirection: "column" }}
+        // O lightbox de imagem é portalizado pro <body> (fora deste
+        // DialogContent, ver comentário mais abaixo), então o Radix o
+        // enxerga como "fora" do modal — sem isso, apertar Esc ou clicar
+        // pra fechar a imagem também fechava o modal do chamado por baixo.
+        // Enquanto o preview está aberto, quem decide fechar é só ele
+        // mesmo (via seu próprio handler de Esc/clique); o Dialog ignora.
+        onEscapeKeyDown={(e) => { if (previewImage) e.preventDefault(); }}
+        onPointerDownOutside={(e) => { if (previewImage) e.preventDefault(); }}
       >
         {/* Header */}
         <div className="flex items-center justify-between" style={{ padding: "14px 22px", borderBottom: `0.5px solid ${BORDER_DEFAULT}`, flexShrink: 0 }}>
