@@ -1021,23 +1021,44 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
               style={{ background: BG_CARD, borderColor: BORDER_DEFAULT, color: TEXT_PRIMARY }}
             />
             {commentFiles.length > 0 && (
-              <div className="flex flex-col" style={{ gap: 4, marginTop: 8 }}>
-                {commentFiles.map((file, i) => (
-                  <div key={`${file.name}-${i}`} className="flex items-center gap-2" style={{ fontSize: 12, background: BG_CARD, borderRadius: 6, padding: 8 }}>
-                    <Paperclip className="h-3 w-3" style={{ color: TEXT_SECONDARY, flexShrink: 0 }} />
-                    <span className="truncate flex-1" style={{ color: TEXT_PRIMARY }}>{file.name}</span>
-                    {/* Remove só esse arquivo, os outros anexados continuam —
-                        não existe mais um "limpar tudo" de uma vez. */}
-                    <button
-                      type="button"
-                      onClick={() => setCommentFiles((prev) => prev.filter((_, idx) => idx !== i))}
-                      title={`Remover ${file.name}`}
-                      style={{ background: "none", border: "none", color: TEXT_MUTED, cursor: "pointer", flexShrink: 0 }}
+              <div style={{ marginTop: 8 }}>
+                <div style={{ fontSize: 11, color: TEXT_MUTED, marginBottom: 4 }}>
+                  {commentFiles.length} {commentFiles.length === 1 ? "arquivo anexado" : "arquivos anexados"}
+                </div>
+                {/* Chips em linha (wrap), não uma lista de uma coluna só —
+                    cabe muito mais item por área de tela. Altura travada +
+                    scroll próprio continua existindo (senão 50 chips
+                    quebrando linha ainda empurrava o Enviar pra fora). O X
+                    só aparece no hover do chip (group-hover) — parado, só o
+                    clipe + nome, sem um ícone de lixeira permanente em cada
+                    um dos 50 itens brigando por atenção. */}
+                <div className="flex flex-wrap" style={{ gap: 6, maxHeight: 160, overflowY: "auto" }}>
+                  {commentFiles.map((file, i) => (
+                    <div
+                      key={`${file.name}-${i}`}
+                      className="group relative flex items-center gap-1.5"
+                      style={{ fontSize: 12, background: BG_CARD, border: `0.5px solid ${BORDER_DEFAULT}`, borderRadius: 999, padding: "5px 10px", flexShrink: 0, maxWidth: 200 }}
                     >
-                      <Trash2 className="h-3 w-3" />
-                    </button>
-                  </div>
-                ))}
+                      <Paperclip className="h-3 w-3" style={{ color: TEXT_SECONDARY, flexShrink: 0 }} />
+                      <span className="truncate" style={{ color: TEXT_PRIMARY }}>{file.name}</span>
+                      {/* Remove só esse arquivo, os outros anexados continuam —
+                          não existe um "limpar tudo" de uma vez. */}
+                      <button
+                        type="button"
+                        onClick={() => setCommentFiles((prev) => prev.filter((_, idx) => idx !== i))}
+                        title={`Remover ${file.name}`}
+                        className="opacity-0 transition-opacity group-hover:opacity-100"
+                        style={{
+                          position: "absolute", top: -6, right: -6, width: 16, height: 16, borderRadius: "50%",
+                          background: ERROR, border: "none", color: "#fff", cursor: "pointer",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                        }}
+                      >
+                        <XIcon className="h-2.5 w-2.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
             <input
