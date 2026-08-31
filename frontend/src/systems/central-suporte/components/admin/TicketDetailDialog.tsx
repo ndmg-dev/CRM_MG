@@ -722,6 +722,13 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
         // flutuante, ConversationView.tsx) — evita repetir a foto em cada
         // linha de uma sequência de mensagens seguidas da mesma pessoa.
         const isLastInGroup = !next || next.author_id !== c.author_id || isSystemNote(next.content);
+        // Barra de "Nota interna" — só na primeira mensagem de uma sequência
+        // interna seguida (mesmo critério de agrupamento do resto: evita uma
+        // barra repetida em cada linha de várias notas internas seguidas).
+        // Essas linhas NUNCA chegam ao solicitante: a query de comments do
+        // chat flutuante (ConversationView.tsx) já filtra internal_only=false
+        // pra quem não é staff — só quem tem acesso de TI vê isso aqui.
+        const showInternalBar = c.internal_only && (!prev || !prev.internal_only || isSystemNote(prev.content));
         // Mesmo padrão visual do chat flutuante (ConversationView.tsx):
         // bolha sólida (sem borda), nome fora/acima dela — não dentro —, e
         // cauda no canto de quem enviou. Antes essa bolha tinha um estilo
@@ -729,11 +736,20 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
         // resto do sistema. A foto de perfil (quando o usuário já sincronizou
         // uma) some junto com o resto do agrupamento em vez de aparecer solta.
         return (
-          <div
-            key={c.id}
-            className="flex items-end"
-            style={{ gap: 6, flexDirection: mine ? "row-reverse" : "row", alignSelf: mine ? "flex-end" : "flex-start", maxWidth: "70%" }}
-          >
+          <div key={c.id} className="flex flex-col" style={{ gap: 4, alignItems: mine ? "flex-end" : "flex-start" }}>
+            {showInternalBar && (
+              <div className="flex items-center gap-2" style={{ width: "100%" }}>
+                <div style={{ height: 1, flex: 1, background: "rgba(245,158,11,0.35)" }} />
+                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--mg-color-status-warning)", whiteSpace: "nowrap" }}>
+                  🔒 Nota interna · só a TI vê
+                </span>
+                <div style={{ height: 1, flex: 1, background: "rgba(245,158,11,0.35)" }} />
+              </div>
+            )}
+            <div
+              className="flex items-end"
+              style={{ gap: 6, flexDirection: mine ? "row-reverse" : "row", maxWidth: "70%", alignSelf: mine ? "flex-end" : "flex-start" }}
+            >
             {isLastInGroup ? (
               <Avatar name={c.author?.full_name || "?"} src={c.author?.foto_url ?? undefined} size="sm" />
             ) : (
@@ -743,7 +759,6 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
             {showAuthor && (
               <span style={{ margin: "0 4px 2px", fontSize: 10, color: TEXT_MUTED }}>
                 {c.author?.full_name || "Desconhecido"}
-                {c.internal_only && <Badge variant="warn">Interno</Badge>}
               </span>
             )}
             {commentAtts.map((att) => (
@@ -786,6 +801,7 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
               )}
               {mine && c.read_at ? `Lido às ${formatTime(c.read_at)}` : formatTime(c.created_at!)}
             </span>
+            </div>
             </div>
           </div>
         );

@@ -497,6 +497,21 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
                     <div className="h-px flex-1 bg-gold/40" />
                   </div>
                 )}
+                {/* Nota interna (criada pelo modal de detalhes do chamado) —
+                    só chega aqui pra quem é staff, a query já filtra
+                    internal_only=false pra quem não é. Barra igual à do
+                    modal (mesmo critério de grupo, só na primeira de uma
+                    sequência interna seguida) pra deixar óbvio que aquilo
+                    NUNCA foi visto pelo solicitante. */}
+                {c.internal_only && (!prev || !prev.internal_only || isSystemNote(prev.content)) && (
+                  <div className="mb-2 mt-3 flex items-center gap-2">
+                    <div className="h-px flex-1" style={{ background: 'rgba(245,158,11,0.35)' }} />
+                    <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide" style={{ color: 'var(--mg-color-status-warning)' }}>
+                      🔒 Nota interna · só a TI vê
+                    </span>
+                    <div className="h-px flex-1" style={{ background: 'rgba(245,158,11,0.35)' }} />
+                  </div>
+                )}
                 {isSystemNote(c.content) ? (
                   <div className="my-3 flex items-center gap-2">
                     <div className="h-px flex-1 bg-border" />
