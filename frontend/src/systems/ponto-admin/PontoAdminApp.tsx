@@ -1,19 +1,26 @@
+import { lazy, Suspense } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { Topbar } from './components/Topbar'
-import Login from './pages/Login'
-import Dashboard from './pages/Dashboard'
-import Employees from './pages/Employees'
-import Reports from './pages/Reports'
-import Ferias from './pages/Ferias'
-import Settings from './pages/Settings'
-import Justifications from './pages/Justifications'
-import AuditLog from './pages/AuditLog'
-import Corrections from './pages/Corrections'
-import Users from './pages/Users'
-import Calendar from './pages/Calendar'
-import Register from './pages/Register'
-import BiometricCapture from './pages/BiometricCapture'
+// Lazy por página — este era o 2º maior chunk de todo o build (1.2MB
+// minificado só ele) porque as 13 páginas do Ponto Admin (Dashboard,
+// Reports, Calendar etc., cada uma com seus próprios gráficos/tabelas)
+// entravam juntas num chunk só. Cada rota agora carrega por conta própria,
+// só quando a pessoa navega até ela — reduz o pico de memória do build e
+// o tanto de JS baixado de cara pra quem só usa uma parte do sistema.
+const Login = lazy(() => import('./pages/Login'))
+const Dashboard = lazy(() => import('./pages/Dashboard'))
+const Employees = lazy(() => import('./pages/Employees'))
+const Reports = lazy(() => import('./pages/Reports'))
+const Ferias = lazy(() => import('./pages/Ferias'))
+const Settings = lazy(() => import('./pages/Settings'))
+const Justifications = lazy(() => import('./pages/Justifications'))
+const AuditLog = lazy(() => import('./pages/AuditLog'))
+const Corrections = lazy(() => import('./pages/Corrections'))
+const Users = lazy(() => import('./pages/Users'))
+const Calendar = lazy(() => import('./pages/Calendar'))
+const Register = lazy(() => import('./pages/Register'))
+const BiometricCapture = lazy(() => import('./pages/BiometricCapture'))
 import { api } from './lib/api'
 import { useAuth, type Permission } from './hooks/useAuth'
 import { usePontoBase, usePontoPath } from './hooks/usePontoBase'
@@ -95,24 +102,26 @@ function EspelhoRedirect() {
 export default function PontoAdminApp() {
   return (
     <div className="pontoadmin-root">
-      <Routes>
-        <Route path="login" element={<Login />} />
-        <Route path="cadastro/:token" element={<Register />} />
-        <Route path="biometria/:token" element={<BiometricCapture />} />
+      <Suspense fallback={null}>
+        <Routes>
+          <Route path="login" element={<Login />} />
+          <Route path="cadastro/:token" element={<Register />} />
+          <Route path="biometria/:token" element={<BiometricCapture />} />
 
-        <Route index element={<RequireAuth><Layout><Dashboard /></Layout></RequireAuth>} />
-        <Route path="employees" element={<RequireAuth><RequirePermission permission="employees"><Layout><Employees /></Layout></RequirePermission></RequireAuth>} />
-        <Route path="reports" element={<RequireAuth><RequirePermission permission="reports"><Layout><Reports /></Layout></RequirePermission></RequireAuth>} />
-        <Route path="espelho" element={<EspelhoRedirect />} />
-        <Route path="ferias" element={<RequireAuth><RequirePermission permission="reports"><Layout><Ferias /></Layout></RequirePermission></RequireAuth>} />
-        <Route path="settings" element={<RequireAuth><RequirePermission permission="settings"><Layout><Settings /></Layout></RequirePermission></RequireAuth>} />
-        <Route path="justifications" element={<RequireAuth><RequirePermission permission="justifications"><Layout><Justifications /></Layout></RequirePermission></RequireAuth>} />
-        <Route path="corrections" element={<RequireAuth><RequirePermission permission="corrections"><Layout><Corrections /></Layout></RequirePermission></RequireAuth>} />
-        <Route path="audit" element={<RequireAuth><RequirePermission permission="audit"><Layout><AuditLog /></Layout></RequirePermission></RequireAuth>} />
-        <Route path="calendar" element={<RequireAuth><RequirePermission permission="calendar"><Layout><Calendar /></Layout></RequirePermission></RequireAuth>} />
-        <Route path="users" element={<RequireAuth><RequireAdmin><Layout><Users /></Layout></RequireAdmin></RequireAuth>} />
-        <Route path="*" element={<NotFoundRedirect />} />
-      </Routes>
+          <Route index element={<RequireAuth><Layout><Dashboard /></Layout></RequireAuth>} />
+          <Route path="employees" element={<RequireAuth><RequirePermission permission="employees"><Layout><Employees /></Layout></RequirePermission></RequireAuth>} />
+          <Route path="reports" element={<RequireAuth><RequirePermission permission="reports"><Layout><Reports /></Layout></RequirePermission></RequireAuth>} />
+          <Route path="espelho" element={<EspelhoRedirect />} />
+          <Route path="ferias" element={<RequireAuth><RequirePermission permission="reports"><Layout><Ferias /></Layout></RequirePermission></RequireAuth>} />
+          <Route path="settings" element={<RequireAuth><RequirePermission permission="settings"><Layout><Settings /></Layout></RequirePermission></RequireAuth>} />
+          <Route path="justifications" element={<RequireAuth><RequirePermission permission="justifications"><Layout><Justifications /></Layout></RequirePermission></RequireAuth>} />
+          <Route path="corrections" element={<RequireAuth><RequirePermission permission="corrections"><Layout><Corrections /></Layout></RequirePermission></RequireAuth>} />
+          <Route path="audit" element={<RequireAuth><RequirePermission permission="audit"><Layout><AuditLog /></Layout></RequirePermission></RequireAuth>} />
+          <Route path="calendar" element={<RequireAuth><RequirePermission permission="calendar"><Layout><Calendar /></Layout></RequirePermission></RequireAuth>} />
+          <Route path="users" element={<RequireAuth><RequireAdmin><Layout><Users /></Layout></RequireAdmin></RequireAuth>} />
+          <Route path="*" element={<NotFoundRedirect />} />
+        </Routes>
+      </Suspense>
     </div>
   )
 }

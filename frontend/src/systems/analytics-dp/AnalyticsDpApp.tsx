@@ -1,13 +1,21 @@
+import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { useNativeSystemBase } from '@/hooks/useNativeSystemBase'
 import { Topbar } from '@analyticsdp/components/Topbar'
 import { LoginGate } from '@analyticsdp/components/LoginGate'
-import { DashboardPage } from '@analyticsdp/pages/DashboardPage'
-import { ImportsPage } from '@analyticsdp/pages/ImportsPage'
-import { EmployeesPage } from '@analyticsdp/pages/EmployeesPage'
-import { QualityPage } from '@analyticsdp/pages/QualityPage'
-import { PersonnelCostPage } from '@analyticsdp/pages/PersonnelCostPage'
+
+// Lazy por página, não só o sistema inteiro: DashboardPage e EmployeesPage
+// puxam echarts + exceljs (bibliotecas pesadas, ~1MB+ cada minificadas) —
+// import estático nelas juntava tudo isso a QualityPage/ImportsPage/
+// PersonnelCostPage num chunk único de 2MB+ (o maior de todo o build,
+// contribuindo pro build estourar memória no deploy). Cada página agora só
+// carrega o que ela mesma usa, e só quando a pessoa realmente navega até lá.
+const DashboardPage = lazy(() => import('@analyticsdp/pages/DashboardPage').then((m) => ({ default: m.DashboardPage })))
+const ImportsPage = lazy(() => import('@analyticsdp/pages/ImportsPage').then((m) => ({ default: m.ImportsPage })))
+const EmployeesPage = lazy(() => import('@analyticsdp/pages/EmployeesPage').then((m) => ({ default: m.EmployeesPage })))
+const QualityPage = lazy(() => import('@analyticsdp/pages/QualityPage').then((m) => ({ default: m.QualityPage })))
+const PersonnelCostPage = lazy(() => import('@analyticsdp/pages/PersonnelCostPage').then((m) => ({ default: m.PersonnelCostPage })))
 
 import '@analyticsdp/styles/global.css'
 
@@ -36,14 +44,16 @@ export default function AnalyticsDpApp() {
         <Toaster position="top-right" toastOptions={{ className: 'bg-card text-text-primary border border-border' }} />
         <Topbar />
         <main className="mx-auto max-w-7xl px-6 py-8">
-          <Routes>
-            <Route index element={<DashboardPage />} />
-            <Route path="imports" element={<ImportsPage />} />
-            <Route path="quality" element={<QualityPage />} />
-            <Route path="employees" element={<EmployeesPage />} />
-            <Route path="personnel-cost" element={<PersonnelCostPage />} />
-            <Route path="*" element={<NotFoundRedirect />} />
-          </Routes>
+          <Suspense fallback={null}>
+            <Routes>
+              <Route index element={<DashboardPage />} />
+              <Route path="imports" element={<ImportsPage />} />
+              <Route path="quality" element={<QualityPage />} />
+              <Route path="employees" element={<EmployeesPage />} />
+              <Route path="personnel-cost" element={<PersonnelCostPage />} />
+              <Route path="*" element={<NotFoundRedirect />} />
+            </Routes>
+          </Suspense>
         </main>
       </div>
     </LoginGate>
