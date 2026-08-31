@@ -50,21 +50,24 @@ ENV VITE_TASKFLOW_SUPABASE_ANON_KEY=$VITE_TASKFLOW_SUPABASE_ANON_KEY
 ENV VITE_TASKFLOW_API_URL=$VITE_TASKFLOW_API_URL
 ENV VITE_ANALYTICS_DP_API_URL=$VITE_ANALYTICS_DP_API_URL
 ENV VITE_DASHRH_API_URL=$VITE_DASHRH_API_URL
-# Build local (fora do Docker, mesmo Node 22 e mesmo cap de 3072) passa sem
-# erro algum — o "npm run build" falhando no NDDEV com exit code 1 e
-# nenhuma mensagem real de erro no log (Coolify corta o stdout) é a
-# assinatura clássica de OOM-kill do container, não de um bug de código.
-# Isso só ajuda se o container do NDDEV tiver RAM física disponível acima
-# desse teto; se o limite físico do container for MENOR que isso, o V8 ainda
-# vai ser morto pelo OOM killer do host antes de estourar o heap sozinho —
-# nesse caso o ajuste real é no limite de memória do build no Coolify
-# (fora do Dockerfile), não aqui.
+# Subiu de 3072 quando a hipótese era falta de memória — a causa real
+# acabou sendo outra (EMFILE, ver comentário abaixo do `ulimit -n`), mas
+# manter esse teto um pouco mais folgado não faz mal.
 ENV NODE_OPTIONS="--max-old-space-size=4608"
 COPY package*.json ./
 COPY packages/ ./packages/
 RUN npm install --no-audit --no-fund --legacy-peer-deps
 COPY . .
-RUN npm run build
+# Causa real dos deploys falhando (achada no log RAW do Coolify, o resumo
+# sempre cortava antes disso): não é memória — é
+# "Error: EMFILE: too many open files, watch '/app'", do watcher de arquivo
+# que o compilador do @vanilla-extract (usado pelo @mg/ui) abre sobre /app
+# inteiro mesmo num build único (não é modo watch de verdade, é assim que
+# ele processa os arquivos .css.ts). O container do Coolify tem um teto de
+# arquivos abertos simultâneos baixo demais pro tanto de arquivo que o
+# projeto já acumulou. `ulimit -n` sobe o teto SÓ pra esse RUN (não muda
+# nada fora do build).
+RUN ulimit -n 65536 2>/dev/null; npm run build
 
 # Production stage
 FROM nginx:alpine
