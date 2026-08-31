@@ -150,12 +150,20 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
   const RECENT_ROWS_LIMIT = 200
 
   const { data: comments = [] } = useQuery({
-    queryKey: ['chat-widget-comments', ticketId],
+    // isStaff no key: troca de papel (raro, mas existe) precisa refazer a
+    // busca com o filtro certo, não só reaproveitar o cache de antes.
+    queryKey: ['chat-widget-comments', ticketId, isStaff],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('comments')
         .select('*, author:profiles!author_id(full_name, foto_url)')
         .eq('ticket_id', ticketId)
+      // Nota interna (TicketDetailDialog, o modal) é só pra TI — sem isso o
+      // solicitante via aqui, no próprio chat dele, qualquer nota interna
+      // que a TI deixasse sobre o chamado. Defesa em profundidade: mesmo
+      // que a RLS do banco já bloqueie, não custa filtrar aqui também.
+      if (!isStaff) query = query.eq('internal_only', false)
+      const { data, error } = await query
         .order('created_at', { ascending: false })
         .limit(RECENT_ROWS_LIMIT)
       if (error) throw error
