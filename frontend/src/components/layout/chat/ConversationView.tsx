@@ -81,8 +81,7 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
   // controles, só a conversa em si.
   const { isStaff, isAdmin } = useUserSector()
   const [text, setText] = useState('')
-  const [pendingImage, setPendingImage] = useState<File | null>(null)
-  const [pendingImagePreview, setPendingImagePreview] = useState<string | null>(null)
+  const [pendingImages, setPendingImages] = useState<{ file: File; previewUrl: string }[]>([])
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [newDividerIndex, setNewDividerIndex] = useState<number | null>(null)
   const [closeModalOpen, setCloseModalOpen] = useState(false)
@@ -275,41 +274,58 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
     setNewDividerIndex(prevSeen !== undefined && prevSeen < comments.length ? prevSeen : null)
   }, [ticketId, comments])
 
-  function pickImage(file: File) {
-    if (!isImageFile(file)) {
-      toast.error('Só é possível anexar imagens por aqui.')
-      return
+  // Aceita mais de uma imagem de uma vez (seleção múltipla ou vários prints
+  // colados juntos), acumulando em cima do que já tinha sido escolhido.
+  function pickImages(files: File[]) {
+    const added: { file: File; previewUrl: string }[] = []
+    for (const file of files) {
+      if (!isImageFile(file)) {
+        toast.error('Só é possível anexar imagens por aqui.')
+        continue
+      }
+      if (file.size > MAX_IMAGE_BYTES) {
+        toast.error(`"${file.name}" tem mais de 10MB e não foi anexada.`)
+        continue
+      }
+      added.push({ file, previewUrl: URL.createObjectURL(file) })
     }
-    if (file.size > MAX_IMAGE_BYTES) {
-      toast.error('A imagem deve ter no máximo 10MB.')
-      return
-    }
-    setPendingImage(file)
-    setPendingImagePreview(URL.createObjectURL(file))
+    if (added.length > 0) setPendingImages((prev) => [...prev, ...added])
   }
 
-  function clearPendingImage() {
-    if (pendingImagePreview) URL.revokeObjectURL(pendingImagePreview)
-    setPendingImage(null)
-    setPendingImagePreview(null)
+  // Remove só essa imagem, as outras anexadas continuam — não existe mais
+  // um "limpar tudo" de uma vez.
+  function removePendingImage(index: number) {
+    setPendingImages((prev) => {
+      const target = prev[index]
+      if (target) URL.revokeObjectURL(target.previewUrl)
+      return prev.filter((_, i) => i !== index)
+    })
+  }
+
+  function clearPendingImages() {
+    setPendingImages((prev) => {
+      prev.forEach((p) => URL.revokeObjectURL(p.previewUrl))
+      return []
+    })
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
-  // Cola uma imagem do clipboard (print/copiar imagem) direto no composer —
-  // mesmo fluxo de anexar por arquivo, só que sem passar pelo seletor.
+  // Cola imagens do clipboard (print/copiar imagem) direto no composer —
+  // mesmo fluxo de anexar por arquivo, só que sem passar pelo seletor. Pega
+  // todas as imagens coladas de uma vez, não só a primeira.
   function handlePaste(e: React.ClipboardEvent) {
-    const item = Array.from(e.clipboardData.items).find((i) => i.type.startsWith('image/'))
-    if (!item) return
-    const file = item.getAsFile()
-    if (!file) return
+    const items = Array.from(e.clipboardData.items).filter((i) => i.type.startsWith('image/'))
+    if (items.length === 0) return
+    const files = items.map((i) => i.getAsFile()).filter((f): f is File => !!f)
+    if (files.length === 0) return
     e.preventDefault()
-    pickImage(file)
+    pickImages(files)
   }
 
   const sendComment = useMutation({
     mutationFn: async () => {
       if (isClosed) throw new Error('Chamado encerrado')
-      if (!text.trim() && !pendingImage) return
+      if (!text.trim() && pendingImages.length === 0) return
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Não autenticado')
 
@@ -322,23 +338,28 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
       }).select('id').single()
       if (error) throw error
 
-      if (pendingImage && commentData) {
-        const filePath = `${ticketId}/${crypto.randomUUID()}_${pendingImage.name}`
-        const { error: uploadError } = await supabase.storage
-          .from('ticket-attachments')
-          .upload(filePath, pendingImage)
-        if (uploadError) throw uploadError
+      // Upload de cada imagem, todas ligadas ao mesmo comentário — um por
+      // um em vez de Promise.all pra não estourar a conexão com várias
+      // imagens grandes de uma vez.
+      if (pendingImages.length > 0 && commentData) {
+        for (const { file } of pendingImages) {
+          const filePath = `${ticketId}/${crypto.randomUUID()}_${file.name}`
+          const { error: uploadError } = await supabase.storage
+            .from('ticket-attachments')
+            .upload(filePath, file)
+          if (uploadError) throw uploadError
 
-        const { error: attError } = await supabase.from('attachments').insert({
-          ticket_id: ticketId,
-          comment_id: commentData.id,
-          file_name: pendingImage.name,
-          file_path: filePath,
-          file_type: pendingImage.type,
-          file_size: pendingImage.size,
-          uploaded_by: user.id,
-        })
-        if (attError) throw attError
+          const { error: attError } = await supabase.from('attachments').insert({
+            ticket_id: ticketId,
+            comment_id: commentData.id,
+            file_name: file.name,
+            file_path: filePath,
+            file_type: file.type,
+            file_size: file.size,
+            uploaded_by: user.id,
+          })
+          if (attError) throw attError
+        }
       }
 
       // Resposta da TI move o chamado pra "Em Andamento" (status `pending`)
@@ -362,7 +383,7 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
     },
     onSuccess: () => {
       setText('')
-      clearPendingImage()
+      clearPendingImages()
       queryClient.invalidateQueries({ queryKey: ['chat-widget-comments', ticketId] })
       queryClient.invalidateQueries({ queryKey: ['chat-widget-attachments', ticketId] })
       queryClient.invalidateQueries({ queryKey: ['chat-widget-conversations'] })
@@ -605,18 +626,23 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
         </div>
       )}
 
-      {/* Pending image preview */}
-      {pendingImagePreview && (
-        <div className="flex items-center gap-2 border-t border-border px-2.5 pt-2">
-          <img src={pendingImagePreview} alt="Prévia" className="h-12 w-12 rounded-lg border border-border object-cover" />
-          <span className="flex-1 truncate text-xs text-text-muted">{pendingImage?.name}</span>
-          <button
-            onClick={clearPendingImage}
-            aria-label="Remover imagem"
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-text-secondary hover:bg-surface hover:text-text-primary"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
+      {/* Pending image previews — uma linha por imagem, cada uma com seu
+          próprio botão de remover (não existe mais um "limpar tudo"). */}
+      {pendingImages.length > 0 && (
+        <div className="flex flex-col gap-1.5 border-t border-border px-2.5 pt-2">
+          {pendingImages.map((p, i) => (
+            <div key={p.previewUrl} className="flex items-center gap-2">
+              <img src={p.previewUrl} alt="Prévia" className="h-12 w-12 rounded-lg border border-border object-cover" />
+              <span className="flex-1 truncate text-xs text-text-muted">{p.file.name}</span>
+              <button
+                onClick={() => removePendingImage(i)}
+                aria-label={`Remover ${p.file.name}`}
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-text-secondary hover:bg-surface hover:text-text-primary"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ))}
         </div>
       )}
 
@@ -631,10 +657,11 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
           type="file"
           ref={fileInputRef}
           accept="image/*"
+          multiple
           className="hidden"
           onChange={(e) => {
-            const file = e.target.files?.[0]
-            if (file) pickImage(file)
+            const files = Array.from(e.target.files || [])
+            if (files.length > 0) pickImages(files)
           }}
         />
         <button
@@ -651,7 +678,7 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
           onChange={(e) => setText(e.target.value)}
           onPaste={handlePaste}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey && (text.trim() || pendingImage) && !sendComment.isPending) {
+            if (e.key === 'Enter' && !e.shiftKey && (text.trim() || pendingImages.length > 0) && !sendComment.isPending) {
               e.preventDefault()
               sendComment.mutate()
             }
@@ -661,7 +688,7 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
         />
         <button
           onClick={() => sendComment.mutate()}
-          disabled={(!text.trim() && !pendingImage) || sendComment.isPending}
+          disabled={(!text.trim() && pendingImages.length === 0) || sendComment.isPending}
           aria-label="Enviar"
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gold text-background transition-opacity disabled:opacity-40"
         >

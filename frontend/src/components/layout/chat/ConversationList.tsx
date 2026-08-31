@@ -304,6 +304,15 @@ export function ConversationList() {
                         #{String(c.ticketCode ?? '').padStart(3, '0')}
                       </span>
                       <span className="truncate text-sm font-semibold text-text-primary">{c.title}</span>
+                      {/* "Novo" = chamado ainda em "A Fazer" (ninguém da TI
+                          tratou ainda) — mesma categoria 'todo' do Kanban.
+                          Ajuda a distinguir, na aba Abertos, o que acabou de
+                          chegar do que já está "Em Andamento". */}
+                      {c.category === 'todo' && (
+                        <span className="shrink-0 rounded-full bg-gold px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-background">
+                          Novo
+                        </span>
+                      )}
                     </div>
                     <span className="shrink-0 text-[11px] text-text-muted">{formatPreviewTime(c.lastMessageAt)}</span>
                   </div>
