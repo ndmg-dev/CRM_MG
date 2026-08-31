@@ -117,16 +117,21 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
   const [archiveReason, setArchiveReason] = useState("");
   const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
   const [restoreReason, setRestoreReason] = useState("");
-  const [commentFile, setCommentFile] = useState<File | null>(null);
+  const [commentFiles, setCommentFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   // Compartilhado entre o input de arquivo (clicar em "Anexar") e o
   // onPaste do textarea (colar print) — mesma validação nos dois casos.
-  const pickFile = (file: File) => {
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error("Arquivo deve ter no máximo 10MB");
-      return;
-    }
-    setCommentFile(file);
+  // Aceita mais de um arquivo de uma vez (seleção múltipla ou vários itens
+  // colados juntos), acumulando em cima do que já tinha sido escolhido.
+  const pickFiles = (files: File[]) => {
+    const valid = files.filter((file) => {
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error(`"${file.name}" tem mais de 10MB e não foi anexado`);
+        return false;
+      }
+      return true;
+    });
+    if (valid.length > 0) setCommentFiles((prev) => [...prev, ...valid]);
   };
   const [activeTab, setActiveTab] = useState("details");
   // Preview de imagem em modal em vez de abrir em nova aba — nova aba tira o
@@ -444,37 +449,47 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
 
   const addComment = useMutation({
     mutationFn: async () => {
-      if (!ticketId || (!commentText.trim() && !commentFile)) return;
+      if (!ticketId || (!commentText.trim() && commentFiles.length === 0)) return;
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Não autenticado");
+
+      const fallbackContent = commentFiles.length === 1
+        ? `📎 ${commentFiles[0].name}`
+        : commentFiles.length > 1
+          ? `📎 ${commentFiles.length} arquivos`
+          : "";
 
       // Insert comment
       const { data: commentData, error } = await supabase.from("comments").insert({
         ticket_id: ticketId,
-        content: commentText.trim() || (commentFile ? `📎 ${commentFile.name}` : ""),
+        content: commentText.trim() || fallbackContent,
         author_id: user.id,
         internal_only: isInternal,
       }).select("id").single();
       if (error) throw error;
 
-      // Upload attachment if present
-      if (commentFile && commentData) {
-        const filePath = `${ticketId}/${crypto.randomUUID()}_${commentFile.name}`;
-        const { error: uploadError } = await supabase.storage
-          .from("ticket-attachments")
-          .upload(filePath, commentFile);
-        if (uploadError) throw uploadError;
+      // Upload de cada anexo, todos ligados ao mesmo comentário — um por um
+      // em vez de Promise.all pra não estourar a conexão com muitos arquivos
+      // grandes de uma vez e pra manter a ordem de upload previsível.
+      if (commentFiles.length > 0 && commentData) {
+        for (const file of commentFiles) {
+          const filePath = `${ticketId}/${crypto.randomUUID()}_${file.name}`;
+          const { error: uploadError } = await supabase.storage
+            .from("ticket-attachments")
+            .upload(filePath, file);
+          if (uploadError) throw uploadError;
 
-        const { error: attError } = await supabase.from("attachments").insert({
-          ticket_id: ticketId,
-          comment_id: commentData.id,
-          file_name: commentFile.name,
-          file_path: filePath,
-          file_type: commentFile.type,
-          file_size: commentFile.size,
-          uploaded_by: user.id,
-        });
-        if (attError) throw attError;
+          const { error: attError } = await supabase.from("attachments").insert({
+            ticket_id: ticketId,
+            comment_id: commentData.id,
+            file_name: file.name,
+            file_path: filePath,
+            file_type: file.type,
+            file_size: file.size,
+            uploaded_by: user.id,
+          });
+          if (attError) throw attError;
+        }
       }
 
       // Mesma regra do chat flutuante rápido (ConversationView.tsx): resposta
@@ -499,7 +514,7 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
     onSuccess: () => {
       setCommentText("");
       setIsInternal(false);
-      setCommentFile(null);
+      setCommentFiles([]);
       if (fileInputRef.current) fileInputRef.current.value = "";
       queryClient.invalidateQueries({ queryKey: ["ticket-comments", ticketId] });
       queryClient.invalidateQueries({ queryKey: ["ticket-attachments", ticketId] });
@@ -983,7 +998,7 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
-                  if ((commentText.trim() || commentFile) && !addComment.isPending) {
+                  if ((commentText.trim() || commentFiles.length > 0) && !addComment.isPending) {
                     addComment.mutate();
                   }
                 }
@@ -992,29 +1007,43 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
               // comportamento que o chat flutuante já tinha (ConversationView.tsx),
               // faltava aqui no modal. Antes só dava pra anexar clicando no
               // botão "Anexar", print colado direto não ia pra lugar nenhum.
+              // Pega TODAS as imagens coladas de uma vez (Windows deixa
+              // copiar/colar vários prints juntos), não só a primeira.
               onPaste={(e) => {
-                const item = Array.from(e.clipboardData.items).find((i) => i.type.startsWith("image/"));
-                if (!item) return;
-                const file = item.getAsFile();
-                if (!file) return;
+                const items = Array.from(e.clipboardData.items).filter((i) => i.type.startsWith("image/"));
+                if (items.length === 0) return;
+                const files = items.map((i) => i.getAsFile()).filter((f): f is File => !!f);
+                if (files.length === 0) return;
                 e.preventDefault();
-                pickFile(file);
+                pickFiles(files);
               }}
               rows={2}
               style={{ background: BG_CARD, borderColor: BORDER_DEFAULT, color: TEXT_PRIMARY }}
             />
-            {commentFile && (
-              <div className="flex items-center gap-2" style={{ fontSize: 12, background: BG_CARD, borderRadius: 6, padding: 8, marginTop: 8 }}>
-                <Paperclip className="h-3 w-3" style={{ color: TEXT_SECONDARY }} />
-                <span className="truncate flex-1" style={{ color: TEXT_PRIMARY }}>{commentFile.name}</span>
-                <button type="button" onClick={() => { setCommentFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }} style={{ background: "none", border: "none", color: TEXT_MUTED, cursor: "pointer" }}>
-                  <Trash2 className="h-3 w-3" />
-                </button>
+            {commentFiles.length > 0 && (
+              <div className="flex flex-col" style={{ gap: 4, marginTop: 8 }}>
+                {commentFiles.map((file, i) => (
+                  <div key={`${file.name}-${i}`} className="flex items-center gap-2" style={{ fontSize: 12, background: BG_CARD, borderRadius: 6, padding: 8 }}>
+                    <Paperclip className="h-3 w-3" style={{ color: TEXT_SECONDARY, flexShrink: 0 }} />
+                    <span className="truncate flex-1" style={{ color: TEXT_PRIMARY }}>{file.name}</span>
+                    {/* Remove só esse arquivo, os outros anexados continuam —
+                        não existe mais um "limpar tudo" de uma vez. */}
+                    <button
+                      type="button"
+                      onClick={() => setCommentFiles((prev) => prev.filter((_, idx) => idx !== i))}
+                      title={`Remover ${file.name}`}
+                      style={{ background: "none", border: "none", color: TEXT_MUTED, cursor: "pointer", flexShrink: 0 }}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
               </div>
             )}
             <input
               type="file"
               ref={fileInputRef}
+              multiple
               // display:none (className="hidden") em cima de um input de
               // arquivo DENTRO de um Radix Dialog é um padrão conhecido por
               // não disparar o onChange de forma confiável em alguns
@@ -1025,8 +1054,8 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
               // resolve mantendo o elemento de fato presente/interativo.
               style={{ position: "absolute", width: 1, height: 1, padding: 0, margin: -1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap", border: 0 }}
               onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) pickFile(file);
+                const files = Array.from(e.target.files || []);
+                if (files.length > 0) pickFiles(files);
               }}
             />
             <div className="flex items-center justify-between" style={{ marginTop: 10 }}>
@@ -1062,11 +1091,11 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
               <button
                 type="button"
                 onClick={() => addComment.mutate()}
-                disabled={(!commentText.trim() && !commentFile) || addComment.isPending}
+                disabled={(!commentText.trim() && commentFiles.length === 0) || addComment.isPending}
                 style={{
                   height: 36, padding: "0 18px", background: GOLD, color: "var(--mg-color-bg-base)", border: "none",
                   borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 8,
-                  opacity: (!commentText.trim() && !commentFile) || addComment.isPending ? 0.5 : 1,
+                  opacity: (!commentText.trim() && commentFiles.length === 0) || addComment.isPending ? 0.5 : 1,
                 }}
               >
                 Enviar <Send className="h-3.5 w-3.5" />
