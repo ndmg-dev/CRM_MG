@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
+import { SETORES_COLABORADOR } from "../lib/setores";
 import {
   ShieldCheck,
   UserCog,
@@ -36,18 +37,11 @@ export default function GestaoUsuarios() {
   // Listas Limpas e Separadas
   const listaPerfis = ["Administrador", "Coordenador", "Gestor", "Analista"];
 
-  const listaSetores = [
-    "Global",
-    "Contábil",
-    "Departamento Pessoal",
-    "Financeiro",
-    "Fiscal",
-    "Recursos Humanos",
-    "Tecnologia da Informação",
-    "Diretoria",
-    "Comercial",
-    "Operacional",
-  ];
+  // "Global" fica só aqui: é escopo de acesso do usuário (sem restrição de
+  // setor), não um departamento de verdade — por isso não faz parte de
+  // SETORES_COLABORADOR (lib/setores.js), a lista compartilhada com
+  // Colaboradores/Relatórios/Dashboard.
+  const listaSetores = ["Global", ...SETORES_COLABORADOR];
 
   const obterNomeSetorCurto = (setorLongo) => {
     const traducoes = {

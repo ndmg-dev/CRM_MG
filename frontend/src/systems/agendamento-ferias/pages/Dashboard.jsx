@@ -3,7 +3,6 @@ import {
   CheckCircle2,
   XCircle,
   UserMinus,
-  AlertTriangle,
   TrendingUp,
   History,
 } from "lucide-react";
@@ -12,7 +11,8 @@ import { supabase } from "../lib/supabase";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useAuth } from "../contexts/AuthContext";
-import { canViewCollaborator } from "../lib/permissions";
+import { canViewCollaborator, isStatusEmAberto } from "../lib/permissions";
+import { SETORES_COLABORADOR, SIGLAS_SETOR } from "../lib/setores";
 
 export default function Dashboard() {
   const { usuarioLogado } = useAuth();
@@ -58,8 +58,11 @@ export default function Dashboard() {
           ),
         );
         setStats({
+          // "Sugerida" ainda não é uma decisão final (ver isStatusEmAberto) —
+          // conta como pendente aqui também, senão o card mostra menos
+          // pendências do que a tela de Solicitações de fato tem.
           pendentes: solicitacoesVisiveis.filter(
-            (s) => s.status?.toLowerCase() === "pendente",
+            (s) => isStatusEmAberto(s.status),
           ).length,
           aprovadas: solicitacoesVisiveis.filter(
             (s) => s.status?.toLowerCase() === "aprovada",
@@ -88,7 +91,7 @@ export default function Dashboard() {
       // 2. BUSCAR COLABORADORES
       const { data: colaboradores, error: errColab } = await supabase
         .from("colaboradores")
-        .select("setor, status, email");
+        .select("setor, status, email, dias_gozados");
 
       if (errColab) {
         console.warn("Aviso colaboradores:", errColab.message); // <-- Usado
@@ -135,34 +138,27 @@ export default function Dashboard() {
       icone: <XCircle size={20} className="text-red-500" />,
     },
     {
+      // Antes era um card fixo em "0", nunca calculado de verdade — agora
+      // conta quem ainda não tirou nenhum dia de férias no ciclo atual
+      // (dias_gozados zerado ou nulo), dentre quem o usuário logado pode ver.
       titulo: "Sem férias",
-      valor: "0",
+      valor: setoresData.filter((c) => !c.dias_gozados).length.toString(),
       icone: <UserMinus size={20} className="text-gray-400" />,
     },
-    {
-      titulo: "Conflitos",
-      valor: "0",
-      icone: <AlertTriangle size={20} className="text-gold" />,
-    },
   ];
 
-  const listaSetores = [
-    { sigla: "CONT", nome: "Contábil" },
-    { sigla: "DP", nome: "Departamento Pessoal" },
-    { sigla: "FIN", nome: "Financeiro" },
-    { sigla: "FISC", nome: "Fiscal" },
-    { sigla: "RH", nome: "Recursos Humanos" },
-    { sigla: "TI", nome: "Tecnologia da Informação" },
-  ];
+  // "Conflitos" existia como card fixo em "0" — removido: a detecção de
+  // conflito de verdade (cruza feriado/coletiva + limite de cobertura do
+  // setor) só existe hoje dentro do fluxo de análise de uma solicitação
+  // específica (Solicitacoes.jsx/checarConflitos), não é algo que dá pra
+  // resumir num card sem duplicar aquela lógica inteira aqui.
 
-  const ocupacaoSetor = listaSetores.map((setor) => {
-    const totalNoSetor = setoresData.filter(
-      (c) => c.setor === setor.nome,
-    ).length;
+  const ocupacaoSetor = SETORES_COLABORADOR.map((nome) => {
+    const totalNoSetor = setoresData.filter((c) => c.setor === nome).length;
     const ocupados = setoresData.filter(
-      (c) => c.setor === setor.nome && c.status === "ferias",
+      (c) => c.setor === nome && c.status === "ferias",
     ).length;
-    return { ...setor, ocupados, total: totalNoSetor };
+    return { sigla: SIGLAS_SETOR[nome] || nome, nome, ocupados, total: totalNoSetor };
   });
 
   const dataHoje = format(new Date(), "EEEE, dd 'de' MMMM 'de' yyyy", {
@@ -177,7 +173,7 @@ export default function Dashboard() {
             Central de Operações
           </h1>
           <p className="text-sm text-gray-500 capitalize">
-            Administrador (TI) • {dataHoje}
+            {usuarioLogado?.nome || usuarioLogado?.perfil || "Usuário"} • {dataHoje}
           </p>
         </div>
         <div className="bg-[#1a1a1a] border border-gray-800 text-gray-400 px-3 py-1 rounded-full text-xs font-mono tracking-wider">
@@ -185,7 +181,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         {kpis.map((kpi, index) => (
           <div
             key={index}

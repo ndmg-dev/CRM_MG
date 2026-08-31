@@ -3,8 +3,10 @@ import test from "node:test";
 import {
   canDecideRequest,
   canDeleteRequest,
+  canEditRequest,
   canLaunchFor,
   getFeriasPermissions,
+  isStatusEmAberto,
   normalizeSector,
 } from "./permissions.js";
 
@@ -43,4 +45,13 @@ test("somente administrador exclui solicitações e gerencia usuários", () => {
   assert.equal(canDeleteRequest(manager), false);
   assert.equal(getFeriasPermissions(admin).canManageUsers, true);
   assert.equal(getFeriasPermissions(manager).canManageUsers, false);
+});
+
+test('"Sugerida" conta como decisão em aberto, igual a "Pendente"', () => {
+  assert.equal(isStatusEmAberto("Pendente"), true);
+  assert.equal(isStatusEmAberto("Sugerida"), true);
+  assert.equal(isStatusEmAberto("Aprovada"), false);
+  assert.equal(isStatusEmAberto("Reprovada"), false);
+  assert.equal(canEditRequest(coordinator, { status: "Sugerida", setor: "DP" }), true);
+  assert.equal(canEditRequest(coordinator, { status: "Aprovada", setor: "DP" }), false);
 });

@@ -7,6 +7,7 @@ import Calendario from "./pages/Calendario";
 import Colaboradores from "./pages/Colaboradores";
 import Usuarios from "./pages/GestaoUsuarios";
 import Configuracoes from "./pages/Configuracoes";
+import Relatorios from "./pages/Relatorios";
 import {
   FeriasRouterProvider,
   Navigate,
@@ -62,6 +63,10 @@ function EstruturaBase() {
             <Route
               path="/colaboradores"
               element={!permissions.isAnalyst ? <Colaboradores /> : <Navigate to="/" />}
+            />
+            <Route
+              path="/relatorios"
+              element={!permissions.isAnalyst ? <Relatorios /> : <Navigate to="/" />}
             />
             <Route
               path="/usuarios"

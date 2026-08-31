@@ -9,6 +9,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { differenceInMonths, parseISO, format } from "date-fns";
+import { SETORES_COLABORADOR } from "../lib/setores";
 
 export default function Relatorios() {
   // --- ESTADOS ---
@@ -16,15 +17,7 @@ export default function Relatorios() {
   const [carregando, setCarregando] = useState(true);
   const [filtroSetor, setFiltroSetor] = useState("Todos");
 
-  const listaSetores = [
-    "Todos",
-    "Contábil",
-    "Departamento Pessoal",
-    "Financeiro",
-    "Fiscal",
-    "Recursos Humanos",
-    "Tecnologia da Informação",
-  ];
+  const listaSetores = ["Todos", ...SETORES_COLABORADOR];
 
   // --- 1. BUSCA DE DADOS (Aqui é onde estava o erro) ---
   async function buscarDados() {
@@ -115,13 +108,18 @@ export default function Relatorios() {
 
   const stats = {
     total: dadosFiltrados.length,
+    // Sem o 3º argumento (dias_direito), todo colaborador era avaliado como
+    // se tivesse 30 dias de direito — quem tem direito diferente do padrão
+    // (ex: proporcional) saía com status errado nos cards e na tabela.
     vencidas: dadosFiltrados.filter(
       (c) =>
-        obterStatus(c.data_admissao, c.dias_gozados).label ===
+        obterStatus(c.data_admissao, c.dias_gozados, c.dias_direito).label ===
         "VENCIDA (DOBRA)",
     ).length,
     saudavel: dadosFiltrados.filter(
-      (c) => obterStatus(c.data_admissao, c.dias_gozados).label === "EM DIA",
+      (c) =>
+        obterStatus(c.data_admissao, c.dias_gozados, c.dias_direito).label ===
+        "EM DIA",
     ).length,
   };
 
@@ -222,7 +220,7 @@ export default function Relatorios() {
               </tr>
             ) : (
               dadosFiltrados.map((c) => {
-                const status = obterStatus(c.data_admissao, c.dias_gozados);
+                const status = obterStatus(c.data_admissao, c.dias_gozados, c.dias_direito);
                 const saldo = (c.dias_direito || 30) - (c.dias_gozados || 0);
                 return (
                   <tr

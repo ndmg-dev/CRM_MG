@@ -7,6 +7,7 @@ import {
   canEditRequest,
   canLaunchFor,
   canViewCollaborator,
+  isStatusEmAberto,
 } from "../lib/permissions";
 import emailjs from "@emailjs/browser";
 import {
@@ -198,8 +199,13 @@ export default function Solicitacoes() {
         .order("created_at", { ascending: false });
 
       if (errSols) throw errSols;
-      setPendentes(sols?.filter((s) => s.status === "Pendente") || []);
-      setHistorico(sols?.filter((s) => s.status !== "Pendente") || []);
+      // "Sugerida" (botão "Enviar Sugestão" da Análise IA) não é uma decisão
+      // final — ainda precisa que alguém aprove ou reprove de verdade. Antes
+      // caía direto no Histórico com a pílula vermelha de "reprovado" (única
+      // cor que a tabela conhecia fora "Aprovada") e sumia da fila de quem
+      // precisa decidir. Ver isStatusEmAberto em lib/permissions.js.
+      setPendentes(sols?.filter((s) => isStatusEmAberto(s.status)) || []);
+      setHistorico(sols?.filter((s) => !isStatusEmAberto(s.status)) || []);
 
       // 3. Busca Colaboradores
       const { data: colabs, error: errColabs } = await supabase
@@ -514,8 +520,16 @@ export default function Solicitacoes() {
                     {sol.colaboradores?.colaborador_nome?.charAt(0) || "-"}
                   </div>
                   <div>
-                    <h3 className="font-bold text-sm uppercase text-white">
+                    <h3 className="font-bold text-sm uppercase text-white flex items-center gap-2">
                       {sol.colaboradores?.colaborador_nome || "Desconhecido"}
+                      {sol.status === "Sugerida" && (
+                        <span
+                          className="text-[9px] font-black px-1.5 py-0.5 rounded border border-purple-900/50 text-purple-400 bg-purple-900/10 normal-case"
+                          title="O sistema já sugeriu uma data alternativa por e-mail; ainda aguarda aprovar/reprovar."
+                        >
+                          Sugestão enviada
+                        </span>
+                      )}
                     </h3>
                     <p className="text-[10px] text-gray-500 font-black uppercase">
                       {sol.colaboradores?.setor || "Sem Setor"} · {sol.tipo_afastamento === "FOLGA" ? "Folga" : "Férias"}

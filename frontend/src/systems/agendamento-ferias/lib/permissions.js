@@ -63,8 +63,17 @@ export function canDecideRequest(user, request) {
   return normalizeSector(user?.setor) === normalizeSector(requestSector);
 }
 
+// "Sugerida" ainda é uma decisão em aberto (o sistema só propôs datas
+// alternativas, ninguém aprovou/reprovou de fato) — por isso conta como
+// pendente pra fins de edição, junto com "Pendente".
+const STATUS_EM_ABERTO = ["PENDENTE", "SUGERIDA"];
+
+export function isStatusEmAberto(status) {
+  return STATUS_EM_ABERTO.includes(normalizeText(status));
+}
+
 export function canEditRequest(user, request) {
-  return normalizeText(request?.status) === "PENDENTE"
+  return isStatusEmAberto(request?.status)
     && canDecideRequest(user, request);
 }
 
