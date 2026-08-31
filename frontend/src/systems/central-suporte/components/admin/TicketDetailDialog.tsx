@@ -965,7 +965,15 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
             <input
               type="file"
               ref={fileInputRef}
-              className="hidden"
+              // display:none (className="hidden") em cima de um input de
+              // arquivo DENTRO de um Radix Dialog é um padrão conhecido por
+              // não disparar o onChange de forma confiável em alguns
+              // navegadores — o seletor do Windows abre normal, mas o
+              // arquivo escolhido nunca chega no React (o chat flutuante,
+              // que não é um Dialog, não tinha esse problema com o mesmo
+              // padrão). Estilo "visualmente oculto" (sem display:none)
+              // resolve mantendo o elemento de fato presente/interativo.
+              style={{ position: "absolute", width: 1, height: 1, padding: 0, margin: -1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap", border: 0 }}
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (file) {
