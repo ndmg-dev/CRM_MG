@@ -20,6 +20,7 @@ const menuItems = [
   { name: "Calendário", path: "/calendario", icon: Calendar },
   { name: "Solicitações", path: "/solicitacoes", icon: FileText, badge: true },
   { name: "Colaboradores", path: "/colaboradores", icon: Users, restritoAnalista: true },
+  { name: "Relatórios", path: "/relatorios", icon: FileText, restritoAnalista: true },
   { name: "Usuários", path: "/usuarios", icon: UserCog, adminOnly: true },
   { name: "Configurações", path: "/configuracoes", icon: Settings, configOnly: true },
 ];

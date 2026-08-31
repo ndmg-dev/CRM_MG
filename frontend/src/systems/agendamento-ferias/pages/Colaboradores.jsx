@@ -18,6 +18,7 @@ import {
 import { differenceInMonths, parseISO, format } from "date-fns";
 import { useAuth } from "../contexts/AuthContext";
 import { canViewCollaborator, getFeriasPermissions } from "../lib/permissions";
+import { SETORES_COLABORADOR } from "../lib/setores";
 
 export default function Colaboradores() {
   const { usuarioLogado } = useAuth();
@@ -51,15 +52,6 @@ export default function Colaboradores() {
   const [editDiasDireito, setEditDiasDireito] = useState(30);
   const [editDiasGozados, setEditDiasGozados] = useState(0);
   const [salvandoEdicao, setSalvandoEdicao] = useState(false);
-
-  const listaSetores = [
-    "Contábil",
-    "Departamento Pessoal",
-    "Financeiro",
-    "Fiscal",
-    "Recursos Humanos",
-    "Tecnologia da Informação",
-  ];
 
   // ==========================================
   // LÓGICA DE AUTO-CHECKBOX (FÉRIAS VENCIDAS)
@@ -167,8 +159,12 @@ export default function Colaboradores() {
         dias_gozados: parseInt(diasGozados),
       },
     ]);
-    if (error) alert(error.message);
-    else {
+    if (error) {
+      // Mesmo tratamento do GestaoUsuarios.jsx pro e-mail duplicado
+      // (constraint unique do Postgres) — sem isso a pessoa via só a
+      // mensagem crua do driver em vez de um aviso claro.
+      alert(error.code === "23505" ? "Este e-mail já está cadastrado!" : error.message);
+    } else {
       setNome("");
       setEmail("");
       setDataAdmissao("");
@@ -363,7 +359,7 @@ export default function Colaboradores() {
               onChange={(e) => setSetor(e.target.value)}
               className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg p-3 text-white text-sm outline-none cursor-pointer"
             >
-              {listaSetores.map((s) => (
+              {SETORES_COLABORADOR.map((s) => (
                 <option key={s} value={s}>
                   {s}
                 </option>
@@ -652,7 +648,7 @@ export default function Colaboradores() {
                 onChange={(e) => setEditSetor(e.target.value)}
                 className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg p-3 text-white text-sm outline-none"
               >
-                {listaSetores.map((s) => (
+                {SETORES_COLABORADOR.map((s) => (
                   <option key={s} value={s}>
                     {s}
                   </option>
