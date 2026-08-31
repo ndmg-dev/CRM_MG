@@ -62,12 +62,23 @@ COPY . .
 # sempre cortava antes disso): não é memória — é
 # "Error: EMFILE: too many open files, watch '/app'", do watcher de arquivo
 # que o compilador do @vanilla-extract (usado pelo @mg/ui) abre sobre /app
-# inteiro mesmo num build único (não é modo watch de verdade, é assim que
-# ele processa os arquivos .css.ts). O container do Coolify tem um teto de
-# arquivos abertos simultâneos baixo demais pro tanto de arquivo que o
-# projeto já acumulou. `ulimit -n` sobe o teto SÓ pra esse RUN (não muda
-# nada fora do build).
-RUN ulimit -n 65536 2>/dev/null; npm run build
+# inteiro mesmo num build único (não é modo watch de verdade — o próprio
+# vanilla-extract sobe um vite.createServer() interno pra processar os
+# .css.ts, com server.hmr:false mas SEM desligar o watcher — dá pra
+# confirmar em node_modules/@vanilla-extract/compiler/dist/*.cjs.dev.js,
+# não é algo que dá pra desligar pelas options públicas do plugin). Sem
+# suporte nativo de inotify otimizado nesse filesystem, o chokidar cai no
+# fallback _watchWithNodeFs, que abre 1 file descriptor POR DIRETÓRIO sob
+# /app — um monorepo deste tamanho (25+ sistemas vendorizados, cada um com
+# node_modules próprio nalguns casos) facilmente passa de 65536 diretórios.
+# `ulimit -n 65536` (tentativa anterior) não foi suficiente — foi
+# substituído por "sobe pro teto físico que o container permitir", sem
+# chutar um número: imprime os valores no log (senão fica no escuro nas
+# próximas falhas, de novo) e usa o hard limit como soft limit.
+RUN echo "ulimit antes: soft=$(ulimit -Sn) hard=$(ulimit -Hn)" \
+ && ulimit -n "$(ulimit -Hn)" \
+ && echo "ulimit depois: soft=$(ulimit -Sn) hard=$(ulimit -Hn)" \
+ && npm run build
 
 # Production stage
 FROM nginx:alpine
