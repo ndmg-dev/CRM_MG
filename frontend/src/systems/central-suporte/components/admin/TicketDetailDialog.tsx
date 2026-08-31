@@ -114,6 +114,15 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
   const [restoreReason, setRestoreReason] = useState("");
   const [commentFile, setCommentFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Compartilhado entre o input de arquivo (clicar em "Anexar") e o
+  // onPaste do textarea (colar print) — mesma validação nos dois casos.
+  const pickFile = (file: File) => {
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Arquivo deve ter no máximo 10MB");
+      return;
+    }
+    setCommentFile(file);
+  };
   const [activeTab, setActiveTab] = useState("details");
   // Preview de imagem em modal em vez de abrir em nova aba — nova aba tira o
   // agente do chamado só pra ver um print anexado. É um <Dialog> do Radix
@@ -950,6 +959,18 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
                   }
                 }
               }}
+              // Colar print (Ctrl+V) direto no campo de texto — mesmo
+              // comportamento que o chat flutuante já tinha (ConversationView.tsx),
+              // faltava aqui no modal. Antes só dava pra anexar clicando no
+              // botão "Anexar", print colado direto não ia pra lugar nenhum.
+              onPaste={(e) => {
+                const item = Array.from(e.clipboardData.items).find((i) => i.type.startsWith("image/"));
+                if (!item) return;
+                const file = item.getAsFile();
+                if (!file) return;
+                e.preventDefault();
+                pickFile(file);
+              }}
               rows={2}
               style={{ background: BG_CARD, borderColor: BORDER_DEFAULT, color: TEXT_PRIMARY }}
             />
@@ -976,13 +997,7 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
               style={{ position: "absolute", width: 1, height: 1, padding: 0, margin: -1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap", border: 0 }}
               onChange={(e) => {
                 const file = e.target.files?.[0];
-                if (file) {
-                  if (file.size > 10 * 1024 * 1024) {
-                    toast.error("Arquivo deve ter no máximo 10MB");
-                    return;
-                  }
-                  setCommentFile(file);
-                }
+                if (file) pickFile(file);
               }}
             />
             <div className="flex items-center justify-between" style={{ marginTop: 10 }}>
