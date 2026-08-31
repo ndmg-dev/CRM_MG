@@ -37,6 +37,7 @@ import { ticketCategory, isTicketClosed } from "@suporte/utils/ticketStatus";
 import { reopenTicketWithReason } from "@suporte/utils/reopenTicket";
 import { ReopenReasonDialog } from "@suporte/components/admin/ReopenReasonDialog";
 import { isSystemNote } from "@suporte/utils/systemNote";
+import { useUserSector } from "@suporte/hooks/useUserSector";
 
 interface TicketDetailDialogProps {
   ticketId: string | null;
@@ -106,6 +107,10 @@ function formatTime(dateStr: string): string {
 
 export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = false, archivedMode = false }: TicketDetailDialogProps) {
   const queryClient = useQueryClient();
+  // Nota interna só é visível pra Admin TI e pra quem criou a nota — mesmo
+  // outro membro da TI (support_agent, dev, coordenador) não deve ver a
+  // nota interna de um colega. Ver `visibleComments` abaixo.
+  const { isAdmin } = useUserSector();
   const [commentText, setCommentText] = useState("");
   const [isInternal, setIsInternal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -257,6 +262,14 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
     },
     enabled: !!ticketId && open,
   });
+
+  // Nota interna: só Admin TI e quem escreveu enxergam. Qualquer outro
+  // membro da TI (support_agent, dev, coordenador) nem sabe que ela existe
+  // — some da lista inteiramente, não só do conteúdo.
+  const visibleComments = useMemo(
+    () => comments?.filter((c) => !c.internal_only || isAdmin || c.author_id === currentUserId),
+    [comments, isAdmin, currentUserId]
+  );
 
   // Marca como lido pra virar "✓✓ Lido às" na bolha de quem enviou — mesma
   // lógica do chat flutuante (ConversationView.tsx), que o modal não tinha:
@@ -704,7 +717,7 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
 
   const messagesTabContent = (
     <div className="flex flex-col" style={{ gap: 10 }}>
-      {comments?.map((c, i) => {
+      {visibleComments?.map((c, i) => {
         const commentAtts = attachments?.filter((a) => a.comment_id === c.id) || [];
         if (isSystemNote(c.content)) {
           return (
@@ -715,8 +728,8 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
           );
         }
         const mine = c.author_id === currentUserId;
-        const prev = comments[i - 1];
-        const next = comments[i + 1];
+        const prev = visibleComments[i - 1];
+        const next = visibleComments[i + 1];
         const showAuthor = !prev || prev.author_id !== c.author_id || isSystemNote(prev.content);
         // Avatar só na última mensagem do grupo (mesmo critério do chat
         // flutuante, ConversationView.tsx) — evita repetir a foto em cada
@@ -725,9 +738,9 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
         // Barra de "Nota interna" — só na primeira mensagem de uma sequência
         // interna seguida (mesmo critério de agrupamento do resto: evita uma
         // barra repetida em cada linha de várias notas internas seguidas).
-        // Essas linhas NUNCA chegam ao solicitante: a query de comments do
-        // chat flutuante (ConversationView.tsx) já filtra internal_only=false
-        // pra quem não é staff — só quem tem acesso de TI vê isso aqui.
+        // `visibleComments` já garante que só chegou até aqui quem pode ver
+        // (Admin TI ou quem escreveu) — nem outro membro comum da TI, nem o
+        // solicitante (que usa outro componente, o chat flutuante).
         const showInternalBar = c.internal_only && (!prev || !prev.internal_only || isSystemNote(prev.content));
         // Mesmo padrão visual do chat flutuante (ConversationView.tsx):
         // bolha sólida (sem borda), nome fora/acima dela — não dentro —, e
@@ -806,7 +819,7 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
           </div>
         );
       })}
-      {(!comments || comments.length === 0) && (
+      {(!visibleComments || visibleComments.length === 0) && (
         <p style={{ fontSize: 13, color: TEXT_MUTED, textAlign: "center", padding: "24px 0" }}>Nenhuma mensagem ainda</p>
       )}
     </div>
@@ -955,7 +968,7 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
             items={[
               { value: "details", label: "Detalhes", content: detailsTabContent },
               { value: "anexos", label: `Anexos (${attachments?.length || 0})`, content: attachmentsTabContent },
-              { value: "mensagens", label: `Mensagens (${comments?.length || 0})`, content: messagesTabContent },
+              { value: "mensagens", label: `Mensagens (${visibleComments?.length || 0})`, content: messagesTabContent },
             ]}
           />
         </div>
