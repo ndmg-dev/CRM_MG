@@ -37,6 +37,7 @@ import { ticketCategory, isTicketClosed } from "@suporte/utils/ticketStatus";
 import { reopenTicketWithReason } from "@suporte/utils/reopenTicket";
 import { ReopenReasonDialog } from "@suporte/components/admin/ReopenReasonDialog";
 import { isSystemNote } from "@suporte/utils/systemNote";
+import { useUserSector } from "@suporte/hooks/useUserSector";
 
 interface TicketDetailDialogProps {
   ticketId: string | null;
@@ -106,6 +107,10 @@ function formatTime(dateStr: string): string {
 
 export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = false, archivedMode = false }: TicketDetailDialogProps) {
   const queryClient = useQueryClient();
+  // Nota interna só é visível pra Admin TI e pra quem criou a nota — mesmo
+  // outro membro da TI (support_agent, dev, coordenador) não deve ver a
+  // nota interna de um colega. Ver `visibleComments` abaixo.
+  const { isAdmin } = useUserSector();
   const [commentText, setCommentText] = useState("");
   const [isInternal, setIsInternal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -114,6 +119,15 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
   const [restoreReason, setRestoreReason] = useState("");
   const [commentFile, setCommentFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Compartilhado entre o input de arquivo (clicar em "Anexar") e o
+  // onPaste do textarea (colar print) — mesma validação nos dois casos.
+  const pickFile = (file: File) => {
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Arquivo deve ter no máximo 10MB");
+      return;
+    }
+    setCommentFile(file);
+  };
   const [activeTab, setActiveTab] = useState("details");
   // Preview de imagem em modal em vez de abrir em nova aba — nova aba tira o
   // agente do chamado só pra ver um print anexado. É um <Dialog> do Radix
@@ -248,6 +262,14 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
     },
     enabled: !!ticketId && open,
   });
+
+  // Nota interna: só Admin TI e quem escreveu enxergam. Qualquer outro
+  // membro da TI (support_agent, dev, coordenador) nem sabe que ela existe
+  // — some da lista inteiramente, não só do conteúdo.
+  const visibleComments = useMemo(
+    () => comments?.filter((c) => !c.internal_only || isAdmin || c.author_id === currentUserId),
+    [comments, isAdmin, currentUserId]
+  );
 
   // Marca como lido pra virar "✓✓ Lido às" na bolha de quem enviou — mesma
   // lógica do chat flutuante (ConversationView.tsx), que o modal não tinha:
@@ -695,7 +717,7 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
 
   const messagesTabContent = (
     <div className="flex flex-col" style={{ gap: 10 }}>
-      {comments?.map((c, i) => {
+      {visibleComments?.map((c, i) => {
         const commentAtts = attachments?.filter((a) => a.comment_id === c.id) || [];
         if (isSystemNote(c.content)) {
           return (
@@ -706,13 +728,20 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
           );
         }
         const mine = c.author_id === currentUserId;
-        const prev = comments[i - 1];
-        const next = comments[i + 1];
+        const prev = visibleComments[i - 1];
+        const next = visibleComments[i + 1];
         const showAuthor = !prev || prev.author_id !== c.author_id || isSystemNote(prev.content);
         // Avatar só na última mensagem do grupo (mesmo critério do chat
         // flutuante, ConversationView.tsx) — evita repetir a foto em cada
         // linha de uma sequência de mensagens seguidas da mesma pessoa.
         const isLastInGroup = !next || next.author_id !== c.author_id || isSystemNote(next.content);
+        // Barra de "Nota interna" — só na primeira mensagem de uma sequência
+        // interna seguida (mesmo critério de agrupamento do resto: evita uma
+        // barra repetida em cada linha de várias notas internas seguidas).
+        // `visibleComments` já garante que só chegou até aqui quem pode ver
+        // (Admin TI ou quem escreveu) — nem outro membro comum da TI, nem o
+        // solicitante (que usa outro componente, o chat flutuante).
+        const showInternalBar = c.internal_only && (!prev || !prev.internal_only || isSystemNote(prev.content));
         // Mesmo padrão visual do chat flutuante (ConversationView.tsx):
         // bolha sólida (sem borda), nome fora/acima dela — não dentro —, e
         // cauda no canto de quem enviou. Antes essa bolha tinha um estilo
@@ -720,11 +749,20 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
         // resto do sistema. A foto de perfil (quando o usuário já sincronizou
         // uma) some junto com o resto do agrupamento em vez de aparecer solta.
         return (
-          <div
-            key={c.id}
-            className="flex items-end"
-            style={{ gap: 6, flexDirection: mine ? "row-reverse" : "row", alignSelf: mine ? "flex-end" : "flex-start", maxWidth: "70%" }}
-          >
+          <div key={c.id} className="flex flex-col" style={{ gap: 4, alignItems: mine ? "flex-end" : "flex-start" }}>
+            {showInternalBar && (
+              <div className="flex items-center gap-2" style={{ width: "100%" }}>
+                <div style={{ height: 1, flex: 1, background: "rgba(245,158,11,0.35)" }} />
+                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--mg-color-status-warning)", whiteSpace: "nowrap" }}>
+                  🔒 Nota interna · só a TI vê
+                </span>
+                <div style={{ height: 1, flex: 1, background: "rgba(245,158,11,0.35)" }} />
+              </div>
+            )}
+            <div
+              className="flex items-end"
+              style={{ gap: 6, flexDirection: mine ? "row-reverse" : "row", maxWidth: "70%", alignSelf: mine ? "flex-end" : "flex-start" }}
+            >
             {isLastInGroup ? (
               <Avatar name={c.author?.full_name || "?"} src={c.author?.foto_url ?? undefined} size="sm" />
             ) : (
@@ -734,7 +772,6 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
             {showAuthor && (
               <span style={{ margin: "0 4px 2px", fontSize: 10, color: TEXT_MUTED }}>
                 {c.author?.full_name || "Desconhecido"}
-                {c.internal_only && <Badge variant="warn">Interno</Badge>}
               </span>
             )}
             {commentAtts.map((att) => (
@@ -778,10 +815,11 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
               {mine && c.read_at ? `Lido às ${formatTime(c.read_at)}` : formatTime(c.created_at!)}
             </span>
             </div>
+            </div>
           </div>
         );
       })}
-      {(!comments || comments.length === 0) && (
+      {(!visibleComments || visibleComments.length === 0) && (
         <p style={{ fontSize: 13, color: TEXT_MUTED, textAlign: "center", padding: "24px 0" }}>Nenhuma mensagem ainda</p>
       )}
     </div>
@@ -930,7 +968,7 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
             items={[
               { value: "details", label: "Detalhes", content: detailsTabContent },
               { value: "anexos", label: `Anexos (${attachments?.length || 0})`, content: attachmentsTabContent },
-              { value: "mensagens", label: `Mensagens (${comments?.length || 0})`, content: messagesTabContent },
+              { value: "mensagens", label: `Mensagens (${visibleComments?.length || 0})`, content: messagesTabContent },
             ]}
           />
         </div>
@@ -949,6 +987,18 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
                     addComment.mutate();
                   }
                 }
+              }}
+              // Colar print (Ctrl+V) direto no campo de texto — mesmo
+              // comportamento que o chat flutuante já tinha (ConversationView.tsx),
+              // faltava aqui no modal. Antes só dava pra anexar clicando no
+              // botão "Anexar", print colado direto não ia pra lugar nenhum.
+              onPaste={(e) => {
+                const item = Array.from(e.clipboardData.items).find((i) => i.type.startsWith("image/"));
+                if (!item) return;
+                const file = item.getAsFile();
+                if (!file) return;
+                e.preventDefault();
+                pickFile(file);
               }}
               rows={2}
               style={{ background: BG_CARD, borderColor: BORDER_DEFAULT, color: TEXT_PRIMARY }}
@@ -976,13 +1026,7 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
               style={{ position: "absolute", width: 1, height: 1, padding: 0, margin: -1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap", border: 0 }}
               onChange={(e) => {
                 const file = e.target.files?.[0];
-                if (file) {
-                  if (file.size > 10 * 1024 * 1024) {
-                    toast.error("Arquivo deve ter no máximo 10MB");
-                    return;
-                  }
-                  setCommentFile(file);
-                }
+                if (file) pickFile(file);
               }}
             />
             <div className="flex items-center justify-between" style={{ marginTop: 10 }}>

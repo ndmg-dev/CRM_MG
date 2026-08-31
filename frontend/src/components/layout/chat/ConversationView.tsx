@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowLeft, X, Send, Minus, Check, CheckCheck, Paperclip, Trash2 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -79,7 +79,7 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
   // Só quem é da TI (support_agent/dev/admin_ti/coordenador) move status ou
   // encerra o chat — quem só abre chamado (requester comum) nunca vê esses
   // controles, só a conversa em si.
-  const { isStaff } = useUserSector()
+  const { isStaff, isAdmin } = useUserSector()
   const [text, setText] = useState('')
   const [pendingImage, setPendingImage] = useState<File | null>(null)
   const [pendingImagePreview, setPendingImagePreview] = useState<string | null>(null)
@@ -149,7 +149,7 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
   // antigos com muita conversa a cada evento realtime.
   const RECENT_ROWS_LIMIT = 200
 
-  const { data: comments = [] } = useQuery({
+  const { data: rawComments = [] } = useQuery({
     queryKey: ['chat-widget-comments', ticketId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -162,6 +162,17 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
       return (data || []).slice().reverse()
     },
   })
+
+  // Nota interna (criada no modal de detalhes do chamado) só é visível pra
+  // Admin TI e pra quem escreveu — nem outro membro da TI (support_agent,
+  // dev, coordenador) vê a nota interna de um colega, e o solicitante nunca
+  // vê nenhuma. Filtro em cima do resultado da query (não na query em si)
+  // porque currentUserId resolve num efeito separado, depois do primeiro
+  // fetch — filtrar na query arriscava rodar antes dele estar pronto.
+  const comments = useMemo(
+    () => rawComments.filter((c: any) => !c.internal_only || isAdmin || c.author_id === currentUserId),
+    [rawComments, isAdmin, currentUserId]
+  )
 
   // Anexos do chamado, com URL assinada — mesmo padrão do TicketDetailDialog.
   const { data: attachments = [] } = useQuery({
@@ -487,6 +498,22 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
                       Novas mensagens
                     </span>
                     <div className="h-px flex-1 bg-gold/40" />
+                  </div>
+                )}
+                {/* Nota interna (criada pelo modal de detalhes do chamado) —
+                    `comments` (derivado de rawComments) já filtra pra só
+                    sobrar aqui o que Admin TI ou o próprio autor podem ver;
+                    ninguém mais (nem outro membro da TI, nem o solicitante)
+                    chega a ter essa linha na lista. Barra igual à do modal
+                    (mesmo critério de grupo, só na primeira de uma
+                    sequência interna seguida). */}
+                {c.internal_only && (!prev || !prev.internal_only || isSystemNote(prev.content)) && (
+                  <div className="mb-2 mt-3 flex items-center gap-2">
+                    <div className="h-px flex-1" style={{ background: 'rgba(245,158,11,0.35)' }} />
+                    <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide" style={{ color: 'var(--mg-color-status-warning)' }}>
+                      🔒 Nota interna · só a TI vê
+                    </span>
+                    <div className="h-px flex-1" style={{ background: 'rgba(245,158,11,0.35)' }} />
                   </div>
                 )}
                 {isSystemNote(c.content) ? (
