@@ -1021,23 +1021,32 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
               style={{ background: BG_CARD, borderColor: BORDER_DEFAULT, color: TEXT_PRIMARY }}
             />
             {commentFiles.length > 0 && (
-              <div className="flex flex-col" style={{ gap: 4, marginTop: 8 }}>
-                {commentFiles.map((file, i) => (
-                  <div key={`${file.name}-${i}`} className="flex items-center gap-2" style={{ fontSize: 12, background: BG_CARD, borderRadius: 6, padding: 8 }}>
-                    <Paperclip className="h-3 w-3" style={{ color: TEXT_SECONDARY, flexShrink: 0 }} />
-                    <span className="truncate flex-1" style={{ color: TEXT_PRIMARY }}>{file.name}</span>
-                    {/* Remove só esse arquivo, os outros anexados continuam —
-                        não existe mais um "limpar tudo" de uma vez. */}
-                    <button
-                      type="button"
-                      onClick={() => setCommentFiles((prev) => prev.filter((_, idx) => idx !== i))}
-                      title={`Remover ${file.name}`}
-                      style={{ background: "none", border: "none", color: TEXT_MUTED, cursor: "pointer", flexShrink: 0 }}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </button>
-                  </div>
-                ))}
+              <div style={{ marginTop: 8 }}>
+                <div style={{ fontSize: 11, color: TEXT_MUTED, marginBottom: 4 }}>
+                  {commentFiles.length} {commentFiles.length === 1 ? "arquivo anexado" : "arquivos anexados"}
+                </div>
+                {/* Altura travada + scroll próprio — sem isso, anexar muitos
+                    arquivos de uma vez (a seleção múltipla permite qualquer
+                    quantidade) empurrava o composer inteiro pra baixo do
+                    modal, escondendo o botão Enviar. */}
+                <div className="flex flex-col" style={{ gap: 4, maxHeight: 160, overflowY: "auto" }}>
+                  {commentFiles.map((file, i) => (
+                    <div key={`${file.name}-${i}`} className="flex items-center gap-2" style={{ fontSize: 12, background: BG_CARD, borderRadius: 6, padding: 8, flexShrink: 0 }}>
+                      <Paperclip className="h-3 w-3" style={{ color: TEXT_SECONDARY, flexShrink: 0 }} />
+                      <span className="truncate flex-1" style={{ color: TEXT_PRIMARY }}>{file.name}</span>
+                      {/* Remove só esse arquivo, os outros anexados continuam —
+                          não existe mais um "limpar tudo" de uma vez. */}
+                      <button
+                        type="button"
+                        onClick={() => setCommentFiles((prev) => prev.filter((_, idx) => idx !== i))}
+                        title={`Remover ${file.name}`}
+                        style={{ background: "none", border: "none", color: TEXT_MUTED, cursor: "pointer", flexShrink: 0 }}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
             <input

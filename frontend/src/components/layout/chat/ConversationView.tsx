@@ -627,22 +627,30 @@ export function ConversationView({ ticketId }: ConversationViewProps) {
       )}
 
       {/* Pending image previews — uma linha por imagem, cada uma com seu
-          próprio botão de remover (não existe mais um "limpar tudo"). */}
+          próprio botão de remover (não existe mais um "limpar tudo").
+          Altura travada + scroll próprio: sem isso, anexar muitas imagens
+          de uma vez (a janelinha do chat já é pequena) empurrava o
+          composer inteiro pra fora da tela visível. */}
       {pendingImages.length > 0 && (
-        <div className="flex flex-col gap-1.5 border-t border-border px-2.5 pt-2">
-          {pendingImages.map((p, i) => (
-            <div key={p.previewUrl} className="flex items-center gap-2">
-              <img src={p.previewUrl} alt="Prévia" className="h-12 w-12 rounded-lg border border-border object-cover" />
-              <span className="flex-1 truncate text-xs text-text-muted">{p.file.name}</span>
-              <button
-                onClick={() => removePendingImage(i)}
-                aria-label={`Remover ${p.file.name}`}
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-text-secondary hover:bg-surface hover:text-text-primary"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          ))}
+        <div className="border-t border-border px-2.5 pt-2">
+          <p className="mb-1 text-[11px] text-text-muted">
+            {pendingImages.length} {pendingImages.length === 1 ? 'imagem anexada' : 'imagens anexadas'}
+          </p>
+          <div className="flex max-h-32 flex-col gap-1.5 overflow-y-auto">
+            {pendingImages.map((p, i) => (
+              <div key={p.previewUrl} className="flex shrink-0 items-center gap-2">
+                <img src={p.previewUrl} alt="Prévia" className="h-12 w-12 rounded-lg border border-border object-cover" />
+                <span className="flex-1 truncate text-xs text-text-muted">{p.file.name}</span>
+                <button
+                  onClick={() => removePendingImage(i)}
+                  aria-label={`Remover ${p.file.name}`}
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-text-secondary hover:bg-surface hover:text-text-primary"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
