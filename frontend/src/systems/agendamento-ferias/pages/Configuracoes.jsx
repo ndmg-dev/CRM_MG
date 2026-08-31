@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { toast } from "react-hot-toast";
 import { supabase } from "../lib/supabase";
 import {
   Settings,
@@ -36,19 +37,25 @@ export default function Configuracoes() {
   async function buscarDados() {
     setCarregando(true);
     try {
-      const { data: dRegras } = await supabase
+      // Antes nem checava o `error` das duas queries — uma falha (RLS,
+      // rede) virava uma tela "sem regras/sem eventos cadastrados" muda,
+      // indistinguível de estar tudo vazio de verdade.
+      const { data: dRegras, error: errRegras } = await supabase
         .from("regras_setor")
         .select("*")
         .order("setor");
+      if (errRegras) throw errRegras;
       setRegras(dRegras || []);
 
-      const { data: dEventos } = await supabase
+      const { data: dEventos, error: errEventos } = await supabase
         .from("feriados_coletivas")
         .select("*")
         .order("data_inicio", { ascending: false });
+      if (errEventos) throw errEventos;
       setEventos(dEventos || []);
     } catch (error) {
       console.error("Erro ao buscar dados:", error);
+      toast.error("Não foi possível carregar as configurações.");
     } finally {
       setCarregando(false);
     }

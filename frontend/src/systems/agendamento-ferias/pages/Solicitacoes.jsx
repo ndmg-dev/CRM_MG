@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { toast } from "react-hot-toast";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import {
@@ -192,9 +193,10 @@ export default function Solicitacoes() {
 
     try {
       // 1. Busca Feriados primeiro (Importante para o cálculo)
-      const { data: feris } = await supabase
+      const { data: feris, error: errFeris } = await supabase
         .from("feriados_coletivas")
         .select("*");
+      if (errFeris) throw errFeris;
       setFeriados(feris || []);
 
       // 2. Busca Solicitações
@@ -223,10 +225,12 @@ export default function Solicitacoes() {
       setColaboradores(colabs || []);
 
       // 5. Busca Regras
-      const { data: regras } = await supabase.from("regras_setor").select("*");
+      const { data: regras, error: errRegras } = await supabase.from("regras_setor").select("*");
+      if (errRegras) throw errRegras;
       setRegrasSetor(regras || []);
     } catch (error) {
       console.error("Erro ao buscar dados:", error);
+      toast.error("Não foi possível carregar as solicitações.");
     }
 
     setCarregando(false);

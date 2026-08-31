@@ -7,6 +7,7 @@ import {
   History,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "react-hot-toast";
 import { supabase } from "../lib/supabase";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -47,6 +48,7 @@ export default function Dashboard() {
 
       if (errSoli) {
         console.error("Erro ao carregar solicitações:", errSoli.message); // <-- Usado
+        toast.error("Não foi possível carregar as solicitações do dashboard.");
       } else if (solicitacoes) {
         const solicitacoesVisiveis = solicitacoes.filter((solicitacao) =>
           canViewCollaborator(
@@ -95,6 +97,7 @@ export default function Dashboard() {
 
       if (errColab) {
         console.warn("Aviso colaboradores:", errColab.message); // <-- Usado
+        toast.error("Não foi possível carregar a ocupação por setor.");
       } else if (colaboradores) {
         setSetoresData(
           colaboradores.filter((colaborador) =>
