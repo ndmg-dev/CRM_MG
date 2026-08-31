@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { toast } from "react-hot-toast";
 import { supabase } from "../lib/supabase";
 import {
   FileText,
@@ -32,6 +33,7 @@ export default function Relatorios() {
       setColaboradores(data || []);
     } catch (error) {
       console.error("Erro ao buscar dados:", error.message);
+      toast.error("Não foi possível carregar os dados do relatório.");
     } finally {
       setCarregando(false);
     }

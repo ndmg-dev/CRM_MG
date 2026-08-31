@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { toast } from "react-hot-toast";
 import { supabase } from "../lib/supabase";
 import { SETORES_COLABORADOR } from "../lib/setores";
 import {
@@ -68,6 +69,7 @@ export default function GestaoUsuarios() {
       setUsuarios(data || []);
     } catch (error) {
       console.error("Erro na busca:", error.message);
+      toast.error("Não foi possível carregar os usuários.");
     } finally {
       setCarregando(false);
     }

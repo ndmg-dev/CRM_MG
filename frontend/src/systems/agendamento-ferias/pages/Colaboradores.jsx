@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { toast } from "react-hot-toast";
 import { supabase } from "../lib/supabase";
 import {
   Users,
@@ -91,6 +92,7 @@ export default function Colaboradores() {
       setColaboradores(colabs || []);
     } catch (error) {
       console.error(error.message);
+      toast.error("Não foi possível carregar os colaboradores.");
     } finally {
       setCarregando(false);
     }

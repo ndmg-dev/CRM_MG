@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { toast } from "react-hot-toast";
 import { supabase } from "../lib/supabase";
 import {
   ChevronLeft,
@@ -62,6 +63,7 @@ export default function Calendario() {
 
         if (errSols) {
           console.error("Erro Sols:", errSols.message);
+          toast.error("Não foi possível carregar as férias aprovadas.");
         } else {
           setEventos(
             (sols || []).filter((solicitacao) =>
@@ -77,11 +79,13 @@ export default function Calendario() {
 
         if (errFeri) {
           console.error("Erro Feri:", errFeri.message);
+          toast.error("Não foi possível carregar feriados e coletivas.");
         } else {
           setFeriados(feri || []);
         }
       } catch (error) {
         console.error("Erro geral no calendário:", error);
+        toast.error("Erro ao carregar o calendário.");
       }
     }
 

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { toast } from "react-hot-toast";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import {
@@ -96,16 +97,21 @@ export default function Solicitacoes() {
 
     let atual = dataIni;
     while (atual <= dataFim) {
-      // Verifica se o dia atual é um feriado ou coletiva
-      const ehFeriado = feriados.some((f) => {
-        if (!f.data_inicio || !f.data_fim) return false;
+      // Só um "Feriado" de verdade (desconta_saldo=false, cadastrado em
+      // Configurações) desconta do total pedido. Uma "Férias Coletivas"
+      // marcada "Descontar do saldo de todos?" é o oposto — o próprio
+      // objetivo dela é CONSUMIR dia de férias de quem se sobrepõe, não
+      // dar de graça. Antes as duas eram tratadas igual aqui: pedir férias
+      // em cima de uma coletiva com desconto ligado subtraía esses dias do
+      // total pedido, quando deveriam contar normalmente.
+      const ehFeriadoNaoDescontado = feriados.some((f) => {
+        if (!f.data_inicio || !f.data_fim || f.desconta_saldo) return false;
         const fIni = parseISO(f.data_inicio);
         const fFim = parseISO(f.data_fim);
         return isWithinInterval(atual, { start: fIni, end: fFim });
       });
 
-      // Se NÃO for feriado, conta como dia de férias gasto
-      if (!ehFeriado) {
+      if (!ehFeriadoNaoDescontado) {
         totalDias++;
       }
       atual = addDays(atual, 1);
@@ -187,9 +193,10 @@ export default function Solicitacoes() {
 
     try {
       // 1. Busca Feriados primeiro (Importante para o cálculo)
-      const { data: feris } = await supabase
+      const { data: feris, error: errFeris } = await supabase
         .from("feriados_coletivas")
         .select("*");
+      if (errFeris) throw errFeris;
       setFeriados(feris || []);
 
       // 2. Busca Solicitações
@@ -218,10 +225,12 @@ export default function Solicitacoes() {
       setColaboradores(colabs || []);
 
       // 5. Busca Regras
-      const { data: regras } = await supabase.from("regras_setor").select("*");
+      const { data: regras, error: errRegras } = await supabase.from("regras_setor").select("*");
+      if (errRegras) throw errRegras;
       setRegrasSetor(regras || []);
     } catch (error) {
       console.error("Erro ao buscar dados:", error);
+      toast.error("Não foi possível carregar as solicitações.");
     }
 
     setCarregando(false);
