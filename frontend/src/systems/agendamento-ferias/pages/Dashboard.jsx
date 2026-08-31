@@ -12,7 +12,7 @@ import { supabase } from "../lib/supabase";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useAuth } from "../contexts/AuthContext";
-import { canViewCollaborator } from "../lib/permissions";
+import { canViewCollaborator, isStatusEmAberto } from "../lib/permissions";
 
 export default function Dashboard() {
   const { usuarioLogado } = useAuth();
@@ -58,8 +58,11 @@ export default function Dashboard() {
           ),
         );
         setStats({
+          // "Sugerida" ainda não é uma decisão final (ver isStatusEmAberto) —
+          // conta como pendente aqui também, senão o card mostra menos
+          // pendências do que a tela de Solicitações de fato tem.
           pendentes: solicitacoesVisiveis.filter(
-            (s) => s.status?.toLowerCase() === "pendente",
+            (s) => isStatusEmAberto(s.status),
           ).length,
           aprovadas: solicitacoesVisiveis.filter(
             (s) => s.status?.toLowerCase() === "aprovada",
