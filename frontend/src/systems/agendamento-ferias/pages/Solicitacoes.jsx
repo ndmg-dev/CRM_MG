@@ -96,16 +96,21 @@ export default function Solicitacoes() {
 
     let atual = dataIni;
     while (atual <= dataFim) {
-      // Verifica se o dia atual é um feriado ou coletiva
-      const ehFeriado = feriados.some((f) => {
-        if (!f.data_inicio || !f.data_fim) return false;
+      // Só um "Feriado" de verdade (desconta_saldo=false, cadastrado em
+      // Configurações) desconta do total pedido. Uma "Férias Coletivas"
+      // marcada "Descontar do saldo de todos?" é o oposto — o próprio
+      // objetivo dela é CONSUMIR dia de férias de quem se sobrepõe, não
+      // dar de graça. Antes as duas eram tratadas igual aqui: pedir férias
+      // em cima de uma coletiva com desconto ligado subtraía esses dias do
+      // total pedido, quando deveriam contar normalmente.
+      const ehFeriadoNaoDescontado = feriados.some((f) => {
+        if (!f.data_inicio || !f.data_fim || f.desconta_saldo) return false;
         const fIni = parseISO(f.data_inicio);
         const fFim = parseISO(f.data_fim);
         return isWithinInterval(atual, { start: fIni, end: fFim });
       });
 
-      // Se NÃO for feriado, conta como dia de férias gasto
-      if (!ehFeriado) {
+      if (!ehFeriadoNaoDescontado) {
         totalDias++;
       }
       atual = addDays(atual, 1);
