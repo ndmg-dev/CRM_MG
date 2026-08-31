@@ -50,35 +50,41 @@ ENV VITE_TASKFLOW_SUPABASE_ANON_KEY=$VITE_TASKFLOW_SUPABASE_ANON_KEY
 ENV VITE_TASKFLOW_API_URL=$VITE_TASKFLOW_API_URL
 ENV VITE_ANALYTICS_DP_API_URL=$VITE_ANALYTICS_DP_API_URL
 ENV VITE_DASHRH_API_URL=$VITE_DASHRH_API_URL
-# Subiu de 3072 quando a hipótese era falta de memória — a causa real
-# acabou sendo outra (EMFILE, ver comentário abaixo do `ulimit -n`), mas
-# manter esse teto um pouco mais folgado não faz mal.
+# Subiu de 3072 quando a hipótese era falta de memória — a causa real do
+# deploy falhando acabou sendo EMFILE (ver CHOKIDAR_USEPOLLING mais
+# abaixo), não memória, mas manter esse teto um pouco mais folgado não faz
+# mal.
 ENV NODE_OPTIONS="--max-old-space-size=4608"
 COPY package*.json ./
 COPY packages/ ./packages/
 RUN npm install --no-audit --no-fund --legacy-peer-deps
 COPY . .
 # Causa real dos deploys falhando (achada no log RAW do Coolify, o resumo
-# sempre cortava antes disso): não é memória — é
-# "Error: EMFILE: too many open files, watch '/app'", do watcher de arquivo
-# que o compilador do @vanilla-extract (usado pelo @mg/ui) abre sobre /app
-# inteiro mesmo num build único (não é modo watch de verdade — o próprio
-# vanilla-extract sobe um vite.createServer() interno pra processar os
-# .css.ts, com server.hmr:false mas SEM desligar o watcher — dá pra
-# confirmar em node_modules/@vanilla-extract/compiler/dist/*.cjs.dev.js,
-# não é algo que dá pra desligar pelas options públicas do plugin). Sem
-# suporte nativo de inotify otimizado nesse filesystem, o chokidar cai no
-# fallback _watchWithNodeFs, que abre 1 file descriptor POR DIRETÓRIO sob
-# /app — um monorepo deste tamanho (25+ sistemas vendorizados, cada um com
-# node_modules próprio nalguns casos) facilmente passa de 65536 diretórios.
-# `ulimit -n 65536` (tentativa anterior) não foi suficiente — foi
-# substituído por "sobe pro teto físico que o container permitir", sem
-# chutar um número: imprime os valores no log (senão fica no escuro nas
-# próximas falhas, de novo) e usa o hard limit como soft limit.
-RUN echo "ulimit antes: soft=$(ulimit -Sn) hard=$(ulimit -Hn)" \
- && ulimit -n "$(ulimit -Hn)" \
- && echo "ulimit depois: soft=$(ulimit -Sn) hard=$(ulimit -Hn)" \
- && npm run build
+# sempre cortava antes disso): "Error: EMFILE: too many open files, watch
+# '/app'", do watcher de arquivo que o compilador do @vanilla-extract
+# (usado pelo @mg/ui) abre sobre /app inteiro mesmo num build único — sobe
+# um vite.createServer() interno pra processar os .css.ts com
+# server.hmr:false mas SEM desligar o watcher (confirmado em
+# node_modules/@vanilla-extract/compiler/dist/*.cjs.dev.js; não dá pra
+# desligar pelas options públicas do plugin).
+#
+# 1ª tentativa (ulimit -n 65536) e 2ª (subir pro hard limit físico,
+# 524288 medido em produção) NÃO resolveram — o log confirmou soft=hard
+# depois do ulimit e o erro persistiu idêntico. Isso descarta file
+# descriptor como causa: o teto de verdade é
+# fs.inotify.max_user_instances do KERNEL do host, que `ulimit` não
+# controla (só dá pra mudar com sysctl, que exige privilégio que o
+# container de build não tem).
+#
+# Fix de verdade: CHOKIDAR_USEPOLLING=true. Confirmado lendo o bundle do
+# watcher (node_modules/@vanilla-extract/compiler/node_modules/vite/dist/
+# node/chunks/dep-*.js) — ele lê essa env var e troca pra polling (fica
+# checando os arquivos periodicamente) em vez de inotify, contornando o
+# limite inteiro em vez de tentar caber nele. Mais lento que inotify, mas
+# isso não importa aqui: é só um watcher que nem deveria existir num build
+# de produção de uma vez só.
+ENV CHOKIDAR_USEPOLLING=true
+RUN npm run build
 
 # Production stage
 FROM nginx:alpine
