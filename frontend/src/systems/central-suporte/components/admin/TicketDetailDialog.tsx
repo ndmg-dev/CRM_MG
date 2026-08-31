@@ -24,7 +24,7 @@ import {
 } from "@suporte/components/ui/select";
 import { Select, Badge, Tabs, Avatar } from "@mg/ui";
 import { Label } from "@suporte/components/ui/label";
-import { Clock, Tag, Trash2, Paperclip, Download, FileText, Image, Upload, CalendarIcon, RotateCcw, Pencil, X as XIcon, Send, Users, Check, CheckCheck } from "lucide-react";
+import { Clock, Tag, Trash2, Paperclip, Download, FileText, Image, CalendarIcon, RotateCcw, Pencil, X as XIcon, Send, Users, Check, CheckCheck } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@suporte/components/ui/popover";
 import { Calendar } from "@suporte/components/ui/calendar";
 import { format } from "date-fns";
@@ -1001,8 +1001,18 @@ export function TicketDetailDialog({ ticketId, open, onOpenChange, readOnly = fa
                     Nota interna
                   </label>
                 )}
-                <button type="button" onClick={() => fileInputRef.current?.click()} title="Anexar arquivo" style={{ background: "none", border: "none", color: TEXT_SECONDARY, cursor: "pointer", display: "flex", alignItems: "center" }}>
-                  <Upload className="h-3.5 w-3.5" />
+                {/* Antes era só um ícone de 14px (Upload) sem rótulo, do
+                    mesmo cinza discreto do resto da barra — na prática
+                    invisível/confundido com decoração ("nem aparece símbolo
+                    de anexo"). Clipe + texto deixa claro que é clicável. */}
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  title="Anexar arquivo"
+                  style={{ background: "none", border: "none", color: TEXT_SECONDARY, cursor: "pointer", display: "flex", alignItems: "center", gap: 5, fontSize: 12.5 }}
+                >
+                  <Paperclip className="h-4 w-4" />
+                  Anexar
                 </button>
               </div>
               <button
