@@ -89,6 +89,10 @@ export const systemRegistry: Record<string, LazyExoticComponent<ComponentType>> 
   // https://dashrh.nucleodigital.cloud/ — passa a renderizar nativo
   // automaticamente, sem precisar mudar nada no banco.
   'dash-rh': lazy(() => import('@dashrh/DashRhApp')),
+  // Sistema novo (não é migração de iframe): monitoramento nativo da VPS
+  // Hostinger onde o CRM roda. Slug 'vps-monitor' — precisa de INSERT em
+  // public.sistemas (setor TI, url '#') pro card aparecer. Fase 1: read-only.
+  'vps-monitor': lazy(() => import('@vpsmonitor/VpsMonitorApp')),
 }
 
 /**
