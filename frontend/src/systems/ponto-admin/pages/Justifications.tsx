@@ -4,7 +4,7 @@ import { api, uploadAttachment, openAttachment } from '../lib/api'
 import { useEmployees } from '../hooks/useEmployees'
 import Badge from '../components/Badge'
 import Avatar from '../components/Avatar'
-import { formatDate } from '../utils/date'
+import { formatDate, toInputDate } from '../utils/date'
 import { Modal } from '../components/Modal'
 import JustificationDetailModal from '../components/JustificationDetailModal'
 
@@ -64,6 +64,8 @@ function groupByBatch(data: Justification[]): JustificationRow[] {
 }
 
 const STATUS_FILTER = ['Todos', 'PENDENTE', 'APROVADO', 'REPROVADO'] as const
+
+const MONTHS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
 
 const OCCURRENCE_TYPE_OPTIONS: { value: OccurrenceType; label: string }[] = [
   { value: 'FALTA_INTEGRAL',    label: 'Falta integral (dia todo)' },
@@ -302,9 +304,15 @@ function CreateModal({ employees, onClose }: { employees: { id: string; name: st
 // ─── Página principal ─────────────────────────────────────────────────────────
 
 export default function Justifications() {
+  const now = new Date()
   const [filter,     setFilter]     = useState<typeof STATUS_FILTER[number]>('Todos')
   const [showCreate, setShowCreate] = useState(false)
   const [detailRow,  setDetailRow]  = useState<JustificationRow | null>(null)
+  // '' = todos; dateFilter (dia específico) sobrepõe mês/ano quando preenchido.
+  const [employeeFilter, setEmployeeFilter] = useState('')
+  const [dateFilter,     setDateFilter]     = useState('')
+  const [monthFilter,    setMonthFilter]    = useState(0)   // 0 = todos os meses
+  const [yearFilter,     setYearFilter]     = useState(now.getFullYear())
   const qc = useQueryClient()
   const { data: employees = [] } = useEmployees()
 
@@ -316,7 +324,15 @@ export default function Justifications() {
     queryKey: ['justifications'],
     queryFn: () => api.get('/api/v1/justifications'),
   })
-  const data = filter === 'Todos' ? allData : allData?.filter(j => j.status === filter)
+  const data = (filter === 'Todos' ? allData : allData?.filter(j => j.status === filter))
+    ?.filter(j => !employeeFilter || j.employee_id === employeeFilter)
+    ?.filter(j => {
+      if (!dateFilter && !monthFilter) return true
+      const local = toInputDate(j.date)   // YYYY-MM-DD no fuso do navegador
+      if (dateFilter) return local === dateFilter
+      const [y, m] = local.split('-').map(Number)
+      return y === yearFilter && m === monthFilter
+    })
 
   const approveMutation = useMutation({
     mutationFn: (id: string) => api.patch(`/api/v1/justifications/${id}/approve`),
@@ -374,6 +390,39 @@ export default function Justifications() {
             + Nova justificativa
           </button>
         </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 14 }}>
+        <select className="form-input" style={{ fontSize: 12, padding: '6px 10px', width: 'auto', minWidth: 160 }}
+          value={employeeFilter} onChange={e => setEmployeeFilter(e.target.value)}>
+          <option value="">Todos os colaboradores</option>
+          {[...employees].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR')).map(e => (
+            <option key={e.id} value={e.id}>{e.name}</option>
+          ))}
+        </select>
+
+        <select className="form-input" style={{ fontSize: 12, padding: '6px 10px', width: 'auto' }}
+          value={monthFilter} disabled={!!dateFilter}
+          onChange={e => setMonthFilter(Number(e.target.value))}>
+          <option value={0}>Todos os meses</option>
+          {MONTHS.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
+        </select>
+        <select className="form-input" style={{ fontSize: 12, padding: '6px 10px', width: 'auto' }}
+          value={yearFilter} disabled={!!dateFilter}
+          onChange={e => setYearFilter(Number(e.target.value))}>
+          {Array.from({ length: 5 }, (_, i) => now.getFullYear() - 2 + i).map(y => (
+            <option key={y} value={y}>{y}</option>
+          ))}
+        </select>
+
+        <input className="form-input" type="date" style={{ fontSize: 12, padding: '6px 10px', width: 'auto' }}
+          value={dateFilter} onChange={e => setDateFilter(e.target.value)}
+          title="Filtrar por um dia específico — sobrepõe o filtro de mês" />
+        {dateFilter && (
+          <button className="btn-ghost" style={{ fontSize: 12, padding: '6px 10px' }} onClick={() => setDateFilter('')}>
+            Limpar dia
+          </button>
+        )}
       </div>
 
       <div className="card">
