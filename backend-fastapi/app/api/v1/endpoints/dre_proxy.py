@@ -20,6 +20,13 @@ _HOP_BY_HOP = {
     "connection", "keep-alive", "proxy-authenticate", "proxy-authorization",
     "te", "trailers", "transfer-encoding", "upgrade", "host", "content-length",
     "content-encoding",
+    # Validação de cache: sem tirar isto, o navegador guarda o dataset.json
+    # com o ETag do Vercel, manda If-None-Match na chamada seguinte e recebe
+    # um 304 de corpo vazio que o front não consegue parsear. Removendo os
+    # condicionais na ida e o ETag/Last-Modified na volta, toda resposta é um
+    # 200 completo.
+    "if-none-match", "if-modified-since", "if-match", "if-unmodified-since",
+    "if-range", "etag", "last-modified",
 }
 
 
