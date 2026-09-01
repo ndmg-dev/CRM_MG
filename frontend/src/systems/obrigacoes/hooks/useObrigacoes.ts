@@ -85,12 +85,19 @@ export function useEntregas(filtro: FiltroEntregas) {
   return useQuery({
     queryKey: ['obrigacoes', 'entregas', filtro],
     queryFn: async () => {
+      // Departamento com `!inner`: sem isso o filtro rodava só depois da
+      // paginação (dentro da página de 50 já reduzida pelo servidor), então
+      // `total`/`count` continuava contando a competência inteira e "próxima
+      // página" pulava direto pras próximas 50 linhas cruas — filtrar um
+      // departamento pequeno podia parecer "acabou" com resultado sobrando
+      // em páginas seguintes. PostgREST filtra coluna de relação embutida
+      // desde que a relação seja marcada `!inner` na própria string do select.
       let q = supabase
         .from('entrega')
         .select(
           `id, competencia, vencimento, status, origem_baixa, anexo_nome,
            empresa:empresa_id ( id, razao_social, nome_fantasia, cnpj ),
-           obrigacao:obrigacao_id ( id, codigo, nome, departamento ),
+           obrigacao:obrigacao_id${filtro.departamento ? '!inner' : ''} ( id, codigo, nome, departamento ),
            responsavel:responsavel_id ( id, nome )`,
           { count: 'exact' },
         )
@@ -99,18 +106,20 @@ export function useEntregas(filtro: FiltroEntregas) {
         .range(pagina * porPagina, pagina * porPagina + porPagina - 1)
 
       if (filtro.status) q = q.eq('status', filtro.status)
+      if (filtro.departamento) q = q.eq('obrigacao.departamento', filtro.departamento)
 
       const { data, error, count } = await q
       erro('Falha ao carregar entregas', error)
 
       let linhas = (data ?? []) as unknown as EntregaLinha[]
 
-      // Departamento e busca livre atravessam a relação; o PostgREST não filtra
-      // por coluna de tabela embutida sem inner join explícito, então o recorte
-      // fino é feito aqui, sobre a página já reduzida pelo servidor.
-      if (filtro.departamento) {
-        linhas = linhas.filter((l) => l.obrigacao?.departamento === filtro.departamento)
-      }
+      // Busca livre continua recortada no client, sobre a página já reduzida
+      // pelo servidor: atravessa nome/CNPJ/código em 3 relações diferentes,
+      // o que exigiria um `.or()` bem mais complexo pra fazer no PostgREST.
+      // O total mostrado na paginação reflete competência+status+departamento,
+      // não a busca livre — resultado de texto pode parecer incompleto numa
+      // competência com muitas linhas; filtrar por departamento primeiro
+      // reduz esse efeito.
       if (filtro.busca?.trim()) {
         const termo = filtro.busca.trim().toLowerCase()
         linhas = linhas.filter((l) =>
