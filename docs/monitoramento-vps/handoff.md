@@ -82,6 +82,33 @@ próprio e o backend só faz scrape HTTP dele.
 - É a camada de "gestão" que responde "que deploy quebrou / o que está consumindo": casa
   com o painel de Containers/Deploys.
 
+## 2.4 Decisões travadas com o usuário (Fase 0)
+
+1. **Acesso:** todo o **setor de TI** (não só `admin`).
+2. **Ações de escrita:** **já na v1** (restart de stack, redeploy, etc.).
+   - ⚠️ **Recomendação registrada, decisão de produto do usuário:** ações de nível-VPS que
+     derrubam o próprio CRM — `restart` / `recreate` / `recovery` / `restore` de snapshot da
+     VPS — devem exigir **confirmação digitada** ("digite REINICIAR") e ficar **admin-only**
+     mesmo com o resto liberado pro TI. O backend do CRM roda nesta VPS: um restart reinicia
+     o CRM e os satélites por 1–2 min e o operador não vê o resultado até voltar. Levar isso
+     de volta ao usuário na implementação da Fase 4 (ou v1, já que ações entram na v1).
+3. **Coletor:** **híbrido** — leitura via exporters dedicados
+   (`docker-socket-proxy` read-only + `cadvisor` + `node_exporter`), o backend do CRM faz
+   scrape HTTP deles. **Nenhum processo tem escrita no `docker.sock`.** As ações de escrita
+   vão pela **Hostinger API** e **Coolify API** (HTTP + token), não pelo socket. `docker
+   prune` (única que quereria escrita) → via endpoints docker da Hostinger ou adiada.
+   - Motivo de não montar o socket direto no backend: `:ro` no socket **não** deixa a API do
+     Docker read-only (ainda dá `POST /containers/create`); uma RCE no backend do CRM viraria
+     takeover do host inteiro. O proxy read-only fecha isso; exporters dão métrica muito mais
+     rica de graça; e um bug no coletor não derruba o CRM.
+4. **Coolify API:** **sim.** Token gerado no Coolify (avatar → Keys & Tokens → API Tokens →
+   Create, permissões **read** + **deploy**, escopo do time do CRM, copiar na hora).
+   Habilitar a API em Settings → API. **Preferir chamar a Coolify pelo endereço interno**
+   (mesma VPS: `http://coolify:8000` / `localhost:8000`) pra evitar allowlist de IP e o
+   domínio público. **Pendente:** o usuário informar o domínio/URL do Coolify.
+5. **Persistência de histórico:** só na **Fase 3** (v1 usa a janela de histórico da própria
+   Hostinger API).
+
 ## 3. Arquitetura proposta (segue o playbook do CRM)
 
 - **Frontend:** `frontend/src/systems/vps-monitor/` (slug **a confirmar** — sugestão
@@ -90,10 +117,16 @@ próprio e o backend só faz scrape HTTP dele.
   `#system-menu-slot`, CSS escopado sob `.vps-monitor-root`, **recharts@2** (o do CRM — não
   subir versão), ícones **lucide-react**.
 - **Backend:** módulo novo em `backend-fastapi/app/api/v1/endpoints/vps_monitor.py` (ou uma
-  pasta `vps/`), incluído no `router.py` com prefixo `/vps`. Guarda `HOSTINGER_API_TOKEN`
-  e o `virtualMachineId`, faz **cache agressivo** (TTL 30–60s, `cachetools.TTLCache` em
-  memória do processo basta pra 1 VM) de todas as chamadas Hostinger. Tudo atrás de
-  `get_current_user`; ações e dados sensíveis atrás de `require_roles(['admin'])`.
+  pasta `vps/`), incluído no `router.py` com prefixo `/vps`. Guarda `HOSTINGER_API_TOKEN`,
+  `COOLIFY_API_TOKEN`, `COOLIFY_API_URL` (interno) e o `virtualMachineId`; faz **cache
+  agressivo** (TTL 30–60s, `cachetools.TTLCache` em memória do processo basta pra 1 VM) de
+  todas as chamadas Hostinger/Coolify; faz scrape dos exporters. Leitura atrás de
+  `get_current_user` (qualquer usuário do setor TI); ações VPS-level atrás de
+  `require_roles(['admin'])` + confirmação digitada (ver decisão 2).
+- **Exporters (containers novos no `docker-compose.yml` da raiz):** `docker-socket-proxy`
+  (env: só `CONTAINERS=1 IMAGES=1 INFO=1 ... POST=0`), `cadvisor`, `node_exporter` (com
+  `--path.rootfs=/host` e mounts de `/`, `/proc`, `/sys` read-only). Rede interna, sem porta
+  pública. O backend do CRM lê o texto Prometheus deles.
 - **Cliente HTTP no frontend:** **NÃO repetir os bugs do `dre_proxy`** (ver `docs/migracoes/handoff.md`
   e o histórico de PRs abaixo). Construir certo desde o início:
   - base = `import.meta.env.VITE_API_BASE_URL` (URL **absoluta** do backend — o nginx do
@@ -144,14 +177,14 @@ próprio e o backend só faz scrape HTTP dele.
 
 ## 5. Faseamento
 
-- **Fase 0 — Prep & decisões (começo da próxima conversa):**
-  - usuário gera o **`HOSTINGER_API_TOKEN`** no hPanel e passa (ou seta direto no Coolify);
-  - `AskUserQuestion` sobre: (a) acesso — só `admin` ou todo mundo do setor TI?
-    (b) permitir **ações de escrita** (restart VPS, prune, redeploy) pelo CRM já na v1 ou só
-    leitura? (c) montar `docker.sock` no backend vs. exporter dedicado? (d) usar a Coolify
-    API (precisa de token dela)? (e) persistir histórico já na v1 ou depois?
-  - confirmar `setor` real e slug via psql; rodar `GET /virtual-machines` uma vez pra pegar
-    o `virtualMachineId`.
+- **Fase 0 — Prep (decisões de produto já travadas, ver §2.4):**
+  - **PENDENTE do usuário:** gerar `HOSTINGER_API_TOKEN` (hPanel → Dev Tools → API);
+    gerar `COOLIFY_API_TOKEN` (read + deploy); informar `COOLIFY_API_URL` (domínio ou
+    `http://coolify:8000` interno).
+  - confirmar `setor` real de TI e slug livre via psql; rodar `GET /virtual-machines` uma
+    vez pra pegar o `virtualMachineId`.
+  - levar ao usuário, na implementação, o detalhe da confirmação digitada + admin-only pras
+    ações VPS-level (decisão 2 do §2.4).
 - **Fase 1 — Leitura, só Hostinger API (risco zero):** backend com cache + endpoints pra
   `virtual-machines/{id}`, `/metrics`, `/snapshot`, `/backups`, `/actions`, `/firewall`,
   `/monarx`. Frontend: telas 1, 2, 5 (read-only), 6 (read-only), 7 (só histórico).
