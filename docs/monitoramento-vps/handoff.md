@@ -103,9 +103,10 @@ próprio e o backend só faz scrape HTTP dele.
      rica de graça; e um bug no coletor não derruba o CRM.
 4. **Coolify API:** **sim.** Token gerado no Coolify (avatar → Keys & Tokens → API Tokens →
    Create, permissões **read** + **deploy**, escopo do time do CRM, copiar na hora).
-   Habilitar a API em Settings → API. **Preferir chamar a Coolify pelo endereço interno**
-   (mesma VPS: `http://coolify:8000` / `localhost:8000`) pra evitar allowlist de IP e o
-   domínio público. **Pendente:** o usuário informar o domínio/URL do Coolify.
+   Habilitar a API em Settings → API. Domínio público: **`https://coolify.nucleodigital.cloud/`**
+   (API em `https://coolify.nucleodigital.cloud/api/v1`). **Preferir chamar pelo endereço
+   interno** (mesma VPS: `http://coolify:8000` / `localhost:8000`) pra evitar allowlist de IP
+   e o domínio público — confirmar o nome/porta do container do Coolify na rede docker.
 5. **Persistência de histórico:** só na **Fase 3** (v1 usa a janela de histórico da própria
    Hostinger API).
 
