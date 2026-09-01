@@ -41,7 +41,7 @@ export function Entregas({ competencia }: { competencia: string }) {
           <input
             type="text"
             value={busca}
-            onChange={(e) => setBusca(e.target.value)}
+            onChange={(e) => { setBusca(e.target.value); setPagina(0) }}
             placeholder="Buscar por empresa, CNPJ ou obrigação"
             aria-label="Buscar entregas"
             className="w-full rounded-lg border border-border bg-card py-2 pl-9 pr-3 text-sm text-text-primary placeholder:text-text-muted focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold-border"
@@ -51,7 +51,7 @@ export function Entregas({ competencia }: { competencia: string }) {
           <Filter className="h-4 w-4 text-text-muted" aria-hidden="true" />
           <select
             value={departamento}
-            onChange={(e) => setDepartamento(e.target.value)}
+            onChange={(e) => { setDepartamento(e.target.value); setPagina(0) }}
             aria-label="Filtrar por departamento"
             className="rounded-lg border border-border bg-card px-3 py-2 text-sm text-text-secondary focus:border-gold focus:outline-none"
           >

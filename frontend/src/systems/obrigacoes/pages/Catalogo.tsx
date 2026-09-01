@@ -4,9 +4,10 @@ import { Badge, Button } from '@mg/ui'
 import { useCatalogo, useSessao } from '../hooks/useObrigacoes'
 import { Carregando, ErroCarregamento, Vazio } from '../components/Comuns'
 import { ObrigacaoForm } from '../components/ObrigacaoForm'
+import { EditarObrigacaoForm } from '../components/EditarObrigacaoForm'
 import { podeDepartamento } from '../lib/sessao'
 import { ROTULO_DEPARTAMENTO, ROTULO_PERIODICIDADE } from '../lib/formato'
-import type { Esfera } from '../types'
+import type { Esfera, Obrigacao } from '../types'
 
 const ROTULO_ESFERA: Record<Esfera, string> = {
   FEDERAL: 'Federal',
@@ -18,6 +19,7 @@ const ROTULO_ESFERA: Record<Esfera, string> = {
 /** Catálogo mestre: cadastro por TIPO de obrigação, nunca por empresa. */
 export function Catalogo() {
   const [formAberto, setFormAberto] = useState(false)
+  const [editando, setEditando] = useState<Obrigacao | null>(null)
   const { data, isLoading, isError, error } = useCatalogo()
   const { data: sessao } = useSessao()
 
@@ -80,9 +82,16 @@ export function Catalogo() {
                     {!o.ativa && <Badge>encerrada</Badge>}
                     {/* O botão só aparece para quem o RLS deixaria escrever:
                         RBAC por departamento vale no banco, aqui é só para não
-                        oferecer uma ação que o servidor recusaria. */}
+                        oferecer uma ação que o servidor recusaria. Antes era um
+                        rótulo "editável" sem clique nenhum — sobrava do hook já
+                        pronto (useAtualizarObrigacao) sem tela nenhuma usando. */}
                     {o.ativa && podeDepartamento(sessao ?? null, o.departamento) && (
-                      <span className="text-xs text-text-muted">editável</span>
+                      <button
+                        onClick={() => setEditando(o)}
+                        className="text-xs font-medium text-gold hover:underline focus:outline-none focus:ring-2 focus:ring-gold-border"
+                      >
+                        Editar
+                      </button>
                     )}
                   </td>
                 </tr>
@@ -96,6 +105,9 @@ export function Catalogo() {
       </div>
 
       {formAberto && <ObrigacaoForm onFechar={() => setFormAberto(false)} />}
+      {editando && (
+        <EditarObrigacaoForm obrigacao={editando} onFechar={() => setEditando(null)} />
+      )}
     </div>
   )
 }
