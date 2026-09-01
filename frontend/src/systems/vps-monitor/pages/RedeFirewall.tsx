@@ -1,11 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
-import { vpsApi } from '../lib/api'
+import { vpsApi, vpsQueryOptions } from '../lib/api'
 import { fmtDateTime } from '../lib/format'
 import { Badge, Card, Empty, ErrorMsg, Loading } from '../components/ui'
 
 export default function RedeFirewall() {
-  const vmQ = useQuery({ queryKey: ['vps', 'vm'], queryFn: vpsApi.vm })
-  const fwQ = useQuery({ queryKey: ['vps', 'firewall'], queryFn: vpsApi.firewall })
+  const vmQ = useQuery({ queryKey: ['vps', 'vm'], queryFn: vpsApi.vm, ...vpsQueryOptions })
+  const fwQ = useQuery({ queryKey: ['vps', 'firewall'], queryFn: vpsApi.firewall, ...vpsQueryOptions })
 
   if (vmQ.isLoading || fwQ.isLoading) return <Loading />
   if (vmQ.error) return <ErrorMsg error={vmQ.error} />

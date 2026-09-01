@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { vpsApi } from '../lib/api'
+import { vpsApi, vpsQueryOptions } from '../lib/api'
 import { fmtBytes, fmtDateTime, fmtRelative } from '../lib/format'
 import { Badge, Card, Empty, ErrorMsg, Loading } from '../components/ui'
 
@@ -9,8 +9,8 @@ function restoreLabel(seconds: number): string {
 }
 
 export default function SnapshotsBackups() {
-  const snapQ = useQuery({ queryKey: ['vps', 'snapshot'], queryFn: vpsApi.snapshot })
-  const bkpQ = useQuery({ queryKey: ['vps', 'backups'], queryFn: vpsApi.backups })
+  const snapQ = useQuery({ queryKey: ['vps', 'snapshot'], queryFn: vpsApi.snapshot, ...vpsQueryOptions })
+  const bkpQ = useQuery({ queryKey: ['vps', 'backups'], queryFn: vpsApi.backups, ...vpsQueryOptions })
 
   if (snapQ.isLoading || bkpQ.isLoading) return <Loading />
   if (bkpQ.error) return <ErrorMsg error={bkpQ.error} />

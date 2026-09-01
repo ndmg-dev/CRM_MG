@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { vpsApi } from '../lib/api'
+import { vpsApi, vpsQueryOptions } from '../lib/api'
 import { fmtBytes, fmtPct } from '../lib/format'
 import { MetricChart } from '../components/MetricChart'
 import { ErrorMsg, Loading } from '../components/ui'
@@ -18,6 +18,7 @@ export default function Historico() {
     queryKey: ['vps', 'metrics', range],
     queryFn: () => vpsApi.metrics(range),
     refetchInterval: 60_000,
+    ...vpsQueryOptions,
   })
 
   const points = data?.points ?? []

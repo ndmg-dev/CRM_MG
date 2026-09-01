@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Area, AreaChart, ResponsiveContainer } from 'recharts'
 import { Cpu, HardDrive, MemoryStick, RefreshCw, Server, ShieldCheck } from 'lucide-react'
-import { vpsApi } from '../lib/api'
+import { vpsApi, vpsQueryOptions } from '../lib/api'
 import type { MetricPoint } from '../lib/types'
 import { fmtBytes, fmtDateTime, fmtPct, fmtRelative, fmtUptime, stateLabel, stateTone } from '../lib/format'
 import { Badge, Bar, Card, ErrorMsg, Loading, pctTone } from '../components/ui'
@@ -21,6 +21,7 @@ export default function Overview() {
     queryKey: ['vps', 'overview'],
     queryFn: vpsApi.overview,
     refetchInterval: 60_000,
+    ...vpsQueryOptions,
   })
 
   if (isLoading) return <Loading label="Consultando a VPS…" />

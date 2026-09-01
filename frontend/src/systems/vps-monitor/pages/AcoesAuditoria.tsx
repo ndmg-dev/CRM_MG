@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, keepPreviousData } from '@tanstack/react-query'
-import { vpsApi } from '../lib/api'
+import { vpsApi, vpsQueryOptions } from '../lib/api'
 import { actionLabel, fmtDateTime, fmtRelative, isNoiseAction } from '../lib/format'
 import { Badge, Card, Empty, ErrorMsg, Loading } from '../components/ui'
 
@@ -18,6 +18,7 @@ export default function AcoesAuditoria() {
     queryKey: ['vps', 'actions', page],
     queryFn: () => vpsApi.actions(page),
     placeholderData: keepPreviousData,
+    ...vpsQueryOptions,
   })
 
   if (isLoading) return <Loading />

@@ -59,6 +59,14 @@ async function vpsFetch<T>(path: string): Promise<T> {
   return res.json() as Promise<T>
 }
 
+// Opções padrão dos useQuery do painel: falha rápido (1 retry) em vez de
+// deixar o usuário num spinner por ~10s enquanto o react-query re-tenta 3x
+// um erro determinístico (token ausente = 503, rota inexistente = 404).
+export const vpsQueryOptions = {
+  retry: 1,
+  staleTime: 30_000,
+} as const
+
 export const vpsApi = {
   overview: () => vpsFetch<Overview>('/overview'),
   vm: () => vpsFetch<Vm>('/vm'),
