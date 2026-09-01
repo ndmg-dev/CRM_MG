@@ -1,6 +1,12 @@
 "use client";
 
-import { IconePainel } from "./icons";
+import {
+  IconeAlerta,
+  IconeArvore,
+  IconeBarras,
+  IconeDonut,
+  IconePainel,
+} from "./icons";
 import { useFiltros, type Tela } from "../lib/store";
 
 /**
@@ -14,9 +20,10 @@ import { useFiltros, type Tela } from "../lib/store";
  * foi removido — o CRM já mostra isso no próprio Header, repetir aqui é
  * redundante. A navegação continua igual ao original.
  *
- * Fase 1 (nativo): só "Visão geral" está portada. As demais telas
- * (Comparativo, Composição, Drilldown, Insights) entram em fases seguintes —
- * ver EXPLICACOES em lib/telas.ts, que já tem o texto delas pronto.
+ * Fase 2 (nativo): todas as 5 telas portadas (Visão geral, Comparativo,
+ * Composição, Drilldown, Insights). O `resumo` é a pergunta que a aba
+ * responde, abreviada — aparece sob o nome pra não depender de decorar o
+ * título. Ver EXPLICACOES em lib/telas.ts.
  */
 const NAV: {
   id: Tela;
@@ -29,6 +36,30 @@ const NAV: {
     rotulo: "Visão geral",
     resumo: "como estamos",
     Icone: IconePainel,
+  },
+  {
+    id: "comparativo",
+    rotulo: "Comparativo",
+    resumo: "qual loja vai melhor",
+    Icone: IconeBarras,
+  },
+  {
+    id: "composicao",
+    rotulo: "Composição",
+    resumo: "por onde entra e sai",
+    Icone: IconeDonut,
+  },
+  {
+    id: "drilldown",
+    rotulo: "Drilldown por conta",
+    resumo: "de onde vem o número",
+    Icone: IconeArvore,
+  },
+  {
+    id: "insights",
+    rotulo: "Insights",
+    resumo: "o que olhar primeiro",
+    Icone: IconeAlerta,
   },
 ];
 

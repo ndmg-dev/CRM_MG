@@ -61,7 +61,11 @@ async def proxy_dre(
                 params=request.query_params,
                 content=body or None,
                 headers=headers,
-                timeout=30.0,
+                # 60s: o Assistente de IA (/api/assistente) faz um loop de até 6
+                # rodadas de tool-calling na OpenAI antes de responder — o
+                # dataset.json e as anotações respondem em <1s, mas essa rota
+                # chega perto do timeout antigo de 30s.
+                timeout=60.0,
             )
     except httpx.HTTPError:
         raise HTTPException(
