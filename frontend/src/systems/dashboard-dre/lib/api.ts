@@ -5,7 +5,13 @@
 // isso a chamada passa pelo proxy do backend do CRM (que injeta a senha
 // server-side) em vez de ir direto pro Vercel. Ver
 // backend-fastapi/app/api/v1/endpoints/dre_proxy.py.
-const DRE_PROXY_BASE = '/api/v1/dre-proxy'
+//
+// A base tem que ser a URL ABSOLUTA do backend (VITE_API_BASE_URL, igual
+// src/lib/api.ts) — em produção o nginx do frontend não roteia /api pro
+// backend, então um caminho relativo cai no fallback do SPA e volta o
+// index.html do CRM em vez do JSON.
+const API_ROOT = import.meta.env.VITE_API_BASE_URL || '/api/v1'
+const DRE_PROXY_BASE = `${API_ROOT}/dre-proxy`
 
 export async function dreFetch(path: string, options: RequestInit = {}): Promise<Response> {
   const token = localStorage.getItem('crm_token')
