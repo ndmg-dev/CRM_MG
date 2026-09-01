@@ -16,6 +16,11 @@ dependencies = [
     "python-dotenv>=1.0.1",
     "email-validator>=2.1.1",
     "httpx>=0.27.0",
+    # brotli: o httpx só descomprime respostas `content-encoding: br` se esta
+    # lib estiver presente. O Vercel serve o dataset.json do Dashboard DRE com
+    # brotli (e ignora `Accept-Encoding: identity` do proxy), então sem isto o
+    # dre_proxy repassava bytes comprimidos como se fossem texto.
+    "brotli>=1.1.0",
     "aiofiles>=23.0.0",
     "python-multipart>=0.0.9",
     "openai>=1.30.0"
