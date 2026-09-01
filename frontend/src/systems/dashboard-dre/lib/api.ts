@@ -17,7 +17,12 @@ export async function dreFetch(path: string, options: RequestInit = {}): Promise
   const token = localStorage.getItem('crm_token')
   const headers = new Headers(options.headers)
   if (token) headers.set('Authorization', `Bearer ${token}`)
-  const res = await fetch(`${DRE_PROXY_BASE}${path}`, { ...options, headers })
+  // cache: 'no-store' — o Vercel devolve ETag/Last-Modified no dataset.json;
+  // sem isto o navegador guarda a resposta, manda If-None-Match na próxima e
+  // recebe um 304 vazio que o r.json() não consegue parsear ("Unexpected
+  // token '�'"). O dataset é pequeno e vem do CDN do Vercel, revalidar no
+  // servidor não compensa o risco.
+  const res = await fetch(`${DRE_PROXY_BASE}${path}`, { cache: 'no-store', ...options, headers })
 
   // Mesmo tratamento de sessão expirada do resto do CRM (ver src/lib/api.ts).
   if (res.status === 401) {
