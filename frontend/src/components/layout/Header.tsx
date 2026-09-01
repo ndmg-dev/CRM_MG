@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Bell, Search, CheckCircle2, Menu, MessageSquare } from 'lucide-react'
+import { Bell, Search, CheckCircle2, Menu, MessageSquare, LogOut } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/authStore'
 import { api } from '@/lib/api'
@@ -13,6 +13,7 @@ import { playNotificationSound } from '@/systems/central-suporte/lib/notificatio
 import { showBrowserNotification, requestBrowserNotificationPermission } from '@/systems/central-suporte/hooks/useBrowserNotifications'
 import { useChatWidgetStore } from '@/stores/chatWidgetStore'
 import { useUIStore } from '@/stores/uiStore'
+import { endUnifiedSession } from '@/lib/unifiedAuth'
 
 interface HeaderProps {
   /** Abre o drawer de navegação em telas < lg. */
@@ -41,11 +42,13 @@ export default function Header({ onMenuClick }: HeaderProps) {
   const fullBleedSystem = useUIStore((s) => s.fullBleedSystem)
   const [showNotif, setShowNotif] = useState(false)
   const [showMessages, setShowMessages] = useState(false)
+  const [showUserMenu, setShowUserMenu] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [isSearchFocused, setIsSearchFocused] = useState(false)
 
   const notifRef = useRef<HTMLDivElement>(null)
   const messagesRef = useRef<HTMLDivElement>(null)
+  const userMenuRef = useRef<HTMLDivElement>(null)
   const searchRef = useRef<HTMLDivElement>(null)
 
   const debouncedSearch = useDebounce(searchQuery, 300)
@@ -252,6 +255,9 @@ export default function Header({ onMenuClick }: HeaderProps) {
       }
       if (messagesRef.current && !messagesRef.current.contains(e.target as Node)) {
         setShowMessages(false)
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setShowUserMenu(false)
       }
       if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
         setIsSearchFocused(false)
@@ -539,19 +545,58 @@ export default function Header({ onMenuClick }: HeaderProps) {
           </AnimatePresence>
         </div>
 
-        {/* User avatar */}
+        {/* User avatar + menu da conta */}
         {user && (
-          user.fotoPerfil ? (
-            <img src={user.fotoPerfil} alt={user.nome} title={user.nome} className="h-8 w-8 rounded-full border border-border object-cover" referrerPolicy="no-referrer" />
-          ) : (
-            <div
+          <div ref={userMenuRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setShowUserMenu((v) => !v)}
+              aria-haspopup="menu"
+              aria-expanded={showUserMenu}
               title={user.nome}
-              className="flex h-8 w-8 items-center justify-center rounded-full border border-gold-border bg-gold-muted text-[11px] font-bold text-gold"
+              className="flex rounded-full outline-none ring-offset-2 ring-offset-background focus-visible:ring-2 focus-visible:ring-gold"
             >
-              <span className="sr-only">{user.nome}</span>
-              <span aria-hidden="true">{getInitials(user.nome)}</span>
-            </div>
-          )
+              {user.fotoPerfil ? (
+                <img src={user.fotoPerfil} alt={user.nome} className="h-8 w-8 rounded-full border border-border object-cover" referrerPolicy="no-referrer" />
+              ) : (
+                <div className="flex h-8 w-8 items-center justify-center rounded-full border border-gold-border bg-gold-muted text-[11px] font-bold text-gold">
+                  <span className="sr-only">{user.nome}</span>
+                  <span aria-hidden="true">{getInitials(user.nome)}</span>
+                </div>
+              )}
+            </button>
+
+            <AnimatePresence>
+              {showUserMenu && (
+                <motion.div
+                  initial={{ opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.12 }}
+                  role="menu"
+                  className="absolute right-0 top-full z-50 mt-2 w-60 overflow-hidden rounded-lg border border-border bg-surface shadow-lg"
+                >
+                  <div className="border-b border-border px-3 py-2.5">
+                    <p className="truncate text-[13px] font-semibold text-text-primary">{user.nome}</p>
+                    <p className="truncate text-[11px] text-text-muted">{user.email}</p>
+                  </div>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={async () => {
+                      setShowUserMenu(false)
+                      await endUnifiedSession()
+                      window.location.href = '/login'
+                    }}
+                    className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-[13px] font-medium text-text-secondary transition-colors hover:bg-surface-raised hover:text-text-primary"
+                  >
+                    <LogOut className="h-4 w-4 shrink-0" />
+                    Sair
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         )}
       </div>
     </header>
