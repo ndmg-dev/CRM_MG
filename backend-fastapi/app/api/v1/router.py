@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import auth, users, sectors, clients, systems, tasks, access, dashboard, audit_logs, portal, documents, notifications, search, sessions, system_tracking, releases, abertura_empresa_proxy, dre_proxy, mgprospect_proxy, ouvidoria_proxy, fronteira_proxy
+from app.api.v1.endpoints import auth, users, sectors, clients, systems, tasks, access, dashboard, audit_logs, portal, documents, notifications, search, sessions, system_tracking, releases, abertura_empresa_proxy, dre_proxy, mgprospect_proxy, ouvidoria_proxy, fronteira_proxy, vps_monitor
 
 api_router = APIRouter()
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
@@ -23,3 +23,4 @@ api_router.include_router(dre_proxy.router, prefix="/dre-proxy", tags=["dre-prox
 api_router.include_router(mgprospect_proxy.router, prefix="/mgprospect-proxy", tags=["mgprospect-proxy"])
 api_router.include_router(ouvidoria_proxy.router, prefix="/ouvidoria-proxy", tags=["ouvidoria-proxy"])
 api_router.include_router(fronteira_proxy.router, prefix="/fronteira-proxy", tags=["fronteira-proxy"])
+api_router.include_router(vps_monitor.router, prefix="/vps", tags=["vps-monitor"])

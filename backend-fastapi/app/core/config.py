@@ -52,6 +52,15 @@ class Settings(BaseSettings):
     # navegador, só o backend do CRM fala com ela.
     FRONTEIRA_V8_API_URL: str = ""
 
+    # Monitoramento da VPS Hostinger (aba Tecnologia/TI). O token é gerado no
+    # hPanel (Dev Tools → API), herda as permissões do usuário e NUNCA chega
+    # no navegador — só o backend do CRM fala com a API da Hostinger, sempre
+    # com cache (rate limit de 90 req/min por IP). Ver
+    # app/api/v1/endpoints/vps_monitor.py.
+    HOSTINGER_API_URL: str = "https://developers.hostinger.com/api/vps/v1"
+    HOSTINGER_API_TOKEN: str = ""
+    HOSTINGER_VPS_ID: int = 1424388
+
     EVOLUTION_API_URL: str = "http://evolution-api:8080"
     EVOLUTION_API_KEY: str = "dev_evolution_key_123"
     EVOLUTION_INSTANCE: str = "default"

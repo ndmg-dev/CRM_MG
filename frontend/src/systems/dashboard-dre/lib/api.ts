@@ -5,13 +5,24 @@
 // isso a chamada passa pelo proxy do backend do CRM (que injeta a senha
 // server-side) em vez de ir direto pro Vercel. Ver
 // backend-fastapi/app/api/v1/endpoints/dre_proxy.py.
-const DRE_PROXY_BASE = '/api/v1/dre-proxy'
+//
+// A base tem que ser a URL ABSOLUTA do backend (VITE_API_BASE_URL, igual
+// src/lib/api.ts) — em produção o nginx do frontend não roteia /api pro
+// backend, então um caminho relativo cai no fallback do SPA e volta o
+// index.html do CRM em vez do JSON.
+const API_ROOT = import.meta.env.VITE_API_BASE_URL || '/api/v1'
+const DRE_PROXY_BASE = `${API_ROOT}/dre-proxy`
 
 export async function dreFetch(path: string, options: RequestInit = {}): Promise<Response> {
   const token = localStorage.getItem('crm_token')
   const headers = new Headers(options.headers)
   if (token) headers.set('Authorization', `Bearer ${token}`)
-  const res = await fetch(`${DRE_PROXY_BASE}${path}`, { ...options, headers })
+  // cache: 'no-store' — o Vercel devolve ETag/Last-Modified no dataset.json;
+  // sem isto o navegador guarda a resposta, manda If-None-Match na próxima e
+  // recebe um 304 vazio que o r.json() não consegue parsear ("Unexpected
+  // token '�'"). O dataset é pequeno e vem do CDN do Vercel, revalidar no
+  // servidor não compensa o risco.
+  const res = await fetch(`${DRE_PROXY_BASE}${path}`, { cache: 'no-store', ...options, headers })
 
   // Mesmo tratamento de sessão expirada do resto do CRM (ver src/lib/api.ts).
   if (res.status === 401) {

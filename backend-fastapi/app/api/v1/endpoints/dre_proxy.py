@@ -20,6 +20,13 @@ _HOP_BY_HOP = {
     "connection", "keep-alive", "proxy-authenticate", "proxy-authorization",
     "te", "trailers", "transfer-encoding", "upgrade", "host", "content-length",
     "content-encoding",
+    # Validação de cache: sem tirar isto, o navegador guarda o dataset.json
+    # com o ETag do Vercel, manda If-None-Match na chamada seguinte e recebe
+    # um 304 de corpo vazio que o front não consegue parsear. Removendo os
+    # condicionais na ida e o ETag/Last-Modified na volta, toda resposta é um
+    # 200 completo.
+    "if-none-match", "if-modified-since", "if-match", "if-unmodified-since",
+    "if-range", "etag", "last-modified",
 }
 
 
@@ -52,6 +59,13 @@ async def proxy_dre(
         k: v for k, v in request.headers.items() if k.lower() not in _HOP_BY_HOP
     }
     headers["authorization"] = _basic_auth_header()
+    # Pede a resposta SEM compressão. O Vercel serve JSON com content-encoding
+    # br (brotli) por padrão; o httpx só descomprime br se a lib brotli estiver
+    # instalada (não está), então upstream.content viria comprimido e, como
+    # removemos o header content-encoding abaixo, o navegador receberia bytes
+    # brotli achando que é texto ("Unexpected token '�'... is not valid
+    # JSON"). Com identity o corpo já vem plano dos dois lados.
+    headers["accept-encoding"] = "identity"
 
     try:
         async with httpx.AsyncClient() as client:

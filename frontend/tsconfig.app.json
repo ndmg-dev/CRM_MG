@@ -35,7 +35,8 @@
       "@cnpj/*": ["./src/systems/consulta-cnpj/*"],
       "@taskflow/*": ["./src/systems/taskflow/*"],
       "@analyticsdp/*": ["./src/systems/analytics-dp/*"],
-      "@dashrh/*": ["./src/systems/dash-rh/*"]
+      "@dashrh/*": ["./src/systems/dash-rh/*"],
+      "@vpsmonitor/*": ["./src/systems/vps-monitor/*"]
     },
 
     /* Bundler mode */
