@@ -8,6 +8,10 @@ import LocationCell from '../components/dashboard/LocationCell'
 import MetricCard from '../components/dashboard/MetricCard'
 import PresenceRanking from '../components/dashboard/PresenceRanking'
 import AbsenceList from '../components/dashboard/AbsenceList'
+import ReviewList from '../components/dashboard/ReviewList'
+import OccurrenceNowList from '../components/dashboard/OccurrenceNowList'
+import PendingOccurrenceList from '../components/dashboard/PendingOccurrenceList'
+import HoursRanking from '../components/dashboard/HoursRanking'
 import PunchHeatmap from '../components/dashboard/PunchHeatmap'
 import { formatTimeShort, todayInputDate, localDayRangeToUtcIso } from '../utils/date'
 
@@ -49,9 +53,17 @@ function FileTextIcon() {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>
 }
 
+/** Cada cartão de KPI é uma aba; o id manda no conteúdo da área de detalhe. */
+type KpiId = 'presentes' | 'ausentes' | 'pontos' | 'revisao' | 'ocorrencia' | 'pendentes'
+
+const DETAIL_PANEL_ID = 'kpi-detail-panel'
+
 export default function Dashboard() {
   const { data: summary, isLoading, isError } = useTodaySummary()
   const { data: employees } = useEmployees()
+
+  // Aba corrente. Nunca é nula — "Pontos hoje" é o estado de repouso do painel.
+  const [activeKpi, setActiveKpi] = useState<KpiId>('pontos')
 
   const [selectedDate, setSelectedDate] = useState(todayInputDate())
   const { from, to } = localDayRangeToUtcIso(selectedDate)
@@ -72,29 +84,77 @@ export default function Dashboard() {
   // Contadores de exceção ficam dourados quando há algo a tratar, brancos quando zerados.
   const alertTone = (value?: number) => (isError ? 'err' : (value ?? 0) > 0 ? 'gold' : undefined)
 
+  const listsLoading = isLoading || !employees
+
+  // Detalhe da aba corrente. "Pontos hoje" é o único que não usa o container
+  // de detalhe: são dois painéis inteiros (ranking + últimos pontos).
+  function renderDetail() {
+    switch (activeKpi) {
+      case 'presentes':
+        return <PresenceRanking logs={summary?.logs ?? []} employees={employees ?? []} isLoading={listsLoading} />
+      case 'ausentes':
+        return <AbsenceList absentIds={summary?.absent_employee_ids ?? []} employees={employees ?? []} isLoading={listsLoading} />
+      case 'revisao':
+        return <ReviewList logs={summary?.logs ?? []} employees={employees ?? []} isLoading={listsLoading} />
+      case 'ocorrencia':
+        return <OccurrenceNowList details={summary?.in_occurrence_now_details ?? []} employees={employees ?? []} isLoading={listsLoading} />
+      case 'pendentes':
+        return <PendingOccurrenceList employeeIds={summary?.pending_occurrence_employee_ids ?? []} employees={employees ?? []} isLoading={listsLoading} />
+      default:
+        return null
+    }
+  }
+
   return (
     <div className="dashboard-page animate-in">
       <div className="page-header">
         <h1 className="page-title">Dashboard</h1>
-        <span style={{ fontSize: 12, color: 'var(--mg-muted)' }}>
-          {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontSize: 12, color: 'var(--mg-muted)' }}>
+            {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+          </span>
+          {/* Dia de referência dos dois gráficos e da tabela de últimos pontos. */}
+          <input type="date" className="form-input" style={{ width: 160 }}
+            aria-label="Dia dos pontos exibidos"
+            value={selectedDate} max={todayInputDate()}
+            onChange={e => setSelectedDate(e.target.value)} />
+        </div>
       </div>
 
-      <div className="grid-kpi">
+      {/* Gráficos acima da grade de KPIs: são a leitura do dia inteiro, e as
+          abas abaixo é que recortam quem/o quê dentro dele. */}
+      <div className="chart-grid chart-grid-wide">
+        <section className="card chart-pane">
+          <div className="panel-head">
+            <div className="section-title" style={{ margin: 0 }}>Locais dos pontos</div>
+            <div className="panel-caption">batidas por local — passe o mouse para ver o endereço</div>
+          </div>
+          {dayError
+            ? <div className="chart-empty">Erro ao carregar os registros do dia.</div>
+            : <LocationsBarChart logs={dayLogs ?? []} />}
+        </section>
+
+        <section className="card chart-pane">
+          <div className="panel-head">
+            <div className="section-title" style={{ margin: 0 }}>Concentração geográfica</div>
+            <div className="panel-caption">onde as batidas acontecem com mais frequência</div>
+          </div>
+          {dayError
+            ? <div className="chart-empty">Erro ao carregar os registros do dia.</div>
+            : <PunchHeatmap logs={dayLogs ?? []} employees={employees ?? []} />}
+        </section>
+      </div>
+
+      <div className="grid-kpi" role="tablist" aria-label="Indicadores do dia">
         <MetricCard
           icon={<UsersCheckIcon />} tone="ok"
           label="Presentes hoje"
           value={stat(summary?.present_today)}
           valueTone={isError ? 'err' : 'ok'}
           sub="Bateram entrada hoje"
-          panel={
-            <PresenceRanking
-              logs={summary?.logs ?? []}
-              employees={employees ?? []}
-              isLoading={isLoading || !employees}
-            />
-          }
+          active={activeKpi === 'presentes'}
+          onSelect={() => setActiveKpi('presentes')}
+          controls={DETAIL_PANEL_ID}
         />
         <MetricCard
           icon={<UsersXIcon />} tone="err"
@@ -102,19 +162,19 @@ export default function Dashboard() {
           value={stat(summary?.absent_today)}
           valueTone="neutral"
           sub="Sem registro nem ocorrência"
-          panel={
-            <AbsenceList
-              absentIds={summary?.absent_employee_ids ?? []}
-              employees={employees ?? []}
-              isLoading={isLoading || !employees}
-            />
-          }
+          active={activeKpi === 'ausentes'}
+          onSelect={() => setActiveKpi('ausentes')}
+          controls={DETAIL_PANEL_ID}
         />
         <MetricCard
           icon={<ClockIcon />} tone="gold"
           label="Pontos hoje"
           value={stat(summary?.punches_today)}
           sub="Batidas no total"
+          live
+          active={activeKpi === 'pontos'}
+          onSelect={() => setActiveKpi('pontos')}
+          controls={DETAIL_PANEL_ID}
         />
         <MetricCard
           icon={<AlertTriangleIcon />} tone="warn"
@@ -122,6 +182,9 @@ export default function Dashboard() {
           value={stat(summary?.pending_review)}
           valueTone={alertTone(summary?.pending_review)}
           sub="Fora do local ou Wi-Fi desconhecido"
+          active={activeKpi === 'revisao'}
+          onSelect={() => setActiveKpi('revisao')}
+          controls={DETAIL_PANEL_ID}
         />
         <MetricCard
           icon={<ActivityIcon />} tone="neutral"
@@ -129,6 +192,9 @@ export default function Dashboard() {
           value={stat(summary?.in_occurrence_now)}
           valueTone={alertTone(summary?.in_occurrence_now)}
           sub="Saíram e ainda não retornaram"
+          active={activeKpi === 'ocorrencia'}
+          onSelect={() => setActiveKpi('ocorrencia')}
+          controls={DETAIL_PANEL_ID}
         />
         <MetricCard
           icon={<FileTextIcon />} tone="gold"
@@ -136,136 +202,124 @@ export default function Dashboard() {
           value={stat(summary?.pending_occurrences_today)}
           valueTone={alertTone(summary?.pending_occurrences_today)}
           sub="Justificativas de hoje a aprovar"
+          active={activeKpi === 'pendentes'}
+          onSelect={() => setActiveKpi('pendentes')}
+          controls={DETAIL_PANEL_ID}
         />
       </div>
 
-      <div className="card">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4, flexWrap: 'wrap', gap: 8 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div className="section-title" style={{ margin: 0 }}>Pontos do dia</div>
-            <div className="view-toggle">
-              <button
-                type="button"
-                className={listView === 'presentes' ? 'view-toggle-btn active' : 'view-toggle-btn'}
-                onClick={() => setListView('presentes')}
-              >
-                Presentes
-              </button>
-              <button
-                type="button"
-                className={listView === 'ausentes' ? 'view-toggle-btn active' : 'view-toggle-btn'}
-                onClick={() => { setListView('ausentes'); setSelectedDate(todayInputDate()) }}
-              >
-                Ausentes
-              </button>
-            </div>
-          </div>
-          {listView === 'presentes' && (
-            <input type="date" className="form-input" style={{ width: 160 }}
-              value={selectedDate} max={todayInputDate()}
-              onChange={e => setSelectedDate(e.target.value)} />
-          )}
-        </div>
-
-        {listView === 'ausentes' ? (
+      <div id={DETAIL_PANEL_ID} role="tabpanel" className="kpi-detail-area">
+        {activeKpi === 'pontos' ? (
           <>
-            {!isToday && (
-              <div style={{ color: 'var(--mg-muted)', fontSize: 12, marginBottom: 8 }}>
-                A lista de ausentes só está disponível para hoje.
+            <HoursRanking />
+
+            <div className="card">
+              <div className="panel-head">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                  <div className="section-title" style={{ margin: 0 }}>Últimos pontos batidos</div>
+                  <div className="view-toggle">
+                    <button
+                      type="button"
+                      className={listView === 'presentes' ? 'view-toggle-btn active' : 'view-toggle-btn'}
+                      onClick={() => setListView('presentes')}
+                    >
+                      Presentes
+                    </button>
+                    <button
+                      type="button"
+                      className={listView === 'ausentes' ? 'view-toggle-btn active' : 'view-toggle-btn'}
+                      onClick={() => { setListView('ausentes'); setSelectedDate(todayInputDate()) }}
+                    >
+                      Ausentes
+                    </button>
+                  </div>
+                </div>
               </div>
-            )}
-            <table className="table" style={{ marginTop: 12 }}>
-              <thead>
-                <tr>
-                  <th>Funcionário</th>
-                  <th>Cargo</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(summary?.absent_employee_ids ?? []).map(id => {
-                  const emp = employeeMap[id]
-                  return (
-                    <tr key={id}>
-                      <td>
-                        <div className="employee-cell">
-                          <Avatar name={emp?.name ?? '?'} />
-                          <span>{emp?.name ?? 'Funcionário removido'}</span>
-                        </div>
-                      </td>
-                      <td style={{ color: 'var(--mg-muted)' }}>{emp?.position ?? '—'}</td>
-                    </tr>
-                  )
-                })}
-                {!summary?.absent_employee_ids?.length && (
-                  <tr><td colSpan={2} style={{ color: 'var(--mg-muted)', textAlign: 'center', padding: 24 }}>
-                    {isLoading ? 'Carregando...' : 'Ninguém ausente hoje.'}
-                  </td></tr>
-                )}
-              </tbody>
-            </table>
-          </>
-        ) : dayLoading ? (
-          <div style={{ color: 'var(--mg-muted)', fontSize: 13, padding: '16px 0' }}>Carregando...</div>
-        ) : dayError ? (
-          <div style={{ color: 'var(--mg-red)', fontSize: 13, padding: '16px 0' }}>Erro ao carregar registros. Tente recarregar a página.</div>
-        ) : (
-          <>
-            <div className="chart-grid">
-              <section className="chart-pane">
-                <div className="chart-caption">
-                  Locais dos pontos
-                  <span className="chart-caption-unit">batidas por local — passe o mouse para ver o endereço</span>
-                </div>
-                <LocationsBarChart logs={dayLogs ?? []} />
-              </section>
 
-              <section className="chart-pane">
-                <div className="chart-caption">
-                  Concentração geográfica
-                  <span className="chart-caption-unit">onde as batidas acontecem com mais frequência</span>
-                </div>
-                <PunchHeatmap logs={dayLogs ?? []} employees={employees ?? []} />
-              </section>
+              {listView === 'ausentes' ? (
+                <>
+                  {!isToday && (
+                    <div style={{ color: 'var(--mg-muted)', fontSize: 12, marginBottom: 8 }}>
+                      A lista de ausentes só está disponível para hoje.
+                    </div>
+                  )}
+                  <table className="table" style={{ marginTop: 12 }}>
+                    <thead>
+                      <tr>
+                        <th>Funcionário</th>
+                        <th>Cargo</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(summary?.absent_employee_ids ?? []).map(id => {
+                        const emp = employeeMap[id]
+                        return (
+                          <tr key={id}>
+                            <td>
+                              <div className="employee-cell">
+                                <Avatar name={emp?.name ?? '?'} />
+                                <span>{emp?.name ?? 'Funcionário removido'}</span>
+                              </div>
+                            </td>
+                            <td style={{ color: 'var(--mg-muted)' }}>{emp?.position ?? '—'}</td>
+                          </tr>
+                        )
+                      })}
+                      {!summary?.absent_employee_ids?.length && (
+                        <tr><td colSpan={2} style={{ color: 'var(--mg-muted)', textAlign: 'center', padding: 24 }}>
+                          {isLoading ? 'Carregando...' : 'Ninguém ausente hoje.'}
+                        </td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </>
+              ) : dayLoading ? (
+                <div style={{ color: 'var(--mg-muted)', fontSize: 13, padding: '16px 0' }}>Carregando...</div>
+              ) : dayError ? (
+                <div style={{ color: 'var(--mg-red)', fontSize: 13, padding: '16px 0' }}>Erro ao carregar registros. Tente recarregar a página.</div>
+              ) : (
+                <table className="table" style={{ marginTop: 12 }}>
+                  <thead>
+                    <tr>
+                      <th>Funcionário</th>
+                      <th>Horário</th>
+                      <th>Tipo</th>
+                      <th>Local</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(dayLogs ?? []).map(log => {
+                      const emp = employeeMap[log.employee_id]
+                      return (
+                        <tr key={log.id}>
+                          <td>
+                            <div className="employee-cell">
+                              <Avatar name={emp?.name ?? '?'} />
+                              <span>{emp?.name ?? log.employee_id}</span>
+                            </div>
+                          </td>
+                          <td style={{ color: 'var(--mg-muted)' }}>
+                            {formatTimeShort(log.created_at)}
+                          </td>
+                          <td>{TYPE_LABEL[log.type] ?? log.type}</td>
+                          <td className="loc-cell">
+                            <LocationCell address={log.address} latitude={log.latitude} longitude={log.longitude} />
+                          </td>
+                          <td><Badge variant={STATUS_VARIANT[log.status] ?? 'neutral'}>{log.status}</Badge></td>
+                        </tr>
+                      )
+                    })}
+                    {!dayLogs?.length && (
+                      <tr><td colSpan={5} style={{ color: 'var(--mg-muted)', textAlign: 'center', padding: 24 }}>Nenhum registro neste dia</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              )}
             </div>
-
-            <table className="table" style={{ marginTop: 16 }}>
-              <thead>
-                <tr>
-                  <th>Funcionário</th>
-                  <th>Horário</th>
-                  <th>Tipo</th>
-                  <th>Local</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(dayLogs ?? []).map(log => {
-                  const emp = employeeMap[log.employee_id]
-                  return (
-                    <tr key={log.id}>
-                      <td>
-                        <div className="employee-cell">
-                          <Avatar name={emp?.name ?? '?'} />
-                          <span>{emp?.name ?? log.employee_id}</span>
-                        </div>
-                      </td>
-                      <td style={{ color: 'var(--mg-muted)' }}>
-                        {formatTimeShort(log.created_at)}
-                      </td>
-                      <td>{TYPE_LABEL[log.type] ?? log.type}</td>
-                      <td className="loc-cell">
-                        <LocationCell address={log.address} latitude={log.latitude} longitude={log.longitude} />
-                      </td>
-                      <td><Badge variant={STATUS_VARIANT[log.status] ?? 'neutral'}>{log.status}</Badge></td>
-                    </tr>
-                  )
-                })}
-                {!dayLogs?.length && (
-                  <tr><td colSpan={5} style={{ color: 'var(--mg-muted)', textAlign: 'center', padding: 24 }}>Nenhum registro neste dia</td></tr>
-                )}
-              </tbody>
-            </table>
           </>
+        ) : (
+          <div className="kpi-detail">{renderDetail()}</div>
         )}
       </div>
     </div>
