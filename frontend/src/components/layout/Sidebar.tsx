@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
-import { endUnifiedSession } from '@/lib/unifiedAuth'
 import {
   LayoutDashboard,
   Grid3X3,
@@ -10,9 +9,6 @@ import {
   ClipboardList,
   Shield,
   Eye,
-  LogOut,
-  Key,
-  Moon,
   X,
   ChevronLeft,
   ChevronRight,
@@ -227,11 +223,6 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
     ? sistemas.find(s => location.pathname.startsWith(`/sistemas/${s.id}`))?.setor ?? undefined
     : undefined
 
-  // Botões do rodapé: mesmo tratamento visual (secundário, bordado) do
-  // sistema de ponto de referência.
-  const footerBtn =
-    'flex w-full items-center gap-2.5 rounded-lg border border-border bg-surface-raised px-3 py-2 text-[13px] font-medium text-text-secondary transition-colors hover:border-border-light hover:bg-surface hover:text-text-primary'
-
   // Botão de ícone do rail de desktop (34×34, icon-only) — usado quando
   // recolhido.
   const railIconBtnClass = (isActive: boolean) =>
@@ -416,40 +407,19 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
         ))}
       </nav>
 
-      {/* Rodapé: usuário + ações */}
-      <div className="shrink-0 border-t border-border p-2.5">
-        {user && (
+      {/* Rodapé: identifica a conta logada. As ações de conta (Sair) vivem no
+          menu do avatar, no Header — "Alterar senha" e "Tema escuro" foram
+          removidos: eram mockups sem handler e o login é via Google OAuth. */}
+      {user && (
+        <div className="shrink-0 border-t border-border p-2.5">
           <p
             title={user.email}
-            className={`mb-2 truncate px-1 text-[11px] text-text-muted ${expanded ? '' : 'lg:hidden'}`}
+            className={`truncate px-1 text-[11px] text-text-muted ${expanded ? '' : 'lg:hidden'}`}
           >
             {user.email}
           </p>
-        )}
-
-        <div className="flex flex-col gap-1.5">
-          {/* Alterar senha — sem handler no código atual; preservado como está. */}
-          <button className={footerBtn} title="Alterar senha">
-            <Key className="h-4 w-4 shrink-0" />
-            <span className={expanded ? '' : 'lg:hidden'}>Alterar senha</span>
-          </button>
-
-          <button
-            onClick={async () => { await endUnifiedSession(); window.location.href = '/login' }}
-            className={footerBtn}
-            title="Sair"
-          >
-            <LogOut className="h-4 w-4 shrink-0" />
-            <span className={expanded ? '' : 'lg:hidden'}>Sair</span>
-          </button>
-
-          {/* Seletor de tema — sem handler no código atual; preservado como está. */}
-          <button className={footerBtn} title="Tema escuro">
-            <Moon className="h-4 w-4 shrink-0" />
-            <span className={expanded ? '' : 'lg:hidden'}>Tema escuro</span>
-          </button>
         </div>
-      </div>
+      )}
     </aside>
   )
 }
