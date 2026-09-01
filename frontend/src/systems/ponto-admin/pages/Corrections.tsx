@@ -1,13 +1,157 @@
 import { useState } from 'react'
-import { useCorrections, useApproveCorrection, useRejectCorrection, type CorrectionRequest } from '../hooks/useCorrections'
+import {
+  useCorrections, useApproveCorrection, useRejectCorrection, useCreateCorrectionBatch,
+  type CorrectionRequest,
+} from '../hooks/useCorrections'
+import { useEmployees } from '../hooks/useEmployees'
 import Avatar from '../components/Avatar'
 import Badge from '../components/Badge'
 import { Modal } from '../components/Modal'
+import EmployeeTransferPicker from '../components/EmployeeTransferPicker'
 
 const STATUS_FILTER = ['Todos', 'PENDENTE', 'APROVADO', 'REJEITADO'] as const
 
 const TYPE_ICON: Record<string, string> = {
   ENTRADA: '🟢', SAIDA_ALMOCO: '🍽', RETORNO_ALMOCO: '↩️', SAIDA: '🔴',
+}
+
+const LOG_TYPES: { value: string; label: string; icon: string }[] = [
+  { value: 'ENTRADA',        label: 'Entrada',        icon: '🟢' },
+  { value: 'SAIDA_ALMOCO',   label: 'Saída almoço',   icon: '🍽' },
+  { value: 'RETORNO_ALMOCO', label: 'Retorno almoço', icon: '↩️' },
+  { value: 'SAIDA',          label: 'Saída',          icon: '🔴' },
+]
+
+/** Rótulo de seção — maiúsculo, discreto, mesmo padrão do formulário de
+ * correção do kiosk (CorrectionFormScreen.tsx), pra manter os dois
+ * consistentes visualmente mesmo sendo telas diferentes. */
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{
+      fontSize: 11, color: 'var(--mg-muted)', marginBottom: 8,
+      textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600,
+    }}>
+      {children}
+    </div>
+  )
+}
+
+function CreateCorrectionModal({ onClose }: { onClose: () => void }) {
+  const { data: employees = [] } = useEmployees()
+  const createBatchMutation = useCreateCorrectionBatch()
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [date, setDate] = useState(new Date().toLocaleDateString('en-CA'))
+  const [logType, setLogType] = useState('ENTRADA')
+  const [time, setTime] = useState('08:00')
+  const [reason, setReason] = useState('')
+  const [err, setErr] = useState('')
+  const [skipped, setSkipped] = useState<string[] | null>(null)
+  const [createdCount, setCreatedCount] = useState(0)
+
+  async function handleSave() {
+    setErr(''); setSkipped(null)
+    if (selected.size === 0) { setErr('Selecione pelo menos um colaborador'); return }
+    try {
+      const result = await createBatchMutation.mutateAsync({
+        employee_ids: [...selected],
+        requested_date: date,
+        log_type: logType,
+        requested_time: time,
+        reason: reason.trim() || undefined,
+      })
+      if (result.skipped.length > 0) {
+        // Fica aberto mostrando quem foi pulado — não sobrepõe batida
+        // existente, e o admin precisa saber pra tratar esses individualmente.
+        setSkipped(result.skipped)
+        setCreatedCount(result.created.length)
+        setSelected(new Set())
+      } else {
+        onClose()
+      }
+    } catch (e) { setErr(e instanceof Error ? e.message : 'Erro ao criar correções') }
+  }
+
+  return (
+    <Modal open={true} onClose={onClose} title="Adicionar correção de ponto" maxWidth={760}>
+      <div>
+        <SectionLabel>Data</SectionLabel>
+        <input type="date" value={date} onChange={e => setDate(e.target.value)}
+          style={{
+            background: 'rgba(255,255,255,0.06)', border: 'var(--mg-border)',
+            borderRadius: 8, padding: '10px 12px', fontSize: 14, color: '#fff',
+            width: '100%', boxSizing: 'border-box', marginBottom: 18,
+          }} />
+
+        <SectionLabel>Tipo</SectionLabel>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 18 }}>
+          {LOG_TYPES.map(t => (
+            <button key={t.value} type="button" onClick={() => setLogType(t.value)} style={{
+              padding: '12px 10px', borderRadius: 10, fontSize: 12, border: 'none', cursor: 'pointer',
+              background: logType === t.value ? 'var(--mg-gold)' : 'rgba(255,255,255,0.06)',
+              color: logType === t.value ? '#111' : '#fff',
+              fontWeight: logType === t.value ? 700 : 400,
+              display: 'flex', alignItems: 'center', gap: 6,
+              transition: 'all 0.15s',
+            }}>
+              <span style={{ fontSize: 15 }}>{t.icon}</span>
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        <SectionLabel>Horário correto</SectionLabel>
+        <input type="time" value={time} onChange={e => setTime(e.target.value)}
+          style={{
+            background: 'rgba(255,255,255,0.06)', border: 'var(--mg-border)',
+            borderRadius: 8, padding: '10px 14px', fontSize: 20, fontWeight: 600,
+            color: '#fff', width: '100%', boxSizing: 'border-box', marginBottom: 18,
+          }} />
+
+        <SectionLabel>Motivo (opcional)</SectionLabel>
+        <textarea rows={3} value={reason}
+          placeholder="Ex: Esqueceu de registrar ao entrar..."
+          onChange={e => setReason(e.target.value)}
+          style={{
+            background: 'rgba(255,255,255,0.06)', border: 'var(--mg-border)',
+            borderRadius: 8, padding: '10px 12px', fontSize: 13, color: '#fff',
+            width: '100%', boxSizing: 'border-box', resize: 'none', fontFamily: 'inherit',
+            marginBottom: 18,
+          }} />
+
+        <SectionLabel>Colaboradores</SectionLabel>
+        <EmployeeTransferPicker employees={employees} selected={selected} onChange={setSelected} />
+      </div>
+
+      {err && <div style={{ fontSize: 12, color: 'var(--mg-red)', margin: '16px 0 0' }}>{err}</div>}
+
+      {skipped && skipped.length > 0 && (
+        <div style={{
+          fontSize: 12, color: 'var(--mg-gold)', margin: '16px 0 0',
+          background: 'rgba(212,168,67,0.08)', border: '0.5px solid rgba(212,168,67,0.3)',
+          borderRadius: 8, padding: '10px 12px', lineHeight: 1.5,
+        }}>
+          {createdCount > 0
+            ? `As outras ${createdCount} correção(ões) foram criadas. `
+            : 'Nenhuma correção foi criada. '}
+          Estes já têm uma batida desse tipo nesse dia — a correção em lote não sobrepõe uma batida existente.
+          Corrija individualmente vinculando à batida já registrada:
+          <strong> {skipped.join(', ')}</strong>
+        </div>
+      )}
+
+      <div className="modal-actions">
+        <button type="button" className="btn-ghost" onClick={onClose}>
+          {skipped ? 'Fechar' : 'Cancelar'}
+        </button>
+        <button type="button" className="btn-primary" onClick={handleSave}
+          disabled={createBatchMutation.isPending || selected.size === 0}>
+          {createBatchMutation.isPending
+            ? 'Salvando...'
+            : `Salvar${selected.size > 0 ? ` (${selected.size})` : ''}`}
+        </button>
+      </div>
+    </Modal>
+  )
 }
 
 function ReviewModal({ corr, onClose }: { corr: CorrectionRequest; onClose: () => void }) {
@@ -112,6 +256,7 @@ function ReviewModal({ corr, onClose }: { corr: CorrectionRequest; onClose: () =
 export default function Corrections() {
   const [filter, setFilter] = useState<typeof STATUS_FILTER[number]>('Todos')
   const [reviewing, setReviewing] = useState<CorrectionRequest | null>(null)
+  const [showCreate, setShowCreate] = useState(false)
 
   const { data = [], isLoading } = useCorrections(filter !== 'Todos' ? filter : undefined)
   const pendingCount = data.filter(c => c.status === 'PENDENTE').length
@@ -135,6 +280,9 @@ export default function Corrections() {
               {s}
             </button>
           ))}
+          <button className="btn-primary" style={{ fontSize: 12 }} onClick={() => setShowCreate(true)}>
+            + Adicionar correção
+          </button>
         </div>
       </div>
 
@@ -196,6 +344,7 @@ export default function Corrections() {
       </div>
 
       {reviewing && <ReviewModal corr={reviewing} onClose={() => setReviewing(null)} />}
+      {showCreate && <CreateCorrectionModal onClose={() => setShowCreate(false)} />}
     </div>
   )
 }

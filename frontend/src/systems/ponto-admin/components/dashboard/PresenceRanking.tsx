@@ -68,46 +68,32 @@ export default function PresenceRanking({ logs, employees, isLoading }: Props) {
   const arrivals = buildArrivals(logs, employees)
 
   if (isLoading) {
-    return <div className="rank-empty">Carregando presenças…</div>
+    return <div className="kpi-detail-empty">Carregando presenças…</div>
   }
   if (!arrivals.length) {
-    return <div className="rank-empty">Nenhuma entrada registrada hoje.</div>
+    return <div className="kpi-detail-empty">Nenhuma entrada registrada hoje.</div>
   }
 
-  const firstIn = arrivals[0]
-  const lastIn = arrivals[arrivals.length - 1]
-
   return (
-    <div className="rank">
-      <div className="rank-head">
-        <div>
-          <div className="rank-title">Ordem de chegada</div>
-          <div className="rank-caption">Da primeira à última entrada do dia</div>
-        </div>
-        <div className="rank-count">{arrivals.length}</div>
+    <>
+      <div className="kpi-detail-title">
+        Presentes hoje — {arrivals.length}{' '}
+        {arrivals.length === 1 ? 'funcionário com entrada registrada' : 'funcionários com entrada registrada'}
       </div>
-
-      <div className="rank-window">
-        <span><span className="rank-window-key">1ª</span> {formatTimeShort(firstIn.arrivedAt)}</span>
-        <span className="rank-window-sep" aria-hidden="true" />
-        <span><span className="rank-window-key">última</span> {formatTimeShort(lastIn.arrivedAt)}</span>
-      </div>
-
-      <ol className="rank-list">
-        {arrivals.map((a, i) => (
-          <li key={a.employeeId} className={`rank-row${i < 3 ? ' rank-row-top' : ''}`}>
-            <span className="rank-pos">{i + 1}</span>
-            <Avatar name={a.name} size={24} />
-            <span className="rank-name" title={a.name}>{a.name}</span>
+      <ol className="kpi-detail-grid cols-3">
+        {arrivals.map(a => (
+          <li key={a.employeeId} className="kpi-detail-item">
+            <Avatar name={a.name} size={22} />
+            <span className="kpi-detail-name" title={a.name}>{a.name}</span>
+            <span className="kpi-detail-meta">· {formatTimeShort(a.arrivedAt)}</span>
             {a.deltaMin !== null && a.deltaMin !== 0 && (
               <span className={`rank-delta ${a.deltaMin > 0 ? 'is-late' : 'is-early'}`}>
                 {formatDelta(a.deltaMin)}
               </span>
             )}
-            <span className="rank-time">{formatTimeShort(a.arrivedAt)}</span>
           </li>
         ))}
       </ol>
-    </div>
+    </>
   )
 }

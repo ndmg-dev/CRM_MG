@@ -17,10 +17,10 @@ interface Props {
  */
 export default function AbsenceList({ absentIds, employees, isLoading }: Props) {
   if (isLoading) {
-    return <div className="rank-empty">Carregando ausências…</div>
+    return <div className="kpi-detail-empty">Carregando ausências…</div>
   }
   if (!absentIds.length) {
-    return <div className="rank-empty">Ninguém ausente hoje.</div>
+    return <div className="kpi-detail-empty">Ninguém ausente hoje.</div>
   }
 
   const byId = new Map(employees.map(e => [e.id, e]))
@@ -29,26 +29,19 @@ export default function AbsenceList({ absentIds, employees, isLoading }: Props) 
     .sort((a, b) => (a.employee?.name ?? '').localeCompare(b.employee?.name ?? '', 'pt-BR'))
 
   return (
-    <div className="rank">
-      <div className="rank-head">
-        <div>
-          <div className="rank-title rank-title-err">Ausentes hoje</div>
-          <div className="rank-caption">Sem entrada e sem ocorrência aprovada</div>
-        </div>
-        <div className="rank-count">{absent.length}</div>
-      </div>
-
-      <ol className="rank-list rank-list-plain">
+    <>
+      <div className="kpi-detail-title">Ausentes — sem batida nem justificativa hoje</div>
+      <ol className="kpi-detail-grid cols-2">
         {absent.map(({ id, employee }) => (
-          <li key={id} className="rank-row">
-            <Avatar name={employee?.name ?? '?'} size={24} />
-            <span className="rank-name" title={employee?.name}>
+          <li key={id} className="kpi-detail-item">
+            <Avatar name={employee?.name ?? '?'} size={22} />
+            <span className="kpi-detail-name" title={employee?.name}>
               {employee?.name ?? 'Funcionário removido'}
             </span>
-            {employee?.position && <span className="rank-meta">{employee.position}</span>}
+            {employee?.position && <span className="kpi-detail-meta">· {employee.position}</span>}
           </li>
         ))}
       </ol>
-    </div>
+    </>
   )
 }

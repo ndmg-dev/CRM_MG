@@ -26,6 +26,20 @@ export function localMinutesOfDay(iso: string): number {
   return Number(h) * 60 + Number(m)
 }
 
+// Minutos decorridos desde um timestamp do backend até agora. Passa pelo mesmo
+// utcDate() do resto do arquivo — sem ele o 'naive' seria lido como local e a
+// diferença sairia deslocada pelo fuso.
+export function minutesSince(iso: string): number {
+  return Math.max(0, Math.round((Date.now() - utcDate(iso).getTime()) / 60000))
+}
+
+// "1h20" / "55min" — duração curta, para "fora há ...".
+export function formatDuration(minutes: number): string {
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  return h ? `${h}h${String(m).padStart(2, '0')}` : `${m}min`
+}
+
 export function formatDate(iso: string): string {
   return utcDate(iso).toLocaleDateString('pt-BR', { timeZone: TZ })
 }
