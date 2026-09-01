@@ -52,6 +52,13 @@ async def proxy_dre(
         k: v for k, v in request.headers.items() if k.lower() not in _HOP_BY_HOP
     }
     headers["authorization"] = _basic_auth_header()
+    # Pede a resposta SEM compressão. O Vercel serve JSON com content-encoding
+    # br (brotli) por padrão; o httpx só descomprime br se a lib brotli estiver
+    # instalada (não está), então upstream.content viria comprimido e, como
+    # removemos o header content-encoding abaixo, o navegador receberia bytes
+    # brotli achando que é texto ("Unexpected token '�'... is not valid
+    # JSON"). Com identity o corpo já vem plano dos dois lados.
+    headers["accept-encoding"] = "identity"
 
     try:
         async with httpx.AsyncClient() as client:
