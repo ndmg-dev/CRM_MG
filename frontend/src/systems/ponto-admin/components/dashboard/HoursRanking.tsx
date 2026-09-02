@@ -1,36 +1,56 @@
 import { useMemo, useState } from 'react'
 import Avatar from '../Avatar'
 import { useSummaryReportRange } from '../../hooks/useReports'
-import { todayInputDate } from '../../utils/date'
+import { todayInputDate, isoWeekBounds, toInputDateLocal, fmtDayMonth } from '../../utils/date'
 
-type Period = 'today' | 'week' | 'month'
+type Period = 'day' | 'week' | 'month'
 
 const PERIOD_LABEL: Record<Period, string> = {
-  today: 'Hoje',
+  day: 'Dia',
   week: 'Semana',
   month: 'Mês',
 }
 
 /**
- * Intervalo de cada período, sempre terminando hoje ("semana até agora", "mês
- * até agora"). Fechar a semana/o mês no futuro inflaria o esperado com dias
- * que ainda não aconteceram e deixaria todo mundo em déficit.
+ * Intervalo do período que contém `anchor`, cortado em hoje: um período que
+ * ainda não terminou não pode cobrar as horas dos dias que faltam, senão todo
+ * mundo aparece em déficit até a virada da semana/do mês.
+ *
+ * A semana sai de `isoWeekBounds` — a mesma que Relatórios usa —, para as duas
+ * telas nunca mostrarem saldos diferentes para a mesma semana.
  */
-function rangeFor(period: Period): { from: string; to: string } {
-  const to = todayInputDate()
-  const today = new Date(`${to}T00:00:00`)
-
-  if (period === 'today') return { from: to, to }
-
-  const from = new Date(today)
-  if (period === 'week') {
-    // Semana começa na segunda — mesmo 0=segunda…6=domingo da escala semanal.
-    const weekday = (today.getDay() + 6) % 7
-    from.setDate(today.getDate() - weekday)
-  } else {
-    from.setDate(1)
+function rangeFor(period: Period, anchor: Date): { from: string; to: string } {
+  const today = todayInputDate()
+  const cap = (d: Date) => {
+    const iso = toInputDateLocal(d)
+    return iso < today ? iso : today
   }
-  return { from: from.toLocaleDateString('en-CA'), to }
+
+  if (period === 'day') {
+    const day = toInputDateLocal(anchor)
+    return { from: day, to: day }
+  }
+
+  if (period === 'week') {
+    const { start, end } = isoWeekBounds(anchor)
+    return { from: toInputDateLocal(start), to: cap(end) }
+  }
+
+  const start = new Date(anchor.getFullYear(), anchor.getMonth(), 1)
+  const end = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0)
+  return { from: toInputDateLocal(start), to: cap(end) }
+}
+
+/**
+ * Anda um período para trás/frente. No mês, zera o dia antes de somar: partindo
+ * de 31/01, `setMonth(+1)` cairia em 03/03, pulando fevereiro inteiro.
+ */
+function shift(anchor: Date, period: Period, delta: number): Date {
+  const next = new Date(anchor)
+  if (period === 'day') next.setDate(next.getDate() + delta)
+  else if (period === 'week') next.setDate(next.getDate() + 7 * delta)
+  else { next.setDate(1); next.setMonth(next.getMonth() + delta) }
+  return next
 }
 
 /** "8.2h" — uma casa decimal, como o resto dos números de jornada do sistema. */
@@ -55,9 +75,23 @@ function balanceLabel(value: number): string {
 export default function HoursRanking() {
   const [period, setPeriod] = useState<Period>('month')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
+  // Âncora do período exibido. Trocar de Dia/Semana/Mês mantém a âncora, então
+  // quem está olhando agosto continua em agosto ao mudar a granularidade.
+  const [anchor, setAnchor] = useState(() => new Date())
 
-  const { from, to } = useMemo(() => rangeFor(period), [period])
+  const { from, to } = useMemo(() => rangeFor(period, anchor), [period, anchor])
   const { data: rows, isLoading, isError } = useSummaryReportRange(from, to, 'team')
+
+  const weekLabel = useMemo(() => {
+    const { start, end } = isoWeekBounds(anchor)
+    return `${fmtDayMonth(start)} – ${fmtDayMonth(end)}/${end.getFullYear()}`
+  }, [anchor])
+
+  // Sem período futuro: o "esperado" de dias que não aconteceram só produziria
+  // um ranking de déficits. Compara o início do próximo período com hoje.
+  const canGoForward = rangeFor(period, shift(anchor, period, 1)).from <= todayInputDate()
+
+  const anchorIso = toInputDateLocal(anchor)
 
   const sorted = useMemo(() => {
     const list = [...(rows ?? [])]
@@ -76,18 +110,54 @@ export default function HoursRanking() {
             quem trabalhou mais e quem trabalhou menos — saldo do período
           </div>
         </div>
-        <div className="view-toggle" role="group" aria-label="Período do ranking">
-          {(Object.keys(PERIOD_LABEL) as Period[]).map(key => (
+        <div className="rank-period">
+          <div className="view-toggle" role="group" aria-label="Período do ranking">
+            {(Object.keys(PERIOD_LABEL) as Period[]).map(key => (
+              <button
+                key={key}
+                type="button"
+                className={period === key ? 'view-toggle-btn active' : 'view-toggle-btn'}
+                aria-pressed={period === key}
+                onClick={() => setPeriod(key)}
+              >
+                {PERIOD_LABEL[key]}
+              </button>
+            ))}
+          </div>
+
+          {/* Mesmo navegador de Relatórios: ‹ intervalo ›. Em Dia e Mês o
+              centro é um campo nativo, para pular direto para uma data
+              distante sem clicar a seta dezenas de vezes. */}
+          <div className="period-nav">
             <button
-              key={key}
-              type="button"
-              className={period === key ? 'view-toggle-btn active' : 'view-toggle-btn'}
-              aria-pressed={period === key}
-              onClick={() => setPeriod(key)}
-            >
-              {PERIOD_LABEL[key]}
-            </button>
-          ))}
+              type="button" className="period-nav-arrow" aria-label="Período anterior"
+              onClick={() => setAnchor(a => shift(a, period, -1))}
+            >‹</button>
+
+            {period === 'week' ? (
+              <span className="period-nav-label">{weekLabel}</span>
+            ) : period === 'day' ? (
+              <input
+                type="date" className="period-nav-input"
+                aria-label="Dia do ranking"
+                value={anchorIso} max={todayInputDate()}
+                onChange={e => e.target.value && setAnchor(new Date(`${e.target.value}T00:00:00`))}
+              />
+            ) : (
+              <input
+                type="month" className="period-nav-input"
+                aria-label="Mês do ranking"
+                value={anchorIso.slice(0, 7)} max={todayInputDate().slice(0, 7)}
+                onChange={e => e.target.value && setAnchor(new Date(`${e.target.value}-01T00:00:00`))}
+              />
+            )}
+
+            <button
+              type="button" className="period-nav-arrow" aria-label="Próximo período"
+              disabled={!canGoForward}
+              onClick={() => setAnchor(a => shift(a, period, 1))}
+            >›</button>
+          </div>
         </div>
       </div>
 
