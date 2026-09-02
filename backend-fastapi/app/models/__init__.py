@@ -12,6 +12,7 @@ from app.models.client_token import ClientToken
 from app.models.user_session import UserSession
 from app.models.system_access_log import SystemAccessLog
 from app.models.release import Release, ReleaseNote, ReleaseRead
+from app.models.pomodoro import PomodoroPreferencia, PomodoroSetorEstado
 
 # Expose models to Alembic and other parts of the application
 __all__ = [
@@ -30,4 +31,6 @@ __all__ = [
     "Release",
     "ReleaseNote",
     "ReleaseRead",
+    "PomodoroPreferencia",
+    "PomodoroSetorEstado",
 ]
