@@ -137,6 +137,23 @@
   box-shadow: 0 0 0 3px var(--kpi-ok-dim);
 }
 
+/* Par de setas ao lado do rótulo — o cartão abre uma tabela ordenável, e as
+   duas cores dizem de saída que o dado tem lado bom e lado ruim. Menores que
+   as setas do cabeçalho da tabela (.th-sort-arrow): aqui são um sinal, não um
+   controle. */
+.kpi-rank {
+  display: inline-flex;
+  vertical-align: middle;
+  align-items: center;
+  gap: 1px;
+  margin-left: 6px;
+  font-size: 8px;
+  line-height: 1;
+}
+
+.kpi-rank-up { color: var(--kpi-ok); }
+.kpi-rank-down { color: var(--kpi-err); }
+
 @media (prefers-reduced-motion: reduce) {
   .kpi-card { transition-duration: 0.01ms; }
 }

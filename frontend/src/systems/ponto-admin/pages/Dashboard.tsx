@@ -1,12 +1,12 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTodaySummary, useTimeLogs } from '../hooks/useTimeLogs'
 import { useEmployees } from '../hooks/useEmployees'
+import { useSummaryReportRange } from '../hooks/useReports'
 import Avatar from '../components/Avatar'
 import Badge from '../components/Badge'
 import LocationsBarChart from '../components/dashboard/LocationsBarChart'
 import LocationCell from '../components/dashboard/LocationCell'
 import MetricCard from '../components/dashboard/MetricCard'
-import PresenceRanking from '../components/dashboard/PresenceRanking'
 import AbsenceList from '../components/dashboard/AbsenceList'
 import ReviewList from '../components/dashboard/ReviewList'
 import OccurrenceNowList from '../components/dashboard/OccurrenceNowList'
@@ -40,8 +40,8 @@ function UsersCheckIcon() {
 function UsersXIcon() {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><line x1="17" y1="8" x2="22" y2="13" /><line x1="22" y1="8" x2="17" y2="13" /></svg>
 }
-function ClockIcon() {
-  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+function BarChartIcon() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></svg>
 }
 function AlertTriangleIcon() {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
@@ -58,11 +58,36 @@ type KpiId = 'presentes' | 'ausentes' | 'pontos' | 'revisao' | 'ocorrencia' | 'p
 
 const DETAIL_PANEL_ID = 'kpi-detail-panel'
 
+/**
+ * Do dia 1 do mês até ONTEM — janela do contador de saldo em dia.
+ *
+ * O dia corrente fica de fora de propósito: o backend cobra a jornada inteira
+ * do dia em curso (8h contra um dia que mal começou), então incluí-lo jogaria
+ * o time inteiro para o déficit durante toda a manhã.
+ *
+ * No dia 1 não existe janela — `date_from` cairia no mês anterior e a API
+ * responde 422 — então devolve null e o cartão mostra "—".
+ */
+function monthToYesterday(): { from: string; to: string } | null {
+  const today = new Date(`${todayInputDate()}T00:00:00`)
+  if (today.getDate() === 1) return null
+
+  const first = new Date(today)
+  first.setDate(1)
+  const yesterday = new Date(today)
+  yesterday.setDate(today.getDate() - 1)
+
+  return {
+    from: first.toLocaleDateString('en-CA'),
+    to: yesterday.toLocaleDateString('en-CA'),
+  }
+}
+
 export default function Dashboard() {
   const { data: summary, isLoading, isError } = useTodaySummary()
   const { data: employees } = useEmployees()
 
-  // Aba corrente. Nunca é nula — "Pontos hoje" é o estado de repouso do painel.
+  // Aba corrente. Nunca é nula — "Ranking" é o estado de repouso do painel.
   const [activeKpi, setActiveKpi] = useState<KpiId>('pontos')
 
   const [selectedDate, setSelectedDate] = useState(todayInputDate())
@@ -86,12 +111,25 @@ export default function Dashboard() {
 
   const listsLoading = isLoading || !employees
 
-  // Detalhe da aba corrente. "Pontos hoje" é o único que não usa o container
-  // de detalhe: são dois painéis inteiros (ranking + últimos pontos).
+  // "Em dia" = saldo zerado ou positivo no mês até ontem. O denominador é o
+  // total de ativos (o backend devolve todos, inclusive quem não bateu ponto),
+  // porque "14" sozinho não diz nada sem o tamanho do time.
+  const balanceRange = useMemo(monthToYesterday, [])
+  const { data: balanceRows, isLoading: balanceLoading, isError: balanceError } =
+    useSummaryReportRange(
+      balanceRange?.from ?? '', balanceRange?.to ?? '', 'team',
+      undefined, undefined, !!balanceRange,
+    )
+
+  const onTrack = balanceRange === null ? '—'
+    : balanceError ? '!'
+    : balanceLoading || !balanceRows ? '…'
+    : `${balanceRows.filter(r => r.balance >= 0).length}/${balanceRows.length}`
+
+  // Detalhe da aba corrente. "Ranking" e "Presentes hoje" são os únicos que não
+  // usam o container de detalhe: cada um é um painel `.card` inteiro.
   function renderDetail() {
     switch (activeKpi) {
-      case 'presentes':
-        return <PresenceRanking logs={summary?.logs ?? []} employees={employees ?? []} isLoading={listsLoading} />
       case 'ausentes':
         return <AbsenceList absentIds={summary?.absent_employee_ids ?? []} employees={employees ?? []} isLoading={listsLoading} />
       case 'revisao':
@@ -152,6 +190,7 @@ export default function Dashboard() {
           value={stat(summary?.present_today)}
           valueTone={isError ? 'err' : 'ok'}
           sub="Bateram entrada hoje"
+          live
           active={activeKpi === 'presentes'}
           onSelect={() => setActiveKpi('presentes')}
           controls={DETAIL_PANEL_ID}
@@ -167,11 +206,11 @@ export default function Dashboard() {
           controls={DETAIL_PANEL_ID}
         />
         <MetricCard
-          icon={<ClockIcon />} tone="gold"
-          label="Pontos hoje"
-          value={stat(summary?.punches_today)}
-          sub="Batidas no total"
-          live
+          icon={<BarChartIcon />} tone="gold"
+          label="Ranking"
+          value={onTrack}
+          sub="Com saldo em dia no mês, até ontem"
+          rank
           active={activeKpi === 'pontos'}
           onSelect={() => setActiveKpi('pontos')}
           controls={DETAIL_PANEL_ID}
@@ -210,114 +249,112 @@ export default function Dashboard() {
 
       <div id={DETAIL_PANEL_ID} role="tabpanel" className="kpi-detail-area">
         {activeKpi === 'pontos' ? (
-          <>
-            <HoursRanking />
-
-            <div className="card">
-              <div className="panel-head">
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                  <div className="section-title" style={{ margin: 0 }}>Últimos pontos batidos</div>
-                  <div className="view-toggle">
-                    <button
-                      type="button"
-                      className={listView === 'presentes' ? 'view-toggle-btn active' : 'view-toggle-btn'}
-                      onClick={() => setListView('presentes')}
-                    >
-                      Presentes
-                    </button>
-                    <button
-                      type="button"
-                      className={listView === 'ausentes' ? 'view-toggle-btn active' : 'view-toggle-btn'}
-                      onClick={() => { setListView('ausentes'); setSelectedDate(todayInputDate()) }}
-                    >
-                      Ausentes
-                    </button>
-                  </div>
+          <HoursRanking />
+        ) : activeKpi === 'presentes' ? (
+          <div className="card">
+            <div className="panel-head">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                <div className="section-title" style={{ margin: 0 }}>Últimos pontos batidos</div>
+                <div className="view-toggle">
+                  <button
+                    type="button"
+                    className={listView === 'presentes' ? 'view-toggle-btn active' : 'view-toggle-btn'}
+                    onClick={() => setListView('presentes')}
+                  >
+                    Presentes
+                  </button>
+                  <button
+                    type="button"
+                    className={listView === 'ausentes' ? 'view-toggle-btn active' : 'view-toggle-btn'}
+                    onClick={() => { setListView('ausentes'); setSelectedDate(todayInputDate()) }}
+                  >
+                    Ausentes
+                  </button>
                 </div>
               </div>
+            </div>
 
-              {listView === 'ausentes' ? (
-                <>
-                  {!isToday && (
-                    <div style={{ color: 'var(--mg-muted)', fontSize: 12, marginBottom: 8 }}>
-                      A lista de ausentes só está disponível para hoje.
-                    </div>
-                  )}
-                  <table className="table" style={{ marginTop: 12 }}>
-                    <thead>
-                      <tr>
-                        <th>Funcionário</th>
-                        <th>Cargo</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(summary?.absent_employee_ids ?? []).map(id => {
-                        const emp = employeeMap[id]
-                        return (
-                          <tr key={id}>
-                            <td>
-                              <div className="employee-cell">
-                                <Avatar name={emp?.name ?? '?'} />
-                                <span>{emp?.name ?? 'Funcionário removido'}</span>
-                              </div>
-                            </td>
-                            <td style={{ color: 'var(--mg-muted)' }}>{emp?.position ?? '—'}</td>
-                          </tr>
-                        )
-                      })}
-                      {!summary?.absent_employee_ids?.length && (
-                        <tr><td colSpan={2} style={{ color: 'var(--mg-muted)', textAlign: 'center', padding: 24 }}>
-                          {isLoading ? 'Carregando...' : 'Ninguém ausente hoje.'}
-                        </td></tr>
-                      )}
-                    </tbody>
-                  </table>
-                </>
-              ) : dayLoading ? (
-                <div style={{ color: 'var(--mg-muted)', fontSize: 13, padding: '16px 0' }}>Carregando...</div>
-              ) : dayError ? (
-                <div style={{ color: 'var(--mg-red)', fontSize: 13, padding: '16px 0' }}>Erro ao carregar registros. Tente recarregar a página.</div>
-              ) : (
+            {listView === 'ausentes' ? (
+              <>
+                {!isToday && (
+                  <div style={{ color: 'var(--mg-muted)', fontSize: 12, marginBottom: 8 }}>
+                    A lista de ausentes só está disponível para hoje.
+                  </div>
+                )}
                 <table className="table" style={{ marginTop: 12 }}>
                   <thead>
                     <tr>
                       <th>Funcionário</th>
-                      <th>Horário</th>
-                      <th>Tipo</th>
-                      <th>Local</th>
-                      <th>Status</th>
+                      <th>Cargo</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {(dayLogs ?? []).map(log => {
-                      const emp = employeeMap[log.employee_id]
+                    {(summary?.absent_employee_ids ?? []).map(id => {
+                      const emp = employeeMap[id]
                       return (
-                        <tr key={log.id}>
+                        <tr key={id}>
                           <td>
                             <div className="employee-cell">
                               <Avatar name={emp?.name ?? '?'} />
-                              <span>{emp?.name ?? log.employee_id}</span>
+                              <span>{emp?.name ?? 'Funcionário removido'}</span>
                             </div>
                           </td>
-                          <td style={{ color: 'var(--mg-muted)' }}>
-                            {formatTimeShort(log.created_at)}
-                          </td>
-                          <td>{TYPE_LABEL[log.type] ?? log.type}</td>
-                          <td className="loc-cell">
-                            <LocationCell address={log.address} latitude={log.latitude} longitude={log.longitude} />
-                          </td>
-                          <td><Badge variant={STATUS_VARIANT[log.status] ?? 'neutral'}>{log.status}</Badge></td>
+                          <td style={{ color: 'var(--mg-muted)' }}>{emp?.position ?? '—'}</td>
                         </tr>
                       )
                     })}
-                    {!dayLogs?.length && (
-                      <tr><td colSpan={5} style={{ color: 'var(--mg-muted)', textAlign: 'center', padding: 24 }}>Nenhum registro neste dia</td></tr>
+                    {!summary?.absent_employee_ids?.length && (
+                      <tr><td colSpan={2} style={{ color: 'var(--mg-muted)', textAlign: 'center', padding: 24 }}>
+                        {isLoading ? 'Carregando...' : 'Ninguém ausente hoje.'}
+                      </td></tr>
                     )}
                   </tbody>
                 </table>
-              )}
-            </div>
-          </>
+              </>
+            ) : dayLoading ? (
+              <div style={{ color: 'var(--mg-muted)', fontSize: 13, padding: '16px 0' }}>Carregando...</div>
+            ) : dayError ? (
+              <div style={{ color: 'var(--mg-red)', fontSize: 13, padding: '16px 0' }}>Erro ao carregar registros. Tente recarregar a página.</div>
+            ) : (
+              <table className="table" style={{ marginTop: 12 }}>
+                <thead>
+                  <tr>
+                    <th>Funcionário</th>
+                    <th>Horário</th>
+                    <th>Tipo</th>
+                    <th>Local</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(dayLogs ?? []).map(log => {
+                    const emp = employeeMap[log.employee_id]
+                    return (
+                      <tr key={log.id}>
+                        <td>
+                          <div className="employee-cell">
+                            <Avatar name={emp?.name ?? '?'} />
+                            <span>{emp?.name ?? log.employee_id}</span>
+                          </div>
+                        </td>
+                        <td style={{ color: 'var(--mg-muted)' }}>
+                          {formatTimeShort(log.created_at)}
+                        </td>
+                        <td>{TYPE_LABEL[log.type] ?? log.type}</td>
+                        <td className="loc-cell">
+                          <LocationCell address={log.address} latitude={log.latitude} longitude={log.longitude} />
+                        </td>
+                        <td><Badge variant={STATUS_VARIANT[log.status] ?? 'neutral'}>{log.status}</Badge></td>
+                      </tr>
+                    )
+                  })}
+                  {!dayLogs?.length && (
+                    <tr><td colSpan={5} style={{ color: 'var(--mg-muted)', textAlign: 'center', padding: 24 }}>Nenhum registro neste dia</td></tr>
+                  )}
+                </tbody>
+              </table>
+            )}
+          </div>
         ) : (
           <div className="kpi-detail">{renderDetail()}</div>
         )}

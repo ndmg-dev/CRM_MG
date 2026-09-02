@@ -22,12 +22,17 @@ interface Props {
   active?: boolean
   /** Ponto verde ao lado do rótulo — dado que se atualiza sozinho. */
   live?: boolean
+  /**
+   * Par de setas (verde ↑ / vermelha ↓) ao lado do rótulo — o cartão abre uma
+   * tabela ordenável, e o dado tem lado bom e lado ruim.
+   */
+  rank?: boolean
   /** Id do painel que esta aba controla, para aria-controls. */
   controls?: string
 }
 
 export default function MetricCard({
-  icon, tone, label, value, valueTone, sub, onSelect, active, live, controls,
+  icon, tone, label, value, valueTone, sub, onSelect, active, live, rank, controls,
 }: Props) {
   const body = (
     <>
@@ -35,6 +40,12 @@ export default function MetricCard({
       <div className="kpi-label">
         {label}
         {live && <span className="kpi-live" aria-hidden="true" />}
+        {rank && (
+          <span className="kpi-rank" aria-hidden="true">
+            <span className="kpi-rank-up">▲</span>
+            <span className="kpi-rank-down">▼</span>
+          </span>
+        )}
       </div>
       <div className={`kpi-value${valueTone ? ` tone-${valueTone}` : ''}`}>{value}</div>
       {sub && <div className="kpi-sub">{sub}</div>}
