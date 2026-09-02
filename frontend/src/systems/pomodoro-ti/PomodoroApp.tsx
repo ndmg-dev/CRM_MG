@@ -34,6 +34,20 @@ export default function PomodoroApp() {
 
   useEffect(() => { store.init() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // O relógio do setor sempre conta certinho no back (e no widget flutuante)
+  // mesmo com a tela aqui parada no modo Individual — só o anel grande é que
+  // fica "sem mexer" nesse caso, porque ele mostra o que `mode` manda, e
+  // ninguém trocava a aba sozinho depois de clicar em "Iniciar para todo o
+  // setor" (parecia bug: "cliquei e não começou a contar"). Troca automática
+  // pra Setor completo assim que o pomodoro do setor vira ativo — e também ao
+  // abrir a tela já com um em andamento, senão quem entra depois só vê o
+  // banner e o anel de setor precisa ser garimpado na aba errada.
+  const sectorWasActive = useRef(false)
+  useEffect(() => {
+    if (sector?.active && !sectorWasActive.current) setMode('sector')
+    sectorWasActive.current = !!sector?.active
+  }, [sector?.active])
+
   // Inputs de "Personalização" (individual) — locais até clicar Salvar.
   const [focusInput, setFocusInput] = useState(individual.focusMin)
   const [restInput, setRestInput] = useState(individual.restMin)
