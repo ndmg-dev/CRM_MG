@@ -268,6 +268,75 @@
 .rank-balance.is-up   { color: var(--kpi-ok); }
 .rank-balance.is-down { color: var(--kpi-err); }
 
+/* ── Navegador de período ───────────────────────────────────────────────
+   ‹ intervalo › ao lado do seletor Dia/Semana/Mês, com o mesmo desenho do
+   cabeçalho de Relatórios — é o mesmo gesto, então tem de parecer o mesmo
+   controle. */
+
+.rank-period {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.period-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px;
+  border-radius: var(--radius-md);
+  background: var(--mg-bg2);
+  border: 0.5px solid var(--surface-hair);
+}
+
+.period-nav-arrow {
+  border: none;
+  background: transparent;
+  color: var(--mg-muted);
+  font-size: 14px;
+  line-height: 1;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.period-nav-arrow:hover:not(:disabled) { background: var(--mg-gold-dim); color: var(--mg-gold); }
+.period-nav-arrow:focus-visible { outline: 2px solid var(--mg-gold); outline-offset: 1px; }
+/* Fim do intervalo disponível: continua ocupando o lugar para o rótulo do
+   meio não pular de posição ao chegar no período corrente. */
+.period-nav-arrow:disabled { opacity: 0.35; cursor: default; }
+
+.period-nav-label {
+  min-width: 118px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--mg-white);
+  font-variant-numeric: tabular-nums;
+}
+
+.period-nav-input {
+  min-width: 118px;
+  border: none;
+  background: transparent;
+  color: var(--mg-white);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  padding: 0 4px;
+}
+.period-nav-input:focus-visible { outline: 2px solid var(--mg-gold); outline-offset: 1px; border-radius: 2px; }
+/* O ícone nativo do campo é escuro sobre fundo escuro. */
+.period-nav-input::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.5;
+  cursor: pointer;
+}
+.period-nav-input::-webkit-calendar-picker-indicator:hover { opacity: 1; }
+
 /* ── Área de detalhe das abas ──────────────────────────────────────────── */
 
 .kpi-detail-area {
