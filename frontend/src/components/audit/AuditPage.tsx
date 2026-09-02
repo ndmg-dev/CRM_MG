@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Activity, Users, Clock, Monitor, Eye, ChevronDown,
   LogIn, LogOut, Globe, Smartphone, Shield, Trophy
@@ -63,10 +63,19 @@ function getBrowserName(userAgent?: string): string {
 
 // ─── Overview Tab ────────────────────────────────────────────────────────────
 function OverviewTab() {
+  const queryClient = useQueryClient()
   const { data: activeSessions = [], isLoading: loadingSessions } = useQuery({
     queryKey: ['sessions-ativas'],
     queryFn: () => api.sessoes.getAtivas(),
     refetchInterval: 30_000, // Refresh every 30s
+  })
+
+  // Mata a sessão de longe — o dono cai pra tela de login na próxima request
+  // dele (get_current_user rejeita ativa=false), sem precisar desativar a
+  // conta inteira.
+  const encerrarSessao = useMutation({
+    mutationFn: (sessionId: string) => api.sessoes.encerrar(sessionId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['sessions-ativas'] }),
   })
 
   const { data: auditLogs } = useQuery({
@@ -166,6 +175,20 @@ function OverviewTab() {
                   <p className="text-xs text-text-secondary">{timeAgo(session.ultimaAtividade)}</p>
                   <p className="text-[10px] text-text-muted">desde {formatDateTime(session.inicio)}</p>
                 </div>
+
+                <button
+                  type="button"
+                  title="Encerrar esta sessão"
+                  disabled={encerrarSessao.isPending}
+                  onClick={() => {
+                    if (confirm(`Encerrar a sessão de ${session.usuarioNome}? A pessoa vai precisar fazer login de novo.`)) {
+                      encerrarSessao.mutate(session.id)
+                    }
+                  }}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-text-muted transition-colors hover:bg-error/10 hover:text-error disabled:opacity-50"
+                >
+                  <LogOut className="h-4 w-4" />
+                </button>
               </div>
             ))}
           </div>

@@ -1,12 +1,12 @@
 from typing import Optional
 from uuid import UUID
 from datetime import datetime, timedelta
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
 
 from app.db.session import get_db
-from app.core.security import get_current_user, require_roles
+from app.core.security import get_current_user, get_current_session, require_roles
 from app.models.user import Usuario
 from app.models.user_session import UserSession
 from app.schemas.audit import UserSessionResponse, UserSessionActiveResponse
@@ -20,6 +20,7 @@ async def heartbeat(
     request: Request,
     db: AsyncSession = Depends(get_db),
     current_user: Usuario = Depends(get_current_user),
+    session: Optional[UserSession] = Depends(get_current_session),
 ):
     forwarded_for = request.headers.get("x-forwarded-for")
     real_ip = request.headers.get("x-real-ip")
@@ -31,31 +32,52 @@ async def heartbeat(
         ip_address = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent", "")[:512]
 
-    # Find an active session for this user
-    result = await db.execute(
-        select(UserSession)
-        .where(
-            and_(
-                UserSession.usuario_id == current_user.id,
-                UserSession.ativa == True,
+    # A sessão do próprio token (criada no login, ver auth.py) é a que
+    # recebe o heartbeat — antes disso existir, o heartbeat "adivinhava"
+    # pegando a sessão mais recente do usuário, o que confundia presença
+    # entre abas/dispositivos diferentes logados ao mesmo tempo. Só cai no
+    # find-or-create de antes pra token legado sem `jti` (ver
+    # get_current_session), até ele expirar sozinho.
+    if session is None:
+        result = await db.execute(
+            select(UserSession)
+            .where(
+                and_(
+                    UserSession.usuario_id == current_user.id,
+                    UserSession.ativa == True,
+                )
             )
+            .order_by(UserSession.inicio.desc())
+            .limit(1)
         )
-        .order_by(UserSession.inicio.desc())
-        .limit(1)
-    )
-    session = result.scalar_one_or_none()
+        session = result.scalar_one_or_none()
+        if session is None:
+            session = UserSession(usuario_id=current_user.id)
+            db.add(session)
 
-    if session:
-        session.ultima_atividade = datetime.utcnow()
-        session.ip_address = ip_address
-    else:
-        session = UserSession(
-            usuario_id=current_user.id,
-            ip_address=ip_address,
-            user_agent=user_agent,
-        )
-        db.add(session)
+    session.ultima_atividade = datetime.utcnow()
+    session.ip_address = ip_address
+    if not session.user_agent:
+        session.user_agent = user_agent
 
+    await db.commit()
+    return {"ok": True}
+
+
+@router.put("/{session_id}/encerrar")
+async def encerrar_sessao(
+    session_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(require_roles(["ADMIN"])),
+):
+    """Mata uma sessão específica de longe — o dono dela leva 401 na próxima
+    request/heartbeat (get_current_user rejeita `ativa=False`) e cai pra tela
+    de login, sem precisar desativar a conta inteira dele."""
+    session = await db.scalar(select(UserSession).where(UserSession.id == session_id))
+    if not session:
+        raise HTTPException(status_code=404, detail="Sessão não encontrada")
+    session.ativa = False
+    session.fim = datetime.utcnow()
     await db.commit()
     return {"ok": True}
 

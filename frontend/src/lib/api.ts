@@ -117,6 +117,10 @@ const realApi = {
         body: JSON.stringify({ idToken }),
       }),
     me: () => request<Usuario>('/auth/me'),
+    // Revoga a sessão no backend (ver auth.py) — sem isso, um token
+    // "esquecido" continuava valendo até expirar sozinho (até 24h) mesmo
+    // depois de clicar Sair.
+    logout: () => request<void>('/auth/logout', { method: 'POST' }),
   },
 
   usuarios: {
@@ -257,6 +261,8 @@ const realApi = {
       }
       return request<PaginatedResponse<UserSession>>(`/sessoes/historico?${params}`)
     },
+    encerrar: (id: string) =>
+      request<void>(`/sessoes/${id}/encerrar`, { method: 'PUT' }),
   },
 
   tracking: {
