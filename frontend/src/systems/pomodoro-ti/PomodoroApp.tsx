@@ -98,9 +98,18 @@ export default function PomodoroApp() {
   const sessionStarted = active.timeLeft < totalSec || active.cycle > 1
   const startLabel = sessionStarted && !active.running ? 'Continuar' : 'Iniciar'
 
-  const start = () => (useSector ? undefined : store.startIndividual())
-  const pause = () => (useSector ? undefined : store.pauseIndividual())
-  const reset = () => (useSector ? undefined : store.resetIndividual())
+  // No modo Setor o botão principal era um no-op (só existia de verdade no
+  // card "Iniciar pomodoro para todo o setor" lá embaixo) — parecia bugado:
+  // líder clicava Iniciar aqui em cima e nada acontecia. Agora os dois
+  // controles fazem a mesma coisa, usando os mesmos inputs do card. O
+  // backend não tem conceito de "pausar" pro setor (só ativo/inativo), então
+  // Pausar e Reiniciar aqui em cima encerram pra todo mundo — igual ao botão
+  // "Encerrar para o setor".
+  const start = () => (useSector
+    ? store.startSector({ focusMin: sectorFocusInput, restMin: sectorRestInput, cyclesTotal: sectorCyclesInput })
+    : store.startIndividual())
+  const pause = () => (useSector ? store.stopSector() : store.pauseIndividual())
+  const reset = () => (useSector ? store.stopSector() : store.resetIndividual())
 
   return (
     <div className="flex min-h-full justify-center bg-background px-6 py-8 font-sans text-text-primary lg:px-10">
