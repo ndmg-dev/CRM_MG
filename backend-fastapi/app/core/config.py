@@ -18,7 +18,14 @@ class Settings(BaseSettings):
     
     # JWT & Auth
     JWT_SECRET: str
-    JWT_EXPIRATION_SECONDS: int = 604800  # 7 dias
+    # Era 7 dias (604800s). Sem revogação por sessão (user_sessions hoje é só
+    # heartbeat de presença, não fecha nunca — ver achado da varredura de
+    # segurança), um token vazado ficava válido por até uma semana; a única
+    # forma de matá-lo era desativar a conta inteira do usuário. 24h reduz
+    # bastante essa janela sem mudar login/arquitetura; revogação de verdade
+    # (jti + sessão criada no login + checagem por request) fica pra uma
+    # mudança maior, decidida com calma.
+    JWT_EXPIRATION_SECONDS: int = 86400  # 24 horas
     GOOGLE_CLIENT_ID: str = ""
     # Restrição de acesso ao login Google. O default preserva o comportamento
     # que antes era hardcoded no auth_service; e-mails avulsos de fora do

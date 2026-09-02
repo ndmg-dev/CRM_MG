@@ -197,6 +197,11 @@ export async function establishUnifiedSession(googleIdToken: string): Promise<Au
 export async function endUnifiedSession(): Promise<void> {
   try {
     await Promise.allSettled([
+      // Revoga a sessão no backend do CRM (ver auth.py) — precisa rodar
+      // ANTES do useAuthStore.getState().logout() no finally, que é quem
+      // apaga o crm_token do localStorage que essa chamada usa pra se
+      // autenticar.
+      api.auth.logout(),
       isSupportSupabaseConfigured
         ? supabase.auth.signOut({ scope: 'local' })
         : Promise.resolve(),
