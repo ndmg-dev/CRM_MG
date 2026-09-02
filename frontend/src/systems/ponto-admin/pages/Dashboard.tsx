@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTodaySummary, useTimeLogs } from '../hooks/useTimeLogs'
 import { useEmployees } from '../hooks/useEmployees'
+import { useSummaryReportRange } from '../hooks/useReports'
 import Avatar from '../components/Avatar'
 import Badge from '../components/Badge'
 import LocationsBarChart from '../components/dashboard/LocationsBarChart'
@@ -57,6 +58,31 @@ type KpiId = 'presentes' | 'ausentes' | 'pontos' | 'revisao' | 'ocorrencia' | 'p
 
 const DETAIL_PANEL_ID = 'kpi-detail-panel'
 
+/**
+ * Do dia 1 do mês até ONTEM — janela do contador de saldo em dia.
+ *
+ * O dia corrente fica de fora de propósito: o backend cobra a jornada inteira
+ * do dia em curso (8h contra um dia que mal começou), então incluí-lo jogaria
+ * o time inteiro para o déficit durante toda a manhã.
+ *
+ * No dia 1 não existe janela — `date_from` cairia no mês anterior e a API
+ * responde 422 — então devolve null e o cartão mostra "—".
+ */
+function monthToYesterday(): { from: string; to: string } | null {
+  const today = new Date(`${todayInputDate()}T00:00:00`)
+  if (today.getDate() === 1) return null
+
+  const first = new Date(today)
+  first.setDate(1)
+  const yesterday = new Date(today)
+  yesterday.setDate(today.getDate() - 1)
+
+  return {
+    from: first.toLocaleDateString('en-CA'),
+    to: yesterday.toLocaleDateString('en-CA'),
+  }
+}
+
 export default function Dashboard() {
   const { data: summary, isLoading, isError } = useTodaySummary()
   const { data: employees } = useEmployees()
@@ -84,6 +110,21 @@ export default function Dashboard() {
   const alertTone = (value?: number) => (isError ? 'err' : (value ?? 0) > 0 ? 'gold' : undefined)
 
   const listsLoading = isLoading || !employees
+
+  // "Em dia" = saldo zerado ou positivo no mês até ontem. O denominador é o
+  // total de ativos (o backend devolve todos, inclusive quem não bateu ponto),
+  // porque "14" sozinho não diz nada sem o tamanho do time.
+  const balanceRange = useMemo(monthToYesterday, [])
+  const { data: balanceRows, isLoading: balanceLoading, isError: balanceError } =
+    useSummaryReportRange(
+      balanceRange?.from ?? '', balanceRange?.to ?? '', 'team',
+      undefined, undefined, !!balanceRange,
+    )
+
+  const onTrack = balanceRange === null ? '—'
+    : balanceError ? '!'
+    : balanceLoading || !balanceRows ? '…'
+    : `${balanceRows.filter(r => r.balance >= 0).length}/${balanceRows.length}`
 
   // Detalhe da aba corrente. "Ranking" e "Presentes hoje" são os únicos que não
   // usam o container de detalhe: cada um é um painel `.card` inteiro.
@@ -149,6 +190,7 @@ export default function Dashboard() {
           value={stat(summary?.present_today)}
           valueTone={isError ? 'err' : 'ok'}
           sub="Bateram entrada hoje"
+          live
           active={activeKpi === 'presentes'}
           onSelect={() => setActiveKpi('presentes')}
           controls={DETAIL_PANEL_ID}
@@ -166,9 +208,9 @@ export default function Dashboard() {
         <MetricCard
           icon={<BarChartIcon />} tone="gold"
           label="Ranking"
-          value={stat(summary?.punches_today)}
-          sub="Batidas no total"
-          live
+          value={onTrack}
+          sub="Com saldo em dia no mês, até ontem"
+          rank
           active={activeKpi === 'pontos'}
           onSelect={() => setActiveKpi('pontos')}
           controls={DETAIL_PANEL_ID}
