@@ -7,6 +7,7 @@ from sqlalchemy import select
 from app.db.session import get_db
 from app.core.security import get_current_user
 from app.models.user import Usuario
+from app.models.sector import Setor
 from app.models.pomodoro import PomodoroPreferencia, PomodoroSetorEstado
 from app.schemas.pomodoro import (
     PomodoroPreferenciaResponse,
@@ -26,6 +27,20 @@ PERFIS_LIDER = {"ADMIN", "COORDENADOR"}
 
 def _pode_liderar(user: Usuario, setor: str) -> bool:
     return user.perfil in PERFIS_LIDER and (user.perfil == "ADMIN" or user.setor == setor)
+
+
+async def _validar_setor(db: AsyncSession, setor: str) -> str:
+    """Confere que `setor` é um código real da tabela `setores` — sem isso,
+    qualquer `?setor=` (autenticado, mas não necessariamente admin) criava
+    silenciosamente uma linha nova em pomodoro_setor_estado pra um setor
+    inexistente (achado na varredura de segurança; não dava acesso indevido
+    a nada porque `_pode_liderar` continua checando setor real, mas poluía a
+    tabela com registros órfãos)."""
+    codigo = setor.strip().upper()
+    existe = await db.scalar(select(Setor).where(Setor.codigo == codigo))
+    if not existe:
+        raise HTTPException(status_code=400, detail=f"Setor '{codigo}' não existe")
+    return codigo
 
 
 # ---------------------------------------------------------------------------
@@ -113,6 +128,7 @@ async def get_setor(
     db: AsyncSession = Depends(get_db),
     current_user: Usuario = Depends(get_current_user),
 ):
+    setor = await _validar_setor(db, setor)
     estado = await db.scalar(select(PomodoroSetorEstado).where(PomodoroSetorEstado.setor == setor))
     if estado is None:
         estado = PomodoroSetorEstado(setor=setor, active=False)
@@ -169,6 +185,7 @@ async def iniciar_setor(
     db: AsyncSession = Depends(get_db),
     current_user: Usuario = Depends(get_current_user),
 ):
+    setor = await _validar_setor(db, setor)
     if not _pode_liderar(current_user, setor):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -197,6 +214,7 @@ async def encerrar_setor(
     db: AsyncSession = Depends(get_db),
     current_user: Usuario = Depends(get_current_user),
 ):
+    setor = await _validar_setor(db, setor)
     if not _pode_liderar(current_user, setor):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
