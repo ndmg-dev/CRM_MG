@@ -10,10 +10,13 @@ from datetime import datetime, timezone
 # testes não usam auth nem banco — só um valor qualquer pra o import passar.
 os.environ.setdefault("JWT_SECRET", "test-only")
 
+from datetime import timedelta  # noqa: E402
+
 from app.api.v1.endpoints.vps_monitor import (  # noqa: E402
     _compute_insights,
     _downsample,
     _mb_to_bytes,
+    _metrics_params,
     _newest_backup,
     _series_to_recharts,
     _snapshot_view,
@@ -27,6 +30,14 @@ def test_mb_to_bytes_handles_zero_and_none():
     assert _mb_to_bytes(None) is None
     assert _mb_to_bytes(0) == 0  # plano ilimitado != "sem dado"
     assert _mb_to_bytes(16384) == 16384 * 1024 * 1024
+
+
+def test_metrics_params_truncates_to_minute_for_cache_stability():
+    a = _metrics_params(timedelta(hours=24), datetime(2026, 9, 8, 12, 30, 17, 900000, tzinfo=timezone.utc))
+    b = _metrics_params(timedelta(hours=24), datetime(2026, 9, 8, 12, 30, 59, tzinfo=timezone.utc))
+    assert a == b  # mesma janela → mesma chave de cache → o TTLCache acerta
+    assert a["date_to"] == "2026-09-08T12:30:00Z"
+    assert a["date_from"] == "2026-09-07T12:30:00Z"
 
 
 def test_series_alignment_and_missing_metrics():

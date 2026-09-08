@@ -25,7 +25,6 @@ from __future__ import annotations
 import asyncio
 import calendar
 import logging
-from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -52,8 +51,17 @@ _error_cache: TTLCache[str, HTTPException] = TTLCache(maxsize=64, ttl=10)
 # Um lock POR CHAVE: chaves distintas resolvem em paralelo (o asyncio.gather
 # do /overview realmente concorre); a mesma chave é deduplicada (o 2º a
 # chegar espera e pega o cache quente). O lock NUNCA envolve o I/O de chaves
-# diferentes — era esse o gargalo da 1ª versão.
-_key_locks: dict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
+# diferentes — era esse o gargalo da 1ª versão. TTLCache pra não vazar locks:
+# um lock ocioso >2min é descartado (nenhum fetch dura tanto — o timeout é 15s).
+_key_locks: TTLCache[str, asyncio.Lock] = TTLCache(maxsize=256, ttl=120)
+
+
+def _lock_for(key: str) -> asyncio.Lock:
+    lock = _key_locks.get(key)
+    if lock is None:
+        lock = asyncio.Lock()
+        _key_locks[key] = lock
+    return lock
 
 _RANGES = {
     "24h": timedelta(hours=24),
@@ -74,6 +82,21 @@ def _cache_key(path: str, params: dict[str, Any] | None) -> str:
     return path + "?" + "&".join(f"{k}={v}" for k, v in sorted((params or {}).items()))
 
 
+def _metrics_params(delta: timedelta, now: datetime) -> dict[str, str]:
+    """Janela date_from/date_to pra /metrics.
+
+    `now` é truncado ao minuto: sem isso, cada request gera um date_to
+    diferente (precisão de segundo) → a chave de cache muda toda vez e o
+    TTLCache NUNCA acerta pra /metrics e /overview. A amostragem da Hostinger
+    é de minutos, então perder até 59s de recência não custa nada.
+    """
+    now = now.replace(second=0, microsecond=0)
+    return {
+        "date_from": (now - delta).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "date_to": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+    }
+
+
 async def _hostinger_get(path: str, params: dict[str, Any] | None = None) -> Any:
     """GET na Hostinger API com cache TTL (positivo e negativo) e token server-side.
 
@@ -89,7 +112,7 @@ async def _hostinger_get(path: str, params: dict[str, Any] | None = None) -> Any
     if key in _cache:
         return _cache[key]
 
-    async with _key_locks[key]:
+    async with _lock_for(key):
         # Re-checa dentro do lock: outra corrotina pode ter preenchido.
         if key in _cache:
             return _cache[key]
@@ -388,12 +411,7 @@ async def get_metrics(
     _: Usuario = _ti_user,
 ) -> Any:
     """Série temporal já no formato do recharts, para a janela pedida."""
-    delta = _RANGES[range]
-    now = datetime.now(tz=timezone.utc)
-    params = {
-        "date_from": (now - delta).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "date_to": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
-    }
+    params = _metrics_params(_RANGES[range], datetime.now(tz=timezone.utc))
     raw_metrics, vm = await asyncio.gather(
         _hostinger_get(_vm_path("/metrics"), params),
         _get_vm(),
@@ -450,11 +468,7 @@ async def get_monarx(_: Usuario = _ti_user) -> Any:
 
 
 async def _overview_sources(hours: int) -> tuple[Any, ...]:
-    now = datetime.now(tz=timezone.utc)
-    params = {
-        "date_from": (now - timedelta(hours=hours)).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "date_to": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
-    }
+    params = _metrics_params(timedelta(hours=hours), datetime.now(tz=timezone.utc))
     return await asyncio.gather(
         _hostinger_get("/virtual-machines"),
         _hostinger_get(_vm_path("/metrics"), params),
