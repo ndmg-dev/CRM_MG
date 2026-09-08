@@ -12,7 +12,11 @@
 import type {
   ActionsResponse,
   BackupsResponse,
+  ContainersResponse,
+  DeploysResponse,
+  DiskInfo,
   FirewallResponse,
+  HostInfo,
   InsightsResponse,
   MetricsResponse,
   Monarx,
@@ -78,4 +82,9 @@ export const vpsApi = {
   actions: (page = 1) => vpsFetch<ActionsResponse>(`/actions?page=${page}`),
   firewall: () => vpsFetch<FirewallResponse>('/firewall'),
   monarx: () => vpsFetch<Monarx>('/monarx'),
+  // Fase 2
+  host: () => vpsFetch<HostInfo>('/host'),
+  containers: () => vpsFetch<ContainersResponse>('/containers'),
+  disk: () => vpsFetch<DiskInfo>('/disk'),
+  deploys: () => vpsFetch<DeploysResponse>('/deploys'),
 }

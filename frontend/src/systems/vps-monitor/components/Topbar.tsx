@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, LineChart, Network, Camera, ScrollText, ShieldAlert } from 'lucide-react'
+import { LayoutDashboard, LineChart, Boxes, HardDrive, Network, Camera, ScrollText, ShieldAlert } from 'lucide-react'
 import { useNativeSystemPath } from '@/hooks/useNativeSystemBase'
 
 // Portalizado pro Header do CRM (#system-menu-slot), mesmo padrão do
@@ -10,6 +10,8 @@ import { useNativeSystemPath } from '@/hooks/useNativeSystemBase'
 const LINKS = [
   { to: '.', label: 'Visão Geral', icon: LayoutDashboard, end: true },
   { to: 'historico', label: 'Histórico', icon: LineChart, end: false },
+  { to: 'containers', label: 'Containers & Deploys', icon: Boxes, end: false },
+  { to: 'disco', label: 'Disco', icon: HardDrive, end: false },
   { to: 'rede', label: 'Rede & Firewall', icon: Network, end: false },
   { to: 'backups', label: 'Snapshots & Backups', icon: Camera, end: false },
   { to: 'acoes', label: 'Ações & Auditoria', icon: ScrollText, end: false },

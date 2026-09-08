@@ -3,6 +3,8 @@ import { useNativeSystemBase } from '@/hooks/useNativeSystemBase'
 import { Topbar } from './components/Topbar'
 import Overview from './pages/Overview'
 import Historico from './pages/Historico'
+import Containers from './pages/Containers'
+import Disco from './pages/Disco'
 import RedeFirewall from './pages/RedeFirewall'
 import SnapshotsBackups from './pages/SnapshotsBackups'
 import AcoesAuditoria from './pages/AcoesAuditoria'
@@ -29,6 +31,8 @@ export default function VpsMonitorApp() {
         <Routes>
           <Route index element={<Overview />} />
           <Route path="historico" element={<Historico />} />
+          <Route path="containers" element={<Containers />} />
+          <Route path="disco" element={<Disco />} />
           <Route path="rede" element={<RedeFirewall />} />
           <Route path="backups" element={<SnapshotsBackups />} />
           <Route path="acoes" element={<AcoesAuditoria />} />

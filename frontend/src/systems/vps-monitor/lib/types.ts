@@ -113,6 +113,89 @@ export interface Monarx {
   scan_ended_at: string | null
 }
 
+// --- Fase 2: coletores (cadvisor / node-exporter / docker-socket-proxy) ---
+
+export interface HostInfo {
+  loadAvg: { '1m': number | null; '5m': number | null; '15m': number | null }
+  cpuCount: number | null
+  memory: { totalBytes: number | null; usedBytes: number | null; pct: number | null }
+  disk: { totalBytes: number | null; usedBytes: number | null; pct: number | null; inodesPct: number | null }
+  uptimeSeconds: number | null
+}
+
+export interface ContainerRow {
+  name: string
+  image: string | null
+  state: string | null
+  status: string | null
+  createdEpoch: number | null
+  cpuPct: number | null
+  memBytes: number | null
+  memLimitBytes: number | null
+  memPct: number | null
+  project: string | null
+  service: string | null
+  resource: string | null
+}
+
+export interface ContainersResponse {
+  generatedAt: number
+  hasCpuRates: boolean
+  counts: { total: number; running: number; stopped: number; unhealthy: number }
+  containers: ContainerRow[]
+}
+
+interface DiskBucket {
+  count: number
+  sizeBytes: number
+  reclaimableBytes?: number
+  dangling?: number
+}
+
+export interface DiskInfo {
+  filesystem: { totalBytes: number | null; usedBytes: number | null; availBytes: number | null; pct: number | null }
+  docker: {
+    totalBytes: number
+    reclaimableBytes: number
+    images: DiskBucket
+    containers: DiskBucket
+    volumes: DiskBucket
+    buildCache: DiskBucket
+  }
+}
+
+// --- Fase 2: Coolify ---
+
+export interface CoolifyApp {
+  uuid: string | null
+  name: string | null
+  status: string | null
+  fqdn: string | null
+  gitRepository: string | null
+  gitBranch: string | null
+  lastOnlineAt: string | null
+  updatedAt: string | null
+}
+
+export interface CoolifyDeployment {
+  uuid: string | null
+  application: string | null
+  applicationUuid: string | null
+  status: string | null
+  commit: string | null
+  commitMessage: string | null
+  isWebhook: boolean | null
+  createdAt: string | null
+  finishedAt: string | null
+}
+
+export interface DeploysResponse {
+  running: CoolifyDeployment[]
+  applications: CoolifyApp[]
+  services: { uuid: string | null; name: string | null; status: string | null }[]
+  counts: { deploying: number; applications: number; appsDegraded: number; servicesDegraded: number }
+}
+
 export type InsightSeverity = 'critical' | 'warning' | 'info'
 
 export interface Insight {
