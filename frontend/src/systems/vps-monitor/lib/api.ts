@@ -10,6 +10,8 @@
 //    não custa nada garantir que o navegador não sirva resposta velha.
 
 import type {
+  ActionCatalogItem,
+  ActionRunResult,
   ActionsResponse,
   BackupsResponse,
   ContainersResponse,
@@ -84,6 +86,14 @@ export const vpsApi = {
   snapshot: () => vpsFetch<SnapshotView>('/snapshot'),
   backups: () => vpsFetch<BackupsResponse>('/backups'),
   actions: (page = 1) => vpsFetch<ActionsResponse>(`/actions?page=${page}`),
+  // Fase 4 — ações de escrita (ADMIN only no backend)
+  actionCatalog: () => vpsFetch<{ actions: ActionCatalogItem[] }>('/action-catalog'),
+  runAction: (key: string, body: { confirm: string; backup_id?: number; root_password?: string }) =>
+    vpsFetch<ActionRunResult>(`/actions/${encodeURIComponent(key)}/run`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }),
   firewall: () => vpsFetch<FirewallResponse>('/firewall'),
   monarx: () => vpsFetch<Monarx>('/monarx'),
   // Fase 2
