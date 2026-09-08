@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { vpsApi, vpsQueryOptions } from '../lib/api'
 import { fmtBytes, fmtDateTime, fmtRelative } from '../lib/format'
-import { Badge, Card, Empty, ErrorMsg, Loading } from '../components/ui'
+import { Badge, Card, Empty, ErrorMsg, Freshness, Loading } from '../components/ui'
 
 function restoreLabel(seconds: number): string {
   const min = Math.round(seconds / 60)
@@ -20,7 +20,10 @@ export default function SnapshotsBackups() {
 
   return (
     <>
-      <h2 className="vm-page-title">Snapshots &amp; Backups</h2>
+      <div className="vm-toolbar">
+        <h2 className="vm-page-title">Snapshots &amp; Backups</h2>
+        <Freshness updatedAt={bkpQ.dataUpdatedAt} fetching={snapQ.isFetching || bkpQ.isFetching} />
+      </div>
       <p className="vm-page-sub">Somente leitura. Criar/restaurar entra na Fase 4 (admin-only + confirmação digitada).</p>
 
       <div className="vm-note">

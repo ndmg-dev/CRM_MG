@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { vpsApi, vpsQueryOptions } from '../lib/api'
 import { fmtBytes, fmtPct } from '../lib/format'
 import { MetricChart } from '../components/MetricChart'
-import { ErrorMsg, Loading } from '../components/ui'
+import { ErrorMsg, Freshness, Loading } from '../components/ui'
 
 type Range = '24h' | '7d' | '30d'
 const RANGES: { key: Range; label: string }[] = [
@@ -14,7 +14,7 @@ const RANGES: { key: Range; label: string }[] = [
 
 export default function Historico() {
   const [range, setRange] = useState<Range>('24h')
-  const { data, isLoading, error, isFetching } = useQuery({
+  const { data, isLoading, error, isFetching, dataUpdatedAt } = useQuery({
     queryKey: ['vps', 'metrics', range],
     queryFn: () => vpsApi.metrics(range),
     refetchInterval: 60_000,
@@ -34,9 +34,10 @@ export default function Historico() {
             </button>
           ))}
         </div>
+        <Freshness updatedAt={dataUpdatedAt} fetching={isFetching && !isLoading} />
       </div>
       <p className="vm-page-sub">
-        Janela da própria API da Hostinger (amostragem em minutos). {isFetching && !isLoading ? 'Atualizando…' : ''}
+        Janela da própria API da Hostinger (amostragem em minutos).
       </p>
 
       {isLoading ? (

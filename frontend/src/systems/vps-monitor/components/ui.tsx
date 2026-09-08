@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react'
 import { AlertTriangle, Loader2 } from 'lucide-react'
+import { fmtRelative } from '../lib/format'
+import type { InsightCounts } from '../lib/types'
 
 export function Card({ title, children, className }: { title?: string; children: ReactNode; className?: string }) {
   return (
@@ -60,4 +62,32 @@ export function ErrorMsg({ error }: { error: unknown }) {
 
 export function Empty({ children }: { children: ReactNode }) {
   return <div className="vm-state-msg">{children}</div>
+}
+
+export function SeverityPills({ counts }: { counts: InsightCounts | undefined }) {
+  const c = counts ?? { critical: 0, warning: 0, info: 0 }
+  const total = c.critical + c.warning + c.info
+  if (total === 0) {
+    return <span className="vm-sev-pill info">Tudo ok</span>
+  }
+  return (
+    <div className="vm-sev-pills">
+      {(['critical', 'warning', 'info'] as const).map((sev) => (
+        <span key={sev} className={`vm-sev-pill ${c[sev] > 0 ? sev : 'muted'}`}>
+          <span className="n">{c[sev]}</span>
+          {sev === 'critical' ? 'críticos' : sev === 'warning' ? 'atenção' : 'info'}
+        </span>
+      ))}
+    </div>
+  )
+}
+
+// Indicador de frescor — recebe o `dataUpdatedAt` do useQuery (epoch ms).
+export function Freshness({ updatedAt, fetching }: { updatedAt: number | undefined; fetching?: boolean }) {
+  if (!updatedAt || !Number.isFinite(updatedAt)) return null
+  return (
+    <span className="vm-metric-label" style={{ marginLeft: 'auto', alignSelf: 'center' }}>
+      {fetching ? 'atualizando…' : `atualizado ${fmtRelative(new Date(updatedAt).toISOString())}`}
+    </span>
+  )
 }

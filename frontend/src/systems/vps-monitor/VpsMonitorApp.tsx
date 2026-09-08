@@ -6,6 +6,7 @@ import Historico from './pages/Historico'
 import RedeFirewall from './pages/RedeFirewall'
 import SnapshotsBackups from './pages/SnapshotsBackups'
 import AcoesAuditoria from './pages/AcoesAuditoria'
+import Insights from './pages/Insights'
 
 import './styles/vps-monitor.css'
 
@@ -31,6 +32,7 @@ export default function VpsMonitorApp() {
           <Route path="rede" element={<RedeFirewall />} />
           <Route path="backups" element={<SnapshotsBackups />} />
           <Route path="acoes" element={<AcoesAuditoria />} />
+          <Route path="insights" element={<Insights />} />
           <Route path="*" element={<NotFoundRedirect />} />
         </Routes>
       </main>

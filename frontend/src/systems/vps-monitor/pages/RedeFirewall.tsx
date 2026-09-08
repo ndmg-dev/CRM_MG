@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { vpsApi, vpsQueryOptions } from '../lib/api'
 import { fmtDateTime } from '../lib/format'
-import { Badge, Card, Empty, ErrorMsg, Loading } from '../components/ui'
+import { Badge, Card, Empty, ErrorMsg, Freshness, Loading } from '../components/ui'
 
 export default function RedeFirewall() {
   const vmQ = useQuery({ queryKey: ['vps', 'vm'], queryFn: vpsApi.vm, ...vpsQueryOptions })
@@ -17,7 +17,10 @@ export default function RedeFirewall() {
 
   return (
     <>
-      <h2 className="vm-page-title">Rede &amp; Firewall</h2>
+      <div className="vm-toolbar">
+        <h2 className="vm-page-title">Rede &amp; Firewall</h2>
+        <Freshness updatedAt={Math.min(vmQ.dataUpdatedAt || Infinity, fwQ.dataUpdatedAt || Infinity)} fetching={vmQ.isFetching || fwQ.isFetching} />
+      </div>
       <p className="vm-page-sub">Somente leitura. Edição de regras entra na Fase 4 (admin-only).</p>
 
       <div className="vm-grid" style={{ marginBottom: 14 }}>

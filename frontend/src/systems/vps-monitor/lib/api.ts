@@ -13,6 +13,7 @@ import type {
   ActionsResponse,
   BackupsResponse,
   FirewallResponse,
+  InsightsResponse,
   MetricsResponse,
   Monarx,
   Overview,
@@ -69,6 +70,7 @@ export const vpsQueryOptions = {
 
 export const vpsApi = {
   overview: () => vpsFetch<Overview>('/overview'),
+  insights: () => vpsFetch<InsightsResponse>('/insights'),
   vm: () => vpsFetch<Vm>('/vm'),
   metrics: (range: '24h' | '7d' | '30d') => vpsFetch<MetricsResponse>(`/metrics?range=${range}`),
   snapshot: () => vpsFetch<SnapshotView>('/snapshot'),

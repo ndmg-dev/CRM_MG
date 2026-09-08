@@ -113,6 +113,28 @@ export interface Monarx {
   scan_ended_at: string | null
 }
 
+export type InsightSeverity = 'critical' | 'warning' | 'info'
+
+export interface Insight {
+  id: string
+  severity: InsightSeverity
+  title: string
+  detail: string
+  value: string | null
+}
+
+export interface InsightCounts {
+  critical: number
+  warning: number
+  info: number
+}
+
+export interface InsightsResponse {
+  generatedAt: string
+  insights: Insight[]
+  counts: InsightCounts
+}
+
 export interface Overview {
   generatedAt: string
   vm: Vm | null
@@ -125,4 +147,5 @@ export interface Overview {
   backupsCount: number
   lastBackupAt: string | null
   monarx: Monarx | null
+  insightCounts: InsightCounts
 }
