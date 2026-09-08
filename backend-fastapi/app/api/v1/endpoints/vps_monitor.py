@@ -172,6 +172,57 @@ async def _fetch(path: str, params: dict[str, Any] | None, key: str) -> Any:
     return data
 
 
+async def hostinger_write(method: str, path: str, json: dict[str, Any] | None = None) -> Any:
+    """Chamada de ESCRITA na Hostinger (Fase 4). Sem cache; o mesmo mapeamento
+    de erro do GET. Depois de uma escrita, o cache de leitura fica obsoleto —
+    quem chama deve invocar bust_cache()."""
+    _require_configured()
+    url = f"{settings.HOSTINGER_API_URL}{path}"
+    headers = {
+        "Authorization": f"Bearer {settings.HOSTINGER_API_TOKEN}",
+        "Accept": "application/json",
+    }
+    try:
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            resp = await client.request(method, url, headers=headers, json=json)
+    except httpx.HTTPError as e:
+        logger.warning("vps-monitor: falha de rede em %s %s: %s", method, path, e)
+        raise HTTPException(status_code=502, detail="Não foi possível contatar a API da Hostinger.")
+
+    if resp.status_code == 404:
+        raise HTTPException(status_code=404, detail="Recurso não encontrado na Hostinger.")
+    if resp.status_code == 409:
+        raise HTTPException(status_code=409, detail="A VPS já tem uma ação em andamento (actions_lock).")
+    if resp.status_code == 422:
+        raise HTTPException(status_code=422, detail=_first_error(resp) or "Parâmetros inválidos para a Hostinger.")
+    if resp.status_code in (401, 403):
+        logger.error("vps-monitor: Hostinger recusou a escrita (%s) em %s", resp.status_code, path)
+        raise HTTPException(status_code=502, detail="Token da Hostinger sem permissão para esta ação.")
+    if resp.status_code >= 400:
+        logger.warning("vps-monitor: Hostinger respondeu %s em %s %s", resp.status_code, method, path)
+        raise HTTPException(status_code=502, detail=f"Hostinger respondeu {resp.status_code}.")
+
+    try:
+        return resp.json() if resp.content else {}
+    except ValueError:
+        return {}
+
+
+def _first_error(resp: httpx.Response) -> str | None:
+    try:
+        body = resp.json()
+    except ValueError:
+        return None
+    if isinstance(body, dict):
+        return body.get("message") or body.get("detail")
+    return None
+
+
+def bust_cache() -> None:
+    _cache.clear()
+    _error_cache.clear()
+
+
 def _vm_path(suffix: str = "") -> str:
     return f"/virtual-machines/{settings.HOSTINGER_VPS_ID}{suffix}"
 
