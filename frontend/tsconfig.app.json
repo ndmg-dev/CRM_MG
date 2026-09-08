@@ -36,7 +36,8 @@
       "@taskflow/*": ["./src/systems/taskflow/*"],
       "@analyticsdp/*": ["./src/systems/analytics-dp/*"],
       "@dashrh/*": ["./src/systems/dash-rh/*"],
-      "@vpsmonitor/*": ["./src/systems/vps-monitor/*"]
+      "@vpsmonitor/*": ["./src/systems/vps-monitor/*"],
+      "@pomodoro/*": ["./src/systems/pomodoro-ti/*"]
     },
 
     /* Bundler mode */

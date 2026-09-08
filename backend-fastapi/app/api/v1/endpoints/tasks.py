@@ -14,6 +14,19 @@ from app.schemas.common import PaginatedResponse
 
 router = APIRouter()
 
+
+def _pode_gerenciar_tarefa(user: Usuario, tarefa: Tarefa) -> bool:
+    """Mesmo corte de visibilidade que já vale pra listagem (get_tarefas) —
+    faltava aplicar em update_tarefa/update_tarefa_status (achado na
+    varredura de segurança: qualquer usuário autenticado, de qualquer
+    setor/perfil, conseguia mudar o status de QUALQUER tarefa só sabendo o
+    id, e um COORDENADOR conseguia editar tarefa de outro setor)."""
+    if user.perfil == "ADMIN":
+        return True
+    if user.perfil == "COORDENADOR":
+        return tarefa.setor_origem == user.setor or tarefa.responsavel_id == user.id
+    return tarefa.responsavel_id == user.id
+
 @router.get("", response_model=PaginatedResponse[TarefaResponse])
 async def get_tarefas(
     status: Optional[str] = None,
@@ -111,7 +124,9 @@ async def update_tarefa(
     tarefa = await db.scalar(select(Tarefa).where(Tarefa.id == id))
     if not tarefa:
         raise HTTPException(status_code=404, detail="Tarefa not found")
-        
+    if not _pode_gerenciar_tarefa(current_user, tarefa):
+        raise HTTPException(status_code=403, detail="Você não tem acesso a esta tarefa")
+
     old_responsavel = tarefa.responsavel_id
         
     for field, value in tarefa_in.model_dump(exclude_unset=True).items():
@@ -140,7 +155,9 @@ async def update_tarefa_status(
     tarefa = await db.scalar(select(Tarefa).where(Tarefa.id == id))
     if not tarefa:
         raise HTTPException(status_code=404, detail="Tarefa not found")
-        
+    if not _pode_gerenciar_tarefa(current_user, tarefa):
+        raise HTTPException(status_code=403, detail="Você não tem acesso a esta tarefa")
+
     tarefa.status = status_update.novo_status
     await db.commit()
     await db.refresh(tarefa)

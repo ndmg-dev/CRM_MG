@@ -808,3 +808,1881 @@ Melhorias:
 
 - Comentário novo em `STATUS_BUTTONS` é bom, mas duplica parte da explicação já presente no bloco de `ticketStatus.ts` referenciado — ok manter curto, mas cuidado para não desalinhar os dois textos no futuro (um documenta e o outro pode ficar desatualizado se só um for editado).
 - Nada crítico de segurança ou lógica no trecho do diff em si além do ponto acima.
+
+## 2026-08-26 16:51:23 — `frontend/src/systems/ponto-admin/components/reports/MonthlyReportTab.tsx`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0063
+
+- **Bugs e Erros de Lógica:**
+  - Nenhum bug ou erro de lógica evidente foi identificado.
+
+- **Melhorias:**
+  - **Estilo Inline:** O uso extensivo de estilos inline pode dificultar a manutenção e a reutilização do código. Considere mover esses estilos para uma folha de estilos CSS ou usar uma solução de CSS-in-JS.
+  - **Acessibilidade:** Os botões de ação ("Aprovar" e "Recusar") não possuem feedback visual para indicar que estão desabilitados. Considere adicionar estilos para melhorar a acessibilidade.
+  - **Tratamento de Erros:** A mensagem de erro é exibida apenas como texto. Considere usar um componente de alerta ou notificação para melhorar a visibilidade e a experiência do usuário.
+  - **Duplicação de Estado:** A variável `detailJustification` está sendo declarada duas vezes na mesma função, o que pode causar confusão. Remova a duplicação para melhorar a clareza do código.
+
+## 2026-08-26 16:51:26 — `frontend/src/systems/ponto-admin/components/employees/PendingRegistrations.tsx`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0025
+
+- A implementação parece correta e não há bugs aparentes ou falhas de segurança.
+- A lógica para exibir a mensagem de possível duplicado está bem implementada.
+
+Sugestões de melhoria:
+- Considere extrair o estilo inline para uma classe CSS para melhorar a manutenção e a legibilidade do código.
+- Verifique se `p.similar_employee` é sempre uma string ou se pode ser outro tipo de dado, para evitar possíveis problemas de renderização.
+
+## 2026-08-26 16:51:32 — `frontend/src/systems/ponto-admin/components/MirrorTab.tsx`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0128
+
+- **Erro de Lógica**: No cálculo do saldo do dia (`dayBalance`), a função considera dias futuros como não úteis, o que pode ser incorreto se o dia futuro for um dia útil planejado. Isso pode levar a um cálculo de saldo incorreto.
+  
+- **Segurança**: No componente `RequestAdjustmentModal`, a data está sendo inicializada com a data atual, mas não há validação para garantir que a data não seja no futuro. Isso pode permitir que usuários solicitem ajustes para datas futuras, o que pode não ser desejado.
+
+- **Melhoria de Código**: A função `fmtH` e `fmtHPlain` têm lógica semelhante para formatar horas. Considere unificar a lógica para evitar duplicação de código.
+
+- **Clareza**: A função `isNonWorkDay` poderia ser renomeada para algo mais descritivo, como `isNonWorkingDay`, para melhorar a clareza do código.
+
+- **Performance**: O uso de `useMemo` não está presente no código, mas foi importado. Verifique se há necessidade de otimização de re-renderizações que poderiam se beneficiar do uso de `useMemo`.
+
+- **Acessibilidade**: O uso de `role="tooltip"` no componente `CorrectedTime` deve ser revisado para garantir que a acessibilidade seja mantida, especialmente para leitores de tela. Considere usar bibliotecas de acessibilidade para gerenciar tooltips.
+
+## 2026-08-26 16:51:33 — `frontend/src/systems/ponto-admin/pages/Justifications.tsx`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0015
+
+Sem observações.
+
+## 2026-08-26 16:51:34 — `frontend/src/systems/ponto-admin/hooks/useRegistration.ts`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0013
+
+Sem observações.
+
+## 2026-08-26 16:51:38 — `frontend/src/systems/ponto-admin/pages/Reports.tsx`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0055
+
+- **Erro de Lógica**: No cálculo do saldo, a descrição foi alterada para "Trabalhado − esperado + justificado", mas a lógica de cálculo não foi ajustada para incluir as horas justificadas. O cálculo atual ainda é `totals.wrk - totals.exp`, mas deveria ser `totals.wrk - totals.exp + totals.just`.
+  
+- **Segurança**: A função `canManage` está usando `can('corrections')` para verificar permissões. Certifique-se de que a função `can` está corretamente implementada para evitar falhas de segurança, como permissões incorretas.
+
+- **Melhoria de Clareza**: Considere adicionar comentários explicativos para as novas funcionalidades, como a inclusão de horas justificadas, para melhorar a compreensão do código.
+
+- **Consistência de Código**: Verifique se todos os ícones seguem o mesmo padrão de implementação e importação para manter a consistência no código.
+
+## 2026-08-26 16:51:41 — `frontend/src/systems/ponto-admin/hooks/useReports.ts`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0040
+
+- **Bug Potencial**: A adição de `justified_h` e `total_h` na interface `MirrorRow` e `total_justified_hours` na interface `Totals` sugere que há um novo cálculo ou lógica associada a horas justificadas. No entanto, o diff não mostra como esses novos campos são calculados ou utilizados. Isso pode levar a inconsistências se não forem devidamente inicializados ou calculados em outras partes do código.
+
+- **Melhoria de Clareza**: Certifique-se de que a lógica para calcular `justified_h` e `total_h` está implementada e documentada em outras partes do código. Isso ajudará a manter a consistência e a clareza do sistema.
+
+- **Documentação**: Atualize a documentação e comentários para refletir a adição dos novos campos e suas funções. Isso é crucial para a manutenção futura do código.
+
+- **Teste**: Adicione testes para garantir que os novos campos estão sendo calculados corretamente e que não introduzem regressões no sistema.
+
+## 2026-08-26 16:51:44 — `frontend/src/systems/ponto-admin/styles/espelho.css`
+
+**Severidade:** alta
+
+**Custo estimado:** $0.0119
+
+- O código contém conflitos de merge não resolvidos, indicados pelos marcadores `<<<<<<<`, `=======`, e `>>>>>>>`. Isso pode causar falhas no estilo do CSS, pois o navegador não conseguirá interpretar essas linhas.
+- A presença desses conflitos sugere que o código não foi testado após a tentativa de merge, o que pode levar a comportamentos inesperados na aplicação.
+
+Sugestões de melhoria:
+- Resolva os conflitos de merge antes de qualquer commit ou deploy. Certifique-se de que a versão final do arquivo CSS está correta e testada.
+- Considere adicionar verificações automáticas para detectar conflitos de merge antes de permitir commits ou builds.
+
+## 2026-08-26 16:53:19 — `frontend/src/systems/ponto-admin/components/Topbar.tsx`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0016
+
+Sem observações.
+
+## 2026-08-26 16:53:20 — `frontend/src/systems/ponto-admin/PontoAdminApp.tsx`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0022
+
+Sem observações.
+
+## 2026-08-26 16:53:26 — `frontend/src/systems/ponto-admin/PontoAdminApp.tsx`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0026
+
+Sem observações.
+
+## 2026-08-26 16:53:33 — `frontend/src/systems/ponto-admin/PontoAdminApp.tsx`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0023
+
+Sem observações.
+
+## 2026-08-26 16:54:37 — `frontend/src/systems/ponto-admin/components/reports/MonthlyReportTab.tsx`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0042
+
+Sem observações.
+
+## 2026-08-26 16:56:52 — `commit 157123b (feat/migracoes-arthur)`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0095
+
+Sem observações.
+
+## 2026-08-26 17:08:23 — `frontend/src/systems/ponto-admin/components/MirrorTab.tsx`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0069
+
+- **Remoção de Filtros**: A remoção do sistema de filtros (`filter`, `counts`, `filteredRows`) pode impactar a funcionalidade de filtragem dos registros exibidos. Se a filtragem é uma funcionalidade desejada, sua remoção pode ser considerada um bug de usabilidade.
+- **Remoção de `SummaryCard`**: A remoção do componente `SummaryCard` e sua utilização pode afetar a exibição de resumos importantes para o usuário. Se esses resumos são necessários para a compreensão dos dados, sua ausência pode ser um problema de usabilidade.
+
+Sugestões de melhoria:
+- **Documentação e Comentários**: Considere adicionar comentários para explicar a razão pela qual os filtros e o componente `SummaryCard` foram removidos, caso isso tenha sido uma decisão intencional.
+- **Verificação de Funcionalidade**: Certifique-se de que a remoção dessas funcionalidades não afeta negativamente a experiência do usuário ou os requisitos do sistema.
+
+## 2026-08-26 17:08:41 — `frontend/src/systems/ponto-admin/styles/espelho.css`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0026
+
+Sem observações.
+
+## 2026-08-26 17:08:50 — `frontend/src/systems/ponto-admin/styles/espelho.css`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0030
+
+Sem observações.
+
+## 2026-08-26 17:10:09 — `commit f6b8216 (feat/migracoes-arthur)`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0070
+
+Sem observações.
+
+## 2026-08-27 08:29:52 — `frontend/src/systems/ponto-admin/components/MirrorTab.tsx`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0017
+
+Sem observações.
+
+## 2026-08-27 08:30:31 — `commit b0c9de9 (feat/migracoes-arthur)`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0017
+
+Sem observações.
+
+## 2026-08-27 08:43:00 — `commit 0bcf24b (feat/migracoes-arthur)`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0126
+
+- **Risco de Segurança**: A documentação menciona que alguns sistemas, como o "Consulta CNPJ" e "Analytics DP", não possuem autenticação ou usam autenticação fraca. Isso pode ser um risco de segurança se esses sistemas lidarem com dados sensíveis. É importante revisar se essa decisão é realmente segura e se não há necessidade de implementar uma autenticação mais robusta.
+  
+- **Inconsistência de Nomenclatura**: O nome do sistema "TASK_MANANGER" parece conter um erro de digitação. O correto seria "TASK_MANAGER". Isso pode causar confusão e erros ao referenciar o sistema em outros lugares do código.
+
+- **Duplicação de Informação**: A documentação menciona a necessidade de verificar se um sistema já está cadastrado em `sistemas_seed.sql` e no banco de produção. Isso pode ser propenso a erros se não houver um processo automatizado para manter essas informações sincronizadas.
+
+- **Complexidade Desnecessária**: A seção sobre escopar CSS sob uma classe raiz (`.{sistema}-root`) parece complexa e propensa a erros, especialmente com a necessidade de prefixar manualmente seletores e `@keyframes`. Considerar o uso de ferramentas ou técnicas que automatizem essa tarefa pode reduzir erros e simplificar o processo.
+
+- **Falta de Detalhamento em Casos de Conflito**: A seção sobre sincronização de features menciona a necessidade de verificar alterações recentes com `git log`, mas não detalha como resolver conflitos de arquitetura além de sugerir comunicação com o usuário. Incluir exemplos ou melhores práticas para resolver tais conflitos pode ser útil.
+
+## 2026-08-27 08:44:42 — `PR #83 — docs(migracoes): atualiza handoff de continuação`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0125
+
+- **Risco de Segurança**: A seção sobre PRs que "somem sozinhos" sugere que PRs estão sendo mesclados automaticamente ou por outra pessoa/processo sem confirmação. Isso pode indicar um problema de segurança ou de configuração no fluxo de trabalho do GitHub, permitindo que PRs sejam mesclados sem revisão adequada.
+  
+- **Risco de Segurança**: A documentação menciona sistemas sem autenticação ou com autenticação "fraca". Isso pode expor dados sensíveis ou permitir acesso não autorizado. É importante revisar se essa abordagem é realmente segura e adequada para o contexto.
+
+- **Melhoria de Clareza**: A seção sobre sincronização de features menciona um problema de duplicação de código e decisões de arquitetura conflitantes. Sugiro implementar um processo de comunicação mais claro e talvez uma revisão de código mais rigorosa para evitar tais conflitos.
+
+- **Melhoria de Clareza**: A documentação é bastante detalhada, mas algumas seções são densas e podem ser difíceis de seguir. Considere dividir em subtópicos ou adicionar exemplos concretos para melhorar a compreensão.
+
+- **Melhoria de Processo**: A dependência de variáveis de ambiente `VITE_*` precisa ser melhor documentada e talvez automatizada para evitar erros repetidos. Considere criar um script ou checklist para garantir que todas as variáveis necessárias estejam configuradas corretamente.
+
+- **Melhoria de Segurança**: Para sistemas que usam `allow_origins=["*"]`, considere restringir o CORS para apenas as origens necessárias, a fim de minimizar o risco de ataques CSRF e outros problemas de segurança relacionados a CORS.
+
+## 2026-08-27 08:45:39 — `commit 5e8727d (feat/migracoes-arthur)`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0070
+
+Sem observações.
+
+## 2026-08-27 08:48:26 — `commit 45db7db (feat/migracoes-arthur)`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0077
+
+- **Risco de Segurança:** A falta de proteção na branch `main` do repositório `CRM_MG` é um risco significativo. Qualquer pessoa com acesso de escrita pode mesclar PRs sem revisão, o que pode levar a código não revisado e potencialmente inseguro sendo integrado. Isso deve ser abordado com prioridade, mesmo que seja uma decisão deliberada do time, para garantir que todos estejam cientes dos riscos.
+
+- **Risco de Segurança:** O uso de `allow_origins=["*"]` em CORS para APIs sem autenticação é um risco de segurança. Isso permite que qualquer origem acesse a API, potencialmente expondo dados ou funcionalidades que não deveriam ser acessíveis publicamente. Recomenda-se restringir as origens permitidas para apenas aquelas que são necessárias.
+
+- **Melhoria de Processo:** A recomendação de sempre confirmar o estado de um PR antes de continuar a trabalhar é boa, mas poderia ser complementada com a implementação de um processo automatizado ou uma ferramenta que notifique os desenvolvedores sobre mudanças no estado dos PRs, reduzindo a dependência de verificações manuais.
+
+- **Clareza e Documentação:** A documentação poderia ser mais clara sobre as implicações de segurança e as razões para as recomendações feitas, especialmente para desenvolvedores que podem não estar cientes dos riscos associados a práticas como `allow_origins=["*"]`.
+
+## 2026-08-27 08:49:58 — `PR #83 — docs(migracoes): atualiza handoff de continuação`
+
+**Severidade:** alta
+
+**Custo estimado:** $0.0134
+
+- **Segurança**: A falta de proteção na branch `main` do repositório `CRM_MG` é um risco significativo. Qualquer pessoa com acesso de escrita pode mesclar PRs sem revisão, o que pode introduzir código malicioso ou quebrar funcionalidades. Isso deve ser tratado com urgência, mesmo que a decisão de processo seja deliberada, pois expõe o projeto a riscos desnecessários.
+  
+- **Erro de Lógica**: A instrução para usar `useNativeSystemPath()('.')` em vez de `useNativeSystemPath()('')` precisa ser mais clara sobre o impacto de usar o caminho incorreto. Isso pode causar problemas de navegação que não são imediatamente óbvios.
+
+- **Erro de Lógica**: A seção sobre a sincronização de features menciona um problema de duplicação que foi resolvido com `git revert`/`git revert` do revert. Isso indica um processo de sincronização falho que pode ser melhorado para evitar retrabalho e conflitos.
+
+- **Erro de Lógica**: A abordagem de CSS para sistemas com sidebar vertical própria, convertendo para nav horizontal no Topbar, pode não ser adequada para todos os sistemas. Isso pode causar problemas de usabilidade e layout que não foram considerados.
+
+- **Segurança**: A decisão de manter autenticações "fracas" sem integração com o SSO do CRM pode ser aceitável em alguns casos, mas deve ser revisada regularmente para garantir que não introduza vulnerabilidades.
+
+Sugestões de melhoria:
+
+- **Clareza**: A documentação poderia ser mais clara sobre as consequências de não seguir as práticas recomendadas, especialmente em relação à proteção de branches e ao uso correto de hooks de navegação.
+
+- **Automação**: Considere automatizar a verificação de proteção de branches e a configuração de variáveis de ambiente para evitar erros humanos e garantir consistência.
+
+- **Processo**: Reavalie o processo de sincronização de features para minimizar conflitos e duplicações, possivelmente introduzindo revisões de código mais rigorosas ou ferramentas de merge automatizadas.
+
+## 2026-08-27 09:00:24 — `PR #84 — feat(central-suporte): trocar solicitante (Admin TI), corrige status preso e melhora classificacao do chat`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0115
+
+- **Risco de Segurança**: A verificação de permissão para editar o solicitante (`canEditRequester`) é feita no frontend. Isso pode ser manipulado por usuários mal-intencionados. A lógica de autorização deve ser reforçada no backend para garantir que apenas usuários com o papel "admin_ti" possam alterar o solicitante.
+  
+- **Erro de Lógica**: No método `buildTitle`, a função agora apenas concatena `categoryName` e `subcategoryName`. Se ambos forem `undefined`, o título será uma string vazia. Considere adicionar uma verificação para garantir que pelo menos um dos valores esteja presente.
+
+- **Caso de Borda Não Tratado**: No `useEffect` que reseta `isEditingRequester` ao mudar de `ticketId`, se `ticketId` for `null`, isso pode causar comportamento inesperado. Certifique-se de que `ticketId` é sempre um valor válido ou trate o caso onde ele é `null`.
+
+- **Melhoria de Clareza**: A função `normalizeCategoryName` poderia ser documentada para explicar por que a normalização é necessária e quais problemas ela resolve.
+
+- **Duplicação de Código**: A lógica para verificar se um ticket está fechado (`isTicketClosed`) e a categoria do ticket (`ticketCategory`) é usada em múltiplos lugares. Certifique-se de que essas funções são eficientes e reutilizáveis para evitar duplicação de lógica em diferentes partes do código.
+
+## 2026-08-27 09:21:12 — `frontend/vite.config.ts`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0012
+
+Sem observações.
+
+## 2026-08-27 09:21:16 — `frontend/src/systems/registry.tsx`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0014
+
+Sem observações.
+
+## 2026-08-27 09:23:48 — `frontend/src/systems/registry.tsx`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0014
+
+Sem observações.
+
+## 2026-08-27 09:26:49 — `commit b9ea49c (feat/migracoes-arthur)`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0125
+
+- **Segurança**: O uso de `localStorage` para armazenar tokens JWT pode ser um risco de segurança, pois é vulnerável a ataques XSS. Considere usar `sessionStorage` ou cookies com a flag `HttpOnly` para maior segurança.
+- **TypeScript**: O uso de `// @ts-nocheck` desativa a verificação de tipos do TypeScript, o que pode ocultar erros potenciais. É melhor resolver os erros de tipo em vez de ignorá-los.
+- **Fallback de URL**: A mensagem de aviso para a URL de fallback (`VITE_DASHRH_API_URL`) é útil, mas seria melhor lançar um erro ou falhar rapidamente se a URL não estiver configurada, para evitar comportamentos inesperados em produção.
+- **Tratamento de Erros**: No método `getConfidential`, o tratamento de erro para status 401 é específico, mas outros códigos de erro não são tratados de forma diferenciada. Considere adicionar tratamento para outros códigos de erro HTTP comuns.
+- **Performance**: O uso de `Promise.all` para chamadas simultâneas de API é bom, mas certifique-se de que todas as chamadas são independentes e não precisam ser sequenciais.
+- **Código Comentado**: Há muitos comentários no código que podem ser removidos ou reduzidos para melhorar a clareza e a legibilidade. Comentários devem ser usados para explicar o "porquê" e não o "como" do código.
+
+## 2026-08-27 09:28:32 — `commit d0a82f6 (feat/migracoes-arthur)`
+
+**Severidade:** alta
+
+**Custo estimado:** $0.0080
+
+- **Risco de Segurança**: O sistema Dash RH original não tinha autenticação, e a migração para o uso de Bearer JWT do CRM é uma melhoria significativa. No entanto, a documentação menciona que a área restrita anteriormente usava um header `X-Confidential-Auth` com senha em texto puro. É crucial garantir que não haja resquícios desse método inseguro no código atual.
+- **Risco de Segurança**: A allowlist de e-mail para a área restrita é uma boa prática, mas a documentação sugere que se a lista estiver vazia, qualquer usuário autenticado pode acessar dados sensíveis. Isso pode ser um risco se a lista for acidentalmente deixada vazia. Considere implementar uma verificação para garantir que a lista nunca esteja vazia ou que haja uma configuração padrão segura.
+- **Problema de Manutenção**: O uso de arquivos `.jsx` sem TypeScript pode levar a problemas de manutenção e bugs não detectados. Embora a decisão tenha sido tomada com o usuário, é importante monitorar de perto e considerar a migração para TypeScript no futuro para melhorar a segurança e a robustez do código.
+
+Sugestões de melhoria:
+- **Documentação**: A documentação poderia ser mais clara sobre os passos necessários para garantir que o `HR_CONFIDENTIAL_ALLOWLIST` não esteja vazio ou que haja um mecanismo de fallback seguro.
+- **Teste e Monitoramento**: Reforce a necessidade de testes manuais e automáticos, especialmente devido à ausência de TypeScript, para garantir que o sistema funcione conforme esperado e que as mudanças não introduzam novos bugs.
+
+## 2026-08-27 09:31:27 — `PR #85 — feat(dash-rh): migra Dash RH de iframe para sistema nativo`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0131
+
+- **Risco de Segurança**: O uso de `localStorage` para armazenar tokens JWT pode ser um risco de segurança, pois `localStorage` é acessível por qualquer script no mesmo domínio, tornando-o vulnerável a ataques XSS. Considere usar `sessionStorage` ou cookies com a flag `HttpOnly` para maior segurança.
+- **Erro de Lógica**: No arquivo `client.js`, a função `get` não retorna o resultado da chamada `fetch`. A linha `return` está isolada e não retorna o JSON parseado, o que provavelmente causará problemas ao tentar acessar os dados da resposta.
+- **Falta de Tipagem**: O uso de `// @ts-nocheck` em `DashRhApp.tsx` desativa a verificação de tipos do TypeScript, o que pode esconder erros de tipo. Considere adicionar tipagem gradual para melhorar a manutenção e a detecção de erros.
+- **Aviso de Configuração**: O aviso de configuração de `VITE_DASHRH_API_URL` é útil, mas poderia ser mais visível ou registrado em um sistema de monitoramento para garantir que não seja ignorado em produção.
+
+Sugestões de melhoria:
+- **Clareza do Código**: Considere adicionar comentários mais detalhados sobre a lógica de autenticação e autorização, especialmente em áreas críticas como a manipulação de tokens.
+- **Performance**: Avalie o impacto de carregar todas as rotas e componentes de uma vez. Se o aplicativo crescer, pode ser necessário implementar carregamento assíncrono para melhorar o desempenho.
+- **Documentação**: Atualize a documentação para refletir as mudanças de segurança e arquitetura, especialmente em relação ao novo sistema de autenticação e autorização.
+
+## 2026-08-27 10:12:06 — `frontend/src/systems/dash-rh/components/charts/BarChart.jsx`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0079
+
+- **Bugs Reais e Erros de Lógica:**
+  - Não foram identificados bugs reais ou erros de lógica que quebrem o comportamento do componente.
+
+- **Melhorias:**
+  - **Clareza no Código:** A remoção do `React.Fragment` para os eixos `XAxis` e `YAxis` foi feita para compatibilidade com `recharts@2`. No entanto, a explicação no comentário poderia ser mais clara sobre o motivo técnico exato, como a limitação de renderização de filhos diretos.
+  - **Consistência de Estilo:** A propriedade `maxBarSize` foi adicionada, mas não há uma explicação clara sobre o motivo de seus valores específicos (`28` e `56`). Seria útil documentar a razão desses valores para manutenção futura.
+  - **Uso de Constantes:** Considere mover valores mágicos como `28`, `56`, `100`, `800`, `11`, `12`, `0.8125rem`, etc., para constantes nomeadas, melhorando a legibilidade e manutenção do código.
+  - **Segurança e Robustez:** Ao usar `String(payload.value)`, é importante garantir que `payload.value` não seja `null` ou `undefined` para evitar possíveis exceções. Embora o código atual já trate `!payload || !payload.value`, é sempre bom revisar se há outros pontos de entrada que possam passar valores inesperados.
+
+## 2026-08-27 10:12:11 — `frontend/src/systems/dash-rh/components/charts/BarChart.jsx`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0047
+
+Sem observações.
+
+## 2026-08-27 10:13:06 — `commit 31f8fd7 (feat/migracoes-arthur)`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0071
+
+- **Bugs Reais/Erros de Lógica**: Não foram identificados bugs ou erros de lógica no código apresentado.
+
+- **Melhorias**:
+  - **Clareza**: A explicação sobre a migração de `recharts@3` para `recharts@2` é útil, mas poderia ser mais clara ao explicar o impacto direto no código. Considerar adicionar comentários mais específicos sobre como as mudanças afetam o comportamento do gráfico.
+  - **Consistência de Estilo**: No trecho onde `xAxisProps` e `yAxisProps` são definidos, as propriedades de estilo (`tick`, `axisLine`, etc.) poderiam ser extraídas para constantes ou funções utilitárias para evitar repetição e melhorar a legibilidade.
+  - **Desempenho**: A propriedade `animationBegin` é calculada como `i * 100`, o que pode causar atrasos perceptíveis em gráficos com muitas barras. Avaliar se esse comportamento é desejado ou se um valor fixo seria mais apropriado.
+
+Nenhum problema crítico foi encontrado, mas as sugestões de melhoria podem ajudar na manutenção e clareza do código.
+
+## 2026-08-27 10:23:12 — `PR #87 — feat(central-suporte): abre chamado para outra pessoa + preview de imagem em modal`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0123
+
+- **Erro de Lógica**: No `ConversationList`, a lógica para determinar `visibleConversations` pode ser confusa. O uso de `simpleTab` e `tab` simultaneamente pode levar a inconsistências se não for bem gerenciado. Certifique-se de que a lógica de filtragem é clara e que os estados não entrem em conflito.
+- **Risco de Segurança**: No `ConversationView`, a URL da imagem é usada diretamente no `src` do elemento `img`. Certifique-se de que as URLs são seguras e que não há risco de injeção de conteúdo malicioso.
+- **Erro de Lógica**: No `ConversationView`, a verificação de `isStaff` antes de atualizar o status do ticket pode levar a inconsistências se `isStaff` não for corretamente determinado. Certifique-se de que a lógica de verificação de permissões está correta e que `isStaff` é sempre determinado de forma confiável.
+- **Caso de Borda**: No `KanbanTicketCard`, ao exibir "Aberto por" e "Para", se `opened_by` ou `requester` não tiverem `full_name`, o texto exibido será "—". Considere se isso é o comportamento desejado ou se uma mensagem mais clara seria apropriada.
+
+Sugestões de melhoria:
+- **Clareza**: Considere adicionar comentários mais detalhados onde a lógica de filtragem e permissões é aplicada para facilitar a compreensão futura.
+- **Performance**: Avalie se o uso de `useMemo` em `visibleConversations` é realmente necessário e se está trazendo benefícios de performance, dado que a lógica de filtragem pode ser simples.
+- **Usabilidade**: No modal de visualização de imagem, considere adicionar um botão de fechar mais visível ou uma indicação clara de que clicar fora da imagem fechará o modal, para melhorar a experiência do usuário.
+
+## 2026-08-27 10:47:36 — `PR #88 — fix(central-suporte): card do Kanban estoura a coluna com Aberto por/Para`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0021
+
+Sem observações.
+
+## 2026-08-27 11:01:02 — `PR #89 — fix(central-suporte): reforca contencao do card do Kanban com overflow-hidden`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0030
+
+Sem observações.
+
+## 2026-08-27 11:17:38 — `PR #90 — fix(central-suporte): card do Kanban volta a mostrar apenas um nome`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0022
+
+Sem observações.
+
+## 2026-08-27 11:28:59 — `frontend/src/systems/taskflow/styles/global.css`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0020
+
+Sem observações.
+
+## 2026-08-27 11:29:10 — `frontend/src/systems/taskflow/styles/global.css`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0027
+
+Sem observações.
+
+## 2026-08-27 11:30:36 — `commit 0f2c93f (fix/taskflow-kanban-card-glass)`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0027
+
+Sem observações.
+
+## 2026-08-27 12:57:40 — `PR #92 — fix(central-suporte): corrige bugs da auditoria do sistema de chamados`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0098
+
+- **Bugs Reais e Erros de Lógica:**
+  - A lógica de atualização do status e prioridade dos tickets depende de condições específicas (e.g., `archived_at` ser `null` e prioridade ser `p3`). Se essas condições não forem atendidas, a atualização não ocorrerá, o que pode ser um problema se o estado esperado não for alcançado.
+  - O uso de `await` dentro de `then` pode levar a comportamentos inesperados se houver erros não tratados adequadamente, especialmente se `console.error` for a única forma de tratamento.
+
+- **Melhorias Sugeridas:**
+  - Considere adicionar logs ou notificações de erro mais robustas para garantir que falhas de atualização sejam devidamente monitoradas e tratadas.
+  - A verificação de `archived_at` e `priority` pode ser melhor documentada ou encapsulada em funções utilitárias para melhorar a clareza e reutilização do código.
+  - A filtragem de `allProfiles` para excluir usuários de staff e o próprio usuário poderia ser otimizada ou documentada para maior clareza sobre o motivo dessas exclusões.
+  - Considere usar `try-catch` em vez de `then-catch` para lidar com promessas assíncronas, o que pode melhorar a legibilidade e o tratamento de erros.
+
+## 2026-08-27 13:02:55 — `PR #92 — fix(central-suporte): corrige bugs da auditoria do sistema de chamados`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0111
+
+- **Bugs Reais e Erros de Lógica:**
+  - A lógica para verificar se o ticket foi aberto por outra pessoa (`openedByOther`) pode falhar se `opened_by_id` for `null`. Isso deve ser tratado explicitamente para evitar comparações inválidas.
+  - A verificação de `archived_at` ao atualizar o status do ticket é uma boa prática, mas deve ser consistente em todos os lugares onde o status é atualizado. Certifique-se de que todos os updates de status considerem essa condição.
+
+- **Melhorias Sugeridas:**
+  - No trecho onde `useEffect` é usado para adicionar e remover o evento de teclado, considere adicionar um `useCallback` para a função `onKeyDown` para evitar recriações desnecessárias da função em cada renderização.
+  - A função `requesterOptions` poderia ser otimizada para evitar a execução desnecessária de lógica quando `allProfiles` ou `staffUserIds` não estão prontos. Considere usar `useMemo` para encapsular a lógica de filtragem.
+  - Considere adicionar logs ou mensagens de erro mais detalhadas ao lidar com erros do Supabase para facilitar o diagnóstico de problemas em produção.
+
+## 2026-08-27 13:28:38 — `PR #93 — docs(central-suporte): documenta comportamento intencional em formularios legados e filtro do Kanban`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0020
+
+Sem observações.
+
+## 2026-08-27 13:44:08 — `PR #94 — refactor(central-suporte): remove duplicacao da busca de categorias por setor`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0066
+
+Sem observações.
+
+## 2026-08-27 13:49:25 — `PR #94 — refactor+perf(central-suporte): dedup de categorias + otimizacao de queries de chat`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0123
+
+- **Erro de Lógica**: No trecho onde `previews` é verificado, a condição `if (!previews || previews.length === 0) return []` está correta, mas a variável `ticketIds` é definida logo após, sem verificar se `previews` é `null`. Isso pode causar um erro se `previews` for `null` mas não `undefined`.
+- **Erro de Lógica**: No método `get_recent_ticket_previews`, a função SQL não considera a possibilidade de `p_limit` ser `null` ou `undefined`, o que pode resultar em comportamento inesperado.
+- **Segurança**: A função SQL `get_recent_ticket_previews` é executada com privilégios de quem chama, mas não há verificações explícitas de permissões no código TypeScript para garantir que o usuário tenha permissão para acessar os dados retornados.
+- **Melhoria de Performance**: A função `reverse()` é chamada após o `slice()` em várias partes do código. Isso pode ser otimizado para evitar a criação de cópias desnecessárias da lista.
+- **Clareza**: O comentário sobre a função SQL `get_recent_ticket_previews` poderia ser mais claro sobre o comportamento esperado quando `p_limit` não é fornecido.
+
+Sugestões de melhoria:
+- Adicione verificações para garantir que `previews` não seja `null` antes de acessar suas propriedades.
+- Considere adicionar verificações de permissões explícitas no TypeScript para garantir que apenas usuários autorizados possam acessar os dados.
+- Revise o uso de `reverse()` para evitar operações desnecessárias em listas.
+- Atualize a documentação e comentários para esclarecer o comportamento esperado em casos de borda, como quando `p_limit` não é fornecido.
+
+## 2026-08-27 14:37:23 — `PR #95 — feat(central-suporte): motivo obrigatorio ao reabrir chamado`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0115
+
+- **Erro de Lógica**: No `ConversationView.tsx`, a dependência `currentUserId` foi removida do array de dependências do `useEffect`. Isso pode causar problemas se `currentUserId` mudar após o primeiro render, pois o efeito não será reexecutado.
+- **Validação de Entrada**: No `ReopenReasonDialog.tsx`, o campo de texto para o motivo da reabertura não possui validação adicional além de verificar se está vazio. Considere adicionar validações para evitar entradas inválidas ou maliciosas.
+- **Segurança**: Não há menção de sanitização da entrada do usuário antes de ser enviada para o backend. Isso pode abrir brechas para ataques de injeção de código.
+- **Desempenho**: No `TicketDetailDialog.tsx`, a função `reopenTicket.mutate` é chamada dentro de um `onConfirm` que é passado para o componente `ReopenReasonDialog`. Certifique-se de que essa função não seja recriada desnecessariamente em cada render.
+
+Sugestões de melhoria:
+- **Clareza**: Considere adicionar comentários explicativos sobre a lógica de reabertura de tickets, especialmente onde as mudanças de estado são manipuladas.
+- **Reutilização de Código**: A lógica de reabertura de tickets parece ser duplicada em diferentes componentes. Considere refatorar para uma função utilitária compartilhada para melhorar a manutenção do código.
+
+## 2026-08-27 14:47:48 — `PR #95 — fix(central-suporte): motivo obrigatorio ao reabrir + correcoes na pagina de Relatorios`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0113
+
+- **Bugs Reais / Erros de Lógica:**
+  - Nenhum bug crítico ou erro de lógica aparente foi identificado na alteração.
+
+- **Melhorias:**
+  - **Validação do Motivo de Reabertura:** Atualmente, o motivo é apenas verificado se está vazio ou não. Seria interessante adicionar validações mais robustas, como comprimento mínimo ou palavras proibidas, para garantir que o motivo fornecido seja significativo.
+  - **Tratamento de Erros:** No método `reopenTicketWithReason`, não há tratamento de erros detalhado. Considere adicionar logs ou mensagens de erro mais específicas para facilitar o diagnóstico de problemas.
+  - **Desempenho:** A função `invalidateQueries` é chamada múltiplas vezes com diferentes chaves. Considere agrupar essas chamadas em uma única operação para melhorar a eficiência.
+  - **Clareza:** A lógica de controle de estado para `pendingReopenStatus` pode ser complexa para novos desenvolvedores. Considere adicionar comentários explicativos ou refatorar para maior clareza.
+  - **Segurança:** Certifique-se de que o motivo da reabertura não seja suscetível a injeções de código ou XSS, especialmente se for exibido em algum lugar sem sanitização adequada.
+
+Essas melhorias podem ajudar a tornar o código mais robusto e fácil de manter.
+
+## 2026-08-27 16:42:27 — `PR #95 — feat(central-suporte): motivo obrigatorio ao reabrir + redesign visual do sistema de chamados`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0116
+
+- **Bugs Reais / Erros de Lógica:**
+  - Nenhum bug crítico ou erro de lógica foi identificado na alteração apresentada.
+
+- **Melhorias:**
+  - **Clareza e Manutenção:** A função `isSystemNote` foi movida para um arquivo utilitário, o que é uma boa prática. No entanto, a remoção do comentário automático de reabertura de chat pode impactar a clareza do histórico de eventos. Certifique-se de que a nota de reabertura é gerada de forma consistente em outro lugar.
+  - **Desempenho:** O uso de `useMemo` e `useEffect` parece apropriado, mas verifique se não há chamadas desnecessárias que possam ser otimizadas, especialmente em listas grandes de conversas.
+  - **Acessibilidade:** O uso de `aria-label` para indicar mensagens não lidas é uma boa prática. Certifique-se de que todos os elementos interativos tenham atributos de acessibilidade adequados.
+  - **Consistência de Código:** Certifique-se de que todas as constantes e funções reutilizáveis estejam centralizadas em arquivos utilitários para facilitar a manutenção e evitar duplicação de código.
+
+- **Casos de Borda Não Tratados:**
+  - Verifique se há tratamento adequado para estados de erro ou carregamento, especialmente ao lidar com dados assíncronos do Supabase.
+
+## 2026-08-27 17:16:53 — `PR #97 — style(header): ajusta icones do header global pro padrao do redesign`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0027
+
+Sem observações.
+
+## 2026-08-27 17:27:52 — `PR #97 — feat(central-suporte): redesign visual completo do sistema de chamados`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0123
+
+- **Uso de Cores CSS Customizadas**: A substituição de classes CSS por variáveis CSS customizadas pode ser uma melhoria, mas é importante garantir que essas variáveis estejam definidas e sejam consistentes em todos os ambientes. Caso contrário, pode haver problemas de renderização.
+
+- **Remoção de Componentes Importados**: A remoção dos componentes `Card`, `CardContent`, `CardHeader`, `CardTitle`, e `Button` pode ser uma decisão de design, mas é importante verificar se a nova implementação atende a todos os requisitos de acessibilidade e responsividade que esses componentes poderiam fornecer.
+
+- **Consistência de Estilo**: A mistura de estilos inline com classes CSS pode levar a inconsistências e dificuldades de manutenção. Seria melhor optar por um único método de estilização para garantir consistência.
+
+- **Uso de `style` Inline**: O uso extensivo de estilos inline pode dificultar a manutenção e a reutilização de estilos. Considerar mover esses estilos para classes CSS ou um sistema de design tokens centralizado.
+
+- **Verificação de Dependências**: A mudança de importações de `@suporte/components/ui` para `@mg/ui` pode causar problemas se as novas dependências não estiverem corretamente instaladas ou configuradas. Certifique-se de que todas as dependências necessárias estão listadas no arquivo de configuração do projeto.
+
+- **Tratamento de Erros**: Não há tratamento de erros visível para o caso de falha na consulta de dados (`useQuery`). Considere adicionar um estado de erro para melhorar a experiência do usuário em caso de falhas de rede ou problemas de API.
+
+## 2026-08-28 08:26:30 — `frontend/src/main.tsx`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0031
+
+- **Bugs Reais e Erros de Lógica:**
+  - Não foram identificados bugs reais ou erros de lógica na alteração apresentada.
+
+- **Melhorias:**
+  - **Clareza:** Seria útil adicionar um comentário mais detalhado na função `installChunkErrorHandler` para explicar o comportamento esperado e os cenários em que ela deve ser utilizada. Isso ajudaria outros desenvolvedores a entenderem melhor a intenção por trás dessa função.
+  - **Segurança:** Verifique se a função `installChunkErrorHandler` não expõe informações sensíveis ou cria vulnerabilidades de segurança, especialmente se manipular erros de carregamento de chunks pode ser explorado de alguma forma.
+  - **Performance:** Avalie se a função `installChunkErrorHandler` tem impacto significativo no desempenho, especialmente em ambientes de produção, e se há maneiras de mitigar qualquer impacto negativo.
+
+## 2026-08-28 08:28:46 — `commit 5420cdf (feat/zero-downtime-deploy)`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0044
+
+Sem observações.
+
+## 2026-08-28 09:18:15 — `PR #100 — fix(central-suporte): titulo do card do Kanban corta sem reticencias`
+
+**Severidade:** alta
+
+**Custo estimado:** $0.0134
+
+- **Senha hardcoded no código-fonte**: A presença de senhas padrão no código-fonte (`POSTGRES_PASSWORD` e `EVOLUTION_API_KEY`) é um risco de segurança significativo. Se as variáveis de ambiente não forem definidas, o sistema usará essas senhas conhecidas, potencialmente expondo o sistema a acessos não autorizados. A recomendação é remover esses valores padrão e exigir que as variáveis de ambiente sejam definidas, falhando no boot se estiverem ausentes.
+
+- **Exposição de chave de serviço do Supabase**: A `OUVIDORIA_SUPABASE_SERVICE_ROLE_KEY` está centralizada no backend do CRM, o que amplia a superfície de ataque. Se o backend do CRM for comprometido, isso pode dar acesso irrestrito ao banco de dados da Ouvidoria. É importante revisar se essa chave precisa estar no CRM ou se pode ser isolada.
+
+- **Ausência de política de retenção de dados**: Não há documentação sobre políticas de retenção de dados pessoais, o que é um problema de conformidade com a LGPD. É crucial definir e documentar essas políticas para todas as aplicações.
+
+- **Falta de confirmação de multi-tenant**: Algumas aplicações podem tratar dados de múltiplos clientes sem confirmação de isolamento adequado. Isso precisa ser verificado para garantir que os dados de diferentes clientes sejam devidamente segregados.
+
+- **Ausência de PWA**: Nenhuma das aplicações tem suporte a PWA, o que pode ser um problema de UX se alguma aplicação precisar funcionar offline ou como app instalável.
+
+Sugestões de melhoria:
+- **Documentação e clareza**: Melhorar a documentação sobre a função e o responsável técnico de cada sistema, especialmente para aqueles com backend desconhecido.
+- **Revisão de segurança**: Realizar uma revisão de segurança mais abrangente para identificar e mitigar outros possíveis riscos não cobertos por esta auditoria inicial.
+
+## 2026-08-28 09:20:53 — `commit 77920ac (main-hotfix)`
+
+**Severidade:** alta
+
+**Custo estimado:** $0.0038
+
+- **Bugs Reais e Erros de Lógica**: A remoção dos healthchecks pode causar problemas de disponibilidade e confiabilidade do serviço. Sem healthchecks, o orquestrador não tem como verificar se os novos containers estão prontos para substituir os antigos, o que pode resultar em downtime ou em containers não funcionais sendo considerados saudáveis.
+  
+- **Riscos de Segurança**: Não diretamente relacionado à segurança, mas a falta de healthchecks pode levar a situações onde serviços falham silenciosamente, potencialmente expondo o sistema a falhas de segurança não monitoradas.
+
+- **Melhorias Sugeridas**: 
+  - Reintroduzir os healthchecks para garantir que o sistema possa realizar deploys sem downtime e que containers não saudáveis sejam detectados e tratados adequadamente.
+  - Se os healthchecks estavam causando problemas, investigar e corrigir a causa raiz (como tempo de resposta inadequado ou endpoints de saúde mal configurados) ao invés de removê-los completamente.
+
+## 2026-08-28 09:33:43 — `PR #100 — fix(central-suporte): titulo do card do Kanban corta sem reticencias`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0104
+
+Sem observações.
+
+## 2026-08-28 10:08:28 — `PR #100 — fix(central-suporte): titulo do card do Kanban corta sem reticencias`
+
+**Severidade:** alta
+
+**Custo estimado:** $0.0134
+
+- **Senha Hardcoded**: A senha do banco de dados está hardcoded no código-fonte (`POSTGRES_PASSWORD: str = "crm_dev_password_2024"`). Isso é um risco de segurança significativo, pois se a variável de ambiente não for definida, o sistema usará essa senha padrão, que é conhecida. A recomendação é remover o valor padrão e exigir que a variável de ambiente seja definida, falhando no boot se estiver ausente.
+
+- **Chave de Serviço Supabase**: A chave de serviço do Supabase (`OUVIDORIA_SUPABASE_SERVICE_ROLE_KEY`) está centralizada no backend do CRM, o que amplia a superfície de ataque. Se o backend for comprometido, o atacante pode ter acesso irrestrito ao banco de dados da Ouvidoria. É importante revisar se essa chave precisa estar no backend do CRM ou se pode ser isolada.
+
+- **Política de Retenção de Dados**: Não há confirmação de políticas de retenção ou anonimização de dados, especialmente para dados sensíveis como relatos de denúncias. Isso é crítico para conformidade com a LGPD.
+
+- **Multi-tenant**: A aplicação `obrigacoes` é confirmada como multi-tenant, mas outras aplicações que podem ser multi-tenant não têm essa confirmação. Isso pode levar a problemas de isolamento de dados entre clientes.
+
+Sugestões de melhoria:
+
+- **Documentação de Retenção de Dados**: Definir e documentar políticas claras de retenção e exclusão de dados pessoais para todas as aplicações.
+
+- **Isolamento de Chaves Sensíveis**: Revisar a necessidade de chaves sensíveis estarem centralizadas e considerar isolá-las em serviços dedicados para reduzir a superfície de ataque.
+
+- **Confirmação de Multi-tenancy**: Verificar e documentar se outras aplicações são multi-tenant e garantir que o isolamento de dados seja adequadamente implementado e testado.
+
+## 2026-08-28 11:42:11 — `PR #102 — fix(central-suporte): card do Kanban cortava rodape em vez do titulo`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0016
+
+Sem observações.
+
+## 2026-08-28 12:48:12 — `PR #104 — fix(central-suporte): X do preview + scroll da aba Mensagens + bolha menor`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0074
+
+- A alteração parece estar bem implementada, utilizando o componente `Dialog` do Radix para gerenciar a hierarquia de modais, o que resolve problemas de fechamento simultâneo de modais.
+- A remoção do uso de `createPortal` e a adição de `DialogTitle` melhoram a acessibilidade e a manutenção do código.
+- Não foram encontrados bugs, erros de lógica ou riscos de segurança evidentes na alteração proposta.
+
+Sugestões de melhoria:
+- Considere adicionar testes para garantir que o comportamento de fechamento dos modais funcione conforme esperado, especialmente em cenários de borda.
+- Verifique se a alteração no estilo das bolhas de mensagem (ajuste de `maxWidth` e `padding`) mantém a consistência visual com o restante da aplicação.
+
+## 2026-08-28 13:08:55 — `PR #105 — style(central-suporte): bolha do modal segue o padrao do chat flutuante`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0064
+
+- **Risco de Segurança**: O uso de `window.open` sem verificar adequadamente a URL pode levar a vulnerabilidades de segurança, como ataques de phishing. Certifique-se de que a URL é segura antes de abrir.
+- **Melhoria de Clareza**: O código de estilo inline pode ser difícil de manter e ler. Considere mover estilos para uma folha de estilo CSS ou usar uma biblioteca de estilos como Styled Components ou Emotion para melhorar a clareza e a manutenção do código.
+- **Consistência de Estilo**: A mudança de estilo para seguir o padrão do chat flutuante é uma boa prática, mas certifique-se de que todos os elementos visuais e interativos são consistentes em todo o aplicativo para uma melhor experiência do usuário.
+- **Verificação de Nulo**: O acesso a `c.created_at!` assume que `created_at` nunca é nulo ou indefinido. Considere adicionar uma verificação para evitar possíveis erros de tempo de execução.
+
+## 2026-08-28 15:33:08 — `PR #106 — style(chat): abas Abertos/Outros/Encerrados dividem 100% do espaco`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0028
+
+Sem observações.
+
+## 2026-08-28 15:43:29 — `PR #106 — style(chat): abas Abertos/Outros/Encerrados dividem 100% do espaco`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0041
+
+Sem observações.
+
+## 2026-08-28 15:48:44 — `PR #106 — style(chat): abas Abertos/Outros/Encerrados dividem 100% do espaco`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0091
+
+- **Bugs Reais / Erros de Lógica:**
+  - Nenhum bug real ou erro de lógica foi identificado no diff apresentado.
+
+- **Melhorias:**
+  - **Consistência de Estilo:** A utilização de `style={{ flex: "1.3 1 0%" }}` e `style={{ flex: "1.1 1 0%" }}` para definir a flexibilidade das abas pode ser padronizada para manter a consistência. Considere mover essas definições para uma classe CSS para manter o estilo separado da lógica.
+  - **Segurança:** O uso de `console.error` para logar erros pode expor informações sensíveis em ambientes de produção. Considere utilizar uma solução de logging mais robusta que possa ser configurada para diferentes ambientes.
+  - **Clareza do Código:** A lógica de marcação de comentários como lidos poderia ser extraída para uma função separada para melhorar a clareza e a reutilização do código.
+  - **Desempenho:** O uso de `queryClient.invalidateQueries` após a marcação de comentários como lidos pode ser otimizado para invalidar apenas os dados necessários, em vez de potencialmente recarregar dados desnecessários.
+
+## 2026-08-28 16:14:37 — `PR #106 — feat(central-suporte): foto de perfil real nos avatares + ajustes de UI do chat`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0116
+
+- **Segurança**: A inclusão de imagens de perfil a partir de URLs externas (`src={src}`) pode introduzir riscos de segurança, como ataques de Cross-Site Scripting (XSS) se as URLs não forem devidamente validadas e sanitizadas. Certifique-se de que as URLs são seguras e provenientes de fontes confiáveis.
+  
+- **Melhoria de Código**: A lógica de fallback para `requesterPhoto` e `authorPhoto` usa `|| null` ou `|| undefined`, o que é redundante, pois `undefined` já é o valor padrão para propriedades não definidas. Considere simplificar essa lógica.
+
+- **Consistência de Estilo**: A função `Avatar` é duplicada em dois arquivos diferentes (`ConversationList.tsx` e `ConversationView.tsx`). Considere refatorar para um componente compartilhado para evitar duplicação de código e facilitar a manutenção.
+
+- **Performance**: O uso de `style` inline para definir flexibilidade dos botões pode ser substituído por classes CSS para melhorar a consistência e a manutenção do código.
+
+- **Acessibilidade**: Certifique-se de que as imagens de perfil (`<img>`) tenham um texto alternativo (`alt`) descritivo e significativo para melhorar a acessibilidade. Atualmente, o `alt` é apenas o nome, o que pode ser insuficiente em alguns contextos.
+
+## 2026-08-28 16:40:28 — `PR #107 — build(frontend): aumenta memoria do build (corrige falha de deploy no NDDEV)`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0029
+
+- Aumentar o limite de memória para o Node.js pode resolver o problema de OOM-kill, mas não aborda a causa raiz se o container não tiver memória física suficiente. Certifique-se de que o ambiente de execução (NDDEV) tenha recursos adequados.
+- Aumentar o limite de memória pode mascarar problemas de eficiência de memória no código. Considere revisar o código para otimizações de uso de memória.
+- O comentário adicionado é útil para contexto, mas poderia ser mais conciso e claro sobre as limitações e condições sob as quais o ajuste é eficaz.
+
+## 2026-08-28 17:32:05 — `PR #108 — feat(central-suporte): avatar com foto nas mensagens do modal do chamado`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0043
+
+- A lógica para determinar `isLastInGroup` parece correta, mas seria bom garantir que `comments` seja sempre um array válido para evitar possíveis erros de execução ao acessar índices fora do limite.
+- A verificação de `c.author?.foto_url ?? undefined` é uma boa prática para evitar erros de acesso a propriedades indefinidas, mas certifique-se de que o componente `Avatar` lida corretamente com um `src` indefinido.
+- Considere adicionar testes para garantir que o comportamento de agrupamento e exibição de avatares funcione conforme esperado, especialmente em casos de borda como mensagens consecutivas de autores diferentes ou mensagens do sistema.
+
+## 2026-08-31 09:23:28 — `PR #109 — fix(agendamento-ferias): status Sugerida deixa de sumir/quebrar o fluxo`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0064
+
+- O código parece estar correto e funcional, sem bugs aparentes ou falhas de segurança.
+- A função `isStatusEmAberto` foi bem implementada para melhorar a clareza e evitar duplicação de lógica.
+- Os testes foram atualizados para cobrir a nova lógica, o que é uma boa prática.
+
+Sugestões de melhoria:
+- Considere adicionar comentários mais detalhados sobre o motivo da escolha de incluir o status "Sugerida" como "em aberto", para facilitar o entendimento futuro do código por outros desenvolvedores.
+- Verifique se há necessidade de normalizar o texto do status em todos os lugares onde `isStatusEmAberto` é chamado, para garantir consistência.
+
+## 2026-08-31 09:33:51 — `PR #109 — fix(agendamento-ferias): varredura completa - Sugerida, setores, Relatorios, limpeza`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0120
+
+- **Bug Real**: No trecho onde a função `validar` é definida, a verificação de feriados utiliza `isWithinInterval` para verificar se a data de início ou fim está dentro do intervalo de feriados. No entanto, isso pode falhar se o feriado começar ou terminar exatamente no mesmo dia que o início ou fim do período de férias. Deve-se garantir que a comparação inclua os limites do intervalo.
+  
+- **Melhoria de Segurança**: A função `analisarIA` utiliza `alert` para notificar o usuário sobre a falta de seleção de data. Isso pode ser melhorado utilizando um sistema de notificação mais robusto e menos intrusivo.
+
+- **Melhoria de Performance**: A função `validar` é chamada várias vezes em um loop para encontrar uma data válida. Isso pode ser otimizado para evitar chamadas desnecessárias, especialmente se o intervalo de busca for grande.
+
+- **Melhoria de Clareza**: O código possui comentários extensos que podem ser reduzidos ou movidos para documentação externa para melhorar a legibilidade do código.
+
+- **Melhoria de Duplicação**: A lógica para calcular `fimCalculado` e `fimSugeridoStr` é repetida. Isso pode ser extraído para uma função auxiliar para evitar duplicação de código.
+
+- **Caso de Borda Não Tratado**: Não há tratamento para o caso em que `supabase` retorna um erro ou dados inesperados. Deve-se adicionar verificações para garantir que os dados retornados são válidos antes de serem usados.
+
+## 2026-08-31 09:59:38 — `PR #109 — fix(central-suporte,agendamento-ferias): 2 bugs urgentes do chat + varredura de Ferias`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0089
+
+Sem observações.
+
+## 2026-08-31 10:46:05 — `PR #110 — fix(central-suporte): nota interna - vazamento, barra visual e restricao admin+criador`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0119
+
+- **Risco de Segurança**: O uso de `any` no filtro de comentários (`rawComments.filter((c: any) => ...)`) pode introduzir vulnerabilidades se a estrutura dos dados não for controlada. Considere definir um tipo específico para os comentários para garantir a segurança e a consistência dos dados.
+  
+- **Validação de Permissões**: A lógica de filtragem de comentários internos depende de `isAdmin` e `currentUserId`. Certifique-se de que `currentUserId` está sempre definido antes de usar essa lógica, para evitar falhas de segurança onde usuários não autorizados possam ver informações restritas.
+
+- **Duplicação de Código**: A lógica para exibir a barra de "Nota interna" é duplicada em dois componentes (`ConversationView` e `TicketDetailDialog`). Considere refatorar essa lógica em um componente separado para melhorar a manutenção e reduzir a duplicação de código.
+
+- **Desempenho**: O uso de `useMemo` para filtrar comentários é uma boa prática, mas certifique-se de que as dependências estão corretamente definidas para evitar re-renderizações desnecessárias. Verifique se `currentUserId` e `isAdmin` são estáveis e não causam re-renderizações adicionais.
+
+- **Clareza do Código**: A lógica de exibição de mensagens e a verificação de permissões podem ser complexas. Considere adicionar comentários mais detalhados ou refatorar partes do código para melhorar a legibilidade e a compreensão do fluxo de controle.
+
+## 2026-08-31 11:06:54 — `PR #111 — feat(central-suporte): badge 'Novo' nas conversas do chat flutuante`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0016
+
+Sem observações.
+
+## 2026-08-31 11:48:10 — `PR #112 — perf(frontend): lazy-load paginas do Analytics DP e Ponto Admin`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0083
+
+- **Bugs Reais / Erros de Lógica / Riscos de Segurança:**
+  - O `Suspense` está utilizando `fallback={null}`. Isso pode resultar em uma experiência de usuário ruim, pois não há indicação visual de que algo está carregando. Considere adicionar um componente de carregamento para melhorar a UX.
+
+- **Sugestões de Melhoria:**
+  - Considere adicionar tratamento de erros para os imports dinâmicos. Caso algum módulo falhe ao carregar, o usuário não receberá feedback sobre o erro.
+  - Verifique se todas as rotas protegidas por `RequireAuth` e `RequirePermission` estão corretamente configuradas para evitar acessos não autorizados.
+  - Documente o motivo da escolha do lazy loading nas páginas específicas, para que futuros desenvolvedores entendam a decisão de design.
+
+## 2026-08-31 13:26:08 — `PR #113 — fix(frontend): resolve EMFILE que estava quebrando o deploy`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0054
+
+- **Risco de Portabilidade**: O uso de `ulimit -n 65536` pode não ser suportado em todos os sistemas operacionais ou configurações de contêineres. Isso pode causar falhas em ambientes onde `ulimit` não está disponível ou não pode ser modificado.
+- **Falta de Comentários Estruturados**: Embora o comentário explique a razão para o aumento do limite de arquivos abertos, ele é extenso e pode ser difícil de seguir. Considere resumir ou estruturar melhor para facilitar a leitura.
+- **Dependência de Ambiente**: A solução depende de uma configuração específica do ambiente de execução (Coolify), o que pode não ser ideal se o projeto for movido para outro ambiente de execução ou se as configurações do Coolify mudarem.
+
+Sugestões de melhoria:
+- **Verificação de Suporte**: Adicione uma verificação para garantir que `ulimit` seja suportado antes de tentar alterá-lo, ou forneça uma alternativa para ambientes onde isso não é possível.
+- **Documentação**: Considere adicionar documentação externa ou comentários mais concisos sobre a necessidade e o impacto do ajuste `ulimit`, para que outros desenvolvedores possam entender rapidamente a mudança sem precisar ler um comentário longo.
+- **Configuração Flexível**: Avalie a possibilidade de tornar o limite de arquivos abertos configurável através de variáveis de ambiente, permitindo ajustes sem a necessidade de modificar o Dockerfile diretamente.
+
+## 2026-08-31 14:07:26 — `PR #114 — fix(frontend): sobe ulimit -n pro teto fisico do container (65536 nao bastou)`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0048
+
+- **Risco de Segurança**: Alterar o `ulimit` para o máximo permitido pelo container pode ter implicações de segurança, especialmente se o container estiver rodando em um ambiente compartilhado. Isso pode permitir que o processo consuma mais recursos do que o esperado, potencialmente afetando outros serviços.
+- **Erro de Lógica**: Não há verificação se o aumento do `ulimit` realmente resolve o problema. Se o `ulimit` máximo ainda não for suficiente, o problema persistirá.
+- **Falta de Tratamento de Erros**: O comando `ulimit` pode falhar, e não há tratamento de erro para lidar com essa situação. Isso pode resultar em um build falho sem uma mensagem de erro clara.
+
+Sugestões de melhoria:
+- Considere adicionar um tratamento de erro para o comando `ulimit` para garantir que falhas sejam capturadas e logadas adequadamente.
+- Avalie se é possível otimizar o número de arquivos abertos pelo processo, em vez de apenas aumentar o limite.
+- Documente claramente as implicações de segurança e os motivos para aumentar o `ulimit` no contexto do projeto, para que outros desenvolvedores entendam a necessidade e os riscos associados.
+
+## 2026-08-31 15:09:14 — `PR #116 — fix(central-suporte): lista de anexos pendentes ganha scroll proprio`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0048
+
+Sem observações.
+
+## 2026-08-31 15:35:05 — `PR #117 — fix(agendamento-ferias): calculo de dias liquidos ignorava desconta_saldo`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0041
+
+- **Bugs Reais/Erros de Lógica**: Não foram identificados erros de lógica ou bugs reais na alteração proposta. A lógica parece corrigir adequadamente o comportamento esperado para o cálculo de dias de férias.
+
+- **Melhorias**:
+  - **Clareza**: O comentário adicionado é extenso e pode ser simplificado para melhorar a legibilidade. Considere resumir a explicação ou dividir em comentários menores.
+  - **Nomenclatura**: A variável `ehFeriadoNaoDescontado` poderia ter um nome mais intuitivo, como `ehFeriadoGratuito`, para refletir melhor o conceito de feriado que não desconta do saldo.
+  - **Desempenho**: A função `some()` é chamada para cada dia no intervalo, o que pode ser ineficiente se a lista de feriados for grande. Considere otimizar essa verificação, talvez pré-processando os feriados em um formato mais eficiente para consulta.
+
+## 2026-08-31 15:45:29 — `PR #117 — fix(agendamento-ferias): calculo de dias liquidos ignorava desconta_saldo`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0100
+
+- **Erro de Lógica**: No componente `Solicitacoes.jsx`, a lógica para determinar se um dia é um feriado que não desconta do saldo (`ehFeriadoNaoDescontado`) foi corrigida, mas é importante garantir que todos os casos de feriados e coletivas sejam cobertos adequadamente. Verifique se há casos de borda, como feriados que começam ou terminam exatamente no início ou fim do período de férias.
+  
+- **Tratamento de Erros**: Em várias partes do código, erros de consulta ao banco de dados são tratados com um `throw`, mas não há um tratamento específico para diferentes tipos de erros (como problemas de rede, autenticação, etc.). Considere adicionar um tratamento mais granular para diferentes tipos de erros, se possível.
+
+- **Feedback ao Usuário**: O uso de `toast.error` para notificar o usuário sobre falhas de carregamento é uma boa prática, mas certifique-se de que o usuário tenha uma maneira de tentar novamente ou de saber o que fazer a seguir.
+
+- **Performance**: As consultas ao banco de dados são feitas sequencialmente. Avalie se é possível realizar algumas dessas consultas em paralelo para melhorar a performance, especialmente se elas não dependem umas das outras.
+
+- **Clareza**: Considere adicionar comentários mais detalhados em trechos críticos do código, especialmente onde a lógica de negócios é complexa, para facilitar a manutenção futura.
+
+## 2026-09-01 08:59:58 — `frontend/src/components/layout/Sidebar.tsx`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0024
+
+Sem observações.
+
+## 2026-09-01 09:00:03 — `frontend/src/components/layout/Sidebar.tsx`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0027
+
+Sem observações.
+
+## 2026-09-01 09:00:08 — `frontend/src/components/layout/Sidebar.tsx`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0032
+
+Sem observações.
+
+## 2026-09-01 09:00:16 — `frontend/src/components/layout/Header.tsx`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0013
+
+Sem observações.
+
+## 2026-09-01 09:00:19 — `frontend/src/components/layout/Header.tsx`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0016
+
+Sem observações.
+
+## 2026-09-01 09:00:27 — `frontend/src/components/layout/Header.tsx`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0020
+
+Sem observações.
+
+## 2026-09-01 09:00:31 — `frontend/src/components/layout/Header.tsx`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0023
+
+Sem observações.
+
+## 2026-09-01 09:00:53 — `frontend/src/components/layout/Header.tsx`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0067
+
+- **Risco de Segurança**: O uso de `window.location.href = '/login'` para redirecionamento após logout pode ser suscetível a ataques de redirecionamento aberto se a URL não for controlada adequadamente. Considere usar uma abordagem mais segura, como o uso de `window.location.replace('/login')` para evitar que a página anterior seja acessada através do botão de voltar do navegador.
+  
+- **Melhoria de Código**: A função `endUnifiedSession` é chamada de forma assíncrona, mas não há tratamento de erro caso a promessa falhe. Considere adicionar um bloco `try-catch` para lidar com possíveis falhas na execução da função.
+
+- **Acessibilidade**: O botão de logout não possui um `aria-label`, o que pode dificultar a navegação para usuários que dependem de leitores de tela. Adicione um `aria-label` para melhorar a acessibilidade.
+
+- **Clareza de Código**: A lógica de alternância de visibilidade do menu do usuário (`setShowUserMenu`) pode ser mais clara se for extraída para uma função separada, melhorando a legibilidade do código.
+
+## 2026-09-01 09:02:43 — `commit 0b51f3c (feat/account-menu-avatar)`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0086
+
+- **Risco de Segurança**: O uso de `window.location.href = '/login'` para redirecionamento após logout pode ser vulnerável a ataques de redirecionamento aberto se a URL não for validada corretamente. Considere usar uma abordagem mais segura para redirecionamento.
+- **Acessibilidade**: O botão de avatar não possui um texto alternativo claro para leitores de tela, o que pode prejudicar a acessibilidade. Considere adicionar um `aria-label` mais descritivo.
+- **Melhoria de Código**: A lógica de fechamento do menu do usuário ao clicar fora dele é duplicada para notificações e mensagens. Considere refatorar essa lógica em uma função utilitária para evitar duplicação de código.
+- **Melhoria de Usabilidade**: O menu de usuário é fechado imediatamente após clicar em "Sair", o que pode ser uma experiência confusa para o usuário. Considere adicionar um feedback visual ou uma confirmação antes de redirecionar.
+
+## 2026-09-01 09:16:30 — `PR #119 — fix+feat(obrigacoes): filtros de Entregas + tela de edicao de obrigacao`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0123
+
+- **Erro de validação de data**: No componente `NovaVersaoPrazo`, a validação de `vigenciaInicio` apenas verifica o formato da data, mas não se assegura de que a data é válida (por exemplo, 2023-02-30 passaria na validação). Considere usar uma biblioteca como `date-fns` ou `moment` para validar a data corretamente.
+- **Falta de tratamento de erro**: Nos blocos `try-catch` de `salvarDados` e `salvar`, os erros capturados não estão sendo tratados ou logados, o que pode dificultar a identificação de problemas em produção.
+- **Uso de `any` no TypeScript**: O uso de `as Error` em `(atualizar.error as Error).message` pode mascarar erros de tipagem. Considere definir tipos mais específicos para os erros retornados.
+
+Sugestões de melhoria:
+- **Desempenho**: O componente `EditarObrigacaoForm` renderiza um modal com muitos elementos. Considere dividir o componente em subcomponentes menores para melhorar a legibilidade e potencialmente o desempenho.
+- **Clareza do código**: Considere adicionar comentários explicativos em trechos de código mais complexos, especialmente onde há lógica de negócios importante, para facilitar a manutenção futura.
+- **Acessibilidade**: Certifique-se de que todos os elementos interativos são acessíveis via teclado e que possuem descrições adequadas para leitores de tela.
+
+## 2026-09-01 09:42:24 — `PR #119 — fix(obrigacoes,dashboard): filtros de Entregas, edicao de obrigacao, SLA real`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0126
+
+- **Erro de lógica**: No cálculo de `dias` na função `dueLabel`, a diferença de tempo é dividida por `86400000` (milissegundos em um dia), mas isso pode não considerar corretamente mudanças de horário de verão. Considere usar bibliotecas como `date-fns` ou `moment` para cálculos de data mais precisos.
+- **Risco de segurança**: Não há tratamento de erros para a chamada `suporteSupabase.auth.getUser()`. Se essa chamada falhar, pode causar comportamentos inesperados.
+- **Risco de segurança**: As consultas ao banco de dados não têm tratamento de erros robusto. Embora haja um `throw` para erros, seria melhor ter um mecanismo de logging ou notificação para monitorar falhas.
+- **Melhoria de clareza**: A função `dueLabel` poderia ser documentada melhor para explicar o propósito e o funcionamento, especialmente em relação ao cálculo de dias.
+- **Melhoria de performance**: A função `dueLabel` é chamada várias vezes para cada renderização do componente. Considere memoizar o resultado se os parâmetros não mudarem entre renderizações.
+- **Melhoria de clareza**: O uso de strings literais como `'Atrasado'`, `'Hoje'`, `'Amanhã'` poderia ser substituído por constantes para melhorar a legibilidade e evitar erros de digitação.
+- **Melhoria de clareza**: No componente `EditarObrigacaoForm`, a lógica de estado e manipulação de erros poderia ser extraída para hooks personalizados para melhorar a legibilidade e a manutenção do código.
+
+## 2026-09-01 09:48:50 — `frontend/src/systems/dashboard-dre/components/Sidebar.tsx`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0013
+
+Sem observações.
+
+## 2026-09-01 09:49:01 — `frontend/src/systems/dashboard-dre/components/Sidebar.tsx`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0024
+
+Sem observações.
+
+## 2026-09-01 09:49:17 — `frontend/src/systems/dashboard-dre/DashboardDreApp.tsx`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0053
+
+- **Risco de Segurança**: A implementação menciona o uso de `OPENAI_API_KEY` e `POSTGRES_URL`, mas não há verificação de que essas variáveis estão configuradas corretamente antes de tentar usá-las. Isso pode levar a falhas silenciosas ou comportamentos inesperados se as variáveis não estiverem definidas.
+- **Erro de Lógica**: Não há tratamento para o caso em que `tela` não corresponde a nenhuma das opções esperadas ('visao-geral', 'comparativo', 'composicao', 'drilldown', 'insights'). Isso pode resultar em uma tela em branco ou comportamento inesperado.
+
+Sugestões de melhoria:
+- **Clareza**: Adicionar comentários explicando o propósito de cada componente importado e como eles se relacionam com a lógica geral do aplicativo.
+- **Resiliência**: Implementar um fallback no componente `Telas` para lidar com valores inesperados de `tela`, garantindo que o aplicativo não quebre.
+- **Segurança**: Antes de usar as variáveis de ambiente, verificar se elas estão definidas e, caso contrário, fornecer mensagens de erro claras ou degradar a funcionalidade de forma controlada.
+
+## 2026-09-01 09:51:24 — `backend-fastapi/app/api/v1/endpoints/dre_proxy.py`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0014
+
+Sem observações.
+
+## 2026-09-01 09:51:44 — `commit 861c346 (feat/dashboard-dre-fase2)`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0121
+
+- **Timeout aumentado:** O aumento do timeout de 30s para 60s pode mascarar problemas de performance. É importante garantir que a causa do aumento de tempo de resposta seja investigada e otimizada.
+- **Tratamento de Erros:** No `useEffect` que verifica a disponibilidade do assistente, erros de rede são silenciosamente ignorados. Considere adicionar logs ou algum tipo de feedback para facilitar o diagnóstico de problemas.
+- **Segurança:** Não há validação ou sanitização das entradas do usuário antes de enviá-las para o servidor. Isso pode abrir brechas para ataques de injeção. Certifique-se de que as entradas são devidamente tratadas.
+- **Uso de `useEffect`:** O uso de `let ativo = true;` para controlar o estado do componente pode ser propenso a erros. Considere usar `AbortController` para cancelar requisições HTTP quando o componente desmonta.
+
+Sugestões de melhoria:
+- **Clareza do Código:** Considere adicionar comentários explicativos em trechos complexos ou críticos do código para melhorar a manutenção futura.
+- **Performance:** Revise a lógica de renderização condicional e o uso de estados para garantir que o componente não seja re-renderizado desnecessariamente.
+- **Acessibilidade:** Verifique se todos os elementos interativos possuem atributos `aria` adequados para melhorar a acessibilidade.
+
+## 2026-09-01 09:52:51 — `PR #120 — feat(dashboard-dre): fase 2 — 4 telas restantes + Assistente/Anotações`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0125
+
+- **Timeout aumentado:** O aumento do timeout de 30s para 60s pode mascarar problemas de desempenho. É importante garantir que o aumento do tempo de resposta seja realmente necessário e que não seja um sintoma de um problema subjacente que precisa ser resolvido.
+- **Tratamento de erros:** No `useEffect` que verifica a disponibilidade do assistente, o `catch` está vazio. Seria melhor logar o erro ou informar o usuário de alguma forma para facilitar o diagnóstico de problemas.
+- **Segurança:** A função `perguntar` envia dados para o servidor sem validação adicional. Certifique-se de que o servidor está preparado para lidar com entradas inesperadas ou maliciosas.
+- **Acessibilidade:** O botão de abrir o assistente tem um rótulo que aparece apenas no hover. Considere melhorar a acessibilidade para usuários de teclado ou leitores de tela.
+- **Performance:** O uso de `useEffect` para verificar a disponibilidade do assistente em cada renderização pode ser otimizado para evitar chamadas desnecessárias ao servidor.
+
+Sugestões de melhoria:
+- **Clareza do Código:** Considere adicionar comentários explicativos em partes complexas do código para facilitar a manutenção futura.
+- **Reutilização de Código:** A lógica de renderização de componentes com base no estado `tela` poderia ser extraída para uma função separada para melhorar a clareza e a reutilização.
+- **Feedback ao Usuário:** Quando o assistente está "pensando", seria útil fornecer um feedback visual mais claro para o usuário, além da mensagem de texto.
+
+## 2026-09-01 10:16:46 — `frontend/src/systems/dashboard-dre/lib/api.ts`
+
+**Severidade:** alta
+
+**Custo estimado:** $0.0042
+
+- **Risco de Segurança**: A utilização de `localStorage` para armazenar o token (`crm_token`) pode ser um risco de segurança, pois `localStorage` é vulnerável a ataques XSS (Cross-Site Scripting). Considere usar cookies com a flag `HttpOnly` para armazenar tokens de autenticação.
+- **Erro de Lógica**: A alteração para usar `VITE_API_BASE_URL` pode causar problemas se a variável de ambiente não estiver definida corretamente em todos os ambientes (desenvolvimento, teste, produção). Certifique-se de que essa variável esteja configurada em todos os ambientes para evitar falhas de conexão.
+- **Caso de Borda**: Não há tratamento para o caso em que `VITE_API_BASE_URL` não está definido. Isso pode resultar em URLs incorretas. Considere adicionar uma validação para garantir que `API_ROOT` seja sempre uma URL válida.
+
+Sugestões de melhoria:
+- **Clareza**: Adicione comentários explicando a importância de `VITE_API_BASE_URL` estar corretamente configurada e os possíveis impactos se não estiver.
+- **Performance**: Se `VITE_API_BASE_URL` não mudar durante a execução, considere armazená-la em uma constante para evitar múltiplas leituras de `import.meta.env`.
+
+## 2026-09-01 10:18:03 — `commit 7d6fa7a (fix/dashboard-dre-proxy-base)`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0035
+
+- **Risco de Segurança**: Utilizar `import.meta.env.VITE_API_BASE_URL` sem validação pode ser arriscado se o valor não for controlado adequadamente. Certifique-se de que o valor é seguro e não pode ser manipulado por usuários mal-intencionados.
+- **Erro de Lógica**: Se `VITE_API_BASE_URL` não estiver definido, o código usará `'/api/v1'` como fallback. Isso pode causar problemas se o backend não estiver configurado para lidar com esse caminho corretamente.
+
+Sugestões de Melhoria:
+- **Validação de URL**: Adicione uma validação para garantir que `VITE_API_BASE_URL` seja uma URL válida antes de usá-la.
+- **Fallback mais robusto**: Considere adicionar logs ou avisos quando o fallback para `'/api/v1'` for utilizado, para facilitar o diagnóstico de problemas de configuração em ambientes de produção.
+
+## 2026-09-01 10:18:43 — `PR #122 — fix(dashboard-dre): proxy usa VITE_API_BASE_URL, não caminho relativo`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0038
+
+- **Risco de Segurança**: Usar `import.meta.env.VITE_API_BASE_URL` diretamente pode expor a aplicação a ataques se o valor não for corretamente validado ou sanitizado. Certifique-se de que o valor de `VITE_API_BASE_URL` é seguro e não pode ser manipulado por um usuário mal-intencionado.
+- **Erro de Lógica**: Se `VITE_API_BASE_URL` não estiver definido, o código usará `'/api/v1'` como fallback. Isso pode não funcionar corretamente se o backend não estiver configurado para lidar com esse caminho. Certifique-se de que o fallback é um valor válido e funcional em todos os ambientes.
+
+Sugestões de melhoria:
+- **Validação de Configuração**: Adicione uma validação para garantir que `VITE_API_BASE_URL` está definido e é uma URL válida antes de construir `DRE_PROXY_BASE`.
+- **Documentação**: Considere adicionar comentários ou documentação explicando o comportamento esperado quando `VITE_API_BASE_URL` não está definido, para evitar confusão futura.
+
+## 2026-09-01 10:18:48 — `PR #121 — fix(central-suporte): notificacao de novo comentario mostra numero+titulo+solicitante`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0050
+
+- A função `notify_new_comment` não trata o caso em que `new.ticket_id` não corresponde a nenhum registro na tabela `public.tickets`. Isso pode ser um caso de borda, mas a função já retorna `new` se `v_ticket` for `null`, o que é adequado.
+- Não há tratamento de exceções para falhas nas consultas SQL. Embora o uso de PL/pgSQL geralmente não exija isso, adicionar tratamento de exceções pode ajudar na depuração e na robustez do sistema.
+- A função assume que `new.author_id` e `new.internal_only` sempre estarão presentes e válidos. Certifique-se de que esses campos são obrigatórios e sempre fornecidos.
+
+Sugestões de melhoria:
+- Considere adicionar logs ou mensagens de erro para casos em que `v_ticket` ou `v_requester_name` não são encontrados, para facilitar a depuração.
+- Avalie a possibilidade de adicionar comentários no código para explicar a lógica de notificação, especialmente para novos desenvolvedores que possam trabalhar no código no futuro.
+
+## 2026-09-01 10:24:36 — `backend-fastapi/app/api/v1/endpoints/dre_proxy.py`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0016
+
+Sem observações.
+
+## 2026-09-01 10:24:45 — `commit c23690b (fix/dashboard-dre-proxy-base)`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0016
+
+Sem observações.
+
+## 2026-09-01 10:25:00 — `commit 538add0 (fix/dashboard-dre-proxy-brotli)`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0016
+
+Sem observações.
+
+## 2026-09-01 10:29:09 — `PR #123 — fix(dashboard-dre): proxy pede accept-encoding identity ao upstream`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0016
+
+Sem observações.
+
+## 2026-09-01 10:34:25 — `commit e79b037 (fix/dre-proxy-brotli-dep)`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0015
+
+Sem observações.
+
+## 2026-09-01 10:39:30 — `PR #124 — fix(dashboard-dre): brotli nas deps do backend p/ o dre_proxy`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0015
+
+Sem observações.
+
+## 2026-09-01 11:04:00 — `frontend/src/systems/dashboard-dre/lib/api.ts`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0017
+
+Sem observações.
+
+## 2026-09-01 11:04:15 — `backend-fastapi/app/api/v1/endpoints/dre_proxy.py`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0039
+
+- **Bugs Reais e Erros de Lógica**: A remoção dos cabeçalhos relacionados à validação de cache pode resolver o problema imediato de receber respostas 304 que o front-end não consegue parsear, mas também pode introduzir problemas de performance e carga no servidor. Ao desabilitar o cache, cada requisição resultará em uma resposta completa (200), o que pode aumentar significativamente o tempo de resposta e o uso de largura de banda.
+
+- **Melhorias Sugeridas**:
+  - **Clareza**: Comente de forma mais clara o motivo da remoção desses cabeçalhos, explicando o impacto potencial na performance e por que essa abordagem foi escolhida.
+  - **Alternativas**: Considere implementar uma solução no front-end para lidar com respostas 304, em vez de desabilitar completamente o cache. Isso pode incluir a adição de lógica para detectar e tratar respostas vazias de forma adequada.
+  - **Segurança**: Certifique-se de que a remoção desses cabeçalhos não introduza vulnerabilidades, como a exposição de dados sensíveis devido à falta de cache controlado.
+
+## 2026-09-01 11:05:06 — `commit 3d88b24 (fix/dre-proxy-304-cache)`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0048
+
+- **Bugs Reais e Erros de Lógica:**
+  - Nenhum bug real ou erro de lógica foi identificado no código apresentado.
+
+- **Riscos de Segurança:**
+  - A manipulação direta de tokens de autenticação a partir do `localStorage` pode ser um risco de segurança se o `localStorage` for comprometido. Considere alternativas mais seguras para armazenar tokens, como cookies com atributos `HttpOnly` e `Secure`.
+
+- **Melhorias:**
+  - **Clareza:** O comentário sobre o uso de `cache: 'no-store'` é útil, mas poderia ser mais conciso. Considere simplificar para melhorar a legibilidade.
+  - **Performance:** A configuração `cache: 'no-store'` desabilita o cache completamente, o que pode impactar a performance em redes lentas. Avalie se há uma maneira de implementar um cache mais inteligente, talvez com uma estratégia de revalidação que não dependa de `ETag` ou `Last-Modified`.
+  - **Duplicação:** Verifique se há duplicação de lógica de tratamento de sessão expirada em outros arquivos e considere centralizar essa lógica para facilitar a manutenção.
+
+## 2026-09-01 11:29:36 — `commit 9ffa406 (docs/handoff-monitoramento-vps)`
+
+**Severidade:** alta
+
+**Custo estimado:** $0.0145
+
+- **Risco de Segurança com `docker.sock`:** Montar `/var/run/docker.sock` mesmo em modo somente leitura (`:ro`) ainda representa um risco significativo de segurança, pois permite que o container do backend interaja com o Docker daemon, potencialmente permitindo a execução de comandos maliciosos. Considerar alternativas mais seguras, como um exporter dedicado (cAdvisor/node_exporter) que expõe apenas as métricas necessárias.
+  
+- **Token de Autenticação Exposto:** O uso de `HOSTINGER_API_TOKEN` diretamente no código ou em configurações sem medidas adequadas de segurança pode levar a vazamentos de credenciais. Certifique-se de que o token seja armazenado de forma segura e não seja exposto em logs ou interfaces públicas.
+
+- **Rate Limiting e Cache:** A implementação de cache agressivo é mencionada, mas não está claro se há uma estratégia para lidar com a invalidação do cache ou a atualização de dados críticos em tempo real. Certifique-se de que o cache não cause problemas de consistência de dados.
+
+- **Persistência e Scheduler:** A falta de um scheduler no backend pode levar a problemas de coleta de dados históricos e alertas. A adição de um scheduler (APScheduler ou similar) deve ser priorizada para garantir a coleta e processamento de dados em tempo hábil.
+
+- **Ações Assíncronas e `actions_lock`:** A implementação de polling para ações assíncronas deve ser cuidadosamente gerida para evitar sobrecarga no sistema e garantir que o estado de `actions_lock` seja respeitado para evitar conflitos.
+
+Sugestões de melhoria:
+
+- **Documentação e Comentários:** A documentação é extensa, mas garantir que todos os desenvolvedores compreendam as implicações de segurança e arquitetura é crucial. Considere adicionar comentários mais detalhados em áreas críticas do código.
+
+- **Modularização do Código:** Considere modularizar o código para separar claramente as responsabilidades, como a interação com a API da Hostinger, manipulação de dados do Docker, e lógica de negócios do CRM.
+
+- **Testes Automatizados:** Implementar testes automatizados para garantir que as funcionalidades críticas, especialmente aquelas relacionadas a segurança e manipulação de dados, funcionem conforme esperado e não introduzam regressões.
+
+## 2026-09-01 11:31:16 — `PR #126 — docs(vps): handoff do monitoramento da VPS Hostinger`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0138
+
+- **Risco de Segurança:** Montar `/var/run/docker.sock` mesmo como somente leitura (`:ro`) ainda representa um risco significativo de segurança, pois permite que o container do backend tenha acesso a informações sensíveis do Docker. Considere usar um exporter dedicado como cAdvisor ou node_exporter para mitigar esse risco.
+- **Rate Limiting:** O uso da API da Hostinger está sujeito a um limite de taxa de 90 requisições por minuto. Certifique-se de que o cache no backend é implementado corretamente para evitar atingir esse limite, especialmente em cenários de auto-refresh.
+- **Persistência de Dados Sensíveis:** O `HOSTINGER_API_TOKEN` deve ser armazenado de forma segura. Certifique-se de que ele não seja exposto em logs ou interfaces de usuário.
+- **Ações Assíncronas:** As ações assíncronas na Hostinger, como restart e recovery, devem ser cuidadosamente gerenciadas para garantir que o estado da ação seja monitorado até a conclusão. Certifique-se de que o polling em `/actions/{actionId}` é implementado corretamente.
+- **Validação de Entradas:** Ao lidar com endpoints que aceitam dados do usuário, como a edição de regras de firewall, é crucial validar e sanitizar todas as entradas para prevenir injeções ou outras formas de ataque.
+
+Sugestões de melhoria:
+- **Documentação:** Considere adicionar exemplos de uso para cada endpoint da API no documento, o que pode ajudar desenvolvedores a entenderem melhor como integrar e utilizar a API.
+- **Modularização do Código:** Considere dividir o arquivo de documentação em seções menores ou arquivos separados para facilitar a navegação e manutenção.
+- **Clareza na Fase de Decisões:** A seção de decisões na Fase 0 poderia ser mais clara sobre as implicações de cada escolha, ajudando na tomada de decisão informada.
+
+## 2026-09-01 11:35:38 — `commit ec63a50 (docs/handoff-monitoramento-vps)`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0083
+
+- **Risco de Segurança:** O uso de tokens de API (`HOSTINGER_API_TOKEN`, `COOLIFY_API_TOKEN`) deve ser tratado com cuidado. Certifique-se de que esses tokens sejam armazenados de forma segura e não sejam expostos em logs ou interfaces públicas.
+- **Confirmação de Ações Críticas:** A exigência de confirmação digitada para ações críticas é uma boa prática, mas deve ser implementada de forma robusta para evitar bypass. Certifique-se de que a confirmação seja verificada de forma segura.
+- **Dependência de Usuário:** A implementação depende de várias ações do usuário (geração de tokens, fornecimento de URLs). Isso pode ser um ponto de falha se não for bem documentado e verificado.
+- **Exposição de Exporters:** Embora os exporters estejam em uma rede interna, é importante garantir que não haja exposição acidental através de configurações incorretas de rede ou firewall.
+
+Sugestões de melhoria:
+- **Documentação:** Fornecer documentação clara e detalhada para o usuário sobre como gerar e configurar os tokens de API e URLs necessários.
+- **Validação de Entrada:** Implementar validações robustas para as entradas fornecidas pelo usuário, como URLs e tokens, para evitar erros de configuração e possíveis vetores de ataque.
+- **Monitoramento e Logs:** Implementar monitoramento e logging adequados para ações críticas e acessos a APIs para facilitar auditorias e detecção de anomalias.
+
+## 2026-09-01 11:35:53 — `commit 41ca4f2 (docs/handoff-monitoramento-vps)`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0032
+
+- **Segurança:** A exposição do domínio público `https://coolify.nucleodigital.cloud/` pode ser um risco de segurança se não for adequadamente protegido. Certifique-se de que a API está protegida contra acessos não autorizados e que as permissões são restritas ao necessário.
+- **Melhoria de clareza:** A instrução para "confirmar o nome/porta do container do Coolify na rede docker" pode ser mais clara. Considere adicionar um exemplo ou uma breve explicação de como realizar essa confirmação.
+- **Melhoria de documentação:** Considere adicionar uma nota sobre a necessidade de manter o token da API seguro e não exposto em repositórios públicos ou logs.
+
+## 2026-09-01 11:41:44 — `PR #126 — docs(vps): handoff do monitoramento da VPS Hostinger`
+
+**Severidade:** alta
+
+**Custo estimado:** $0.0149
+
+- **Risco de Segurança:** O uso do `docker.sock` mesmo com a montagem `:ro` ainda representa um risco significativo de segurança. Uma vulnerabilidade no backend poderia permitir que um invasor executasse comandos Docker, levando a um comprometimento completo do sistema. A decisão de usar `docker-socket-proxy` é uma melhoria, mas ainda há riscos associados ao acesso ao socket Docker.
+  
+- **Autenticação e Autorização:** Não está claro como a autenticação e autorização são geridas para as APIs da Hostinger e Coolify. Certifique-se de que os tokens de API sejam armazenados de forma segura e que o acesso seja restrito apenas a usuários autorizados.
+
+- **Rate Limiting:** A implementação de cache para evitar atingir os limites de taxa da API da Hostinger é mencionada, mas não há detalhes sobre como isso será gerido em cenários de alta carga. Certifique-se de que o cache seja robusto o suficiente para lidar com picos de tráfego.
+
+- **Confirmação de Ações Críticas:** A exigência de confirmação digitada para ações críticas como `restart` ou `recreate` é uma boa prática, mas deve ser implementada de forma que não possa ser facilmente contornada por um usuário mal-intencionado.
+
+- **Persistência de Histórico:** A decisão de adiar a persistência de histórico para a Fase 3 pode limitar a capacidade de análise de longo prazo. Considere implementar uma solução de armazenamento de dados históricos mais cedo, se possível.
+
+- **Exporters de Métricas:** A configuração dos exporters (`cadvisor`, `node_exporter`) deve ser revisada para garantir que não exponham informações sensíveis ou sejam acessíveis por partes não autorizadas.
+
+Sugestões de melhoria:
+
+- **Documentação:** Adicione mais detalhes sobre como a segurança dos tokens de API será gerida, incluindo práticas recomendadas para rotação e armazenamento seguro.
+
+- **Teste de Segurança:** Realize testes de segurança abrangentes para garantir que o acesso ao `docker.sock` e as APIs externas não possam ser explorados.
+
+- **Monitoramento de Logs:** Implemente um sistema de monitoramento de logs para detectar e responder a atividades suspeitas ou anômalas, especialmente em relação ao uso do `docker.sock` e APIs externas.
+
+- **Feedback do Usuário:** Considere adicionar feedback visual claro para o usuário ao realizar ações críticas, indicando o sucesso ou falha da operação.
+
+## 2026-09-01 11:45:21 — `backend-fastapi/app/core/config.py`
+
+**Severidade:** alta
+
+**Custo estimado:** $0.0040
+
+- **Risco de Segurança**: A inclusão de `HOSTINGER_API_TOKEN` diretamente no código pode levar a vazamentos de segurança se o código for exposto publicamente. Tokens de API devem ser armazenados em variáveis de ambiente ou em um gerenciador de segredos seguro.
+- **Risco de Segurança**: `HOSTINGER_VPS_ID` está hardcoded no código. Embora não seja tão crítico quanto o token, ainda é uma boa prática evitar hardcoding de identificadores sensíveis.
+- **Melhoria de Segurança**: Certifique-se de que o arquivo de configuração não seja exposto publicamente e que o acesso ao repositório seja restrito para evitar vazamento de informações sensíveis.
+
+Sugestões:
+- Utilize variáveis de ambiente para armazenar `HOSTINGER_API_TOKEN` e `HOSTINGER_VPS_ID` e carregue-os no código usando `os.getenv()` ou similar.
+- Considere o uso de um gerenciador de segredos para armazenar e acessar tokens e IDs sensíveis de forma segura.
+- Revise as permissões de acesso ao repositório para garantir que apenas pessoas autorizadas possam acessar o código que contém informações sensíveis.
+
+## 2026-09-01 11:46:25 — `backend-fastapi/app/api/v1/router.py`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0018
+
+Sem observações.
+
+## 2026-09-01 11:50:06 — `frontend/vite.config.ts`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0012
+
+Sem observações.
+
+## 2026-09-01 11:50:16 — `frontend/src/systems/registry.tsx`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0014
+
+Sem observações.
+
+## 2026-09-01 11:51:59 — `commit 32e0785 (feat/migracoes-arthur)`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0129
+
+- **Risco de segurança**: O uso do `HOSTINGER_API_TOKEN` diretamente no código, mesmo que server-side, pode ser um risco se não for bem protegido. Certifique-se de que o token está armazenado de forma segura e que o acesso ao ambiente de execução é restrito.
+- **Tratamento de exceções**: No método `_hostinger_get`, o tratamento de exceções para `httpx.HTTPError` é muito genérico. Considere capturar exceções específicas para fornecer mensagens de erro mais detalhadas.
+- **Cache TTL**: O uso de um TTL de 45 segundos pode não ser suficiente em cenários de alta carga. Considere ajustar o TTL ou implementar um mecanismo de fallback para evitar atingir o limite de taxa da Hostinger.
+- **Validação de dados**: Não há validação explícita dos dados recebidos da API da Hostinger. Considere adicionar validações para garantir que os dados sejam do tipo e formato esperados antes de processá-los.
+- **Uso de `asyncio.gather`**: No endpoint `/overview`, o uso de `asyncio.gather` com `return_exceptions=True` pode mascarar erros. Considere lidar com exceções individualmente para cada chamada assíncrona para melhor controle de erros.
+
+Sugestões de melhoria:
+- **Documentação**: Adicione mais comentários ou docstrings para explicar a lógica de transformação de dados, especialmente em funções como `_series_to_recharts`.
+- **Desempenho**: Avalie o impacto de chamadas simultâneas à API da Hostinger e considere implementar um mecanismo de backoff exponencial para lidar com limites de taxa.
+- **Clareza**: Considere renomear variáveis como `e` para algo mais descritivo, como `epoch`, para melhorar a legibilidade do código.
+
+## 2026-09-01 12:03:38 — `frontend/src/systems/vps-monitor/lib/api.ts`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0015
+
+Sem observações.
+
+## 2026-09-01 12:03:43 — `frontend/src/systems/vps-monitor/pages/Overview.tsx`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0016
+
+Sem observações.
+
+## 2026-09-01 12:03:49 — `frontend/src/systems/vps-monitor/pages/Historico.tsx`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0015
+
+Sem observações.
+
+## 2026-09-01 12:03:57 — `frontend/src/systems/vps-monitor/pages/RedeFirewall.tsx`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0017
+
+Sem observações.
+
+## 2026-09-01 12:04:02 — `frontend/src/systems/vps-monitor/pages/SnapshotsBackups.tsx`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0018
+
+Sem observações.
+
+## 2026-09-01 12:04:08 — `frontend/src/systems/vps-monitor/pages/AcoesAuditoria.tsx`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0015
+
+Sem observações.
+
+## 2026-09-01 12:05:29 — `commit b00f217 (feat/migracoes-arthur)`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0053
+
+Sem observações.
+
+## 2026-09-01 14:47:42 — `PR #128 — Porta melhorias do Cronos (PontoMG) para o CRM`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0093
+
+Sem observações.
+
+## 2026-09-02 09:59:16 — `PR #130 — fix(pomodoro-ti): iniciar pro setor não trocava pro anel do setor`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0031
+
+- A lógica adicionada parece correta e não há bugs evidentes ou problemas de segurança.
+- A implementação usa `useRef` para evitar loops infinitos, o que é uma boa prática.
+- A explicação nos comentários é clara e ajuda a entender a motivação da mudança.
+
+Sugestões de melhoria:
+- Considere adicionar testes para garantir que a troca automática para o modo 'sector' funcione conforme esperado em diferentes cenários.
+- Verifique se a função `setMode` é assíncrona e se há necessidade de tratar possíveis efeitos colaterais ao mudar o estado.
+
+## 2026-09-02 16:25:28 — `PR #132 — security: corrige achados da varredura (XSS, upload sem limite, validação de setor, JWT longo)`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0111
+
+- **Bugs Reais / Erros de Lógica / Riscos de Segurança:**
+  - Nenhum bug ou erro de lógica aparente foi identificado na alteração proposta.
+
+- **Melhorias:**
+  - **Validação de Setor:** A função `_validar_setor` está bem implementada, mas poderia ser otimizada para retornar um booleano em vez de levantar uma exceção diretamente. Isso permitiria um tratamento de erro mais flexível em diferentes contextos.
+  - **Upload de Arquivos:** A lógica de remoção de arquivos parciais é adequada, mas poderia ser melhorada com logs para facilitar a auditoria e o monitoramento de tentativas de upload maliciosas.
+  - **JWT Expiration:** A redução do tempo de expiração do JWT é uma boa prática de segurança. No entanto, a implementação de um sistema de revogação de tokens (como mencionado no comentário) seria uma melhoria significativa para a segurança geral.
+  - **Uso de `dangerouslySetInnerHTML`:** A adição de `DOMPurify` para sanitização é uma boa prática. No entanto, é importante garantir que todas as entradas que possam ser injetadas no HTML sejam sempre sanitizadas, mesmo que o backend escape corretamente os dados.
+
+- **Sugestões Gerais:**
+  - Considere adicionar testes unitários para as novas funcionalidades e validações introduzidas, especialmente para a função `_validar_setor` e o limite de upload de arquivos.
+  - Documente claramente as mudanças de configuração, como a alteração do tempo de expiração do JWT, para que todos os membros da equipe estejam cientes das novas práticas de segurança.
+
+## 2026-09-02 16:41:06 — `PR #132 — security: corrige achados da varredura (XSS, upload sem limite, validação de setor, JWT longo)`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0117
+
+- **Risco de Segurança**: A alteração do tempo de expiração do JWT de 7 dias para 1 dia é uma boa prática, mas não há menção de rotação ou invalidação de tokens antigos, o que pode ser um risco se um token for comprometido.
+- **Validação de Setor**: A função `_validar_setor` corretamente valida a existência do setor, mas não há tratamento para possíveis exceções do banco de dados, como problemas de conexão.
+- **Upload de Arquivos**: A implementação do limite de upload é uma melhoria, mas a remoção do arquivo em caso de exceção pode falhar se `os.remove` não tiver permissões adequadas ou se o arquivo não existir mais por algum motivo.
+- **Sessões de Usuário**: A lógica de fallback para sessões legadas sem `jti` ainda pode causar confusão se não for bem documentada para futuros desenvolvedores. Além disso, a criação de uma nova sessão em `heartbeat` para tokens legados pode levar a inconsistências se não for bem gerida.
+
+Sugestões de melhoria:
+- Considere implementar uma estratégia de rotação de JWTs ou revogação de tokens antigos para melhorar a segurança.
+- Adicione tratamento de exceções para operações de banco de dados e operações de sistema de arquivos para garantir robustez.
+- Documente claramente a lógica de sessões legadas para facilitar a manutenção futura.
+- Considere adicionar logs para operações críticas, como falhas de upload ou problemas de sessão, para facilitar o monitoramento e a depuração.
+
+## 2026-09-02 16:51:36 — `PR #132 — security: corrige achados da varredura (XSS, upload sem limite, validação de setor, JWT longo)`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0122
+
+- **Risco de Segurança**: A alteração no tempo de expiração do JWT de 604800 segundos (7 dias) para 86400 segundos (1 dia) é uma boa prática de segurança, mas a chave `JWT_SECRET` ainda está como um placeholder. Certifique-se de que em produção essa chave seja forte e segura.
+- **Validação de Setor**: A função `_validar_setor` foi adicionada para garantir que apenas setores válidos sejam utilizados, o que é uma boa prática. No entanto, a mensagem de erro ao levantar a `HTTPException` poderia ser mais genérica para evitar exposição de informações internas.
+- **Upload de Arquivos**: A implementação de um limite de tamanho para uploads é uma boa prática. No entanto, a remoção do arquivo parcial em caso de erro é essencial, mas poderia ser melhorada com um bloco `finally` para garantir a limpeza mesmo se outras exceções ocorrerem.
+- **Sessões de Usuário**: A lógica de sessão parece robusta, mas a função `encerrar_sessao` não está completamente visível. Certifique-se de que a lógica de encerramento de sessão lida corretamente com sessões inexistentes ou já encerradas, levantando exceções apropriadas se necessário.
+- **Clareza do Código**: Comentários extensivos são úteis, mas podem ser simplificados para melhorar a legibilidade. Considere usar docstrings para funções complexas e manter comentários curtos e diretos.
+
+Sugestões de melhoria:
+- Considere adicionar testes unitários para as novas funcionalidades, especialmente para a validação de setor e o limite de upload, para garantir que comportamentos inesperados sejam capturados.
+- Revise o uso de `HTTPException` para garantir que mensagens de erro não exponham detalhes internos do sistema.
+
+## 2026-09-02 16:56:53 — `PR #132 — security: corrige achados da varredura (XSS, upload sem limite, validação de setor, JWT longo)`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0120
+
+- **Bugs e Riscos de Segurança:**
+  1. No endpoint de upload de documentos, a validação do tamanho do arquivo ocorre após a leitura de cada chunk. Isso pode permitir que arquivos grandes sejam parcialmente escritos antes de serem rejeitados, o que pode ser explorado para encher o disco com lixo. A remoção do arquivo parcial é uma boa prática, mas a validação poderia ser feita antes de qualquer escrita.
+  2. No método `logout`, a lógica para lidar com tokens legados sem `jti` pode ser melhorada. Atualmente, não há uma verificação explícita para garantir que `session` não seja `None` antes de tentar acessar `session.ativa`.
+
+- **Melhorias:**
+  1. No arquivo `auth.py`, a criação da sessão e do token poderia ser encapsulada em uma função separada para melhorar a clareza e a reutilização do código.
+  2. No arquivo `portal.py`, a variável `safe_filename` poderia ser sanitizada de forma mais robusta para evitar possíveis problemas de segurança relacionados a nomes de arquivos.
+  3. No arquivo `pomodoro.py`, a função `_validar_setor` poderia ser otimizada para retornar diretamente o resultado da consulta ao invés de fazer uma verificação adicional com `if not existe`.
+  4. Considere adicionar logs para operações críticas, como falhas de upload devido ao tamanho do arquivo, para facilitar o monitoramento e a auditoria.
+
+## 2026-09-08 09:10:39 — `PR #133 — fix(ponto-admin): dropdown de exportação do Relatórios ficava atrás do card de filtros`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0022
+
+Sem observações.
+
+## 2026-09-08 10:17:28 — `backend-fastapi/app/core/security.py`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0016
+
+Sem observações.
+
+## 2026-09-08 10:19:07 — `backend-fastapi/app/api/v1/endpoints/vps_monitor.py`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0135
+
+- **Erro de Lógica em Cache Negativo**: O código atual armazena exceções HTTP no `_error_cache` sem diferenciar entre diferentes tipos de erros (e.g., 404, 502). Isso pode causar problemas se um erro temporário (como um 502) for cacheado e impedir que uma resposta válida seja obtida em uma tentativa subsequente dentro do período de cache negativo.
+
+- **Uso de `defaultdict` para Locks**: O uso de `defaultdict(asyncio.Lock)` para `_key_locks` pode ser problemático, pois cria um novo lock para cada chave acessada, mesmo que não seja necessário. Isso pode levar a um consumo excessivo de memória se houver muitas chaves únicas.
+
+- **Tratamento de Exceções**: O tratamento de exceções no método `_fetch` poderia ser mais específico. Atualmente, qualquer `httpx.HTTPError` é capturado e transformado em um `HTTPException` genérico. Seria melhor capturar exceções específicas para fornecer mensagens de erro mais precisas.
+
+- **Validação de Respostas da API**: A função `_get_vm` assume que a resposta da API é uma lista, mas não há verificação explícita para garantir que `vms` seja realmente uma lista antes de iterar sobre ela. Isso pode causar exceções não tratadas se a API retornar um formato inesperado.
+
+Sugestões de melhoria:
+
+- **Separar Cache de Erros por Tipo**: Considere separar o cache de erros por tipo de status HTTP para evitar que um erro temporário bloqueie todas as tentativas subsequentes.
+
+- **Revisar Uso de `defaultdict`**: Avalie o uso de `defaultdict` para `_key_locks` e considere inicializar locks apenas quando necessário para evitar a criação desnecessária de objetos.
+
+- **Melhorar Log de Erros**: Adicione logs mais detalhados para diferentes tipos de exceções HTTP para facilitar o diagnóstico de problemas.
+
+- **Verificação de Tipo de Resposta**: Adicione verificações de tipo mais robustas para garantir que as respostas da API sejam do tipo esperado antes de processá-las.
+
+## 2026-09-08 10:19:15 — `backend-fastapi/app/api/v1/endpoints/vps_monitor.py`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0135
+
+- **Erro de Lógica:** No método `_mb_to_bytes`, a condição `if mb else None` foi alterada para `if mb is not None else None`. Isso pode causar problemas se `mb` for `0`, pois `0` é um valor válido que deveria ser convertido para bytes, mas será tratado como `None`.
+  
+- **Uso de `defaultdict`:** O uso de `defaultdict(asyncio.Lock)` para `_key_locks` pode ser problemático. `asyncio.Lock` não é seguro para ser compartilhado entre threads, e o uso de `defaultdict` pode criar locks de forma implícita, o que pode levar a comportamentos inesperados. Considere inicializar locks explicitamente.
+
+- **Tratamento de Erros:** No método `_fetch`, a exceção `HTTPException` é cacheada em `_error_cache`, mas não há tratamento para limpar esse cache após um tempo ou em caso de recuperação. Isso pode levar a erros persistentes mesmo após a resolução do problema.
+
+- **Validação de Resposta:** No método `_fetch`, a validação de `resp.json()` não trata o caso em que a resposta pode ser `None` ou um tipo inesperado. Considere adicionar verificações adicionais para garantir que a resposta seja do tipo esperado.
+
+- **Uso de `logger`:** O logger é usado para registrar mensagens de aviso e erro, mas não há configuração visível para o nível de log ou para onde os logs são enviados. Certifique-se de que o logger esteja configurado corretamente para capturar e armazenar logs conforme necessário.
+
+Sugestões de melhoria:
+
+- **Clareza do Código:** Considere adicionar docstrings mais detalhadas para funções complexas como `_compute_insights` para melhorar a clareza do código e facilitar a manutenção futura.
+
+- **Desempenho:** Avalie se o uso de locks por chave é realmente necessário ou se há uma abordagem mais eficiente para lidar com concorrência, especialmente em um ambiente de alta carga.
+
+- **Consistência de Código:** Mantenha a consistência no uso de tipos e verificações em todo o código para melhorar a legibilidade e reduzir a probabilidade de erros.
+
+## 2026-09-08 10:20:52 — `frontend/src/systems/vps-monitor/components/ui.tsx`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0013
+
+Sem observações.
+
+## 2026-09-08 10:20:58 — `frontend/src/systems/vps-monitor/components/ui.tsx`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0017
+
+Sem observações.
+
+## 2026-09-08 10:21:06 — `frontend/src/systems/vps-monitor/lib/types.ts`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0016
+
+Sem observações.
+
+## 2026-09-08 10:21:11 — `frontend/src/systems/vps-monitor/lib/api.ts`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0012
+
+Sem observações.
+
+## 2026-09-08 10:21:15 — `frontend/src/systems/vps-monitor/lib/api.ts`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0015
+
+Sem observações.
+
+## 2026-09-08 10:21:27 — `frontend/src/systems/vps-monitor/styles/vps-monitor.css`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0025
+
+Sem observações.
+
+## 2026-09-08 10:21:33 — `frontend/src/systems/vps-monitor/components/ui.tsx`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0017
+
+Sem observações.
+
+## 2026-09-08 10:21:44 — `frontend/src/systems/vps-monitor/components/ui.tsx`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0054
+
+- **Erro de Lógica**: Na função `SeverityPills`, a classe CSS para o span de severidade é determinada por `c[sev] > 0 ? sev : 'muted'`. No entanto, `c[sev]` pode ser `undefined` se `counts` não tiver as propriedades `critical`, `warning` ou `info`. Isso pode resultar em comportamento inesperado. Certifique-se de que `c[sev]` é sempre um número.
+  
+- **Erro de Lógica**: Na função `Freshness`, o uso de `new Date(updatedAt).toISOString()` pode ser desnecessário, pois `fmtRelative` provavelmente aceita um timestamp diretamente. Isso pode ser simplificado para `fmtRelative(updatedAt)`.
+
+Sugestões de melhoria:
+
+- **Clareza**: Considere adicionar comentários explicativos para as funções `SeverityPills` e `Freshness` para descrever o propósito e o comportamento esperado, especialmente em relação ao tratamento de estados de carregamento e contagens de severidade.
+  
+- **Performance**: Na função `SeverityPills`, a criação do array `['critical', 'warning', 'info']` poderia ser extraída para fora do componente, já que não depende de props e não precisa ser recriada em cada renderização.
+
+- **Consistência**: Considere usar um tipo mais explícito para `counts` ao invés de `InsightCounts | undefined`, como `Partial<InsightCounts>`, para evitar a necessidade de valores padrão e garantir que as propriedades existam.
+
+## 2026-09-08 10:22:02 — `frontend/src/systems/vps-monitor/components/Topbar.tsx`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0014
+
+Sem observações.
+
+## 2026-09-08 10:22:06 — `frontend/src/systems/vps-monitor/components/Topbar.tsx`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0017
+
+Sem observações.
+
+## 2026-09-08 10:22:10 — `frontend/src/systems/vps-monitor/VpsMonitorApp.tsx`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0013
+
+Sem observações.
+
+## 2026-09-08 10:22:14 — `frontend/src/systems/vps-monitor/VpsMonitorApp.tsx`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0015
+
+Sem observações.
+
+## 2026-09-08 10:22:25 — `frontend/src/systems/vps-monitor/pages/Overview.tsx`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0016
+
+Sem observações.
+
+## 2026-09-08 10:22:33 — `frontend/src/systems/vps-monitor/pages/Overview.tsx`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0019
+
+Sem observações.
+
+## 2026-09-08 10:22:45 — `frontend/src/systems/vps-monitor/pages/Overview.tsx`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0035
+
+- O código parece estar correto e funcional. A adição do componente `SeverityPills` e do link para "Ver Insights" está bem integrada.
+- Não há problemas de lógica ou segurança evidentes na alteração apresentada.
+
+Sugestões de melhoria:
+- Considere adicionar testes para garantir que a nova funcionalidade de exibição de alertas e o link para insights funcionem conforme esperado.
+- Verifique se o estilo inline `style={{ color: 'var(--vm-gold)' }}` está de acordo com o padrão de estilização do projeto. Pode ser mais eficiente utilizar classes CSS para manter a consistência visual e facilitar a manutenção.
+
+## 2026-09-08 10:22:51 — `frontend/src/systems/vps-monitor/pages/Historico.tsx`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0014
+
+Sem observações.
+
+## 2026-09-08 10:22:56 — `frontend/src/systems/vps-monitor/pages/Historico.tsx`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0017
+
+Sem observações.
+
+## 2026-09-08 10:23:03 — `frontend/src/systems/vps-monitor/pages/Historico.tsx`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0020
+
+Sem observações.
+
+## 2026-09-08 10:23:09 — `frontend/src/systems/vps-monitor/pages/RedeFirewall.tsx`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0014
+
+Sem observações.
+
+## 2026-09-08 10:23:16 — `frontend/src/systems/vps-monitor/pages/RedeFirewall.tsx`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0027
+
+- A alteração introduzida parece estar correta e não há bugs aparentes, erros de lógica ou riscos de segurança associados à adição do componente `Freshness`.
+- A inclusão do componente `Freshness` melhora a interface ao mostrar a atualização mais recente dos dados, o que é uma boa prática para a experiência do usuário.
+- Não há problemas de performance ou duplicação evidentes no trecho apresentado.
+
+Sem observações adicionais.
+
+## 2026-09-08 10:23:25 — `frontend/src/systems/vps-monitor/components/ui.tsx`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0057
+
+- **Erro de lógica no mapeamento de severidade**: Na função `SeverityPills`, o mapeamento de severidade para o texto exibido está incorreto. Atualmente, está usando `'críticos'`, `'atenção'`, e `'info'`, mas deveria ser `'crítico'`, `'aviso'`, e `'informação'` para manter consistência e clareza.
+- **Uso de `undefined` em `SeverityPills`**: A função `SeverityPills` aceita `counts` como `undefined`, mas não trata explicitamente esse caso antes de acessar suas propriedades. Embora haja um fallback, é mais claro verificar explicitamente se `counts` é `undefined` antes de acessar suas propriedades.
+- **Uso de `Number.isFinite`**: Na função `Freshness`, a verificação `Number.isFinite(updatedAt)` pode ser desnecessária, pois `updatedAt` é garantido ser um número ou `undefined`. Se `updatedAt` for `undefined`, a primeira condição já retornará `null`.
+
+Sugestões de melhoria:
+- **Consistência de nomenclatura**: Considere padronizar os nomes das classes CSS para seguir um padrão consistente, como `vm-severity-pill` em vez de `vm-sev-pill`, para melhorar a legibilidade e manutenção do código.
+- **Comentários e documentação**: Adicione comentários explicativos para funções complexas ou lógicas não triviais para melhorar a compreensão do código por outros desenvolvedores.
+- **Teste de borda**: Adicione testes para verificar o comportamento das funções quando `counts` é `undefined` ou quando `updatedAt` é um valor inesperado.
+
+## 2026-09-08 10:23:27 — `frontend/src/systems/vps-monitor/pages/SnapshotsBackups.tsx`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0014
+
+Sem observações.
+
+## 2026-09-08 10:23:33 — `frontend/src/systems/vps-monitor/pages/SnapshotsBackups.tsx`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0018
+
+Sem observações.
+
+## 2026-09-08 10:23:40 — `frontend/src/systems/vps-monitor/pages/AcoesAuditoria.tsx`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0015
+
+Sem observações.
+
+## 2026-09-08 10:23:45 — `frontend/src/systems/vps-monitor/pages/AcoesAuditoria.tsx`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0018
+
+Sem observações.
+
+## 2026-09-08 10:23:51 — `frontend/src/systems/vps-monitor/pages/AcoesAuditoria.tsx`
+
+**Severidade:** baixa
+
+**Custo estimado:** $0.0021
+
+Sem observações.
+
+## 2026-09-08 10:25:47 — `commit d32ade1 (feat/migracoes-arthur)`
+
+**Severidade:** média
+
+**Custo estimado:** $0.0126
+
+- **Erro de Lógica**: No método `_mb_to_bytes`, a conversão de `mb` para bytes não considera o caso em que `mb` pode ser zero. A condição `if mb is not None` deve ser usada para evitar que `None` ou `0` sejam convertidos incorretamente.
+  
+- **Erro de Lógica**: No método `_snapshot_view`, a verificação `if not isinstance(raw, dict) or not raw.get("id")` pode falhar se `raw` for `None`. A verificação `if not raw` já cobre o caso de `None`.
+
+- **Risco de Segurança**: O uso de `asyncio.Lock` em `_key_locks` pode não ser seguro em um ambiente multi-threaded. Considere usar `threading.Lock` ou `asyncio.Lock` com precauções adicionais para garantir a segurança em um ambiente multi-threaded.
+
+- **Melhoria de Performance**: No método `_cache_key`, a construção da string de chave pode ser otimizada usando `urllib.parse.urlencode` para lidar com a codificação de parâmetros de forma mais eficiente e segura.
+
+- **Clareza**: No método `_compute_insights`, a função `add` é definida dentro do método, mas poderia ser uma função separada para melhorar a clareza e a reutilização.
+
+- **Logging**: Considere adicionar mais contexto aos logs de erro para facilitar o diagnóstico, como incluir parâmetros relevantes ou o estado atual do sistema.
+
+- **Manutenção**: O uso de `defaultdict(asyncio.Lock)` pode levar a problemas de manutenção se não for bem documentado, pois cria locks automaticamente para chaves novas, o que pode não ser o comportamento desejado em todos os casos.

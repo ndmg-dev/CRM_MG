@@ -92,13 +92,18 @@ export interface TodaySummary {
   punches_today: number
   pending_review: number
   in_occurrence_now: number
+  /** Quem saiu e ainda não retornou, da saída mais antiga à mais recente. */
+  in_occurrence_now_details: Array<{ employee_id: string; left_at: string }>
   pending_occurrences_today: number
+  /** Uma entrada por justificativa pendente, não por pessoa — casa com o contador. */
+  pending_occurrence_employee_ids: string[]
   logs: Array<{
     id: string
     employee_id: string
     type: TimeLog['type']
     status: TimeLog['status']
     created_at: string
+    address?: string
     face_confidence?: number
   }>
 }

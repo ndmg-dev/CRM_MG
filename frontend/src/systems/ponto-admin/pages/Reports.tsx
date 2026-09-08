@@ -13,7 +13,7 @@ import { useTimeLogs, useDeleteTimeLog, useUpdateTimeLog, useCreateManualTimeLog
 import { useJustifications, useCreateJustification } from '../hooks/useJustifications'
 import { useEmployees } from '../hooks/useEmployees'
 import { useSectors } from '../hooks/useSectors'
-import { toInputDate, toInputTime } from '../utils/date'
+import { toInputDate, toInputTime, isoWeekBounds, toInputDateLocal, fmtDayMonth } from '../utils/date'
 import { TYPE_LABELS, STATUS_LABELS } from '../utils/labels'
 import { downloadBlob } from '../lib/api'
 import { Modal } from '../components/Modal'
@@ -23,25 +23,6 @@ import { useAuth } from '../hooks/useAuth'
 const MONTHS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
 
 function fmtH(h: number) { return `${h.toFixed(1)}h` }
-
-// ─── Semana (segunda a domingo) ────────────────────────────────────────────────
-
-/** Segunda e domingo da semana ISO que contém `anchor`. */
-function isoWeekBounds(anchor: Date): { start: Date; end: Date } {
-  const day = anchor.getDay() // 0=domingo..6=sábado
-  const diffToMonday = day === 0 ? -6 : 1 - day
-  const start = new Date(anchor)
-  start.setDate(anchor.getDate() + diffToMonday)
-  const end = new Date(start)
-  end.setDate(start.getDate() + 6)
-  return { start, end }
-}
-function toInputDateLocal(d: Date): string {
-  return d.toLocaleDateString('en-CA') // YYYY-MM-DD, timezone do browser
-}
-function fmtDayMonth(d: Date): string {
-  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
-}
 
 // ─── Dropdown de exportação ───────────────────────────────────────────────────
 
@@ -68,13 +49,17 @@ function ExportDropdown({ label, variant, items }: {
         ↓ {label} <span style={{ fontSize: 9, opacity: 0.8 }}>▼</span>
       </button>
       {open && (
-        // z-index baixo de propósito — ver comentário em ReportFilters.tsx
-        // (a Header do CRM, sticky z-20, cria seu próprio contexto de
-        // empilhamento; qualquer z-index >= 20 aqui compete com ela inteira).
+        // zIndex 7 (não 3): o card de filtros logo abaixo (ReportFilters.tsx)
+        // é irmão direto de `.dashboard-page` com zIndex 6 de propósito (pra
+        // ficar acima da grade de KPIs) — com 3 aqui, esse menu abria por
+        // baixo do card de filtros. Segue baixo de propósito, como lá: a
+        // Header do CRM (sticky, z-20) cria seu próprio contexto de
+        // empilhamento, então qualquer z-index >= 20 aqui compete com ela
+        // inteira.
         <div style={{
           position: 'absolute', top: '100%', right: 0, marginTop: 4, minWidth: 190,
           background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8,
-          boxShadow: '0 8px 24px rgba(0,0,0,0.45)', zIndex: 3, overflow: 'hidden', padding: '4px 0',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.45)', zIndex: 7, overflow: 'hidden', padding: '4px 0',
         }}>
           {items.map((it, i) => (
             <button key={i} onClick={() => { it.onClick(); setOpen(false) }}

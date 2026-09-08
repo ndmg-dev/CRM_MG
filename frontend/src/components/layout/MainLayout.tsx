@@ -4,6 +4,7 @@ import Sidebar from './Sidebar'
 import Header from './Header'
 import { FloatingTicketChat } from './chat/FloatingTicketChat'
 import { UpdateModal } from './UpdateModal'
+import { PomodoroWidget } from '@pomodoro/components/PomodoroWidget'
 import { useUIStore } from '@/stores/uiStore'
 import { useHeartbeat } from '@/hooks/useHeartbeat'
 
@@ -64,6 +65,9 @@ export default function MainLayout() {
 
       {/* Modal "seu CRM foi atualizado" — uma vez por versão, por usuário. */}
       {!kioskMode && <UpdateModal />}
+
+      {/* Widget do Pomodoro — some no modo TV como o resto dos flutuantes. */}
+      {!kioskMode && <PomodoroWidget />}
     </div>
   )
 }

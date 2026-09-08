@@ -93,6 +93,12 @@ export const systemRegistry: Record<string, LazyExoticComponent<ComponentType>> 
   // Hostinger onde o CRM roda. Slug 'vps-monitor' — precisa de INSERT em
   // public.sistemas (setor TI, url '#') pro card aparecer. Fase 1: read-only.
   'vps-monitor': lazy(() => import('@vpsmonitor/VpsMonitorApp')),
+  // Sistema novo (não é migração de iframe): pomodoro do setor de TI, com
+  // modo individual e um modo "setor completo" sincronizado por um líder
+  // (ADMIN ou COORDENADOR do setor TI) via backend (app/api/v1/endpoints/
+  // pomodoro.py). Slug 'pomodoro-ti' — precisa de INSERT em public.sistemas
+  // (setor TI, url '#') pro card aparecer, igual ao vps-monitor.
+  'pomodoro-ti': lazy(() => import('@pomodoro/PomodoroApp')),
 }
 
 /**

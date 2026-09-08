@@ -16,6 +16,11 @@ from app.schemas.document import DocumentoResponse
 router = APIRouter()
 
 STORAGE_DIR = "/app/storage/clientes"
+# Endpoint público (só magic-link, sem login) sem teto de tamanho enchia o
+# disco de /app/storage com qualquer coisa que alguém de posse do link
+# mandasse repetidamente (achado na varredura de segurança). 100MB cobre bem
+# os documentos contábeis normais (PDF, planilha, foto de nota escaneada).
+MAX_UPLOAD_BYTES = 100 * 1024 * 1024
 
 @router.get("/{token}/info")
 async def get_portal_info(token: str, db: AsyncSession = Depends(get_db)):
@@ -70,16 +75,26 @@ async def upload_document(
     os.makedirs(client_dir, exist_ok=True)
 
     # 3. Save the file locally
-    safe_filename = os.path.basename(file.filename).replace(" ", "_")
+    safe_filename = os.path.basename(file.filename or "arquivo").replace(" ", "_")
     timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
     final_filename = f"{timestamp}_{safe_filename}"
     file_path = os.path.join(client_dir, final_filename)
 
     file_size = 0
-    async with aiofiles.open(file_path, 'wb') as out_file:
-        while content := await file.read(1024 * 1024):  # 1MB chunks
-            await out_file.write(content)
-            file_size += len(content)
+    try:
+        async with aiofiles.open(file_path, 'wb') as out_file:
+            while content := await file.read(1024 * 1024):  # 1MB chunks
+                file_size += len(content)
+                if file_size > MAX_UPLOAD_BYTES:
+                    raise HTTPException(status_code=413, detail="Arquivo maior que o limite de 100MB.")
+                await out_file.write(content)
+    except HTTPException:
+        # Corta o arquivo parcial — senão fica lixo de até 100MB por
+        # tentativa recusada, o próprio problema que o limite existe pra
+        # evitar.
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        raise
 
     # 4. Save metadata to DB
     novo_doc = Documento(

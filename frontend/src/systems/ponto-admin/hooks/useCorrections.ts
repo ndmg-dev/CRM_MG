@@ -42,3 +42,26 @@ export function useRejectCorrection() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['corrections'] }),
   })
 }
+
+export interface CorrectionBatchCreate {
+  employee_ids: string[]
+  requested_date: string   // "YYYY-MM-DD"
+  log_type: string
+  requested_time: string   // "HH:MM"
+  reason?: string
+}
+
+export interface CorrectionBatchResult {
+  created: CorrectionRequest[]
+  /** Nomes dos colaboradores pulados — já tinham uma batida desse tipo
+   * nesse dia, a correção em lote não sobrepõe uma batida existente. */
+  skipped: string[]
+}
+
+export function useCreateCorrectionBatch() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: CorrectionBatchCreate) => api.post<CorrectionBatchResult>('/api/v1/corrections/batch', data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['corrections'] }),
+  })
+}

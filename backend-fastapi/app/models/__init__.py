@@ -13,6 +13,7 @@ from app.models.user_session import UserSession
 from app.models.system_access_log import SystemAccessLog
 from app.models.release import Release, ReleaseNote, ReleaseRead
 from app.models.vps_monitor import VpsInsightEvent, VpsMetricSnapshot
+from app.models.pomodoro import PomodoroPreferencia, PomodoroSetorEstado
 
 # Expose models to Alembic and other parts of the application
 __all__ = [
@@ -33,4 +34,6 @@ __all__ = [
     "ReleaseRead",
     "VpsMetricSnapshot",
     "VpsInsightEvent",
+    "PomodoroPreferencia",
+    "PomodoroSetorEstado",
 ]

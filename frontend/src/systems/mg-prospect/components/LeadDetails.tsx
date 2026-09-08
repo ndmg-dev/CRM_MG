@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import DOMPurify from 'dompurify';
 import { api } from '../lib/api';
 
 import Map, { Marker, NavigationControl } from 'react-map-gl/maplibre';
@@ -404,7 +405,12 @@ export function LeadDetails({ lead: rawLead, onClose, onLeadUpdated }: LeadDetai
                                         <p className="text-xs text-mg-muted mb-1">Assunto:</p>
                                         <p className="text-sm font-medium text-mg-text">{previewData.subject}</p>
                                     </div>
-                                    <div className="p-4 text-sm text-mg-sub prose prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: previewData.html_body }} />
+                                    {/* html_body vem do template de e-mail montado no backend do
+                                        mg-prospect a partir de dados do lead (nome, empresa — vindos
+                                        do formulário público) — sanitiza aqui como segunda camada,
+                                        independente do backend escapar certo ou não (achado na
+                                        varredura de segurança). */}
+                                    <div className="p-4 text-sm text-mg-sub prose prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(previewData.html_body) }} />
                                 </div>
                             ) : selectedTemplateId ? (
                                 <div className="flex justify-center p-8">
