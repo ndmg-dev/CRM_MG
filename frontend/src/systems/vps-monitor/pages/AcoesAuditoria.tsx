@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useQuery, keepPreviousData } from '@tanstack/react-query'
-import { vpsApi } from '../lib/api'
+import { vpsApi, vpsQueryOptions } from '../lib/api'
 import { actionLabel, fmtDateTime, fmtRelative, isNoiseAction } from '../lib/format'
-import { Badge, Card, Empty, ErrorMsg, Loading } from '../components/ui'
+import { Badge, Card, Empty, ErrorMsg, Freshness, Loading } from '../components/ui'
 
 function stateTone(s: string): 'ok' | 'warn' | 'bad' | 'neutral' {
   if (s === 'success') return 'ok'
@@ -14,10 +14,11 @@ function stateTone(s: string): 'ok' | 'warn' | 'bad' | 'neutral' {
 export default function AcoesAuditoria() {
   const [page, setPage] = useState(1)
   const [hideNoise, setHideNoise] = useState(true)
-  const { data, isLoading, error, isFetching } = useQuery({
+  const { data, isLoading, error, isFetching, dataUpdatedAt } = useQuery({
     queryKey: ['vps', 'actions', page],
     queryFn: () => vpsApi.actions(page),
     placeholderData: keepPreviousData,
+    ...vpsQueryOptions,
   })
 
   if (isLoading) return <Loading />
@@ -34,6 +35,7 @@ export default function AcoesAuditoria() {
           <input type="checkbox" checked={hideNoise} onChange={(e) => setHideNoise(e.target.checked)} />
           Ocultar ajustes automáticos
         </label>
+        <Freshness updatedAt={dataUpdatedAt} fetching={isFetching && !isLoading} />
       </div>
       <p className="vm-page-sub">
         Trilha de auditoria da própria Hostinger (quem/quando reiniciou, backups, etc.). O histórico de ações

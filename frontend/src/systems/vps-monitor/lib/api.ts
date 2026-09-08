@@ -12,7 +12,13 @@
 import type {
   ActionsResponse,
   BackupsResponse,
+  ContainersResponse,
+  DeploysResponse,
+  DiskInfo,
   FirewallResponse,
+  HistoryResponse,
+  HostInfo,
+  InsightsResponse,
   MetricsResponse,
   Monarx,
   Overview,
@@ -32,14 +38,14 @@ export class VpsApiError extends Error {
   }
 }
 
-async function vpsFetch<T>(path: string): Promise<T> {
+async function vpsFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const token = localStorage.getItem('crm_token')
-  const headers = new Headers()
+  const headers = new Headers(init?.headers)
   if (token) headers.set('Authorization', `Bearer ${token}`)
 
   let res: Response
   try {
-    res = await fetch(`${VPS_BASE}${path}`, { cache: 'no-store', headers })
+    res = await fetch(`${VPS_BASE}${path}`, { cache: 'no-store', ...init, headers })
   } catch {
     throw new VpsApiError('Falha de rede ao contatar o backend do CRM.', 0)
   }
@@ -59,13 +65,30 @@ async function vpsFetch<T>(path: string): Promise<T> {
   return res.json() as Promise<T>
 }
 
+// Opções padrão dos useQuery do painel: falha rápido (1 retry) em vez de
+// deixar o usuário num spinner por ~10s enquanto o react-query re-tenta 3x
+// um erro determinístico (token ausente = 503, rota inexistente = 404).
+export const vpsQueryOptions = {
+  retry: 1,
+  staleTime: 30_000,
+} as const
+
 export const vpsApi = {
   overview: () => vpsFetch<Overview>('/overview'),
+  insights: () => vpsFetch<InsightsResponse>('/insights'),
+  ackInsight: (key: string) =>
+    vpsFetch<{ status: string }>(`/insights/${encodeURIComponent(key)}/ack`, { method: 'POST' }),
   vm: () => vpsFetch<Vm>('/vm'),
   metrics: (range: '24h' | '7d' | '30d') => vpsFetch<MetricsResponse>(`/metrics?range=${range}`),
+  history: (range: '7d' | '30d' | '90d' | '1y') => vpsFetch<HistoryResponse>(`/history?range=${range}`),
   snapshot: () => vpsFetch<SnapshotView>('/snapshot'),
   backups: () => vpsFetch<BackupsResponse>('/backups'),
   actions: (page = 1) => vpsFetch<ActionsResponse>(`/actions?page=${page}`),
   firewall: () => vpsFetch<FirewallResponse>('/firewall'),
   monarx: () => vpsFetch<Monarx>('/monarx'),
+  // Fase 2
+  host: () => vpsFetch<HostInfo>('/host'),
+  containers: () => vpsFetch<ContainersResponse>('/containers'),
+  disk: () => vpsFetch<DiskInfo>('/disk'),
+  deploys: () => vpsFetch<DeploysResponse>('/deploys'),
 }

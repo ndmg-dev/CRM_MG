@@ -59,6 +59,68 @@ services:
       - crm_storage:/app/storage
     restart: unless-stopped
 
+  # --- Monitoramento da VPS (aba TI) — coletores read-only ------------------
+  # Só o backend do CRM fala com eles (rede interna do compose, sem `ports:`).
+  # docker-socket-proxy expõe a API do Docker em modo LEITURA — nenhum
+  # processo do CRM toca o /var/run/docker.sock diretamente (ver
+  # docs/monitoramento-vps: uma RCE no backend não pode virar takeover do host).
+  docker-socket-proxy:
+    image: tecnativa/docker-socket-proxy:0.3.0
+    container_name: crm-mg-docker-proxy
+    environment:
+      CONTAINERS: 1
+      IMAGES: 1
+      INFO: 1
+      NETWORKS: 1
+      VOLUMES: 1
+      SERVICES: 0
+      TASKS: 0
+      SWARM: 0
+      SYSTEM: 1
+      POST: 0        # bloqueia toda escrita (create/start/stop/exec/…)
+      BUILD: 0
+      COMMIT: 0
+      CONFIGS: 0
+      DISTRIBUTION: 0
+      EXEC: 0
+      PLUGINS: 0
+      SECRETS: 0
+      SESSION: 0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: crm-mg-cadvisor
+    command:
+      - --housekeeping_interval=30s
+      - --docker_only=true
+      - --store_container_labels=false
+      - --disable_metrics=percpu,referenced_memory,cpu_topology,resctrl,udp,tcp,advtcp,sched,hugetlb,process
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    devices:
+      - /dev/kmsg
+    privileged: true
+    restart: unless-stopped
+
+  node-exporter:
+    image: prom/node-exporter:v1.8.1
+    container_name: crm-mg-node-exporter
+    command:
+      - --path.rootfs=/host
+      - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc|var/lib/docker/.+)($$|/)
+      - --no-collector.wifi
+      - --no-collector.hwmon
+    volumes:
+      - /:/host:ro,rslave
+    restart: unless-stopped
+
   frontend:
     build:
       context: ./frontend

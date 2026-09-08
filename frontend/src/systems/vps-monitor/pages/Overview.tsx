@@ -1,10 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
 import { Area, AreaChart, ResponsiveContainer } from 'recharts'
 import { Cpu, HardDrive, MemoryStick, RefreshCw, Server, ShieldCheck } from 'lucide-react'
-import { vpsApi } from '../lib/api'
+import { useNativeSystemPath } from '@/hooks/useNativeSystemBase'
+import { vpsApi, vpsQueryOptions } from '../lib/api'
 import type { MetricPoint } from '../lib/types'
 import { fmtBytes, fmtDateTime, fmtPct, fmtRelative, fmtUptime, stateLabel, stateTone } from '../lib/format'
-import { Badge, Bar, Card, ErrorMsg, Loading, pctTone } from '../components/ui'
+import { Badge, Bar, Card, ErrorMsg, Loading, SeverityPills, pctTone } from '../components/ui'
 
 function Spark({ points, dataKey, color }: { points: MetricPoint[]; dataKey: keyof MetricPoint; color: string }) {
   return (
@@ -17,10 +19,12 @@ function Spark({ points, dataKey, color }: { points: MetricPoint[]; dataKey: key
 }
 
 export default function Overview() {
+  const toAbs = useNativeSystemPath()
   const { data, isLoading, error, isFetching, refetch } = useQuery({
     queryKey: ['vps', 'overview'],
     queryFn: vpsApi.overview,
     refetchInterval: 60_000,
+    ...vpsQueryOptions,
   })
 
   if (isLoading) return <Loading label="Consultando a VPS…" />
@@ -107,6 +111,15 @@ export default function Overview() {
               {monarx ? `${monarx.malicious} maliciosos / ${monarx.scanned_files} arquivos` : '—'}
             </dd>
           </div>
+        </Card>
+
+        <Card title="Alertas abertos">
+          <div style={{ marginBottom: 10 }}>
+            <SeverityPills counts={data.insightCounts} />
+          </div>
+          <Link to={toAbs('insights')} className="vm-metric-label" style={{ color: 'var(--vm-gold)' }}>
+            Ver Insights →
+          </Link>
         </Card>
       </div>
 

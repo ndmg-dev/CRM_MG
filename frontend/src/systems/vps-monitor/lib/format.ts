@@ -43,9 +43,12 @@ export function fmtUptime(seconds: number | null | undefined): string {
 }
 
 // Rótulo curto do eixo X conforme a janela.
-export function tickLabel(t: number, range: '24h' | '7d' | '30d'): string {
+export type ChartRange = '24h' | '7d' | '30d' | '90d' | '1y'
+
+export function tickLabel(t: number, range: ChartRange): string {
   const d = new Date(t)
   if (range === '24h') return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+  if (range === '1y') return d.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })
   return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
 }
 

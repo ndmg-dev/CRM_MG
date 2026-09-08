@@ -113,6 +113,130 @@ export interface Monarx {
   scan_ended_at: string | null
 }
 
+// --- Fase 2: coletores (cadvisor / node-exporter / docker-socket-proxy) ---
+
+export interface HostInfo {
+  loadAvg: { '1m': number | null; '5m': number | null; '15m': number | null }
+  cpuCount: number | null
+  memory: { totalBytes: number | null; usedBytes: number | null; pct: number | null }
+  disk: { totalBytes: number | null; usedBytes: number | null; pct: number | null; inodesPct: number | null }
+  uptimeSeconds: number | null
+}
+
+export interface ContainerRow {
+  name: string
+  image: string | null
+  state: string | null
+  status: string | null
+  createdEpoch: number | null
+  cpuPct: number | null
+  memBytes: number | null
+  memLimitBytes: number | null
+  memPct: number | null
+  project: string | null
+  service: string | null
+  resource: string | null
+}
+
+export interface ContainersResponse {
+  generatedAt: number
+  hasCpuRates: boolean
+  counts: { total: number; running: number; stopped: number; unhealthy: number }
+  containers: ContainerRow[]
+}
+
+interface DiskBucket {
+  count: number
+  sizeBytes: number
+  reclaimableBytes?: number
+  dangling?: number
+}
+
+export interface DiskInfo {
+  filesystem: { totalBytes: number | null; usedBytes: number | null; availBytes: number | null; pct: number | null }
+  docker: {
+    totalBytes: number
+    reclaimableBytes: number
+    images: DiskBucket
+    containers: DiskBucket
+    volumes: DiskBucket
+    buildCache: DiskBucket
+  }
+}
+
+// --- Fase 2: Coolify ---
+
+export interface CoolifyApp {
+  uuid: string | null
+  name: string | null
+  status: string | null
+  fqdn: string | null
+  gitRepository: string | null
+  gitBranch: string | null
+  lastOnlineAt: string | null
+  updatedAt: string | null
+}
+
+export interface CoolifyDeployment {
+  uuid: string | null
+  application: string | null
+  applicationUuid: string | null
+  status: string | null
+  commit: string | null
+  commitMessage: string | null
+  isWebhook: boolean | null
+  createdAt: string | null
+  finishedAt: string | null
+}
+
+export interface DeploysResponse {
+  running: CoolifyDeployment[]
+  applications: CoolifyApp[]
+  services: { uuid: string | null; name: string | null; status: string | null }[]
+  counts: { deploying: number; applications: number; appsDegraded: number; servicesDegraded: number }
+}
+
+export type InsightSeverity = 'critical' | 'warning' | 'info'
+
+export interface Insight {
+  id: string
+  severity: InsightSeverity
+  title: string
+  detail: string
+  value: string | null
+  // Presentes quando o poller (Fase 3) já registrou o evento:
+  status?: 'aberto' | 'reconhecido' | 'resolvido'
+  since?: string
+  acknowledgedBy?: string | null
+}
+
+export interface HistoryPoint {
+  t: number
+  cpu: number | null
+  ramPct: number | null
+  diskPct: number | null
+  netIn: number | null
+  netOut: number | null
+}
+
+export interface HistoryResponse {
+  range: '7d' | '30d' | '90d' | '1y'
+  points: HistoryPoint[]
+  sampleCount: number
+}
+
+export interface InsightCounts {
+  critical: number
+  warning: number
+  info: number
+}
+
+export interface InsightsResponse {
+  generatedAt: string
+  insights: Insight[]
+  counts: InsightCounts
+}
+
 export interface Overview {
   generatedAt: string
   vm: Vm | null
@@ -125,4 +249,5 @@ export interface Overview {
   backupsCount: number
   lastBackupAt: string | null
   monarx: Monarx | null
+  insightCounts: InsightCounts
 }

@@ -68,6 +68,30 @@ class Settings(BaseSettings):
     HOSTINGER_API_TOKEN: str = ""
     HOSTINGER_VPS_ID: int = 1424388
 
+    # Fase 2 — coletores read-only na própria VPS (containers novos no
+    # docker-compose.yml da raiz, rede interna, sem porta pública). Vazio =
+    # endpoints /vps/containers, /vps/host e /vps/disk respondem 503.
+    VPS_CADVISOR_URL: str = "http://cadvisor:8080"
+    VPS_NODE_EXPORTER_URL: str = "http://node-exporter:9100"
+    VPS_DOCKER_PROXY_URL: str = "http://docker-socket-proxy:2375"
+    VPS_COLLECTORS_ENABLED: bool = False
+
+    # Coolify API (read) — histórico de deploy dos satélites. Token gerado no
+    # Coolify (avatar → Keys & Tokens), escopo do time do CRM. Preferir o
+    # endereço interno (mesma VPS) pra evitar allowlist de IP. Vazio = 503.
+    COOLIFY_API_URL: str = "http://coolify:8000/api/v1"
+    COOLIFY_API_TOKEN: str = ""
+
+    # Fase 3 — poller em background (asyncio task no lifespan; o backend não
+    # tem scheduler). Grava um snapshot de métricas por ciclo e reconcilia os
+    # insights (abre/resolve/notifica). No-op enquanto HOSTINGER_API_TOKEN
+    # estiver vazio.
+    VPS_POLLER_ENABLED: bool = True
+    VPS_POLL_INTERVAL_SECONDS: int = 300
+    VPS_HISTORY_RETENTION_DAYS: int = 90
+    # Severidades que geram notificação no CRM pros usuários do setor de TI.
+    VPS_NOTIFY_SEVERITIES: List[str] = ["critical"]
+
     EVOLUTION_API_URL: str = "http://evolution-api:8080"
     EVOLUTION_API_KEY: str = "dev_evolution_key_123"
     EVOLUTION_INSTANCE: str = "default"

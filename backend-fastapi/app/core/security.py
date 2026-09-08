@@ -109,3 +109,24 @@ def require_roles(roles: list[str]):
             )
         return current_user
     return role_checker
+
+
+def require_setores(setores: list[str], allow_admin: bool = True):
+    """Restringe a rota a usuários de um ou mais setores (por código, ex. "TI").
+
+    Paralelo a require_roles, mas sobre Usuario.setor em vez de Usuario.perfil.
+    ADMIN passa por padrão (allow_admin) mesmo sem estar no setor — um admin
+    não necessariamente tem setor = 'TI'.
+    """
+    alvo = {s.upper() for s in setores}
+
+    async def setor_checker(current_user: Usuario = Depends(get_current_user)) -> Usuario:
+        if allow_admin and current_user.perfil == "ADMIN":
+            return current_user
+        if (current_user.setor or "").upper() in alvo:
+            return current_user
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions"
+        )
+    return setor_checker
