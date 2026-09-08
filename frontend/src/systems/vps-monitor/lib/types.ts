@@ -204,6 +204,25 @@ export interface Insight {
   title: string
   detail: string
   value: string | null
+  // Presentes quando o poller (Fase 3) já registrou o evento:
+  status?: 'aberto' | 'reconhecido' | 'resolvido'
+  since?: string
+  acknowledgedBy?: string | null
+}
+
+export interface HistoryPoint {
+  t: number
+  cpu: number | null
+  ramPct: number | null
+  diskPct: number | null
+  netIn: number | null
+  netOut: number | null
+}
+
+export interface HistoryResponse {
+  range: '7d' | '30d' | '90d' | '1y'
+  points: HistoryPoint[]
+  sampleCount: number
 }
 
 export interface InsightCounts {

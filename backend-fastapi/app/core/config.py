@@ -75,6 +75,16 @@ class Settings(BaseSettings):
     COOLIFY_API_URL: str = "http://coolify:8000/api/v1"
     COOLIFY_API_TOKEN: str = ""
 
+    # Fase 3 — poller em background (asyncio task no lifespan; o backend não
+    # tem scheduler). Grava um snapshot de métricas por ciclo e reconcilia os
+    # insights (abre/resolve/notifica). No-op enquanto HOSTINGER_API_TOKEN
+    # estiver vazio.
+    VPS_POLLER_ENABLED: bool = True
+    VPS_POLL_INTERVAL_SECONDS: int = 300
+    VPS_HISTORY_RETENTION_DAYS: int = 90
+    # Severidades que geram notificação no CRM pros usuários do setor de TI.
+    VPS_NOTIFY_SEVERITIES: List[str] = ["critical"]
+
     EVOLUTION_API_URL: str = "http://evolution-api:8080"
     EVOLUTION_API_KEY: str = "dev_evolution_key_123"
     EVOLUTION_INSTANCE: str = "default"

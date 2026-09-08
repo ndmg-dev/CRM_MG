@@ -1,27 +1,38 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { vpsApi, vpsQueryOptions } from '../lib/api'
-import { fmtBytes, fmtPct } from '../lib/format'
+import { fmtBytes, fmtPct, type ChartRange } from '../lib/format'
 import { MetricChart } from '../components/MetricChart'
-import { ErrorMsg, Freshness, Loading } from '../components/ui'
+import { ErrorMsg, Empty, Freshness, Loading } from '../components/ui'
 
-type Range = '24h' | '7d' | '30d'
-const RANGES: { key: Range; label: string }[] = [
-  { key: '24h', label: '24 horas' },
-  { key: '7d', label: '7 dias' },
-  { key: '30d', label: '30 dias' },
+const RANGES: { key: ChartRange; label: string; source: 'hostinger' | 'history' }[] = [
+  { key: '24h', label: '24 horas', source: 'hostinger' },
+  { key: '7d', label: '7 dias', source: 'hostinger' },
+  { key: '30d', label: '30 dias', source: 'hostinger' },
+  { key: '90d', label: '90 dias', source: 'history' },
+  { key: '1y', label: '1 ano', source: 'history' },
 ]
 
 export default function Historico() {
-  const [range, setRange] = useState<Range>('24h')
+  const [range, setRange] = useState<ChartRange>('24h')
+  const source = RANGES.find((r) => r.key === range)!.source
+
   const { data, isLoading, error, isFetching, dataUpdatedAt } = useQuery({
-    queryKey: ['vps', 'metrics', range],
-    queryFn: () => vpsApi.metrics(range),
+    queryKey: ['vps', source, range],
+    queryFn: async () => {
+      const res =
+        source === 'hostinger'
+          ? await vpsApi.metrics(range as '24h' | '7d' | '30d')
+          : await vpsApi.history(range as '90d' | '1y')
+      const sampleCount = 'sampleCount' in res ? res.sampleCount : res.points.length
+      return { points: res.points, sampleCount }
+    },
     refetchInterval: 60_000,
     ...vpsQueryOptions,
   })
 
   const points = data?.points ?? []
+  const sampleCount = data?.sampleCount ?? 0
 
   return (
     <>
@@ -37,13 +48,20 @@ export default function Historico() {
         <Freshness updatedAt={dataUpdatedAt} fetching={isFetching && !isLoading} />
       </div>
       <p className="vm-page-sub">
-        Janela da própria API da Hostinger (amostragem em minutos).
+        {source === 'hostinger'
+          ? 'Janela da própria API da Hostinger (amostragem em minutos).'
+          : 'Histórico da nossa tabela — alimentado pelo poller (Fase 3).'}
       </p>
 
       {isLoading ? (
         <Loading />
       ) : error ? (
         <ErrorMsg error={error} />
+      ) : source === 'history' && points.length === 0 ? (
+        <Empty>
+          O poller ainda não acumulou {range === '90d' ? '90 dias' : '1 ano'} de dados.
+          As janelas de 24h/7d/30d vêm direto da Hostinger e já funcionam.
+        </Empty>
       ) : (
         <>
           <MetricChart title="CPU (%)" points={points} range={range} dataKey="cpu" color="#d4a843" format={(v) => v.toFixed(0)} unit="%" />
@@ -54,7 +72,7 @@ export default function Historico() {
           {points.length > 0 && (
             <p className="vm-page-sub">
               Pico de CPU: {fmtPct(Math.max(...points.map((p) => p.cpu ?? 0)))} · pico de RAM:{' '}
-              {fmtPct(Math.max(...points.map((p) => p.ramPct ?? 0)))} · {points.length} amostras
+              {fmtPct(Math.max(...points.map((p) => p.ramPct ?? 0)))} · {sampleCount} amostras
             </p>
           )}
         </>

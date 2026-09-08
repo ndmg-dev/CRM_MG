@@ -16,6 +16,7 @@ import type {
   DeploysResponse,
   DiskInfo,
   FirewallResponse,
+  HistoryResponse,
   HostInfo,
   InsightsResponse,
   MetricsResponse,
@@ -37,14 +38,14 @@ export class VpsApiError extends Error {
   }
 }
 
-async function vpsFetch<T>(path: string): Promise<T> {
+async function vpsFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const token = localStorage.getItem('crm_token')
-  const headers = new Headers()
+  const headers = new Headers(init?.headers)
   if (token) headers.set('Authorization', `Bearer ${token}`)
 
   let res: Response
   try {
-    res = await fetch(`${VPS_BASE}${path}`, { cache: 'no-store', headers })
+    res = await fetch(`${VPS_BASE}${path}`, { cache: 'no-store', ...init, headers })
   } catch {
     throw new VpsApiError('Falha de rede ao contatar o backend do CRM.', 0)
   }
@@ -75,8 +76,11 @@ export const vpsQueryOptions = {
 export const vpsApi = {
   overview: () => vpsFetch<Overview>('/overview'),
   insights: () => vpsFetch<InsightsResponse>('/insights'),
+  ackInsight: (key: string) =>
+    vpsFetch<{ status: string }>(`/insights/${encodeURIComponent(key)}/ack`, { method: 'POST' }),
   vm: () => vpsFetch<Vm>('/vm'),
   metrics: (range: '24h' | '7d' | '30d') => vpsFetch<MetricsResponse>(`/metrics?range=${range}`),
+  history: (range: '7d' | '30d' | '90d' | '1y') => vpsFetch<HistoryResponse>(`/history?range=${range}`),
   snapshot: () => vpsFetch<SnapshotView>('/snapshot'),
   backups: () => vpsFetch<BackupsResponse>('/backups'),
   actions: (page = 1) => vpsFetch<ActionsResponse>(`/actions?page=${page}`),

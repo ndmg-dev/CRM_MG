@@ -31,9 +31,12 @@ from typing import Any
 import httpx
 from cachetools import TTLCache
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.security import require_setores
+from app.db.session import get_db
 from app.models.user import Usuario
 
 router = APIRouter()
@@ -479,6 +482,42 @@ async def _overview_sources(hours: int) -> tuple[Any, ...]:
     )
 
 
+async def collect_state(hours: int = 24 * 30) -> dict[str, Any]:
+    """Estado consolidado da VPS (métricas + insights). Usado pelo endpoint
+    /insights E pelo poller da Fase 3 (app/services/vps_poller.py) — o poller
+    não passa por rota HTTP, então a lógica mora aqui, não no handler."""
+    now = datetime.now(tz=timezone.utc)
+    vms, raw_metrics, snapshot, backups, monarx = await _overview_sources(hours)
+
+    vm = None
+    if isinstance(vms, list):
+        vm = next((v for v in vms if v.get("id") == settings.HOSTINGER_VPS_ID), None)
+    mem_bytes = _mb_to_bytes(vm.get("memory")) if vm else None
+    disk_bytes = _mb_to_bytes(vm.get("disk")) if vm else None
+    bandwidth_bytes = _mb_to_bytes(vm.get("bandwidth")) if vm else None
+    points = _series_to_recharts(raw_metrics, mem_bytes, disk_bytes) if isinstance(raw_metrics, dict) else []
+    snap_view = _snapshot_view(snapshot)
+
+    insights = _compute_insights(
+        vm=vm, points=points, snapshot=snap_view, backups=backups,
+        monarx=monarx if isinstance(monarx, dict) else None,
+        mem_bytes=mem_bytes, disk_bytes=disk_bytes, bandwidth_bytes=bandwidth_bytes, now=now,
+    )
+    return {
+        "now": now,
+        "vm": vm,
+        "points": points,
+        "latest": points[-1] if points else None,
+        "snapshot": snap_view,
+        "backups": backups,
+        "monarx": monarx if isinstance(monarx, dict) else None,
+        "memBytes": mem_bytes,
+        "diskBytes": disk_bytes,
+        "bandwidthBytes": bandwidth_bytes,
+        "insights": insights,
+    }
+
+
 @router.get("/overview")
 async def get_overview(_: Usuario = _ti_user) -> Any:
     """Agregado da tela Visão Geral. Falha parcial não derruba o painel inteiro."""
@@ -522,39 +561,127 @@ async def get_overview(_: Usuario = _ti_user) -> Any:
 
 
 @router.get("/insights")
-async def get_insights(_: Usuario = _ti_user) -> Any:
-    """Lista priorizada de alertas/recomendações (tela 8). Sem persistência —
-    regras determinísticas sobre a janela de 30d da própria Hostinger."""
-    now = datetime.now(tz=timezone.utc)
-    vms, raw_metrics, snapshot, backups, monarx = await _overview_sources(24 * 30)
+async def get_insights(db: AsyncSession = Depends(get_db), _: Usuario = _ti_user) -> Any:
+    """Lista priorizada de alertas/recomendações (tela 8).
 
-    vm = None
-    if isinstance(vms, list):
-        vm = next((v for v in vms if v.get("id") == settings.HOSTINGER_VPS_ID), None)
-    mem_bytes = _mb_to_bytes(vm.get("memory")) if vm else None
-    disk_bytes = _mb_to_bytes(vm.get("disk")) if vm else None
-    points = _series_to_recharts(raw_metrics, mem_bytes, disk_bytes) if isinstance(raw_metrics, dict) else []
+    Os insights são recalculados ao vivo (funciona sem o poller). Se o poller
+    da Fase 3 estiver rodando, cada um é anotado com o estado persistido
+    (status, desde quando, quem reconheceu)."""
+    state = await collect_state(hours=24 * 30)
+    insights: list[dict[str, Any]] = state["insights"]
 
-    insights = _compute_insights(
-        vm=vm, points=points, snapshot=_snapshot_view(snapshot), backups=backups,
-        monarx=monarx if isinstance(monarx, dict) else None,
-        mem_bytes=mem_bytes, disk_bytes=disk_bytes,
-        bandwidth_bytes=_mb_to_bytes(vm.get("bandwidth")) if vm else None, now=now,
-    )
+    # Anota com o VpsInsightEvent aberto correspondente, se houver.
+    events = await _open_events_by_key(db)
+    for i in insights:
+        ev = events.get(i["id"])
+        if ev:
+            i["status"] = ev.status
+            i["since"] = ev.aberto_em.isoformat()
+            i["acknowledgedBy"] = str(ev.reconhecido_por) if ev.reconhecido_por else None
+
     return {
-        "generatedAt": now.isoformat(),
+        "generatedAt": state["now"].isoformat(),
         "insights": insights,
         "counts": {sev: sum(1 for i in insights if i["severity"] == sev) for sev in ("critical", "warning", "info")},
     }
 
 
+async def _open_events_by_key(db: AsyncSession) -> dict[str, Any]:
+    from app.models.vps_monitor import VpsInsightEvent
+
+    rows = (await db.execute(
+        select(VpsInsightEvent).where(VpsInsightEvent.status != "resolvido")
+    )).scalars().all()
+    return {r.insight_key: r for r in rows}
+
+
+@router.post("/insights/{insight_key}/ack")
+async def ack_insight(
+    insight_key: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = _ti_user,
+) -> Any:
+    """Marca um alerta como reconhecido (não é ação na VPS — é estado no CRM)."""
+    from app.models.vps_monitor import VpsInsightEvent
+
+    ev = await db.scalar(
+        select(VpsInsightEvent).where(
+            VpsInsightEvent.insight_key == insight_key,
+            VpsInsightEvent.status == "aberto",
+        )
+    )
+    if not ev:
+        raise HTTPException(status_code=404, detail="Nenhum alerta aberto com essa chave.")
+    ev.status = "reconhecido"
+    ev.reconhecido_por = current_user.id
+    ev.reconhecido_em = datetime.utcnow()
+    ev.atualizado_em = datetime.utcnow()
+    await db.commit()
+    return {"status": ev.status}
+
+
+_HISTORY_RANGES = {
+    "7d": timedelta(days=7),
+    "30d": timedelta(days=30),
+    "90d": timedelta(days=90),
+    "1y": timedelta(days=365),
+}
+
+
+@router.get("/history")
+async def get_history(
+    range: str = Query("90d", pattern="^(7d|30d|90d|1y)$"),
+    db: AsyncSession = Depends(get_db),
+    _: Usuario = _ti_user,
+) -> Any:
+    """Série de longo prazo da nossa tabela (Fase 3) — além da janela da
+    Hostinger. Vazio até o poller acumular dados."""
+    from app.models.vps_monitor import VpsMetricSnapshot
+
+    since = datetime.utcnow() - _HISTORY_RANGES[range]
+    rows = (await db.execute(
+        select(VpsMetricSnapshot)
+        .where(VpsMetricSnapshot.coletado_em >= since)
+        .order_by(VpsMetricSnapshot.coletado_em)
+    )).scalars().all()
+
+    points = [
+        {
+            "t": int(r.coletado_em.replace(tzinfo=timezone.utc).timestamp() * 1000),
+            "cpu": r.cpu_pct,
+            "ramPct": r.ram_pct,
+            "diskPct": r.disk_pct,
+            "netIn": r.net_in_bytes,
+            "netOut": r.net_out_bytes,
+        }
+        for r in rows
+    ]
+    return {"range": range, "points": _downsample(points, 240), "sampleCount": len(rows)}
+
+
 @router.get("/_meta")
-async def get_meta(_: Usuario = _ti_user) -> Any:
-    """Diagnóstico leve do próprio proxy (não bate na Hostinger)."""
+async def get_meta(db: AsyncSession = Depends(get_db), _: Usuario = _ti_user) -> Any:
+    """Diagnóstico leve: config, cache e estado do poller da Fase 3."""
+    from app.models.vps_monitor import VpsInsightEvent, VpsMetricSnapshot
+
+    snap_count = await db.scalar(select(func.count()).select_from(VpsMetricSnapshot))
+    last_snap = await db.scalar(select(func.max(VpsMetricSnapshot.coletado_em)))
+    open_events = await db.scalar(
+        select(func.count()).select_from(VpsInsightEvent).where(VpsInsightEvent.status != "resolvido")
+    )
     return {
         "configured": bool(settings.HOSTINGER_API_TOKEN),
         "vpsId": settings.HOSTINGER_VPS_ID,
         "cacheTtlSeconds": _cache.ttl,
         "cachedKeys": len(_cache),
         "erroredKeys": len(_error_cache),
+        "collectorsEnabled": settings.VPS_COLLECTORS_ENABLED,
+        "coolifyConfigured": bool(settings.COOLIFY_API_TOKEN),
+        "poller": {
+            "enabled": settings.VPS_POLLER_ENABLED,
+            "intervalSeconds": settings.VPS_POLL_INTERVAL_SECONDS,
+            "snapshotCount": snap_count or 0,
+            "lastSnapshotAt": last_snap.isoformat() if last_snap else None,
+            "openEvents": open_events or 0,
+        },
     }

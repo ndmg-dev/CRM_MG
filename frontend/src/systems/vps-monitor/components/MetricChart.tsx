@@ -1,11 +1,11 @@
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import type { MetricPoint } from '../lib/types'
-import { tickLabel } from '../lib/format'
+import { tickLabel, type ChartRange } from '../lib/format'
 
 interface Props {
   title: string
-  points: MetricPoint[]
-  range: '24h' | '7d' | '30d'
+  points: Array<Partial<MetricPoint> & { t: number }>
+  range: ChartRange
   dataKey: keyof MetricPoint
   color?: string
   unit?: string
