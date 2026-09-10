@@ -23,9 +23,9 @@ const SISTEMAS: SistemaExterno[] = [
   { nome: 'Portal Veri', url: 'https://07478950000175.portal-veri.com.br/', descricao: 'Portal Veri', grupo: 'Contábil / Fiscal', cor: '#7048e8' },
   { nome: 'CertiSeguro', url: 'https://app.certiseguro.com.br', descricao: 'Gestão de certificados digitais', grupo: 'Certificados', cor: '#0ca678' },
   { nome: 'ZapContábil', url: 'https://mendoncagalvao.zapcontabil.chat/tickets', descricao: 'Chamados e atendimento ao cliente', grupo: 'Atendimento', cor: '#25d366' },
-  { nome: 'G-Click', url: 'https://appp.gclick.com.br/', descricao: 'Gestão de tarefas e processos', grupo: 'Gestão do escritório', cor: '#d6336c' },
-  { nome: 'Mister Contador', url: 'https://app.mistercontador.com.br', descricao: 'Gestão do escritório contábil', grupo: 'Gestão do escritório', cor: '#2563eb' },
-  { nome: 'Escritório Inteligente', url: 'https://portal.escritoriointeligente.com', descricao: 'Portal de gestão do escritório', grupo: 'Gestão do escritório', cor: '#0891b2' },
+  { nome: 'Mister Contador', url: 'https://app.mistercontador.com.br', descricao: 'Gestão do escritório contábil', grupo: 'Contábil / Fiscal', cor: '#2563eb' },
+  { nome: 'Escritório Inteligente', url: 'https://portal.escritoriointeligente.com', descricao: 'Portal de gestão do escritório', grupo: 'Contábil / Fiscal', cor: '#0891b2' },
+  { nome: 'G-Click', url: 'https://appp.gclick.com.br/', descricao: 'Gestão de tarefas e processos', grupo: 'Produtividade', cor: '#d6336c' },
   { nome: 'Google', url: 'https://accounts.google.com/login?hl=pt-br', descricao: 'Conta Google / Workspace', grupo: 'Produtividade', cor: '#4285f4' },
 ]
 
