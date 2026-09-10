@@ -1,13 +1,13 @@
 import { ExternalLink } from 'lucide-react'
 
-// Hub de links pra sistemas de terceiros que o escritório usa. Não é uma
-// migração — é uma página nativa simples (setor GERAL, todos veem) que
-// centraliza os acessos. Cada card abre em nova aba: Google/G-Click/SIEG e
-// outros bloqueiam iframe (X-Frame-Options), então embutir não funciona.
+// Hub de links pros sistemas externos (de terceiros) que o escritório usa.
+// Não é uma migração — é uma página nativa simples (setor GERAL, todos veem)
+// que centraliza os acessos. Cada card abre em nova aba: Google/G-Click/SIEG
+// e outros bloqueiam iframe (X-Frame-Options), então embutir não funciona.
 //
-// Pra adicionar/remover uma ferramenta, edite só a lista abaixo.
+// Pra adicionar/remover um sistema, edite só a lista abaixo.
 
-interface Ferramenta {
+interface SistemaExterno {
   nome: string
   url: string
   descricao: string
@@ -16,7 +16,7 @@ interface Ferramenta {
   cor: string
 }
 
-const FERRAMENTAS: Ferramenta[] = [
+const SISTEMAS: SistemaExterno[] = [
   { nome: 'Domínio Web', url: 'https://dominioweb.com.br/', descricao: 'Sistema Domínio — contábil, fiscal e folha', grupo: 'Contábil / Fiscal', cor: '#1f9d55' },
   { nome: 'Onvio', url: 'https://onvio.com.br/', descricao: 'Portal Onvio (Thomson Reuters)', grupo: 'Contábil / Fiscal', cor: '#e8590c' },
   { nome: 'SIEG Hub', url: 'https://www.sieg.com/hub/', descricao: 'Captura e gestão de XML de notas fiscais', grupo: 'Contábil / Fiscal', cor: '#1c7ed6' },
@@ -27,7 +27,7 @@ const FERRAMENTAS: Ferramenta[] = [
   { nome: 'Google', url: 'https://accounts.google.com/login?hl=pt-br', descricao: 'Conta Google / Workspace', grupo: 'Produtividade', cor: '#4285f4' },
 ]
 
-const GRUPOS = [...new Set(FERRAMENTAS.map((f) => f.grupo))]
+const GRUPOS = [...new Set(SISTEMAS.map((s) => s.grupo))]
 
 function iniciais(nome: string): string {
   const p = nome.replace(/[^\p{L}\s]/gu, '').trim().split(/\s+/)
@@ -42,11 +42,11 @@ function hostname(url: string): string {
   }
 }
 
-export default function FerramentasExternasApp() {
+export default function SistemasExternosApp() {
   return (
     <div className="mx-auto max-w-5xl p-5 lg:p-6">
       <header className="mb-6">
-        <h1 className="text-xl font-bold text-text-primary">Ferramentas</h1>
+        <h1 className="text-xl font-bold text-text-primary">Sistemas Externos</h1>
         <p className="mt-1 text-sm text-text-secondary">
           Acesso rápido aos sistemas de terceiros usados pelo escritório. Cada link abre em uma nova aba.
         </p>
@@ -58,7 +58,7 @@ export default function FerramentasExternasApp() {
             {grupo}
           </h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {FERRAMENTAS.filter((f) => f.grupo === grupo).map((f) => (
+            {SISTEMAS.filter((s) => s.grupo === grupo).map((f) => (
               <a
                 key={f.url}
                 href={f.url}
