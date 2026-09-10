@@ -47,6 +47,7 @@ export default defineConfig(({ mode }) => {
         '@dashrh': path.resolve(__dirname, './src/systems/dash-rh'),
         '@vpsmonitor': path.resolve(__dirname, './src/systems/vps-monitor'),
         '@pomodoro': path.resolve(__dirname, './src/systems/pomodoro-ti'),
+        '@ferramentas': path.resolve(__dirname, './src/systems/ferramentas-externas'),
       },
     },
     server: {

@@ -54,6 +54,7 @@ import {
   Bell,
   LayoutGrid,
   Lock,
+  ExternalLink,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -120,6 +121,8 @@ export const ICON_MAP: Record<string, LucideIcon> = {
   'scale': Scale,
   'wrench': Wrench,
   'bell': Bell,
+  'layout-grid': LayoutGrid,
+  'external-link': ExternalLink,
 }
 
 /**

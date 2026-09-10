@@ -99,6 +99,11 @@ export const systemRegistry: Record<string, LazyExoticComponent<ComponentType>> 
   // pomodoro.py). Slug 'pomodoro-ti' — precisa de INSERT em public.sistemas
   // (setor TI, url '#') pro card aparecer, igual ao vps-monitor.
   'pomodoro-ti': lazy(() => import('@pomodoro/PomodoroApp')),
+  // Hub de links pra sistemas de terceiros do escritório (Domínio, Onvio,
+  // SIEG, G-Click, etc.). Página nativa simples, sem backend — só uma lista
+  // no próprio componente. Slug 'ferramentas-externas', setor GERAL (todos
+  // veem), url '#'. Precisa de INSERT em public.sistemas.
+  'ferramentas-externas': lazy(() => import('@ferramentas/FerramentasExternasApp')),
 }
 
 /**

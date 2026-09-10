@@ -37,7 +37,8 @@
       "@analyticsdp/*": ["./src/systems/analytics-dp/*"],
       "@dashrh/*": ["./src/systems/dash-rh/*"],
       "@vpsmonitor/*": ["./src/systems/vps-monitor/*"],
-      "@pomodoro/*": ["./src/systems/pomodoro-ti/*"]
+      "@pomodoro/*": ["./src/systems/pomodoro-ti/*"],
+      "@ferramentas/*": ["./src/systems/ferramentas-externas/*"]
     },
 
     /* Bundler mode */
