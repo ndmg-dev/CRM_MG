@@ -17,7 +17,7 @@ interface SistemaExterno {
 }
 
 const SISTEMAS: SistemaExterno[] = [
-  { nome: 'Domínio Web', url: 'https://dominioweb.com.br/', descricao: 'Sistema Domínio — contábil, fiscal e folha', grupo: 'Contábil / Fiscal', cor: '#1f9d55' },
+  { nome: 'Domínio Web', url: 'https://www.dominioweb.com.br', descricao: 'Sistema Domínio — contábil, fiscal e folha', grupo: 'Contábil / Fiscal', cor: '#1f9d55' },
   { nome: 'Onvio', url: 'https://onvio.com.br/', descricao: 'Portal Onvio (Thomson Reuters)', grupo: 'Contábil / Fiscal', cor: '#e8590c' },
   { nome: 'SIEG Hub', url: 'https://www.sieg.com/hub/', descricao: 'Captura e gestão de XML de notas fiscais', grupo: 'Contábil / Fiscal', cor: '#1c7ed6' },
   { nome: 'Portal Veri', url: 'https://07478950000175.portal-veri.com.br/', descricao: 'Portal Veri', grupo: 'Contábil / Fiscal', cor: '#7048e8' },
