@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import auth, users, sectors, clients, systems, tasks, access, dashboard, audit_logs, portal, documents, notifications, search, sessions, system_tracking, releases, abertura_empresa_proxy, dre_proxy, mgprospect_proxy, ouvidoria_proxy, fronteira_proxy, vps_monitor, vps_collectors, vps_coolify, pomodoro
+from app.api.v1.endpoints import auth, users, sectors, clients, systems, tasks, access, dashboard, audit_logs, portal, documents, notifications, search, sessions, system_tracking, releases, abertura_empresa_proxy, dre_proxy, mgprospect_proxy, ouvidoria_proxy, fronteira_proxy, vps_monitor, vps_collectors, vps_coolify, vps_actions, pomodoro
 
 api_router = APIRouter()
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
@@ -26,4 +26,5 @@ api_router.include_router(fronteira_proxy.router, prefix="/fronteira-proxy", tag
 api_router.include_router(vps_monitor.router, prefix="/vps", tags=["vps-monitor"])
 api_router.include_router(vps_collectors.router, prefix="/vps", tags=["vps-monitor"])
 api_router.include_router(vps_coolify.router, prefix="/vps", tags=["vps-monitor"])
+api_router.include_router(vps_actions.router, prefix="/vps", tags=["vps-monitor"])
 api_router.include_router(pomodoro.router, prefix="/pomodoro", tags=["pomodoro"])

@@ -196,6 +196,31 @@ export interface DeploysResponse {
   counts: { deploying: number; applications: number; appsDegraded: number; servicesDegraded: number }
 }
 
+// --- Fase 4: ações de escrita (Hostinger, nível-VPS, ADMIN only) ---
+
+export type VpsActionKey =
+  | 'restart'
+  | 'recreate'
+  | 'recovery-enter'
+  | 'recovery-exit'
+  | 'restore-snapshot'
+  | 'restore-backup'
+
+export interface ActionCatalogItem {
+  key: VpsActionKey
+  label: string
+  descricao: string
+  confirm: string
+  needsBackupId: boolean
+}
+
+export interface ActionRunResult {
+  ok: boolean
+  actionKey: string
+  actionId: number | null
+  message: string
+}
+
 export type InsightSeverity = 'critical' | 'warning' | 'info'
 
 export interface Insight {
