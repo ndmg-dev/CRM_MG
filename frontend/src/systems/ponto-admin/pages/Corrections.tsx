@@ -10,6 +10,7 @@ import { Modal } from '../components/Modal'
 import EmployeeTransferPicker from '../components/EmployeeTransferPicker'
 
 const STATUS_FILTER = ['Todos', 'PENDENTE', 'APROVADO', 'REJEITADO'] as const
+const MONTHS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
 
 const TYPE_ICON: Record<string, string> = {
   ENTRADA: '🟢', SAIDA_ALMOCO: '🍽', RETORNO_ALMOCO: '↩️', SAIDA: '🔴',
@@ -254,11 +255,26 @@ function ReviewModal({ corr, onClose }: { corr: CorrectionRequest; onClose: () =
 }
 
 export default function Corrections() {
+  const now = new Date()
   const [filter, setFilter] = useState<typeof STATUS_FILTER[number]>('Todos')
   const [reviewing, setReviewing] = useState<CorrectionRequest | null>(null)
   const [showCreate, setShowCreate] = useState(false)
+  // '' = todos; dateFilter (dia específico) sobrepõe mês/ano quando preenchido.
+  const [employeeFilter, setEmployeeFilter] = useState('')
+  const [dateFilter,     setDateFilter]     = useState('')
+  const [monthFilter,    setMonthFilter]    = useState(0)   // 0 = todos os meses
+  const [yearFilter,     setYearFilter]     = useState(now.getFullYear())
 
-  const { data = [], isLoading } = useCorrections(filter !== 'Todos' ? filter : undefined)
+  const { data: employees = [] } = useEmployees()
+  const { data: allData = [], isLoading } = useCorrections(filter !== 'Todos' ? filter : undefined)
+  const data = allData
+    .filter(c => !employeeFilter || c.employee_id === employeeFilter)
+    .filter(c => {
+      if (!dateFilter && !monthFilter) return true
+      if (dateFilter) return c.requested_date === dateFilter
+      const [y, m] = c.requested_date.split('-').map(Number)
+      return y === yearFilter && m === monthFilter
+    })
   const pendingCount = data.filter(c => c.status === 'PENDENTE').length
 
   return (
@@ -284,6 +300,39 @@ export default function Corrections() {
             + Adicionar correção
           </button>
         </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 14 }}>
+        <select className="form-input" style={{ fontSize: 12, padding: '6px 10px', width: 'auto', minWidth: 160 }}
+          value={employeeFilter} onChange={e => setEmployeeFilter(e.target.value)}>
+          <option value="">Todos os colaboradores</option>
+          {[...employees].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR')).map(e => (
+            <option key={e.id} value={e.id}>{e.name}</option>
+          ))}
+        </select>
+
+        <select className="form-input" style={{ fontSize: 12, padding: '6px 10px', width: 'auto' }}
+          value={monthFilter} disabled={!!dateFilter}
+          onChange={e => setMonthFilter(Number(e.target.value))}>
+          <option value={0}>Todos os meses</option>
+          {MONTHS.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
+        </select>
+        <select className="form-input" style={{ fontSize: 12, padding: '6px 10px', width: 'auto' }}
+          value={yearFilter} disabled={!!dateFilter}
+          onChange={e => setYearFilter(Number(e.target.value))}>
+          {Array.from({ length: 5 }, (_, i) => now.getFullYear() - 2 + i).map(y => (
+            <option key={y} value={y}>{y}</option>
+          ))}
+        </select>
+
+        <input className="form-input" type="date" style={{ fontSize: 12, padding: '6px 10px', width: 'auto' }}
+          value={dateFilter} onChange={e => setDateFilter(e.target.value)}
+          title="Filtrar por um dia específico — sobrepõe o filtro de mês" />
+        {dateFilter && (
+          <button className="btn-ghost" style={{ fontSize: 12, padding: '6px 10px' }} onClick={() => setDateFilter('')}>
+            Limpar dia
+          </button>
+        )}
       </div>
 
       <div className="card">
