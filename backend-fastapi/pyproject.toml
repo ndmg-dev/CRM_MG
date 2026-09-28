@@ -9,6 +9,13 @@ dependencies = [
     "pydantic>=2.7.4",
     "pydantic-settings>=2.3.4",
     "sqlalchemy>=2.0.31",
+    # SQLAlchemy async (AsyncSession, usado em toda a app) exige greenlet em
+    # tempo de execução, mas não o declara como dependência obrigatória — só
+    # como extra opcional (`sqlalchemy[asyncio]`). Sempre dependemos de outro
+    # pacote puxar o greenlet de carona; quando isso parou de acontecer (nova
+    # imagem/resolução de dependências), o backend entrou em crash loop no
+    # boot com "ModuleNotFoundError: No module named 'greenlet'".
+    "greenlet>=3.0.0",
     "asyncpg>=0.29.0",
     "alembic>=1.13.1",
     "pyjwt>=2.8.0",
