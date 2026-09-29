@@ -3,7 +3,7 @@ import * as XLSX from 'xlsx'
 import { api } from '../lib/api'
 import {
   useEmployees, useCreateEmployee, useUpdateEmployee,
-  useDeleteEmployee, useRegisterFace,
+  useDeleteEmployee, useReactivateEmployee, useRegisterFace,
   useBulkCreateEmployees, type Employee,
 } from '../hooks/useEmployees'
 import { useSectors } from '../hooks/useSectors'
@@ -24,6 +24,7 @@ export default function Employees() {
   const createMutation      = useCreateEmployee()
   const updateMutation      = useUpdateEmployee()
   const deleteMutation      = useDeleteEmployee()
+  const reactivateMutation  = useReactivateEmployee()
   const faceMutation        = useRegisterFace()
   const bulkMutation        = useBulkCreateEmployees()
   const { data: sectors = [] } = useSectors()
@@ -150,7 +151,9 @@ export default function Employees() {
   }
 
   const saving = createMutation.isPending || updateMutation.isPending
-  const activeEmployees = employees.filter(e => e.is_active)
+  const [showInactive, setShowInactive] = useState(false)
+  const visibleEmployees = employees.filter(e => e.is_active !== showInactive)
+  const inactiveCount = employees.filter(e => !e.is_active).length
 
   async function generateBiometricLink(employeeId: string) {
     try {
@@ -188,13 +191,30 @@ export default function Employees() {
         onReject={id => rejectMutation.mutate(id)}
       />
 
+      <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+        <button
+          className={!showInactive ? 'btn-primary' : 'btn-ghost'}
+          style={{ padding: '6px 12px', fontSize: 12 }}
+          onClick={() => setShowInactive(false)}>
+          Ativos
+        </button>
+        <button
+          className={showInactive ? 'btn-primary' : 'btn-ghost'}
+          style={{ padding: '6px 12px', fontSize: 12 }}
+          onClick={() => setShowInactive(true)}>
+          Desligados{inactiveCount > 0 ? ` (${inactiveCount})` : ''}
+        </button>
+      </div>
+
       <EmployeeList
-        employees={activeEmployees}
+        employees={visibleEmployees}
         sectors={sectors}
         sectorMap={sectorMap}
         isLoading={isLoading}
+        showInactive={showInactive}
         onEdit={openEdit}
         onDelete={id => deleteMutation.mutate(id)}
+        onReactivate={id => reactivateMutation.mutate(id)}
         onGenerateBiometricLink={generateBiometricLink}
       />
 

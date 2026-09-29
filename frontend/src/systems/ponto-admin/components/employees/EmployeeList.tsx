@@ -22,13 +22,15 @@ interface EmployeeListProps {
   sectors: Sector[]
   sectorMap: Record<string, Sector>
   isLoading: boolean
+  showInactive?: boolean
   onEdit: (emp: Employee) => void
   onDelete: (id: string) => void
+  onReactivate: (id: string) => void
   onGenerateBiometricLink: (id: string) => void
 }
 
 export default function EmployeeList({
-  employees, sectors, sectorMap, isLoading, onEdit, onDelete, onGenerateBiometricLink,
+  employees, sectors, sectorMap, isLoading, showInactive, onEdit, onDelete, onReactivate, onGenerateBiometricLink,
 }: EmployeeListProps) {
   const [search,       setSearch]       = useState('')
   const [filterSector, setFilterSector] = useState('')
@@ -153,17 +155,28 @@ export default function EmployeeList({
                   </td>
                   <td>
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                      <button className="btn-ghost" style={{ padding: '4px 12px', fontSize: 12 }} onClick={() => onEdit(emp)}>Editar</button>
-                      {emp.face_photos_count === 0 && (
-                        <button className="btn-ghost" style={{ padding: '4px 12px', fontSize: 12 }}
-                          onClick={() => onGenerateBiometricLink(emp.id)}>
-                          📷 Biometria
+                      {showInactive ? (
+                        <button className="btn-primary" style={{ padding: '4px 12px', fontSize: 12 }}
+                          onClick={() => { if (confirm(`Reativar ${emp.name}? Ele volta a conseguir bater ponto.`)) onReactivate(emp.id) }}>
+                          Reativar
                         </button>
+                      ) : (
+                        <>
+                          <button className="btn-ghost" style={{ padding: '4px 12px', fontSize: 12 }} onClick={() => onEdit(emp)}>Editar</button>
+                          {emp.face_photos_count === 0 && (
+                            <button className="btn-ghost" style={{ padding: '4px 12px', fontSize: 12 }}
+                              onClick={() => onGenerateBiometricLink(emp.id)}>
+                              📷 Biometria
+                            </button>
+                          )}
+                          <button className="btn-danger" style={{ padding: '4px 12px', fontSize: 12 }}
+                            onClick={() => {
+                              if (confirm(`Desativar ${emp.name}?\n\nEle não vai mais conseguir bater ponto, mas os dados e o histórico de ponto dele são mantidos. Dá pra reativar depois.`)) onDelete(emp.id)
+                            }}>
+                            Desativar
+                          </button>
+                        </>
                       )}
-                      <button className="btn-danger" style={{ padding: '4px 12px', fontSize: 12 }}
-                        onClick={() => { if (confirm(`Excluir ${emp.name}?`)) onDelete(emp.id) }}>
-                        Excluir
-                      </button>
                     </div>
                   </td>
                 </tr>

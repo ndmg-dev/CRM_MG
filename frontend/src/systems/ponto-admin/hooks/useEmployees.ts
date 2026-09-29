@@ -81,10 +81,21 @@ export function useUpdateEmployee() {
   })
 }
 
+// Desativa (desligamento) — não apaga o funcionário nem seus dados. Só
+// impede novas batidas de ponto: o reconhecimento facial já ignora
+// funcionário inativo (ver face_service.py).
 export function useDeleteEmployee() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => api.delete(`/api/v1/employees/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['employees'] }),
+  })
+}
+
+export function useReactivateEmployee() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => api.post<Employee>(`/api/v1/employees/${id}/reactivate`, {}),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['employees'] }),
   })
 }
