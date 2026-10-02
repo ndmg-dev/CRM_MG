@@ -214,6 +214,28 @@ export function buildExportUrlRange(
   return `/api/v1/reports/export/${format}-range?${params}`
 }
 
+export function buildCompleteExportUrlRange(
+  format: 'xlsx' | 'pdf',
+  dateFrom: string,
+  dateTo: string,
+  scope: string,
+  scopeLabel: string,
+  periodLabel: string,
+  ids?: string,
+  sectorId?: string,
+): string {
+  const params = new URLSearchParams({
+    date_from: dateFrom,
+    date_to: dateTo,
+    scope,
+    scope_label: scopeLabel,
+    period_label: periodLabel,
+  })
+  if (scope === 'employees' && ids) params.set('ids', ids)
+  if (scope === 'sector' && sectorId) params.set('sector_id', sectorId)
+  return `/api/v1/reports/export/complete-range/${format}?${params}`
+}
+
 export function buildCompleteExportUrl(
   format: 'xlsx' | 'pdf',
   year: number,
@@ -300,11 +322,11 @@ export interface MirrorResponse {
   summary: MirrorSummary
 }
 
-export function useMirror(employeeId: string | null, year: number, month: number) {
+export function useMirror(employeeId: string | null, year: number, month: number, enabled = true) {
   return useQuery<MirrorResponse>({
     queryKey: ['reports', 'mirror', employeeId, year, month],
     queryFn:  () => api.get(`/api/v1/reports/mirror?employee_id=${employeeId}&year=${year}&month=${month}`),
-    enabled:  !!employeeId,
+    enabled:  enabled && !!employeeId,
   })
 }
 

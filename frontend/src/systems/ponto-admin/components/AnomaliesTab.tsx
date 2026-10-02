@@ -2,7 +2,6 @@ import type { Anomaly } from '../hooks/useReports'
 
 interface Props {
   anomalies:    Anomaly[]
-  onExportXlsx: () => void
   onOpenLog:    (logId: string) => void
 }
 
@@ -22,16 +21,9 @@ const JUST_STATUS_LABEL: Record<string, { label: string; color: string }> = {
   REPROVADO: { label: 'Justificativa reprovada', color: 'var(--mg-red)' },
 }
 
-export default function AnomaliesTab({ anomalies, onExportXlsx, onOpenLog }: Props) {
+export default function AnomaliesTab({ anomalies, onOpenLog }: Props) {
   return (
     <>
-      {/* Export button */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 14 }}>
-        <button className="btn-ghost" style={{ fontSize: 12, padding: '5px 12px' }} onClick={onExportXlsx}>
-          ↓ XLSX
-        </button>
-      </div>
-
       {anomalies.length === 0 ? (
         <div style={{ color: 'var(--mg-muted)', textAlign: 'center', padding: 32, fontSize: 13 }}>
           Nenhuma anomalia detectada no período

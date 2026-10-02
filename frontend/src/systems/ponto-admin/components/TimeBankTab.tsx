@@ -2,8 +2,6 @@ import type { TimeBankData } from '../hooks/useReports'
 
 interface Props {
   data:         TimeBankData | undefined
-  onExportPdf:  () => void
-  onExportXlsx: () => void
 }
 
 function fmtH(h: number) {
@@ -23,7 +21,7 @@ function BalanceVal({ value, size = 22 }: { value: number; size?: number }) {
   )
 }
 
-export default function TimeBankTab({ data, onExportPdf, onExportXlsx }: Props) {
+export default function TimeBankTab({ data }: Props) {
   if (!data) {
     return (
       <div style={{ color: 'var(--mg-muted)', textAlign: 'center', padding: 32, fontSize: 13 }}>
@@ -36,16 +34,6 @@ export default function TimeBankTab({ data, onExportPdf, onExportXlsx }: Props) 
 
   return (
     <>
-      {/* Export buttons */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 14 }}>
-        <button className="btn-ghost" style={{ fontSize: 12, padding: '5px 12px' }} onClick={onExportPdf}>
-          ↓ PDF
-        </button>
-        <button className="btn-ghost" style={{ fontSize: 12, padding: '5px 12px' }} onClick={onExportXlsx}>
-          ↓ XLSX
-        </button>
-      </div>
-
       {/* KPI mini-cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 20 }}>
         {[

@@ -399,11 +399,19 @@
 .pontoadmin-root .esp-edit-help { color: var(--mg-muted); font-size: 13px; line-height: 1.5; margin: 0 0 14px; }
 .pontoadmin-root .esp-day-logs { display: grid; gap: 7px; margin-bottom: 18px; }
 .pontoadmin-root .esp-day-log {
-  display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 16px;
-  width: 100%; padding: 11px 12px; border: var(--mg-border); border-radius: 8px;
-  background: var(--mg-bg2); color: var(--mg-white); text-align: left; cursor: pointer;
+  display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; align-items: center; gap: 12px;
+  width: 100%; padding: 9px 12px; border: var(--mg-border); border-radius: 8px;
+  background: var(--mg-bg2); color: var(--mg-white); text-align: left;
 }
-.pontoadmin-root .esp-day-log:hover,
-.pontoadmin-root .esp-day-log:focus-visible { border-color: var(--mg-gold); }
 .pontoadmin-root .esp-day-log strong { font-variant-numeric: tabular-nums; }
-.pontoadmin-root .esp-day-log span:last-child { color: var(--mg-gold); font-size: 12px; }
+.pontoadmin-root .esp-day-action {
+  border: 0; background: none; color: var(--mg-gold); cursor: pointer;
+  padding: 5px; font: inherit; font-size: 12px;
+}
+.pontoadmin-root .esp-day-action:hover { text-decoration: underline; }
+.pontoadmin-root .esp-day-delete { color: #f87171; }
+.pontoadmin-root .esp-day-actions { flex-wrap: wrap; }
+@media (max-width: 520px) {
+  .pontoadmin-root .esp-day-log { grid-template-columns: 1fr auto; }
+  .pontoadmin-root .esp-day-actions button { flex: 1 1 auto; }
+}

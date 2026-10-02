@@ -1,12 +1,13 @@
-import { useState, useMemo, useEffect, useRef } from 'react'
-import { useSummaryReport, useDailyReport, useAlerts, useCalendarReport, useTotals, buildExportUrl,
-         buildCompleteExportUrl, useMirror, useAnomalies, useTimeBank, buildSubExportUrl,
-         useSummaryReportRange, useTotalsRange, buildExportUrlRange } from '../hooks/useReports'
+import { useState, useMemo } from 'react'
+import { useSummaryReport, useDailyReport, useAlerts, useCalendarReport, useTotals,
+         useMirror, useAnomalies, useTimeBank,
+         useSummaryReportRange, useTotalsRange, type MirrorResponse } from '../hooks/useReports'
 import MirrorTab    from '../components/MirrorTab'
 import AnomaliesTab from '../components/AnomaliesTab'
 import TimeBankTab  from '../components/TimeBankTab'
 import LogDetailModal from '../components/LogDetailModal'
 import ReportFilters from '../components/reports/ReportFilters'
+import ReportsExportModal from '../components/reports/ReportsExportModal'
 import MonthlyReportTab from '../components/reports/MonthlyReportTab'
 import { C } from '../components/reports/colors'
 import { useTimeLogs, useDeleteTimeLog, useUpdateTimeLog, useCreateManualTimeLog, type TimeLog } from '../hooks/useTimeLogs'
@@ -15,92 +16,40 @@ import { useEmployees } from '../hooks/useEmployees'
 import { useSectors } from '../hooks/useSectors'
 import { toInputDate, toInputTime, isoWeekBounds, toInputDateLocal, localDayRangeToUtcIso, fmtDayMonth } from '../utils/date'
 import { TYPE_LABELS, STATUS_LABELS } from '../utils/labels'
-import { downloadBlob } from '../lib/api'
 import { Modal } from '../components/Modal'
-import KpiCard, { type Tone } from '../components/dashboard/MetricCard'
 import { useAuth } from '../hooks/useAuth'
+import '../styles/reports.css'
 
 const MONTHS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
 
 function fmtH(h: number) { return `${h.toFixed(1)}h` }
 
-// ─── Dropdown de exportação ───────────────────────────────────────────────────
-
-function ExportDropdown({ label, variant, items }: {
-  label: string
-  variant: 'btn-ghost' | 'btn-primary'
-  items: { label: string; onClick: () => void }[]
-}) {
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!open) return
-    const onDoc = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener('mousedown', onDoc)
-    return () => document.removeEventListener('mousedown', onDoc)
-  }, [open])
-
-  return (
-    <div ref={ref} style={{ position: 'relative' }}>
-      <button className={variant} style={{ fontSize: 12 }} onClick={() => setOpen(o => !o)}>
-        ↓ {label} <span style={{ fontSize: 9, opacity: 0.8 }}>▼</span>
-      </button>
-      {open && (
-        // zIndex 7 (não 3): o card de filtros logo abaixo (ReportFilters.tsx)
-        // é irmão direto de `.dashboard-page` com zIndex 6 de propósito (pra
-        // ficar acima da grade de KPIs) — com 3 aqui, esse menu abria por
-        // baixo do card de filtros. Segue baixo de propósito, como lá: a
-        // Header do CRM (sticky, z-20) cria seu próprio contexto de
-        // empilhamento, então qualquer z-index >= 20 aqui compete com ela
-        // inteira.
-        <div style={{
-          position: 'absolute', top: '100%', right: 0, marginTop: 4, minWidth: 190,
-          background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8,
-          boxShadow: '0 8px 24px rgba(0,0,0,0.45)', zIndex: 7, overflow: 'hidden', padding: '4px 0',
-        }}>
-          {items.map((it, i) => (
-            <button key={i} onClick={() => { it.onClick(); setOpen(false) }}
-              style={{
-                display: 'block', width: '100%', textAlign: 'left', padding: '9px 14px',
-                fontSize: 12, background: 'none', border: 'none', color: '#e8e8e8', cursor: 'pointer',
-                whiteSpace: 'nowrap',
-              }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(245,200,66,0.14)' }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none' }}>
-              {it.label}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ─── Ícones dos KPIs (Feather, mesmo traço da sidebar/dashboard) ──────────────
-
-function ClockIcon() {
-  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
-}
-function CheckClockIcon() {
-  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="8 12 11 15 16 9" /></svg>
-}
-function ScaleIcon() {
-  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="3" x2="12" y2="21" /><polyline points="4 8 4 14" /><polyline points="20 8 20 14" /><path d="M4 8l4-3 4 3" /><path d="M12 8l4-3 4 3" /></svg>
-}
-function UsersIcon() {
-  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" /></svg>
-}
-function FileCheckIcon() {
-  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline points="14 2 14 8 20 8" /><polyline points="9 15 11 17 15 13" /></svg>
-}
-
-function presenceTone(pct: number): Tone {
-  if (pct >= 90) return 'ok'
-  if (pct >= 70) return 'warn'
-  return 'err'
+function combineWeeklyMirror(first: MirrorResponse, second: MirrorResponse | undefined, from: string, to: string): MirrorResponse {
+  const rows = [...first.rows, ...(second?.rows ?? [])]
+    .filter(row => row.date >= from && row.date <= to)
+    .sort((a, b) => a.date.localeCompare(b.date))
+  const total = (field: 'worked_h' | 'expected_h' | 'justified_h') =>
+    Math.round(rows.reduce((sum, row) => sum + row[field], 0) * 100) / 100
+  const worked = total('worked_h')
+  const expected = total('expected_h')
+  const justified = total('justified_h')
+  return {
+    rows,
+    summary: {
+      total_worked_h: worked,
+      total_expected_h: expected,
+      total_justified_h: justified,
+      total_unjustified_h: rows.filter(row => row.status === 'absent').reduce((sum, row) => sum + row.expected_h, 0),
+      balance_h: Math.round((worked + justified - expected) * 100) / 100,
+      ok_count: rows.filter(row => row.status === 'ok').length,
+      incomplete_count: rows.filter(row => row.status === 'incomplete').length,
+      absent_count: rows.filter(row => row.status === 'absent').length,
+      justified_count: rows.filter(row => row.status === 'justified').length,
+      homologado: false,
+      homologado_by: null,
+      homologado_em: null,
+    },
+  }
 }
 
 // ─── Modal editar ponto ───────────────────────────────────────────────────────
@@ -194,11 +143,11 @@ function EditLogModal({ log, employeeId, employees, initialDate, onClose }: {
 
 // ─── Modal justificar ─────────────────────────────────────────────────────────
 
-function JustifyModal({ log, employeeId, onClose }: { log: TimeLog | null; employeeId: string; onClose: () => void }) {
+function JustifyModal({ log, employeeId, initialDate, onClose }: { log: TimeLog | null; employeeId: string; initialDate?: string; onClose: () => void }) {
   const createMutation = useCreateJustification()
   const [form, setForm] = useState({
     reason: '',
-    date: log ? toInputDate(log.created_at) : new Date().toLocaleDateString('en-CA'),
+    date: log ? toInputDate(log.created_at) : initialDate ?? new Date().toLocaleDateString('en-CA'),
     employee_id: employeeId,
     time_log_id: log?.id,
   })
@@ -217,6 +166,7 @@ function JustifyModal({ log, employeeId, onClose }: { log: TimeLog | null; emplo
   return (
     <Modal open={true} onClose={onClose} title="Justificar ausência" maxWidth={380}>
       <form onSubmit={handleSave}>
+        <p className="report-page-subtitle">As horas justificadas entram nos totais após a aprovação.</p>
         <div className="form-group">
           <label className="form-label">Data</label>
           <input className="form-input" type="date" value={form.date} required
@@ -260,7 +210,9 @@ export default function Reports() {
   const [detailLog,  setDetailLog]  = useState<TimeLog | null>(null)
   const [calYear,  setCalYear]  = useState(now.getFullYear())
   const [calMonth, setCalMonth] = useState(now.getMonth() + 1)
-  const [innerTab, setInnerTab] = useState<'registros' | 'espelho' | 'anomalias' | 'banco'>('registros')
+  const [innerTab, setInnerTab] = useState<'registros' | 'espelho' | 'anomalias' | 'banco'>('espelho')
+  const [showExport, setShowExport] = useState(false)
+  const [justifyDate, setJustifyDate] = useState<string>()
   const { can } = useAuth()
 
   const { data: employees = [] } = useEmployees()
@@ -285,8 +237,26 @@ export default function Reports() {
     ? selectedEmployeeChoice : (sortedEmployees[0]?.id ?? '')
   const isEmployeeScope = scope === 'employee'
   const subEmpId = isEmployeeScope ? selectedEmployee || null : null
+  const isWeek = period === 'week'
+  const { start: weekStart, end: weekEnd } = useMemo(() => isoWeekBounds(weekAnchor), [weekAnchor])
+  const weekFrom = toInputDateLocal(weekStart)
+  const weekTo = toInputDateLocal(weekEnd)
+  const weekLabel = `${fmtDayMonth(weekStart)} – ${fmtDayMonth(weekEnd)}/${weekEnd.getFullYear()}`
+  const weekCrossesMonth = weekStart.getFullYear() !== weekEnd.getFullYear() || weekStart.getMonth() !== weekEnd.getMonth()
 
-  const { data: mirrorData, error: mirrorError } = useMirror(subEmpId, year, month)
+  const { data: monthMirror, error: monthMirrorError } = useMirror(subEmpId, year, month, !isWeek)
+  const { data: weekFirstMirror, error: weekFirstError } = useMirror(subEmpId, weekStart.getFullYear(), weekStart.getMonth() + 1, isWeek)
+  const { data: weekSecondMirror, error: weekSecondError } = useMirror(subEmpId, weekEnd.getFullYear(), weekEnd.getMonth() + 1, isWeek && weekCrossesMonth)
+  const mirrorData = useMemo(() => {
+    if (!isWeek) return monthMirror
+    if (!weekFirstMirror || (weekCrossesMonth && !weekSecondMirror)) return undefined
+    return combineWeeklyMirror(weekFirstMirror, weekCrossesMonth ? weekSecondMirror : undefined, weekFrom, weekTo)
+  }, [isWeek, monthMirror, weekFirstMirror, weekSecondMirror, weekCrossesMonth, weekFrom, weekTo])
+  const mirrorError = isWeek ? (weekFirstError ?? weekSecondError) : monthMirrorError
+  const lockedMonths = new Set<string>()
+  if (isWeek && weekFirstMirror?.summary.homologado) lockedMonths.add(weekFrom.slice(0, 7))
+  if (isWeek && weekCrossesMonth && weekSecondMirror?.summary.homologado) lockedMonths.add(weekTo.slice(0, 7))
+
   const { data: anomalies = [] } = useAnomalies(subEmpId, year, month)
   const { data: timeBankData } = useTimeBank(subEmpId, year, month)
 
@@ -296,22 +266,17 @@ export default function Reports() {
 
   const { data: alerts = [] } = useAlerts(year, month, apiScope, idsParam, sectorParam)
 
-  const isWeek = period === 'week'
-  const { start: weekStart, end: weekEnd } = useMemo(() => isoWeekBounds(weekAnchor), [weekAnchor])
-  const weekFrom  = toInputDateLocal(weekStart)
-  const weekTo    = toInputDateLocal(weekEnd)
-  const weekLabel = `${fmtDayMonth(weekStart)} – ${fmtDayMonth(weekEnd)}/${weekEnd.getFullYear()}`
-
   // Os dois períodos usam hooks separados (endpoints diferentes no backend —
   // ver /reports/summary vs /reports/summary-range); `enabled` evita buscar
   // os dois ao mesmo tempo ao alternar Mensal/Semanal.
   const { data: summaryMonth = [] } = useSummaryReport(year, month, apiScope, idsParam, sectorParam, !isWeek)
-  const { data: totalsMonth } = useTotals(year, month, apiScope, idsParam, sectorParam, !isWeek)
+  const { data: totalsMonth, isFetching: totalsMonthFetching } = useTotals(year, month, apiScope, idsParam, sectorParam, !isWeek)
   const { data: summaryWeek = [] } = useSummaryReportRange(weekFrom, weekTo, apiScope, idsParam, sectorParam, isWeek)
-  const { data: totalsWeek } = useTotalsRange(weekFrom, weekTo, apiScope, idsParam, sectorParam, isWeek)
+  const { data: totalsWeek, isFetching: totalsWeekFetching } = useTotalsRange(weekFrom, weekTo, apiScope, idsParam, sectorParam, isWeek)
 
   const summary      = isWeek ? summaryWeek : summaryMonth
   const serverTotals = isWeek ? totalsWeek  : totalsMonth
+  const totalsRefreshing = isWeek ? totalsWeekFetching : totalsMonthFetching
 
   const dailyEmpId = scope === 'employee' ? selectedEmployee : (summary[0]?.employee_id ?? null)
   const { data: dailyData = [] } = useDailyReport(dailyEmpId, year, month)
@@ -379,12 +344,12 @@ export default function Reports() {
 
   function changeScope(s: typeof scope) {
     setScope(s); closePanels()
-    if (s !== 'employee') setInnerTab('registros')
+    setInnerTab(s === 'employee' ? 'espelho' : 'registros')
   }
 
   function changePeriod(p: typeof period) {
     setPeriod(p); closePanels()
-    if (p === 'week') setInnerTab('registros')
+    if (p === 'week' && (innerTab === 'anomalias' || innerTab === 'banco')) setInnerTab('espelho')
   }
 
   function onPickEmployee(id: string) {
@@ -400,87 +365,17 @@ export default function Reports() {
     else setCalMonth(m => m + 1)
   }
 
-  const years = Array.from({ length: 5 }, (_, i) => now.getFullYear() - 2 + i)
-
   // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
     <div className="dashboard-page animate-in">
 
-      {/* Cabeçalho */}
       <div className="page-header" style={{ flexWrap: 'wrap', gap: 12 }}>
-        <h1 className="page-title">Relatórios</h1>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          {/* Mensal / Semanal */}
-          <div style={{ display: 'flex', borderRadius: 8, overflow: 'hidden', border: 'var(--mg-border)' }}>
-            {(['month', 'week'] as const).map(p => (
-              <button key={p} onClick={() => changePeriod(p)}
-                style={{
-                  padding: '6px 14px', fontSize: 12, border: 'none', cursor: 'pointer',
-                  background: period === p ? 'var(--mg-gold)' : 'transparent',
-                  color: period === p ? '#111' : 'var(--mg-muted)',
-                  fontWeight: period === p ? 700 : 400,
-                }}>
-                {p === 'month' ? 'Mensal' : 'Semanal'}
-              </button>
-            ))}
-          </div>
-
-          {period === 'month' ? (
-            <>
-              <select className="form-input" style={{ fontSize: 12, padding: '6px 10px', width: 'auto' }}
-                value={month} onChange={e => setMonth(Number(e.target.value))}>
-                {MONTHS.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
-              </select>
-              <select className="form-input" style={{ fontSize: 12, padding: '6px 10px', width: 'auto' }}
-                value={year} onChange={e => setYear(Number(e.target.value))}>
-                {years.map(y => <option key={y} value={y}>{y}</option>)}
-              </select>
-            </>
-          ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--mg-bg2)', border: 'var(--mg-border)', borderRadius: 8, padding: '2px 4px' }}>
-              <button className="btn-ghost" style={{ padding: '4px 10px', fontSize: 14, lineHeight: 1 }}
-                onClick={() => setWeekAnchor(d => { const n = new Date(d); n.setDate(n.getDate() - 7); return n })}>‹</button>
-              <span style={{ fontSize: 12, fontWeight: 600, color: '#fff', minWidth: 118, textAlign: 'center' }}>{weekLabel}</span>
-              <button className="btn-ghost" style={{ padding: '4px 10px', fontSize: 14, lineHeight: 1 }}
-                onClick={() => setWeekAnchor(d => { const n = new Date(d); n.setDate(n.getDate() + 7); return n })}>›</button>
-            </div>
-          )}
-
-          {isWeek ? (
-            <>
-              <button className="btn-ghost" style={{ fontSize: 12 }} onClick={() => downloadBlob(
-                buildExportUrlRange('xlsx', weekFrom, weekTo, apiScope, sectionTitle, weekLabel, idsParam, sectorParam),
-                `relatorio_semana_${weekFrom}_${weekTo}.xlsx`)}>
-                ↓ XLSX
-              </button>
-              <button className="btn-primary" style={{ fontSize: 12 }} onClick={() => downloadBlob(
-                buildExportUrlRange('pdf', weekFrom, weekTo, apiScope, sectionTitle, weekLabel, idsParam, sectorParam),
-                `relatorio_semana_${weekFrom}_${weekTo}.pdf`)}>
-                ↓ PDF
-              </button>
-            </>
-          ) : (
-            <>
-              <ExportDropdown label="XLSX" variant="btn-ghost" items={[
-                { label: 'XLSX Simplificado', onClick: () => downloadBlob(
-                  buildExportUrl('xlsx', year, month, apiScope, sectionTitle, idsParam, sectorParam),
-                  `relatorio_${year}_${String(month).padStart(2,'0')}.xlsx`) },
-                { label: 'XLSX Detalhado', onClick: () => downloadBlob(
-                  buildCompleteExportUrl('xlsx', year, month, apiScope, sectionTitle, idsParam, sectorParam),
-                  `relatorio_completo_${year}_${String(month).padStart(2,'0')}.xlsx`) },
-              ]} />
-              <ExportDropdown label="PDF" variant="btn-primary" items={[
-                { label: 'PDF Simplificado', onClick: () => downloadBlob(
-                  buildExportUrl('pdf', year, month, apiScope, sectionTitle, idsParam, sectorParam),
-                  `relatorio_${year}_${String(month).padStart(2,'0')}.pdf`) },
-                { label: 'PDF Detalhado', onClick: () => downloadBlob(
-                  buildCompleteExportUrl('pdf', year, month, apiScope, sectionTitle, idsParam, sectorParam),
-                  `relatorio_completo_${year}_${String(month).padStart(2,'0')}.pdf`) },
-              ]} />
-            </>
-          )}
+        <div>
+          <h1 className="page-title">Ponto</h1>
+          <p className="report-page-subtitle">Confira e ajuste as batidas no espelho de ponto.</p>
         </div>
+        <button type="button" className="btn-primary" onClick={() => setShowExport(true)}>Relatórios</button>
       </div>
 
       {/* Barra de filtros */}
@@ -496,59 +391,54 @@ export default function Reports() {
         onSelectSector={setSelectedSector}
       />
 
-      {/* Cards de métricas */}
-      <div className="grid-kpi" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
-        <KpiCard
-          icon={<ClockIcon />} tone="neutral"
-          label="Horas esperadas"
-          value={fmtH(totals.exp)}
-          sub="Jornada prevista no período"
-        />
-        <KpiCard
-          icon={<CheckClockIcon />} tone="ok"
-          label="Horas trabalhadas"
-          value={fmtH(totals.wrk)} valueTone="ok"
-          sub="Efetivamente registradas"
-        />
-        <KpiCard
-          icon={<ScaleIcon />} tone={(serverTotals?.total_balance ?? (totals.wrk - totals.exp)) >= 0 ? 'ok' : 'err'}
-          label="Saldo"
-          value={fmtH(serverTotals?.total_balance ?? (totals.wrk - totals.exp))}
-          valueTone={(serverTotals?.total_balance ?? (totals.wrk - totals.exp)) >= 0 ? 'ok' : 'err'}
-          sub="Trabalhado − esperado + justificado"
-        />
-        <KpiCard
-          icon={<FileCheckIcon />} tone="gold"
-          label="Horas justificadas"
-          value={fmtH(totals.just)}
-          sub="Abonadas no período"
-        />
-        <KpiCard
-          icon={<UsersIcon />} tone="gold"
-          label="Presença"
-          value={`${totals.avgPct.toFixed(1)}%`}
-          valueTone={presenceTone(totals.avgPct)}
-          sub={`${serverTotals?.employee_count ?? summary.length} colaborador(es)`}
-        />
-      </div>
-
       {/* Card de registros */}
-      <div className="card" style={{ marginBottom: 20 }}>
+      <div className="card report-main-card" style={{ marginBottom: 20 }}>
+        <div className="report-period-bar">
+          <div className="report-period-switch" role="group" aria-label="Período da consulta">
+            <button type="button" aria-pressed={period === 'month'} className={period === 'month' ? 'active' : ''} onClick={() => changePeriod('month')}>Mensal</button>
+            <button type="button" aria-pressed={period === 'week'} className={period === 'week' ? 'active' : ''} onClick={() => changePeriod('week')}>Semanal</button>
+          </div>
+          {period === 'month' ? (
+            <div className="report-period-fields">
+              <label className="report-field"><span>Mês</span>
+                <select className="form-input" value={month} onChange={e => setMonth(Number(e.target.value))}>
+                  {MONTHS.map((name, index) => <option key={name} value={index + 1}>{name}</option>)}
+                </select></label>
+              <label className="report-field"><span>Ano</span>
+                <input className="form-input" type="number" min="2000" max="2100" value={year} onChange={e => setYear(Number(e.target.value))} />
+              </label>
+            </div>
+          ) : (
+            <div className="report-period-fields">
+              <button type="button" className="btn-ghost" aria-label="Semana anterior"
+                onClick={() => setWeekAnchor(d => { const next = new Date(d); next.setDate(next.getDate() - 7); return next })}>‹</button>
+              <label className="report-field"><span>Semana de {weekLabel}</span>
+                <input className="form-input" type="date" value={toInputDateLocal(weekAnchor)}
+                  onChange={e => { if (e.target.value) setWeekAnchor(new Date(`${e.target.value}T12:00:00`)) }} />
+              </label>
+              <button type="button" className="btn-ghost" aria-label="Próxima semana"
+                onClick={() => setWeekAnchor(d => { const next = new Date(d); next.setDate(next.getDate() + 7); return next })}>›</button>
+            </div>
+          )}
+        </div>
 
-        {/* Sub-tabs — apenas na visão por colaborador, e só no relatório
-            mensal (Espelho/Anomalias/Banco de horas ainda não têm versão
-            semanal) */}
-        {isEmployeeScope && !isWeek && (
-          <div style={{ display: 'flex', borderBottom: '0.5px solid #2a2a28', marginBottom: 16 }}>
-            {([
-              ['registros',  'Registros',       null               ],
-              ['espelho',    'Espelho de ponto', null               ],
-              ['anomalias',  'Anomalias',        anomalies.length   ],
-              ['banco',      'Banco de horas',   null               ],
-            ] as const).map(([key, label, badge]) => (
+        {isEmployeeScope && (
+          <div className="report-tabs" role="tablist" aria-label="Visões do ponto">
+            {(isWeek ? [
+              ['espelho', 'Espelho de ponto', null],
+              ['registros', 'Registros', null],
+            ] : [
+              ['espelho', 'Espelho de ponto', null],
+              ['registros', 'Registros', null],
+              ['anomalias', 'Anomalias', anomalies.length],
+              ['banco', 'Banco de horas', null],
+            ]).map(([key, label, badge]) => (
               <button
                 key={key}
-                onClick={() => setInnerTab(key)}
+                type="button"
+                role="tab"
+                aria-selected={innerTab === key}
+                onClick={() => setInnerTab(key as typeof innerTab)}
                 style={{
                   padding: '8px 14px', fontSize: 12,
                   background: 'none', border: 'none', cursor: 'pointer',
@@ -561,7 +451,7 @@ export default function Reports() {
                 onMouseLeave={e => { if (innerTab !== key) (e.currentTarget as HTMLElement).style.color = '#666' }}
               >
                 {label}
-                {badge != null && badge > 0 && (
+                {typeof badge === 'number' && badge > 0 && (
                   <span style={{
                     marginLeft: 6, background: 'rgba(226,75,74,0.2)', color: 'var(--mg-red)',
                     borderRadius: 10, padding: '1px 6px', fontSize: 10,
@@ -573,6 +463,17 @@ export default function Reports() {
             ))}
           </div>
         )}
+
+        {totalsRefreshing && <div className="report-refresh-status" role="status">Atualizando dados do período...</div>}
+        <div className="report-summary-strip" aria-label="Resumo do período">
+          <div><span>Previsto</span><strong>{fmtH(totals.exp)}</strong></div>
+          <div><span>Trabalhado</span><strong>{fmtH(totals.wrk)}</strong></div>
+          <div><span>Justificado</span><strong>{fmtH(totals.just)}</strong></div>
+          <div><span>Saldo</span><strong className={(serverTotals?.total_balance ?? 0) >= 0 ? 'positive' : 'negative'}>
+            {fmtH(serverTotals?.total_balance ?? 0)}
+          </strong></div>
+          <div><span>Presença</span><strong>{totals.avgPct.toFixed(1)}%</strong></div>
+        </div>
 
         {/* Cabeçalho — título e ações condicionais por aba */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
@@ -634,7 +535,7 @@ export default function Reports() {
             onOpenDetail={setDetailLog}
             onEditLog={setEditLog}
             onDeleteLog={id => deleteLogMutation.mutate(id)}
-            onJustifyLog={setJustifyLog}
+            onJustifyLog={log => { setJustifyDate(undefined); setJustifyLog(log) }}
             employeeNames={scope !== 'employee' ? employeeNameMap : undefined}
             employeeName={scope === 'employee' ? sectionTitle : undefined}
           />
@@ -651,17 +552,15 @@ export default function Reports() {
             year={year}
             month={month}
             canManage={can('corrections')}
-            onExportPdf={() => downloadBlob(
-              buildSubExportUrl('mirror', 'pdf', selectedEmployee, year, month),
-              `espelho_${year}_${String(month).padStart(2,'0')}.pdf`
-            )}
-            onExportXlsx={() => downloadBlob(
-              buildSubExportUrl('mirror', 'xlsx', selectedEmployee, year, month),
-              `espelho_${year}_${String(month).padStart(2,'0')}.xlsx`
-            )}
+            canJustify={can('justifications')}
+            mode={period}
+            selectionScope={isWeek ? weekFrom : `${year}-${month}`}
+            lockedMonths={lockedMonths}
             logs={logs.filter(log => log.employee_id === selectedEmployee)}
             onEditLog={setEditLog}
             onAddLog={date => { setEditDate(date); setEditLog('new') }}
+            onDeleteLog={log => deleteLogMutation.mutateAsync(log.id)}
+            onJustifyDay={date => { setJustifyLog(null); setJustifyDate(date) }}
           />
         )}
 
@@ -669,10 +568,6 @@ export default function Reports() {
         {innerTab === 'anomalias' && (
           <AnomaliesTab
             anomalies={anomalies}
-            onExportXlsx={() => downloadBlob(
-              buildSubExportUrl('anomalies', 'xlsx', selectedEmployee, year, month),
-              `anomalias_${year}_${String(month).padStart(2,'0')}.xlsx`
-            )}
             onOpenLog={logId => {
               const log = logs.find(l => l.id === logId)
               if (log) setDetailLog(log)
@@ -684,18 +579,23 @@ export default function Reports() {
         {innerTab === 'banco' && (
           <TimeBankTab
             data={timeBankData}
-            onExportPdf={() => downloadBlob(
-              buildSubExportUrl('time-bank', 'pdf', selectedEmployee, year, month),
-              `banco_horas_${year}_${String(month).padStart(2,'0')}.pdf`
-            )}
-            onExportXlsx={() => downloadBlob(
-              buildSubExportUrl('time-bank', 'xlsx', selectedEmployee, year, month),
-              `banco_horas_${year}_${String(month).padStart(2,'0')}.xlsx`
-            )}
           />
         )}
 
       </div>
+
+      {showExport && <ReportsExportModal
+        onClose={() => setShowExport(false)}
+        scope={apiScope}
+        scopeLabel={sectionTitle}
+        employeeId={selectedEmployee}
+        ids={idsParam}
+        sectorId={sectorParam}
+        initialPeriod={period}
+        initialYear={year}
+        initialMonth={month}
+        initialWeekDate={toInputDateLocal(weekAnchor)}
+      />}
 
       {/* Modais */}
       {detailLog && <LogDetailModal log={detailLog} onClose={() => setDetailLog(null)} />}
@@ -708,11 +608,12 @@ export default function Reports() {
           onClose={() => { setEditLog(undefined); setEditDate(undefined) }}
         />
       )}
-      {justifyLog !== undefined && justifyLog !== null && (
+      {(justifyLog || justifyDate) && (
         <JustifyModal
-          log={justifyLog}
+          log={justifyLog ?? null}
           employeeId={selectedEmployee || ''}
-          onClose={() => setJustifyLog(undefined)}
+          initialDate={justifyDate}
+          onClose={() => { setJustifyLog(undefined); setJustifyDate(undefined) }}
         />
       )}
     </div>

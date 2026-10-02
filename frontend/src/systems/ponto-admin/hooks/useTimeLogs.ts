@@ -43,9 +43,11 @@ export function useUpdateTimeLog() {
   return useMutation({
     mutationFn: ({ id, ...data }: TimeLogUpdate & { id: string }) =>
       api.put(`/api/v1/time-logs/${id}`, data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['time-logs'] })
-      qc.invalidateQueries({ queryKey: ['reports'] })
+    onSuccess: async () => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['time-logs'] }),
+        qc.invalidateQueries({ queryKey: ['reports'] }),
+      ])
     },
   })
 }
@@ -54,9 +56,11 @@ export function useDeleteTimeLog() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => api.delete(`/api/v1/time-logs/${id}`),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['time-logs'] })
-      qc.invalidateQueries({ queryKey: ['reports'] })
+    onSuccess: async () => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['time-logs'] }),
+        qc.invalidateQueries({ queryKey: ['reports'] }),
+      ])
     },
   })
 }
@@ -72,9 +76,11 @@ export function useCreateManualTimeLog() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (data: ManualTimeLogCreate) => api.post('/api/v1/time-logs/manual', data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['time-logs'] })
-      qc.invalidateQueries({ queryKey: ['reports'] })
+    onSuccess: async () => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['time-logs'] }),
+        qc.invalidateQueries({ queryKey: ['reports'] }),
+      ])
     },
   })
 }

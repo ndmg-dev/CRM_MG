@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { api, openAttachment } from '../lib/api'
+import { openAttachment } from '../lib/api'
 import { Modal } from './Modal'
 import type { MirrorResponse, MirrorRow, MirrorCorrection } from '../hooks/useReports'
 import { useHomologarMirror, useReabrirMirror } from '../hooks/useReports'
@@ -19,11 +18,15 @@ interface Props {
   month:        number
   /** Permissão "corrections" — só quem pode aprovar correções homologa/reabre o mês. */
   canManage:    boolean
-  onExportPdf:  () => void
-  onExportXlsx: () => void
+  canJustify:   boolean
+  mode:         'month' | 'week'
+  selectionScope: string
+  lockedMonths: Set<string>
   logs:         TimeLog[]
   onEditLog:    (log: TimeLog) => void
   onAddLog:     (date: string) => void
+  onDeleteLog:  (log: TimeLog) => Promise<unknown>
+  onJustifyDay: (date: string) => void
 }
 
 const STATUS_BADGE: Record<string, { variant: string; label: string }> = {
@@ -101,64 +104,11 @@ function StatusBadge({ status }: { status: string }) {
   return <span className={`esp-badge esp-badge-${meta.variant}`}>{meta.label}</span>
 }
 
-// ─── Modal "Solicitar ajuste" ───────────────────────────────────────────────
-
-function RequestAdjustmentModal({ employeeId, onClose }: { employeeId: string; onClose: () => void }) {
-  const qc = useQueryClient()
-  const [date, setDate] = useState(new Date().toLocaleDateString('en-CA'))
-  const [reason, setReason] = useState('')
-  const [err, setErr] = useState('')
-
-  const mutation = useMutation({
-    mutationFn: () => api.post('/api/v1/justifications', {
-      employee_id: employeeId,
-      date: new Date(`${date}T12:00:00`).toISOString(),
-      reason: reason.trim(),
-      occurrence_type: 'FALTA_PARCIAL',
-      affects_chart: true,
-    }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['reports', 'mirror'] }); onClose() },
-    onError: (e: Error) => setErr(e.message),
-  })
-
-  function submit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!reason.trim()) { setErr('Descreva o motivo'); return }
-    setErr('')
-    mutation.mutate()
-  }
-
-  return (
-    <Modal open onClose={onClose} title="Solicitar ajuste" maxWidth={420}>
-      <form onSubmit={submit}>
-        <div className="form-group">
-          <label className="form-label">Data</label>
-          <input className="form-input" type="date" value={date} max={new Date().toLocaleDateString('en-CA')}
-            onChange={e => setDate(e.target.value)} required />
-        </div>
-        <div className="form-group">
-          <label className="form-label">Motivo</label>
-          <textarea className="form-input" rows={3} value={reason} required
-            placeholder="Descreva brevemente. Não informe diagnóstico ou CID."
-            onChange={e => setReason(e.target.value)} />
-        </div>
-        {err && <div style={{ color: 'var(--mg-red)', fontSize: 12, marginBottom: 10 }}>{err}</div>}
-        <div className="modal-actions">
-          <button type="button" className="btn-ghost" onClick={onClose}>Cancelar</button>
-          <button type="submit" className="btn-primary" disabled={mutation.isPending}>
-            {mutation.isPending ? 'Enviando...' : 'Solicitar'}
-          </button>
-        </div>
-      </form>
-    </Modal>
-  )
-}
-
 // ─── Linha (desktop) e card (mobile) do dia ────────────────────────────────
 
 function dayBalance(r: MirrorRow): number | null {
   if (r.status === 'weekend' || r.status === 'holiday' || r.status === 'ferias' || r.status === 'future') return null
-  return r.worked_h - r.expected_h
+  return r.worked_h + r.justified_h - r.expected_h
 }
 
 function BalanceCell({ row }: { row: MirrorRow }) {
@@ -211,7 +161,7 @@ function DayRow({ row: r, onManage }: { row: MirrorRow; onManage?: (date: string
         {(nonWork || isAbsent) && <div className="esp-time-empty" />}
         <div><BalanceCell row={r} /></div>
         <div className="esp-status-cell" style={{ display: 'flex' }}>
-          {onManage && <button type="button" className="esp-edit-day" onClick={() => onManage(r.date)} aria-label={`Editar pontos de ${r.date.slice(8)}/${r.date.slice(5, 7)}`}>Editar pontos</button>}
+          {onManage && <button type="button" className="esp-edit-day" onClick={() => onManage(r.date)} aria-label={`Abrir pontos de ${r.date.slice(8)}/${r.date.slice(5, 7)}`}>Ajustar pontos</button>}
           <StatusBadge status={r.status} />
           {approvedOcc && (
             <span className="esp-badge esp-badge-neutral esp-badge-just approved">
@@ -293,7 +243,7 @@ function DayCard({ row: r, onManage }: { row: MirrorRow; onManage?: (date: strin
           </div>
         </>
       )}
-      {onManage && <button type="button" className="esp-edit-day esp-edit-day-mobile" onClick={() => onManage(r.date)}>Editar pontos deste dia</button>}
+      {onManage && <button type="button" className="esp-edit-day esp-edit-day-mobile" onClick={() => onManage(r.date)}>Ajustar pontos deste dia</button>}
       {r.occurrences.map(occ => (
         <div key={occ.id} className="esp-card-meta" style={{ marginTop: 6 }}>
           {occ.justified_hours != null ? `${occ.justified_hours}h abonado` : 'Dia inteiro'} · {occ.occurrence_type_label} · {occ.reason}
@@ -310,26 +260,32 @@ function DayCard({ row: r, onManage }: { row: MirrorRow; onManage?: (date: strin
 
 // ─── Aba Espelho de ponto ──────────────────────────────────────────────────
 
-// Removidos de propósito (não é regressão): os cards de resumo
-// (Previsto/Trabalhado/Abonado/Faltas/Saldo do mês) e os chips de filtro
-// (Todos/Com pendência/Faltas/Incompletos/Corrigidos) que existiam aqui
-// duplicavam informação já visível nos KPIs do topo da página de
-// Relatórios — decisão tomada no próprio satélite CRONOS_MG (commit
-// 323a413, "remove cards de resumo e filtros redundantes do espelho de
-// ponto") e replicada aqui. Badge Aberto/Homologado mantido.
-export default function MirrorTab({ data, error, logsLoading, logsError, employeeId, year, month, canManage, onExportPdf, onExportXlsx, logs, onEditLog, onAddLog }: Props) {
-  const [showAdjust, setShowAdjust] = useState(false)
+export default function MirrorTab({ data, error, logsLoading, logsError, employeeId, year, month, canManage, canJustify, mode, selectionScope, lockedMonths, logs, onEditLog, onAddLog, onDeleteLog, onJustifyDay }: Props) {
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
+  const [dayError, setDayError] = useState('')
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const homologarMutation = useHomologarMirror()
   const reabrirMutation   = useReabrirMirror()
+  const closureError = homologarMutation.error ?? reabrirMutation.error
 
   const rows = data?.rows.filter(r => r.status !== 'future') ?? []
   const summary = data?.summary
   const homologado = summary?.homologado ?? false
-  const dayPrefix = `${employeeId}:${year}:${month}:`
+  const dayPrefix = `${employeeId}:${selectionScope}:`
   const selectedDay = !homologado && selectedKey?.startsWith(dayPrefix) ? selectedKey.slice(dayPrefix.length) : null
-  const dayLogs = selectedDay ? logs.filter(log => toInputDate(log.created_at) === selectedDay) : []
-  const selectDay = (date: string) => setSelectedKey(`${dayPrefix}${date}`)
+  const dayLogs = selectedDay ? logs.filter(log => toInputDate(log.created_at) === selectedDay)
+    .sort((a, b) => a.created_at.localeCompare(b.created_at)) : []
+  const selectDay = (date: string) => { setDayError(''); setSelectedKey(`${dayPrefix}${date}`) }
+  const canEditDay = (date: string) => (canManage || canJustify) && !lockedMonths.has(date.slice(0, 7)) && !(mode === 'month' && homologado)
+
+  async function deleteLog(log: TimeLog) {
+    if (!window.confirm(`Excluir ${TYPE_LABELS[log.type] ?? log.type} de ${toInputTime(log.created_at)}?`)) return
+    setDayError('')
+    setDeletingId(log.id)
+    try { await onDeleteLog(log) }
+    catch (e) { setDayError(e instanceof Error ? e.message : 'Não foi possível excluir a batida.') }
+    finally { setDeletingId(null) }
+  }
 
   function toggleHomologar() {
     if (!employeeId) return
@@ -342,6 +298,8 @@ export default function MirrorTab({ data, error, logsLoading, logsError, employe
     }
   }
 
+  if (!employeeId) return <div className="esp-state">Selecione um colaborador para ver o espelho.</div>
+
   if (!data) {
     return (
       <div style={{ color: 'var(--mg-muted)', textAlign: 'center', padding: 32, fontSize: 13 }}>
@@ -353,38 +311,28 @@ export default function MirrorTab({ data, error, logsLoading, logsError, employe
   return (
     <div className="esp-tab">
       <div className="esp-toolbar">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-          {summary && (
-            <span className={`esp-chip ${homologado ? 'esp-chip-homologado' : 'esp-chip-aberto'}`}>
-              {homologado ? 'Homologado' : 'Aberto'}
-            </span>
-          )}
-          {homologado && summary && (
-            <span style={{ fontSize: 11, color: 'var(--mg-muted)' }}>
-              {summary.homologado_by ? `por ${summary.homologado_by}` : ''}
-              {summary.homologado_em ? ` em ${fmtDateTime(summary.homologado_em)}` : ''}
-            </span>
-          )}
-        </div>
-        <div className="esp-actions">
-          <button className="btn-ghost" style={{ fontSize: 12 }} onClick={onExportPdf}>↓ PDF</button>
-          <button className="btn-ghost" style={{ fontSize: 12 }} onClick={onExportXlsx}>↓ XLSX</button>
-          <button className="btn-primary" style={{ fontSize: 12 }} disabled={homologado}
-            onClick={() => setShowAdjust(true)}>
-            Solicitar ajuste
-          </button>
-          {canManage && (
-            <button className="btn-ghost" style={{ fontSize: 12 }}
-              disabled={homologarMutation.isPending || reabrirMutation.isPending}
-              onClick={toggleHomologar}>
+        {mode === 'month' ? (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              {summary && <span className={`esp-chip ${homologado ? 'esp-chip-homologado' : 'esp-chip-aberto'}`}>
+                {homologado ? 'Homologado' : 'Aberto'}
+              </span>}
+              {homologado && summary && <span style={{ fontSize: 11, color: 'var(--mg-muted)' }}>
+                {summary.homologado_by ? `por ${summary.homologado_by}` : ''}
+                {summary.homologado_em ? ` em ${fmtDateTime(summary.homologado_em)}` : ''}
+              </span>}
+            </div>
+            {canManage && <button type="button" className="btn-ghost" style={{ fontSize: 12 }}
+              disabled={homologarMutation.isPending || reabrirMutation.isPending} onClick={toggleHomologar}>
               {homologado ? 'Reabrir mês' : 'Homologar mês'}
-            </button>
-          )}
-        </div>
+            </button>}
+          </>
+        ) : <span className="esp-edit-help">A homologação é feita na visão mensal.</span>}
       </div>
+      {closureError && <p className="report-export-error" role="alert">{closureError.message}</p>}
 
       {rows.length === 0 ? (
-        <div className="esp-state">Nenhum registro neste mês.</div>
+        <div className="esp-state">Nenhum registro neste período.</div>
       ) : (
         <>
           {/* Desktop */}
@@ -396,49 +344,45 @@ export default function MirrorTab({ data, error, logsLoading, logsError, employe
                 <div>Horas totais</div><div>Horas justif.</div><div>Intervalo</div>
                 <div>Saldo</div><div>Status / ações</div>
               </div>
-              {rows.map(r => <DayRow key={r.date} row={r} onManage={canManage && !homologado ? selectDay : undefined} />)}
+              {rows.map(r => <DayRow key={r.date} row={r} onManage={canEditDay(r.date) ? selectDay : undefined} />)}
             </div>
             <div className="esp-legend">✎ horário ajustado manualmente — passe o cursor para ver o registro original</div>
           </div>
 
           {/* Mobile */}
           <div className="esp-cards">
-            {rows.map(r => <DayCard key={r.date} row={r} onManage={canManage && !homologado ? selectDay : undefined} />)}
+            {rows.map(r => <DayCard key={r.date} row={r} onManage={canEditDay(r.date) ? selectDay : undefined} />)}
           </div>
 
-          {summary && (
-            <div className="esp-footer">
-              <span>Previsto <strong>{fmtHPlain(summary.total_expected_h)}</strong></span>
-              <span>Trabalhado <strong>{fmtHPlain(summary.total_worked_h)}</strong></span>
-              <span>Abonado <strong>{fmtHPlain(summary.total_justified_h)}</strong></span>
-              <span>Saldo <strong>{fmtH(summary.balance_h)}</strong></span>
-            </div>
-          )}
         </>
       )}
 
       {selectedDay && (
-        <Modal open onClose={() => setSelectedKey(null)} title={`Pontos de ${selectedDay.slice(8)}/${selectedDay.slice(5, 7)}/${selectedDay.slice(0, 4)}`} maxWidth={460}>
-          <p className="esp-edit-help">Selecione uma batida para alterar o horário ou adicione uma batida que esteja faltando. As mudanças ficam registradas no histórico.</p>
-          {logsError ? <p className="esp-edit-help">Não foi possível carregar as batidas: {logsError.message}</p> : logsLoading ? <p className="esp-edit-help">Carregando batidas...</p> : dayLogs.length > 0 ? (
-            <div className="esp-day-logs">
-              {dayLogs.map(log => (
-                <button key={log.id} type="button" className="esp-day-log" onClick={() => { setSelectedKey(null); onEditLog(log) }}>
-                  <span>{TYPE_LABELS[log.type] ?? log.type}</span>
-                  <strong>{toInputTime(log.created_at)}</strong>
-                  <span>Editar</span>
-                </button>
-              ))}
-            </div>
-          ) : <p className="esp-edit-help">Nenhuma batida registrada neste dia.</p>}
-          <div className="modal-actions">
+        <Modal open onClose={() => setSelectedKey(null)} title={`Pontos de ${selectedDay.slice(8)}/${selectedDay.slice(5, 7)}/${selectedDay.slice(0, 4)}`} maxWidth={520}>
+          <p className="esp-edit-help">Consulte as batidas deste dia e faça os ajustes permitidos para seu acesso.</p>
+          {logsError ? <p className="esp-edit-help">Não foi possível carregar as batidas: {logsError.message}</p>
+            : logsLoading ? <p className="esp-edit-help">Carregando batidas...</p>
+            : dayLogs.length > 0 ? (
+              <div className="esp-day-logs">
+                {dayLogs.map(log => (
+                  <div key={log.id} className="esp-day-log">
+                    <span>{TYPE_LABELS[log.type] ?? log.type}</span>
+                    <strong>{toInputTime(log.created_at)}</strong>
+                    {canManage && <button type="button" className="esp-day-action" onClick={() => { setSelectedKey(null); onEditLog(log) }}>Editar</button>}
+                    {canManage && <button type="button" className="esp-day-action esp-day-delete" disabled={deletingId === log.id}
+                      onClick={() => deleteLog(log)}>{deletingId === log.id ? 'Excluindo...' : 'Excluir'}</button>}
+                  </div>
+                ))}
+              </div>
+            ) : <p className="esp-edit-help">Nenhuma batida registrada neste dia.</p>}
+          {dayError && <p className="report-export-error" role="alert">{dayError}</p>}
+          <div className="modal-actions esp-day-actions">
             <button type="button" className="btn-ghost" onClick={() => setSelectedKey(null)}>Fechar</button>
-            <button type="button" className="btn-primary" disabled={logsLoading || !!logsError} onClick={() => { onAddLog(selectedDay); setSelectedKey(null) }}>+ Adicionar batida</button>
+            {canJustify && <button type="button" className="btn-ghost" onClick={() => { onJustifyDay(selectedDay); setSelectedKey(null) }}>Justificar dia</button>}
+            {canManage && <button type="button" className="btn-primary" disabled={logsLoading || !!logsError}
+              onClick={() => { onAddLog(selectedDay); setSelectedKey(null) }}>+ Adicionar batida</button>}
           </div>
         </Modal>
-      )}
-      {showAdjust && employeeId && (
-        <RequestAdjustmentModal employeeId={employeeId} onClose={() => setShowAdjust(false)} />
       )}
     </div>
   )

@@ -1,0 +1,102 @@
+.pontoadmin-root .report-page-subtitle {
+  margin: 5px 0 0;
+  color: var(--mg-muted);
+  font-size: 13px;
+}
+
+.pontoadmin-root .report-main-card { padding-top: 0; }
+.pontoadmin-root .report-period-bar {
+  display: flex;
+  align-items: end;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 16px 0;
+  border-bottom: var(--mg-border);
+}
+.pontoadmin-root .report-period-switch {
+  display: inline-flex;
+  border: var(--mg-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.pontoadmin-root .report-period-switch button {
+  border: 0;
+  background: transparent;
+  color: var(--mg-muted);
+  padding: 9px 14px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+}
+.pontoadmin-root .report-period-switch button.active {
+  background: var(--mg-gold);
+  color: #111;
+  font-weight: 700;
+}
+.pontoadmin-root .report-period-fields {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pontoadmin-root .report-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: var(--mg-muted);
+  font-size: 11px;
+}
+.pontoadmin-root .report-field .form-input { min-width: 100px; width: auto; }
+.pontoadmin-root .report-tabs {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  border-bottom: var(--mg-border);
+  margin-bottom: 18px;
+}
+.pontoadmin-root .report-tabs button { flex: none; }
+.pontoadmin-root .report-refresh-status {
+  color: var(--mg-muted);
+  font-size: 11px;
+  margin: 0 0 6px;
+}
+.pontoadmin-root .report-summary-strip {
+  display: flex;
+  gap: 0;
+  flex-wrap: wrap;
+  margin: 0 0 16px;
+  border: var(--mg-border);
+  border-radius: 8px;
+  background: var(--mg-bg2);
+}
+.pontoadmin-root .report-summary-strip > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 120px;
+  padding: 11px 14px;
+  border-right: var(--mg-border);
+}
+.pontoadmin-root .report-summary-strip > div:last-child { border-right: 0; }
+.pontoadmin-root .report-summary-strip span { color: var(--mg-muted); font-size: 11px; }
+.pontoadmin-root .report-summary-strip strong { color: var(--mg-white); font-size: 16px; font-variant-numeric: tabular-nums; }
+.pontoadmin-root .report-summary-strip strong.positive { color: var(--mg-green); }
+.pontoadmin-root .report-summary-strip strong.negative { color: var(--mg-red); }
+.pontoadmin-root .report-export-form { display: grid; gap: 4px; }
+.pontoadmin-root .report-export-dates {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.pontoadmin-root .report-export-hint {
+  display: block;
+  margin-top: 5px;
+  color: var(--mg-muted);
+  font-size: 11px;
+}
+.pontoadmin-root .report-export-error { color: var(--mg-red); font-size: 12px; }
+@media (max-width: 620px) {
+  .pontoadmin-root .report-period-bar { align-items: stretch; }
+  .pontoadmin-root .report-period-fields { width: 100%; }
+  .pontoadmin-root .report-export-dates { grid-template-columns: 1fr; gap: 0; }
+}

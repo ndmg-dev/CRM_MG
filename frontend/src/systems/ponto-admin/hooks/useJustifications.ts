@@ -38,7 +38,12 @@ export function useCreateJustification() {
   return useMutation({
     mutationFn: (data: { reason: string; date: string; employee_id: string; time_log_id?: string }) =>
       api.post('/api/v1/justifications', data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['justifications'] }),
+    onSuccess: async () => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['justifications'] }),
+        qc.invalidateQueries({ queryKey: ['reports'] }),
+      ])
+    },
   })
 }
 
@@ -47,7 +52,12 @@ export function useUpdateJustification() {
   return useMutation({
     mutationFn: ({ id, ...data }: { id: string; reason: string; date: string; justified_hours?: number; affects_chart: boolean; time_log_id?: string }) =>
       api.put(`/api/v1/justifications/${id}`, data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['justifications'] }),
+    onSuccess: async () => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['justifications'] }),
+        qc.invalidateQueries({ queryKey: ['reports'] }),
+      ])
+    },
   })
 }
 
@@ -55,7 +65,12 @@ export function useDeleteJustification() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => api.delete(`/api/v1/justifications/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['justifications'] }),
+    onSuccess: async () => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['justifications'] }),
+        qc.invalidateQueries({ queryKey: ['reports'] }),
+      ])
+    },
   })
 }
 
@@ -63,7 +78,12 @@ export function useApproveJustification() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => api.patch(`/api/v1/justifications/${id}/approve`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['justifications'] }),
+    onSuccess: async () => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['justifications'] }),
+        qc.invalidateQueries({ queryKey: ['reports'] }),
+      ])
+    },
   })
 }
 
@@ -71,6 +91,11 @@ export function useRejectJustification() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => api.patch(`/api/v1/justifications/${id}/reject`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['justifications'] }),
+    onSuccess: async () => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['justifications'] }),
+        qc.invalidateQueries({ queryKey: ['reports'] }),
+      ])
+    },
   })
 }
