@@ -4,10 +4,16 @@ import { api, openAttachment } from '../lib/api'
 import { Modal } from './Modal'
 import type { MirrorResponse, MirrorRow, MirrorCorrection } from '../hooks/useReports'
 import { useHomologarMirror, useReabrirMirror } from '../hooks/useReports'
+import type { TimeLog } from '../hooks/useTimeLogs'
+import { toInputDate, toInputTime } from '../utils/date'
+import { TYPE_LABELS } from '../utils/labels'
 import '../styles/espelho.css'
 
 interface Props {
   data:         MirrorResponse | undefined
+  error:        Error | null
+  logsLoading:  boolean
+  logsError:    Error | null
   employeeId:   string
   year:         number
   month:        number
@@ -15,6 +21,9 @@ interface Props {
   canManage:    boolean
   onExportPdf:  () => void
   onExportXlsx: () => void
+  logs:         TimeLog[]
+  onEditLog:    (log: TimeLog) => void
+  onAddLog:     (date: string) => void
 }
 
 const STATUS_BADGE: Record<string, { variant: string; label: string }> = {
@@ -169,7 +178,7 @@ function nonWorkLabel(row: MirrorRow) {
   return 'Fim de semana'
 }
 
-function DayRow({ row: r }: { row: MirrorRow }) {
+function DayRow({ row: r, onManage }: { row: MirrorRow; onManage?: (date: string) => void }) {
   const nonWork = isNonWorkDay(r.status)
   const isAbsent = r.status === 'absent'
   const approvedOcc = r.occurrences.find(o => o.status === 'APROVADO')
@@ -202,6 +211,7 @@ function DayRow({ row: r }: { row: MirrorRow }) {
         {(nonWork || isAbsent) && <div className="esp-time-empty" />}
         <div><BalanceCell row={r} /></div>
         <div className="esp-status-cell" style={{ display: 'flex' }}>
+          {onManage && <button type="button" className="esp-edit-day" onClick={() => onManage(r.date)} aria-label={`Editar pontos de ${r.date.slice(8)}/${r.date.slice(5, 7)}`}>Editar pontos</button>}
           <StatusBadge status={r.status} />
           {approvedOcc && (
             <span className="esp-badge esp-badge-neutral esp-badge-just approved">
@@ -243,7 +253,7 @@ function DayRow({ row: r }: { row: MirrorRow }) {
   )
 }
 
-function DayCard({ row: r }: { row: MirrorRow }) {
+function DayCard({ row: r, onManage }: { row: MirrorRow; onManage?: (date: string) => void }) {
   const nonWork = isNonWorkDay(r.status)
   const isAbsent = r.status === 'absent'
   return (
@@ -283,6 +293,7 @@ function DayCard({ row: r }: { row: MirrorRow }) {
           </div>
         </>
       )}
+      {onManage && <button type="button" className="esp-edit-day esp-edit-day-mobile" onClick={() => onManage(r.date)}>Editar pontos deste dia</button>}
       {r.occurrences.map(occ => (
         <div key={occ.id} className="esp-card-meta" style={{ marginTop: 6 }}>
           {occ.justified_hours != null ? `${occ.justified_hours}h abonado` : 'Dia inteiro'} · {occ.occurrence_type_label} · {occ.reason}
@@ -306,14 +317,19 @@ function DayCard({ row: r }: { row: MirrorRow }) {
 // Relatórios — decisão tomada no próprio satélite CRONOS_MG (commit
 // 323a413, "remove cards de resumo e filtros redundantes do espelho de
 // ponto") e replicada aqui. Badge Aberto/Homologado mantido.
-export default function MirrorTab({ data, employeeId, year, month, canManage, onExportPdf, onExportXlsx }: Props) {
+export default function MirrorTab({ data, error, logsLoading, logsError, employeeId, year, month, canManage, onExportPdf, onExportXlsx, logs, onEditLog, onAddLog }: Props) {
   const [showAdjust, setShowAdjust] = useState(false)
+  const [selectedKey, setSelectedKey] = useState<string | null>(null)
   const homologarMutation = useHomologarMirror()
   const reabrirMutation   = useReabrirMirror()
 
   const rows = data?.rows.filter(r => r.status !== 'future') ?? []
   const summary = data?.summary
   const homologado = summary?.homologado ?? false
+  const dayPrefix = `${employeeId}:${year}:${month}:`
+  const selectedDay = !homologado && selectedKey?.startsWith(dayPrefix) ? selectedKey.slice(dayPrefix.length) : null
+  const dayLogs = selectedDay ? logs.filter(log => toInputDate(log.created_at) === selectedDay) : []
+  const selectDay = (date: string) => setSelectedKey(`${dayPrefix}${date}`)
 
   function toggleHomologar() {
     if (!employeeId) return
@@ -329,7 +345,7 @@ export default function MirrorTab({ data, employeeId, year, month, canManage, on
   if (!data) {
     return (
       <div style={{ color: 'var(--mg-muted)', textAlign: 'center', padding: 32, fontSize: 13 }}>
-        Carregando espelho...
+        {error ? `Não foi possível carregar o espelho: ${error.message}` : 'Carregando espelho...'}
       </div>
     )
   }
@@ -378,16 +394,16 @@ export default function MirrorTab({ data, employeeId, year, month, canManage, on
                 <div>Data</div><div>Dia</div><div>Entrada</div><div>S. Almoço</div>
                 <div>R. Almoço</div><div>Saída</div><div>Trabalhado</div>
                 <div>Horas totais</div><div>Horas justif.</div><div>Intervalo</div>
-                <div>Saldo</div><div>Status</div>
+                <div>Saldo</div><div>Status / ações</div>
               </div>
-              {rows.map(r => <DayRow key={r.date} row={r} />)}
+              {rows.map(r => <DayRow key={r.date} row={r} onManage={canManage && !homologado ? selectDay : undefined} />)}
             </div>
             <div className="esp-legend">✎ horário ajustado manualmente — passe o cursor para ver o registro original</div>
           </div>
 
           {/* Mobile */}
           <div className="esp-cards">
-            {rows.map(r => <DayCard key={r.date} row={r} />)}
+            {rows.map(r => <DayCard key={r.date} row={r} onManage={canManage && !homologado ? selectDay : undefined} />)}
           </div>
 
           {summary && (
@@ -401,6 +417,26 @@ export default function MirrorTab({ data, employeeId, year, month, canManage, on
         </>
       )}
 
+      {selectedDay && (
+        <Modal open onClose={() => setSelectedKey(null)} title={`Pontos de ${selectedDay.slice(8)}/${selectedDay.slice(5, 7)}/${selectedDay.slice(0, 4)}`} maxWidth={460}>
+          <p className="esp-edit-help">Selecione uma batida para alterar o horário ou adicione uma batida que esteja faltando. As mudanças ficam registradas no histórico.</p>
+          {logsError ? <p className="esp-edit-help">Não foi possível carregar as batidas: {logsError.message}</p> : logsLoading ? <p className="esp-edit-help">Carregando batidas...</p> : dayLogs.length > 0 ? (
+            <div className="esp-day-logs">
+              {dayLogs.map(log => (
+                <button key={log.id} type="button" className="esp-day-log" onClick={() => { setSelectedKey(null); onEditLog(log) }}>
+                  <span>{TYPE_LABELS[log.type] ?? log.type}</span>
+                  <strong>{toInputTime(log.created_at)}</strong>
+                  <span>Editar</span>
+                </button>
+              ))}
+            </div>
+          ) : <p className="esp-edit-help">Nenhuma batida registrada neste dia.</p>}
+          <div className="modal-actions">
+            <button type="button" className="btn-ghost" onClick={() => setSelectedKey(null)}>Fechar</button>
+            <button type="button" className="btn-primary" disabled={logsLoading || !!logsError} onClick={() => { onAddLog(selectedDay); setSelectedKey(null) }}>+ Adicionar batida</button>
+          </div>
+        </Modal>
+      )}
       {showAdjust && employeeId && (
         <RequestAdjustmentModal employeeId={employeeId} onClose={() => setShowAdjust(false)} />
       )}

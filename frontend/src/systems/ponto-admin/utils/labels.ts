@@ -1,6 +1,7 @@
 export const TYPE_LABELS: Record<string, string> = {
   ENTRADA: 'Entrada', SAIDA_ALMOCO: 'S. Almoço', RETORNO_ALMOCO: 'R. Almoço', SAIDA: 'Saída',
   SAIDA_INTERVALO: 'S. Intervalo', RETORNO_INTERVALO: 'R. Intervalo',
+  SAIDA_AVULSA: 'Saída avulsa', RETORNO_AVULSA: 'Retorno avulso',
 }
 
 export const STATUS_LABELS: Record<string, string> = {

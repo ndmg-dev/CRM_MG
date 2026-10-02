@@ -13,7 +13,7 @@ import { useTimeLogs, useDeleteTimeLog, useUpdateTimeLog, useCreateManualTimeLog
 import { useJustifications, useCreateJustification } from '../hooks/useJustifications'
 import { useEmployees } from '../hooks/useEmployees'
 import { useSectors } from '../hooks/useSectors'
-import { toInputDate, toInputTime, isoWeekBounds, toInputDateLocal, fmtDayMonth } from '../utils/date'
+import { toInputDate, toInputTime, isoWeekBounds, toInputDateLocal, localDayRangeToUtcIso, fmtDayMonth } from '../utils/date'
 import { TYPE_LABELS, STATUS_LABELS } from '../utils/labels'
 import { downloadBlob } from '../lib/api'
 import { Modal } from '../components/Modal'
@@ -105,15 +105,15 @@ function presenceTone(pct: number): Tone {
 
 // ─── Modal editar ponto ───────────────────────────────────────────────────────
 
-function EditLogModal({ log, employeeId, employees, onClose }: {
-  log: TimeLog | null; employeeId: string; employees: { id: string; name: string }[]; onClose: () => void
+function EditLogModal({ log, employeeId, employees, initialDate, onClose }: {
+  log: TimeLog | null; employeeId: string; employees: { id: string; name: string }[]; initialDate?: string; onClose: () => void
 }) {
   const isNew = !log
   const createMutation = useCreateManualTimeLog()
   const updateMutation = useUpdateTimeLog()
   const [form, setForm] = useState({
     employee_id: employeeId,
-    date: log ? toInputDate(log.created_at) : new Date().toLocaleDateString('en-CA'),
+    date: log ? toInputDate(log.created_at) : initialDate ?? new Date().toLocaleDateString('en-CA'),
     time: log ? toInputTime(log.created_at) : '08:00',
     type:   (log?.type   ?? 'ENTRADA')   as TimeLog['type'],
     status: (log?.status ?? 'VERIFICADO') as TimeLog['status'],
@@ -248,13 +248,14 @@ export default function Reports() {
   const [month, setMonth] = useState(now.getMonth() + 1)
   const [weekAnchor, setWeekAnchor] = useState(now)
   const [scope, setScope] = useState<'employee' | 'sector' | 'team'>('employee')
-  const [selectedEmployee, setSelectedEmployee] = useState<string>('')
+  const [selectedEmployeeChoice, setSelectedEmployee] = useState<string>('')
   const [selectedSector,   setSelectedSector]   = useState<string>('')
   const [showCharts,   setShowCharts]   = useState(false)
   const [showCalendar, setShowCalendar] = useState(false)
   const [showAlerts,   setShowAlerts]   = useState(false)
   const [expandedLogs, setExpandedLogs] = useState(false)
   const [editLog,    setEditLog]    = useState<TimeLog | null | 'new'>()
+  const [editDate,   setEditDate]   = useState<string>()
   const [justifyLog, setJustifyLog] = useState<TimeLog | null>()
   const [detailLog,  setDetailLog]  = useState<TimeLog | null>(null)
   const [calYear,  setCalYear]  = useState(now.getFullYear())
@@ -264,18 +265,6 @@ export default function Reports() {
 
   const { data: employees = [] } = useEmployees()
   const { data: sectors   = [] } = useSectors()
-
-  const isEmployeeScope = scope === 'employee'
-  const subEmpId = isEmployeeScope ? selectedEmployee || null : null
-
-  const { data: mirrorData  } = useMirror(subEmpId, year, month)
-  const { data: anomalies = [] } = useAnomalies(subEmpId, year, month)
-  const { data: timeBankData } = useTimeBank(subEmpId, year, month)
-
-  // Reset inner tab when switching employee or período
-  useEffect(() => {
-    setInnerTab('registros')
-  }, [selectedEmployee, year, month, scope, period])
 
   const sectorMap = useMemo(
     () => Object.fromEntries(sectors.map(s => [s.id, s])),
@@ -292,11 +281,14 @@ export default function Reports() {
     [employees]
   )
 
-  useEffect(() => {
-    if (!selectedEmployee && sortedEmployees.length > 0) {
-      setSelectedEmployee(sortedEmployees[0].id)
-    }
-  }, [sortedEmployees, selectedEmployee])
+  const selectedEmployee = sortedEmployees.some(e => e.id === selectedEmployeeChoice)
+    ? selectedEmployeeChoice : (sortedEmployees[0]?.id ?? '')
+  const isEmployeeScope = scope === 'employee'
+  const subEmpId = isEmployeeScope ? selectedEmployee || null : null
+
+  const { data: mirrorData, error: mirrorError } = useMirror(subEmpId, year, month)
+  const { data: anomalies = [] } = useAnomalies(subEmpId, year, month)
+  const { data: timeBankData } = useTimeBank(subEmpId, year, month)
 
   const apiScope    = scope === 'employee' ? 'employees' : scope
   const idsParam    = scope === 'employee' ? selectedEmployee : undefined
@@ -327,11 +319,12 @@ export default function Reports() {
   const firstDay = isWeek ? weekFrom : `${year}-${String(month).padStart(2, '0')}-01`
   const lastDay  = isWeek ? weekTo   : new Date(year, month, 0).toLocaleDateString('en-CA')
 
-  const { data: logs = [] } = useTimeLogs({
-    date_from:   firstDay,
-    date_to:     lastDay,
+  const { data: logs = [], isLoading: logsLoading, error: logsError } = useTimeLogs({
+    date_from:   localDayRangeToUtcIso(firstDay).from,
+    date_to:     localDayRangeToUtcIso(lastDay).to,
     employee_id: scope === 'employee' ? selectedEmployee : undefined,
     sector_id:   scope === 'sector'   ? selectedSector   : undefined,
+    limit:       500,
   })
 
   const { data: justifications = [] } = useJustifications(
@@ -386,10 +379,12 @@ export default function Reports() {
 
   function changeScope(s: typeof scope) {
     setScope(s); closePanels()
+    if (s !== 'employee') setInnerTab('registros')
   }
 
   function changePeriod(p: typeof period) {
     setPeriod(p); closePanels()
+    if (p === 'week') setInnerTab('registros')
   }
 
   function onPickEmployee(id: string) {
@@ -611,7 +606,7 @@ export default function Reports() {
                 </>
               )}
               <button className="btn-primary" style={{ fontSize: 12, padding: '5px 12px' }}
-                onClick={() => setEditLog('new')}>
+                onClick={() => { setEditDate(undefined); setEditLog('new') }}>
                 + Adicionar ponto
               </button>
             </div>
@@ -649,6 +644,9 @@ export default function Reports() {
         {innerTab === 'espelho' && (
           <MirrorTab
             data={mirrorData}
+            error={mirrorError}
+            logsLoading={logsLoading}
+            logsError={logsError}
             employeeId={selectedEmployee}
             year={year}
             month={month}
@@ -661,6 +659,9 @@ export default function Reports() {
               buildSubExportUrl('mirror', 'xlsx', selectedEmployee, year, month),
               `espelho_${year}_${String(month).padStart(2,'0')}.xlsx`
             )}
+            logs={logs.filter(log => log.employee_id === selectedEmployee)}
+            onEditLog={setEditLog}
+            onAddLog={date => { setEditDate(date); setEditLog('new') }}
           />
         )}
 
@@ -703,7 +704,8 @@ export default function Reports() {
           log={editLog === 'new' ? null : editLog}
           employeeId={selectedEmployee || sortedEmployees[0]?.id || ''}
           employees={sortedEmployees}
-          onClose={() => setEditLog(undefined)}
+          initialDate={editDate}
+          onClose={() => { setEditLog(undefined); setEditDate(undefined) }}
         />
       )}
       {justifyLog !== undefined && justifyLog !== null && (

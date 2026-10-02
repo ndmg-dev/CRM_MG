@@ -3,7 +3,7 @@ import { api } from '../lib/api'
 
 export interface TimeLog {
   id: string
-  type: 'ENTRADA' | 'SAIDA_ALMOCO' | 'RETORNO_ALMOCO' | 'SAIDA' | 'SAIDA_INTERVALO' | 'RETORNO_INTERVALO'
+  type: 'ENTRADA' | 'SAIDA_ALMOCO' | 'RETORNO_ALMOCO' | 'SAIDA' | 'SAIDA_INTERVALO' | 'RETORNO_INTERVALO' | 'SAIDA_AVULSA' | 'RETORNO_AVULSA'
   status: 'VERIFICADO' | 'JUSTIFICADO' | 'PENDENTE' | 'WIFI_DESCONHECIDO' | 'FORA_DO_LOCAL'
   source: string
   notes?: string
@@ -43,7 +43,10 @@ export function useUpdateTimeLog() {
   return useMutation({
     mutationFn: ({ id, ...data }: TimeLogUpdate & { id: string }) =>
       api.put(`/api/v1/time-logs/${id}`, data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['time-logs'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['time-logs'] })
+      qc.invalidateQueries({ queryKey: ['reports'] })
+    },
   })
 }
 
@@ -51,7 +54,10 @@ export function useDeleteTimeLog() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => api.delete(`/api/v1/time-logs/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['time-logs'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['time-logs'] })
+      qc.invalidateQueries({ queryKey: ['reports'] })
+    },
   })
 }
 
@@ -66,7 +72,10 @@ export function useCreateManualTimeLog() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (data: ManualTimeLogCreate) => api.post('/api/v1/time-logs/manual', data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['time-logs'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['time-logs'] })
+      qc.invalidateQueries({ queryKey: ['reports'] })
+    },
   })
 }
 
