@@ -325,6 +325,26 @@ export default function Reports() {
     avgPct: serverTotals?.avg_attendance_pct    ?? 0,
   }
 
+  const today = toInputDateLocal(new Date())
+  const throughDate = lastDay < today ? lastDay : today
+  const totalsThroughToday = mirrorData?.rows
+    .filter(row => row.date >= firstDay && row.date <= throughDate)
+    .reduce((acc, row) => ({
+      exp: acc.exp + row.expected_h,
+      wrk: acc.wrk + row.worked_h,
+      just: acc.just + row.justified_h,
+    }), { exp: 0, wrk: 0, just: 0 })
+  const throughTodaySummary = scope === 'employee' && firstDay <= today && today <= lastDay
+    ? totalsThroughToday
+    : undefined
+  const showThroughToday = throughTodaySummary != null
+  const summaryExp = throughTodaySummary?.exp ?? totals.exp
+  const summaryWrk = throughTodaySummary?.wrk ?? totals.wrk
+  const summaryJust = throughTodaySummary?.just ?? totals.just
+  const summaryBalance = throughTodaySummary
+    ? summaryWrk + summaryJust - summaryExp
+    : serverTotals?.total_balance ?? 0
+
   const doughnutData = useMemo(() => {
     if (!serverTotals) return []
     const { present_days, justified_days, absent_days } = serverTotals.pie
@@ -442,9 +462,9 @@ export default function Reports() {
       <div className="card report-main-card" style={{ marginBottom: 20 }}>
         {totalsRefreshing && <div className="report-refresh-status" role="status">Atualizando dados do período...</div>}
         <div className="report-summary-strip" aria-label="Resumo do período">
-          <div className="report-kpi report-kpi-balance"><span>Saldo {isWeek ? 'da semana' : 'do mês'}</span><strong className={(serverTotals?.total_balance ?? 0) >= 0 ? 'positive' : 'negative'}>{fmtH(serverTotals?.total_balance ?? 0, true)}</strong></div>
-          <div className="report-kpi"><span>Trabalhadas</span><strong>{fmtH(totals.wrk)}</strong><small>de {fmtH(totals.exp)} esperadas</small></div>
-          <div className="report-kpi"><span>Justificadas</span><strong>{fmtH(totals.just)}</strong></div>
+          <div className="report-kpi report-kpi-balance"><span>{showThroughToday ? 'Saldo até hoje' : `Saldo ${isWeek ? 'da semana' : 'do mês'}`}</span><strong className={summaryBalance >= 0 ? 'positive' : 'negative'}>{fmtH(summaryBalance, true)}</strong></div>
+          <div className="report-kpi"><span>{showThroughToday ? 'Trabalhadas até hoje' : 'Trabalhadas'}</span><strong>{fmtH(summaryWrk)}</strong><small>de {fmtH(summaryExp)} esperadas{showThroughToday ? ' até hoje' : ''}</small></div>
+          <div className="report-kpi"><span>Justificadas</span><strong>{fmtH(summaryJust)}</strong></div>
           <div className="report-kpi"><span>Presença</span><strong>{Math.round(totals.avgPct)}%</strong>{isEmployeeScope && mirrorData && <small>{mirrorData.rows.filter(row => row.expected_h > 0).length} dias úteis</small>}</div>
           <button type="button" className="report-kpi report-v2-pending-kpi" disabled={!isEmployeeScope} onClick={() => { setMirrorFocus(null); setInnerTab('espelho'); setMirrorFilterRequest(value => value + 1) }}><span>Pendências</span><strong>{isEmployeeScope ? (mirrorData?.summary.incomplete_count ?? 0) + (mirrorData?.summary.absent_count ?? 0) : '—'}</strong><small>Revisar →</small></button>
         </div>
