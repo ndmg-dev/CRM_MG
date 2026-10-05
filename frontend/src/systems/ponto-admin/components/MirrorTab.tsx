@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ChevronLeft, ChevronRight, Pencil, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Info, Pencil, X } from 'lucide-react'
 import { openAttachment } from '../lib/api'
+import { Modal } from './Modal'
 import type { MirrorResponse, MirrorRow } from '../hooks/useReports'
 import { useCreateManualTimeLog, useDiscardTimeLog, useRestoreTimeLog, useUpdateTimeLog, type TimeLog } from '../hooks/useTimeLogs'
 import { toInputDate, toInputTime } from '../utils/date'
@@ -92,6 +93,7 @@ function noteFor(log: TimeLog | undefined) {
 export default function MirrorTab({ data, error, logsLoading, logsError, employeeId, canManage, canJustify, lockedMonths, logs, onJustifyDay, filterRequest, focusDate }: Props) {
   const [filter, setFilter] = useState<Filter>(filterRequest ? 'pending' : 'all')
   const [selectedDate, setSelectedDate] = useState<string | null>(focusDate ?? null)
+  const [showInfo, setShowInfo] = useState(false)
   const [draft, setDraft] = useState<Draft | null>(null)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
@@ -303,11 +305,11 @@ export default function MirrorTab({ data, error, logsLoading, logsError, employe
                 {!merged && <><span className="esp-v2-number">{formatMinutes(work)}</span><span className={`esp-v2-number ${rowBalance >= 0 ? 'positive' : 'negative'}`}>{formatMinutes(rowBalance, true)}</span></>}
                 {merged && <><span /><span /></>}
                 <span className={`esp-v2-status st-${row.status}`}><i />{dayStatus(row)}</span>
-                <span className="esp-v2-edit-action">{allowed && !editing && <button type="button" title="Editar dia" aria-label={`Editar batidas de ${row.date}`} onClick={event => { event.stopPropagation(); begin(row, null) }}><Pencil size={14} /></button>}</span>
+                <span className="esp-v2-edit-action">{allowed && !editing && <button type="button" title="Editar dia" aria-label={`Editar batidas de ${row.date}`} onClick={event => { event.stopPropagation(); begin(row, null) }}><Pencil size={14} /></button>}<button type="button" title="Informações do dia" aria-label={`Ver informações das batidas de ${row.date}`} onClick={event => { event.stopPropagation(); setSelectedDate(row.date); setShowInfo(true) }}><Info size={14} /></button></span>
               </div>
-              {row.occurrences.filter(occ => occ.status === 'APROVADO').map(occ => <div key={occ.id} className="esp-v2-annotation"><b>✓</b>{occ.occurrence_type_label} · {occ.reason}</div>)}
-              {!editing && row.adjustments?.map(adjustment => <div key={adjustment.id} className="esp-v2-annotation note"><b>●</b>{TYPE_LABELS[adjustment.type] ?? adjustment.type} {adjustment.action === 'UPDATE' ? `${adjustment.before ?? '—'} → ${adjustment.after ?? '—'}` : adjustment.action === 'CREATE' ? `incluída ${adjustment.after ?? ''}` : adjustment.action === 'DISCARD' ? 'excluída' : 'restaurada'} · {adjustment.reason}{adjustment.observation ? ` — ${adjustment.observation}` : ''}</div>)}
-              {!editing && !row.adjustments && dayLogs.filter(log => log.notes).map(log => <div key={log.id} className="esp-v2-annotation note"><b>●</b>{TYPE_LABELS[log.type]} {log.original_created_at ? `${toInputTime(log.original_created_at)} → ` : log.source === 'MANUAL' ? 'incluída ' : ''}{toInputTime(log.created_at)} · {log.notes}</div>)}
+              {row.occurrences.filter(occ => occ.status === 'APROVADO' && occ.start_time && occ.end_time).map(occ => <div key={occ.id} className="esp-v2-annotation"><b>✓</b>{occ.start_time}–{occ.end_time}</div>)}
+              {!editing && row.adjustments?.map(adjustment => <div key={adjustment.id} className="esp-v2-annotation note"><b>●</b>{adjustment.before ?? '—'} → {adjustment.after ?? '—'}</div>)}
+              {!editing && !row.adjustments && dayLogs.filter(log => log.notes).map(log => <div key={log.id} className="esp-v2-annotation note"><b>●</b>{log.original_created_at ? toInputTime(log.original_created_at) : '—'} → {toInputTime(log.created_at)}</div>)}
               {editing && <div className="esp-v2-editor" onClick={event => event.stopPropagation()}>
                 {changes.map(change => <div className="esp-v2-change" key={change.index}>
                   <span>{TYPE_LABELS[TYPES[change.index]]}</span>
@@ -325,11 +327,43 @@ export default function MirrorTab({ data, error, logsLoading, logsError, employe
       {selectedRow && <aside className="esp-v2-panel" aria-label={`Detalhes de ${selectedDate}`}>
         <div className="esp-v2-panel-head"><div><h3>{dayLabel(selectedRow.date)}</h3><span className={`esp-v2-status st-${selectedRow.status}`}><i />{dayStatus(selectedRow)}</span></div><div><button type="button" aria-label="Dia anterior" onClick={() => stepSelection(-1)}><ChevronLeft size={16} /></button><button type="button" aria-label="Próximo dia" onClick={() => stepSelection(1)}><ChevronRight size={16} /></button><button type="button" aria-label="Fechar detalhes" onClick={() => setSelectedDate(null)}><X size={16} /></button></div></div>
         <div className="esp-v2-panel-stats"><div><small>Trabalhado</small><strong>{formatMinutes(Math.round(selectedRow.worked_h * 60))}</strong></div><div><small>Intervalo</small><strong>{selectedRow.lunch_minutes == null ? '—' : formatMinutes(selectedRow.lunch_minutes)}</strong></div><div><small>Saldo</small><strong>{formatMinutes(balance(selectedRow), true)}</strong></div></div>
-        <div className="esp-v2-panel-points">{TYPES.map((type, index) => { const log = findPunch(selectedRow, index); const value = selectedRow[FIELDS[index]]; return <div key={type}><strong>{value || '--:--'}</strong><span>{TYPE_LABELS[type]}<small>{log?.original_created_at ? `Original ${toInputTime(log.original_created_at)} · ` : ''}{log?.address || (value ? 'Registro do espelho' : 'Registro não encontrado')}{log?.face_confidence != null ? ` · confiança ${Math.round(log.face_confidence * 100)}%` : ''}</small></span>{canEdit(selectedRow) && <button type="button" onClick={() => begin(selectedRow, index)}>{value ? 'Editar' : '+ Incluir'}</button>}</div> })}</div>
-        {selectedRow.occurrences.map(occ => <div key={occ.id} className="esp-v2-panel-occ"><strong>{occ.occurrence_type_label} · {occ.status_label}</strong><p>{occ.reason}</p>{occ.attachment_url && <button type="button" onClick={() => openAttachment(occ.attachment_url!)}>Ver anexo</button>}</div>)}
+        <div className="esp-v2-panel-points">{TYPES.map((type, index) => { const value = selectedRow[FIELDS[index]]; return <div key={type}><strong>{value || '--:--'}</strong><span>{TYPE_LABELS[type]}</span>{canEdit(selectedRow) && <button type="button" onClick={() => begin(selectedRow, index)}>{value ? 'Editar' : '+ Incluir'}</button>}</div> })}</div>
         {canJustify && !homologado && <button type="button" className="esp-v2-justify" onClick={() => onJustifyDay(selectedRow.date)}>Justificar dia</button>}
       </aside>}
     </div>
+    {showInfo && selectedRow && <Modal open={showInfo} onClose={() => setShowInfo(false)} title={`Informações de ${dayLabel(selectedRow.date)}`} maxWidth={680}>
+      <div className="esp-info-dialog">
+        <section>
+          <h4>Batidas e registros</h4>
+          <div className="esp-info-punches">{TYPES.map((type, index) => {
+            const log = findPunch(selectedRow, index)
+            const correction = selectedRow.corrections[FIELDS[index]]
+            return <article key={type}>
+              <div className="esp-info-punch-title"><strong>{TYPE_LABELS[type]}</strong><time>{selectedRow[FIELDS[index]] || 'Sem horário'}</time></div>
+              {log ? <div className="esp-info-meta">
+                {log.original_created_at && <p><b>Horário original:</b> {toInputTime(log.original_created_at)}</p>}
+                {log.address && <p><b>Local:</b> {log.address}</p>}
+                {log.source && <p><b>Origem:</b> {log.source === 'MANUAL' ? 'Lançamento manual' : log.source}</p>}
+                {log.face_confidence != null && <p><b>Confiança facial:</b> {Math.round(log.face_confidence * 100)}%</p>}
+                {log.validation_detail && <p><b>Validação:</b> {log.validation_detail}</p>}
+                {log.notes && <p><b>Observação:</b> {log.notes}</p>}
+                {log.edited_by_name && <p><b>Alterado por:</b> {log.edited_by_name}{log.edited_at ? ` · ${new Date(log.edited_at).toLocaleString('pt-BR')}` : ''}</p>}
+              </div> : <p className="esp-info-empty">Nenhuma batida registrada neste horário.</p>}
+              {correction?.reason && <p className="esp-info-meta"><b>Motivo do ajuste:</b> {correction.reason}{correction.edited_by ? ` · ${correction.edited_by}` : ''}</p>}
+            </article>
+          })}</div>
+        </section>
+        <section>
+          <h4>Faltas parciais, consultas e justificativas</h4>
+          {selectedRow.occurrences.length ? selectedRow.occurrences.map(occ => <article className="esp-info-occurrence" key={occ.id}>
+            <div><strong>{occ.occurrence_type_label}</strong><span className={`esp-info-status ${occ.status === 'APROVADO' ? 'approved' : ''}`}>{occ.status_label}</span></div>
+            {(occ.start_time || occ.end_time) && <p><b>Horário:</b> {occ.start_time || '—'}–{occ.end_time || '—'}{occ.justified_hours != null ? ` · ${formatMinutes(Math.round(occ.justified_hours * 60))}` : ''}</p>}
+            <p>{occ.reason}</p>
+            {occ.attachment_url && <button type="button" onClick={() => openAttachment(occ.attachment_url!)}>Ver anexo</button>}
+          </article>) : <p className="esp-info-empty">Não há faltas parciais, consultas ou justificativas neste dia.</p>}
+        </section>
+      </div>
+    </Modal>}
     {toast && <div className="esp-v2-toast" role="status">{toast.message}{toast.undo?.length ? <button type="button" disabled={undoing} onClick={() => void undo()}>{undoing ? 'Desfazendo...' : 'Desfazer'}</button> : null}</div>}
   </div>
 }
