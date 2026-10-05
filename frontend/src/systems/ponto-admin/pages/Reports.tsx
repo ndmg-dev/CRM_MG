@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useSummaryReport, useDailyReport, useAlerts, useCalendarReport, useTotals,
-         useMirror, useAnomalies, useTimeBank,
+         useMirror, useHomologarMirror, useReabrirMirror, useAnomalies, useTimeBank,
          useSummaryReportRange, useTotalsRange, type MirrorResponse } from '../hooks/useReports'
 import MirrorTab    from '../components/MirrorTab'
 import AnomaliesTab from '../components/AnomaliesTab'
@@ -270,6 +270,8 @@ export default function Reports() {
     return combineWeeklyMirror(weekFirstMirror, weekCrossesMonth ? weekSecondMirror : undefined, weekFrom, weekTo)
   }, [isWeek, monthMirror, weekFirstMirror, weekSecondMirror, weekCrossesMonth, weekFrom, weekTo])
   const mirrorError = isWeek ? (weekFirstError ?? weekSecondError) : monthMirrorError
+  const homologarMirror = useHomologarMirror()
+  const reabrirMirror = useReabrirMirror()
   const lockedMonths = new Set<string>()
   if (isWeek && weekFirstMirror?.summary.homologado) lockedMonths.add(weekFrom.slice(0, 7))
   if (isWeek && weekCrossesMonth && weekSecondMirror?.summary.homologado) lockedMonths.add(weekTo.slice(0, 7))
@@ -390,6 +392,15 @@ export default function Reports() {
     setMirrorFocus(null)
   }
 
+  function toggleHomologar() {
+    if (!selectedEmployee || !monthMirror) return
+    if (monthMirror.summary.homologado) {
+      if (window.confirm('Reabrir este mês para correções?')) reabrirMirror.mutate({ employeeId: selectedEmployee, year, month })
+    } else if (window.confirm('Homologar este mês? Não será mais possível corrigir pontos até reabrir.')) {
+      homologarMirror.mutate({ employeeId: selectedEmployee, year, month })
+    }
+  }
+
   function prevCalMonth() {
     if (calMonth === 1) { setCalMonth(12); setCalYear(y => y - 1) }
     else setCalMonth(m => m - 1)
@@ -420,10 +431,9 @@ export default function Reports() {
         <div className="report-v2-top-actions">
           <div className="report-v2-period" aria-label="Período da consulta">
             <button type="button" aria-label="Período anterior" onClick={() => period === 'month' ? stepMonth(-1) : setWeekAnchor(d => { const next = new Date(d); next.setDate(next.getDate() - 7); return next })}>‹</button>
-            <strong>{period === 'month' ? new Date(year, month - 1, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) : weekLabel}</strong>
+            <button type="button" className="report-v2-period-label" title="Alternar entre visão mensal e semanal" aria-label={`Visão ${period === 'month' ? 'mensal' : 'semanal'}. Alternar período`} onClick={() => changePeriod(period === 'month' ? 'week' : 'month')}>{period === 'month' ? new Date(year, month - 1, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) : weekLabel}</button>
             <button type="button" aria-label="Próximo período" onClick={() => period === 'month' ? stepMonth(1) : setWeekAnchor(d => { const next = new Date(d); next.setDate(next.getDate() + 7); return next })}>›</button>
           </div>
-          <button type="button" className="report-v2-view-switch" onClick={() => changePeriod(period === 'month' ? 'week' : 'month')}>{period === 'month' ? 'Visão semanal' : 'Visão mensal'}</button>
           <button type="button" className="report-v2-export" onClick={() => setShowExport(true)}>Exportar ▾</button>
         </div>
       </div>
@@ -432,39 +442,29 @@ export default function Reports() {
       <div className="card report-main-card" style={{ marginBottom: 20 }}>
         {totalsRefreshing && <div className="report-refresh-status" role="status">Atualizando dados do período...</div>}
         <div className="report-summary-strip" aria-label="Resumo do período">
-          <div className="report-kpi report-kpi-balance"><span>Saldo do período</span><strong className={(serverTotals?.total_balance ?? 0) >= 0 ? 'positive' : 'negative'}>{fmtH(serverTotals?.total_balance ?? 0, true)}</strong><small>Trabalhadas menos horas esperadas</small></div>
+          <div className="report-kpi report-kpi-balance"><span>Saldo {isWeek ? 'da semana' : 'do mês'}</span><strong className={(serverTotals?.total_balance ?? 0) >= 0 ? 'positive' : 'negative'}>{fmtH(serverTotals?.total_balance ?? 0, true)}</strong></div>
           <div className="report-kpi"><span>Trabalhadas</span><strong>{fmtH(totals.wrk)}</strong><small>de {fmtH(totals.exp)} esperadas</small></div>
-          <div className="report-kpi"><span>Justificadas</span><strong>{fmtH(totals.just)}</strong><small>Horas aprovadas no período</small></div>
-          <div className="report-kpi"><span>Presença</span><strong>{Math.round(totals.avgPct)}%</strong><small>Média de comparecimento</small></div>
-          <button type="button" className="report-kpi report-v2-pending-kpi" disabled={!isEmployeeScope} onClick={() => { setMirrorFocus(null); setInnerTab('espelho'); setMirrorFilterRequest(value => value + 1) }}><span>Pendências</span><strong>{isEmployeeScope ? (mirrorData?.summary.incomplete_count ?? 0) + (mirrorData?.summary.absent_count ?? 0) : '—'}</strong><small>Revisar batidas <b aria-hidden="true">→</b></small></button>
+          <div className="report-kpi"><span>Justificadas</span><strong>{fmtH(totals.just)}</strong></div>
+          <div className="report-kpi"><span>Presença</span><strong>{Math.round(totals.avgPct)}%</strong>{isEmployeeScope && mirrorData && <small>{mirrorData.rows.filter(row => row.expected_h > 0).length} dias úteis</small>}</div>
+          <button type="button" className="report-kpi report-v2-pending-kpi" disabled={!isEmployeeScope} onClick={() => { setMirrorFocus(null); setInnerTab('espelho'); setMirrorFilterRequest(value => value + 1) }}><span>Pendências</span><strong>{isEmployeeScope ? (mirrorData?.summary.incomplete_count ?? 0) + (mirrorData?.summary.absent_count ?? 0) : '—'}</strong><small>Revisar →</small></button>
         </div>
         {isEmployeeScope && (
-          <div className="report-tabs" role="tablist" aria-label="Visões do ponto">
+          <div className="report-tab-bar"><div className="report-tabs" role="tablist" aria-label="Visões do ponto">
             {(isWeek ? [
               ['espelho', 'Espelho de ponto', null],
               ['registros', 'Registros', null],
             ] : [
               ['espelho', 'Espelho de ponto', null],
               ['registros', 'Registros', null],
-              ['anomalias', 'Anomalias', anomalies.length],
               ['banco', 'Banco de horas', null],
             ]).map(([key, label, badge]) => (
               <button
                 key={key}
                 type="button"
                 role="tab"
-                aria-selected={innerTab === key}
+                aria-selected={innerTab === key || innerTab === 'anomalias' && key === 'registros'}
                 onClick={() => setInnerTab(key as typeof innerTab)}
-                style={{
-                  padding: '12px 14px', fontSize: 14,
-                  background: 'none', border: 'none', cursor: 'pointer',
-                  color: innerTab === key ? '#ebebeb' : '#7a7a7a',
-                  borderBottom: innerTab === key ? '2px solid #e3a92f' : '2px solid transparent',
-                  marginBottom: -1, whiteSpace: 'nowrap',
-                  transition: 'color 0.15s',
-                }}
-                onMouseEnter={e => { if (innerTab !== key) (e.currentTarget as HTMLElement).style.color = '#aaa' }}
-                onMouseLeave={e => { if (innerTab !== key) (e.currentTarget as HTMLElement).style.color = '#666' }}
+                className={innerTab === key || innerTab === 'anomalias' && key === 'registros' ? 'active' : ''}
               >
                 {label}
                 {typeof badge === 'number' && badge > 0 && (
@@ -476,21 +476,24 @@ export default function Reports() {
                   </span>
                 )}
               </button>
-            ))}
+            ))}</div>
+            {innerTab === 'espelho' && !isWeek && monthMirror && <div className="report-month-action"><span className={monthMirror.summary.homologado ? 'closed' : ''}><i /> Mês {monthMirror.summary.homologado ? 'homologado' : 'aberto'}</span>{can('corrections') && <button type="button" onClick={toggleHomologar} disabled={homologarMirror.isPending || reabrirMirror.isPending}>{monthMirror.summary.homologado ? 'Reabrir mês' : 'Homologar mês'}</button>}</div>}
           </div>
         )}
 
+        {(homologarMirror.error || reabrirMirror.error) && <p className="report-export-error" role="alert">{homologarMirror.error?.message || reabrirMirror.error?.message}</p>}
+
         {/* Cabeçalho — título e ações condicionais por aba */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
+        {innerTab !== 'espelho' && <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
           <div style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>
             {innerTab === 'registros'  && `Registros — ${sectionTitle}`}
-            {innerTab === 'espelho'    && `Espelho de ponto — ${sectionTitle}`}
             {innerTab === 'anomalias'  && `Anomalias — ${sectionTitle}`}
             {innerTab === 'banco'      && `Banco de horas — ${sectionTitle}`}
           </div>
           {/* Ações: somente na aba Registros */}
           {innerTab === 'registros' && (
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {anomalies.length > 0 && !isWeek && <button type="button" className="btn-ghost" style={{ fontSize: 12, padding: '5px 12px' }} onClick={() => setInnerTab('anomalias')}>Anomalias ({anomalies.length})</button>}
               {/* Gráficos/Calendário/Alertas ainda são só mensais */}
               {!isWeek && (
                 <>
@@ -517,7 +520,7 @@ export default function Reports() {
               </button>
             </div>
           )}
-        </div>
+        </div>}
 
         {/* ── Aba Registros ──────────────────────────────────────────────── */}
         {innerTab === 'registros' && (
@@ -559,11 +562,8 @@ export default function Reports() {
             logsLoading={logsLoading}
             logsError={logsError}
             employeeId={selectedEmployee}
-            year={year}
-            month={month}
             canManage={can('corrections')}
             canJustify={can('justifications')}
-            mode={period}
             lockedMonths={lockedMonths}
             logs={logs.filter(log => log.employee_id === selectedEmployee)}
             onJustifyDay={date => { setJustifyLog(null); setJustifyDate(date) }}

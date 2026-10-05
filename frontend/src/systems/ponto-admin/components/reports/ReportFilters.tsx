@@ -46,6 +46,9 @@ export default function ReportFilters({
   }, [employees, empSearch])
 
   const selectedEmpObj = employees.find(e => e.id === selectedEmployee)
+  const employeeDetail = selectedEmpObj
+    ? `${selectedEmpObj.position || (selectedEmpObj.sector_id ? sectorMap[selectedEmpObj.sector_id]?.name : null) || 'Colaborador'} · Jornada ${Number((selectedEmpObj.weekly_hours / 5).toFixed(1)).toLocaleString('pt-BR')}h`
+    : ''
 
   function pickEmployee(id: string) {
     onPickEmployee(id)
@@ -69,22 +72,13 @@ export default function ReportFilters({
       {scope === 'employee' && (
         <div ref={dropRef} className="report-v2-employee">
           <button type="button" className="report-v2-step" aria-label="Colaborador anterior" onClick={() => onStepEmployee?.(-1)}>‹</button>
-          <button
-            type="button"
-            className="report-v2-employee-current"
-            onClick={() => setDropOpen(o => !o)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 10, width: '100%',
-              padding: '8px 14px', cursor: 'pointer',
-              background: 'var(--mg-bg2)', border: 'var(--mg-border)',
-              color: '#fff', fontSize: 13,
-            }}>
+          <button type="button" className="report-v2-employee-current" aria-expanded={dropOpen} onClick={() => setDropOpen(o => !o)}>
             {selectedEmpObj && <Avatar name={selectedEmpObj.name} size={32} />}
-            <span style={{ flex: 1, textAlign: 'left' }}>
+            <span className="report-v2-employee-name">
               <strong>{selectedEmpObj?.name ?? 'Selecionar colaborador'}</strong>
-              <small>{selectedEmpObj?.sector_id ? sectorMap[selectedEmpObj.sector_id]?.name ?? 'Sem setor' : 'Sem setor'}</small>
+              <small>{employeeDetail}</small>
             </span>
-            <span style={{ color: 'var(--mg-muted)', fontSize: 10 }}>{dropOpen ? '▲' : '▼'}</span>
+            <span className="report-v2-employee-chevron">{dropOpen ? '▲' : '▼'}</span>
           </button>
           <button type="button" className="report-v2-step" aria-label="Próximo colaborador" onClick={() => onStepEmployee?.(1)}>›</button>
 

@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { ChevronLeft, ChevronRight, Pencil, X } from 'lucide-react'
 import { openAttachment } from '../lib/api'
 import type { MirrorResponse, MirrorRow } from '../hooks/useReports'
-import { useHomologarMirror, useReabrirMirror } from '../hooks/useReports'
 import { useCreateManualTimeLog, useDiscardTimeLog, useRestoreTimeLog, useUpdateTimeLog, type TimeLog } from '../hooks/useTimeLogs'
 import { toInputDate, toInputTime } from '../utils/date'
 import { TYPE_LABELS } from '../utils/labels'
@@ -22,11 +21,8 @@ interface Props {
   logsLoading: boolean
   logsError: Error | null
   employeeId: string
-  year: number
-  month: number
   canManage: boolean
   canJustify: boolean
-  mode: 'month' | 'week'
   lockedMonths: Set<string>
   logs: TimeLog[]
   onJustifyDay: (date: string) => void
@@ -93,7 +89,7 @@ function noteFor(log: TimeLog | undefined) {
   return log.notes
 }
 
-export default function MirrorTab({ data, error, logsLoading, logsError, employeeId, year, month, canManage, canJustify, mode, lockedMonths, logs, onJustifyDay, filterRequest, focusDate }: Props) {
+export default function MirrorTab({ data, error, logsLoading, logsError, employeeId, canManage, canJustify, lockedMonths, logs, onJustifyDay, filterRequest, focusDate }: Props) {
   const [filter, setFilter] = useState<Filter>(filterRequest ? 'pending' : 'all')
   const [selectedDate, setSelectedDate] = useState<string | null>(focusDate ?? null)
   const [draft, setDraft] = useState<Draft | null>(null)
@@ -106,8 +102,6 @@ export default function MirrorTab({ data, error, logsLoading, logsError, employe
   const createLog = useCreateManualTimeLog()
   const discardLog = useDiscardTimeLog()
   const restoreLog = useRestoreTimeLog()
-  const homologar = useHomologarMirror()
-  const reabrir = useReabrirMirror()
 
   const rows = useMemo(() => data?.rows.filter(row => row.status !== 'future') ?? [], [data])
   const summary = data?.summary
@@ -254,15 +248,6 @@ export default function MirrorTab({ data, error, logsLoading, logsError, employe
     } finally { setUndoing(false) }
   }
 
-  function toggleHomologar() {
-    if (!employeeId || mode !== 'month') return
-    if (homologado) {
-      if (window.confirm('Reabrir este mês para correções?')) reabrir.mutate({ employeeId, year, month })
-    } else if (window.confirm('Homologar este mês? Não será mais possível corrigir pontos até reabrir.')) {
-      homologar.mutate({ employeeId, year, month })
-    }
-  }
-
   function onRowKeyDown(event: React.KeyboardEvent, row: MirrorRow) {
     if (event.key === 'Escape' && draft) { event.stopPropagation(); setDraft(null) }
     if (event.key === 'Enter' && draft?.date === row.date && event.target instanceof HTMLInputElement) {
@@ -286,11 +271,7 @@ export default function MirrorTab({ data, error, logsLoading, logsError, employe
       </div>
       <span className="esp-v2-hint">Clique num horário para editá-lo · ✎ edita o dia inteiro · Enter salva, Esc cancela</span>
     </div>
-    {mode === 'month' && <div className="esp-v2-month">
-      <span className={homologado ? 'closed' : ''}>● Mês {homologado ? 'homologado' : 'aberto'}</span>
-      {canManage && <button type="button" onClick={toggleHomologar} disabled={homologar.isPending || reabrir.isPending}>{homologado ? 'Reabrir mês' : 'Homologar mês'}</button>}
-    </div>}
-    {(homologar.error || reabrir.error || logsError || saveError) && <p className="report-export-error" role="alert">{saveError || homologar.error?.message || reabrir.error?.message || logsError?.message}</p>}
+    {(logsError || saveError) && <p className="report-export-error" role="alert">{saveError || logsError?.message}</p>}
     {logsLoading && <p className="esp-v2-hint" role="status">Carregando batidas...</p>}
     <div className={`esp-v2-layout ${selectedRow ? 'with-panel' : ''}`}>
       <div className="esp-v2-table-wrap">
