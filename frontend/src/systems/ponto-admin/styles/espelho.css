@@ -121,8 +121,8 @@
 
 .pontoadmin-root .esp-grid {
   display: grid;
-  grid-template-columns: 72px 44px minmax(104px,1fr) minmax(104px,1fr) minmax(104px,1fr) minmax(104px,1fr) 92px 92px 92px 82px 78px 250px;
-  min-width: 1360px;
+  grid-template-columns: 72px 44px repeat(4, minmax(132px,1fr)) 92px 92px 92px 82px 78px 220px;
+  min-width: 1480px;
 }
 
 .pontoadmin-root .esp-grid-head {
@@ -182,6 +182,19 @@
 
 .pontoadmin-root .esp-time { color: var(--mg-white); }
 .pontoadmin-root .esp-time-empty { color: var(--mg-muted2, rgba(255,255,255,0.3)); }
+.pontoadmin-root .esp-point-cell { display: flex; align-items: center; gap: 4px; width: 100%; justify-content: space-between; }
+.pontoadmin-root .esp-point-actions { display: inline-flex; align-items: center; gap: 2px; flex-shrink: 0; }
+.pontoadmin-root .esp-point-action {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 25px; height: 25px; border: 1px solid rgba(212,168,67,0.32);
+  border-radius: 6px; background: rgba(212,168,67,0.07); color: var(--mg-gold);
+  cursor: pointer; padding: 0;
+}
+.pontoadmin-root .esp-point-action:hover, .pontoadmin-root .esp-point-action:focus-visible { background: rgba(212,168,67,0.22); }
+.pontoadmin-root .esp-point-action:disabled { opacity: 0.5; cursor: wait; }
+.pontoadmin-root .esp-point-delete { color: #f87171; border-color: rgba(248,113,113,0.3); background: rgba(248,113,113,0.06); }
+.pontoadmin-root .esp-point-delete:hover, .pontoadmin-root .esp-point-delete:focus-visible { background: rgba(248,113,113,0.18); }
+.pontoadmin-root .esp-point-add { margin-left: auto; }
 
 .pontoadmin-root .esp-time-corrected {
   text-decoration: underline dotted var(--mg-gold);
@@ -202,6 +215,8 @@
 .pontoadmin-root .esp-worked-empty { color: var(--mg-muted); }
 
 .pontoadmin-root .esp-status-cell { flex-wrap: wrap; gap: 4px; row-gap: 4px; }
+.pontoadmin-root .esp-justify-day { border: 0; background: none; color: var(--mg-muted); padding: 5px; cursor: pointer; font: inherit; font-size: 11px; }
+.pontoadmin-root .esp-justify-day:hover, .pontoadmin-root .esp-justify-day:focus-visible { color: var(--mg-white); text-decoration: underline; }
 
 /* Badges de status / justificativa */
 .pontoadmin-root .esp-badge {
@@ -381,8 +396,11 @@
   .pontoadmin-root button { min-height: 40px; }
 }
 
-/* Edição contextual do dia no espelho. */
+/* Ações permanentes nos horários do espelho. */
 .pontoadmin-root .esp-edit-day {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   border: 1px solid rgba(212, 168, 67, 0.4);
   border-radius: 6px;
   padding: 6px 8px;
@@ -395,23 +413,107 @@
 }
 .pontoadmin-root .esp-edit-day:hover,
 .pontoadmin-root .esp-edit-day:focus-visible { background: rgba(212, 168, 67, 0.2); }
-.pontoadmin-root .esp-edit-day-mobile { margin-top: 12px; width: 100%; padding: 9px; }
 .pontoadmin-root .esp-edit-help { color: var(--mg-muted); font-size: 13px; line-height: 1.5; margin: 0 0 14px; }
-.pontoadmin-root .esp-day-logs { display: grid; gap: 7px; margin-bottom: 18px; }
-.pontoadmin-root .esp-day-log {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; align-items: center; gap: 12px;
-  width: 100%; padding: 9px 12px; border: var(--mg-border); border-radius: 8px;
-  background: var(--mg-bg2); color: var(--mg-white); text-align: left;
-}
-.pontoadmin-root .esp-day-log strong { font-variant-numeric: tabular-nums; }
-.pontoadmin-root .esp-day-action {
-  border: 0; background: none; color: var(--mg-gold); cursor: pointer;
-  padding: 5px; font: inherit; font-size: 12px;
-}
-.pontoadmin-root .esp-day-action:hover { text-decoration: underline; }
-.pontoadmin-root .esp-day-delete { color: #f87171; }
-.pontoadmin-root .esp-day-actions { flex-wrap: wrap; }
+.pontoadmin-root .esp-extra-log { border-top: 1px solid rgba(255,255,255,0.06); }
+.pontoadmin-root .esp-extra-log .esp-point-actions { margin-left: 8px; }
+.pontoadmin-root .esp-card-points { display: grid; gap: 5px; padding: 8px 0; border-top: 1px solid rgba(255,255,255,0.06); }
+.pontoadmin-root .esp-card-point { display: grid; grid-template-columns: minmax(0,1fr) auto auto; align-items: center; gap: 8px; color: var(--mg-white); font-size: 12px; }
+.pontoadmin-root .esp-card-point strong { font-variant-numeric: tabular-nums; }
+.pontoadmin-root .esp-card-action-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.pontoadmin-root .esp-card-action-row .esp-justify-day { font-size: 12px; }
 @media (max-width: 520px) {
-  .pontoadmin-root .esp-day-log { grid-template-columns: 1fr auto; }
-  .pontoadmin-root .esp-day-actions button { flex: 1 1 auto; }
+  .pontoadmin-root .esp-card-point { gap: 4px; }
+  .pontoadmin-root .esp-card-action-row > button { flex: 1 1 auto; justify-content: center; }
 }
+
+/* Relatórios v2: espelho compacto com edição e justificativa na linha. */
+.pontoadmin-root .esp-v2 { color: #ebebeb; font-variant-numeric: tabular-nums; }
+.pontoadmin-root .esp-v2-toolbar, .pontoadmin-root .esp-v2-month { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:12px; }
+.pontoadmin-root .esp-v2-filters { display:flex; gap:6px; flex-wrap:wrap; }
+.pontoadmin-root .esp-v2-filters button { height:30px; border:1px solid #2c2c2c; border-radius:15px; background:transparent; color:#bdbdbd; padding:0 12px; font-size:12px; cursor:pointer; }
+.pontoadmin-root .esp-v2-filters button.active { border-color:#6b5320; background:#2a2414; color:#e3a92f; }
+.pontoadmin-root .esp-v2-filters button span { opacity:.7; margin-left:4px; }
+.pontoadmin-root .esp-v2-hint { color:#7a7a7a; font-size:12px; }
+.pontoadmin-root .esp-v2-month { padding:8px 0; font-size:12px; color:#e3a92f; }
+.pontoadmin-root .esp-v2-month .closed { color:#4cc38a; }
+.pontoadmin-root .esp-v2-month button { height:34px; border:0; border-radius:7px; padding:0 14px; background:#e3a92f; color:#1a1408; font-weight:600; cursor:pointer; }
+.pontoadmin-root .esp-v2-month button:disabled { opacity:.5; cursor:wait; }
+.pontoadmin-root .esp-v2-layout { display:grid; grid-template-columns:minmax(0,1fr); gap:20px; align-items:start; }
+@media (min-width:1240px) { .pontoadmin-root .esp-v2-layout.with-panel { grid-template-columns:minmax(0,1fr) 360px; } }
+.pontoadmin-root .esp-v2-table-wrap { overflow-x:auto; border:1px solid #262626; border-radius:12px; background:#181818; min-width:0; }
+.pontoadmin-root .esp-v2-table { min-width:780px; }
+.pontoadmin-root .esp-v2-head, .pontoadmin-root .esp-v2-main { display:grid; grid-template-columns:64px repeat(4,minmax(84px,1fr)) 84px 76px 110px 44px; align-items:center; gap:0; padding:0 16px; }
+.pontoadmin-root .esp-v2-head { height:38px; border-bottom:1px solid #262626; color:#7a7a7a; font-size:11px; text-transform:uppercase; letter-spacing:.04em; }
+.pontoadmin-root .esp-v2-head span:nth-child(6), .pontoadmin-root .esp-v2-head span:nth-child(7) { text-align:right; }
+.pontoadmin-root .esp-v2-head span:nth-child(8) { padding-left:16px; }
+.pontoadmin-root .esp-v2-day { border-bottom:1px solid #222; box-shadow:inset 3px 0 0 transparent; }
+.pontoadmin-root .esp-v2-day.st-incomplete, .pontoadmin-root .esp-v2-day.st-absent { box-shadow:inset 3px 0 0 #6b5320; }
+.pontoadmin-root .esp-v2-day.selected, .pontoadmin-root .esp-v2-day.editing { background:#221f18; box-shadow:inset 3px 0 0 #e3a92f; }
+.pontoadmin-root .esp-v2-day.editing { background:#1d1a14; }
+.pontoadmin-root .esp-v2-main { min-height:46px; font-size:13px; cursor:pointer; }
+.pontoadmin-root .esp-v2-day:not(.editing):hover { background:#1f1f1f; }
+.pontoadmin-root .esp-v2-day-name { display:flex; gap:7px; align-items:baseline; }
+.pontoadmin-root .esp-v2-day-name strong { font-size:14px; }
+.pontoadmin-root .esp-v2-day-name small { color:#7a7a7a; font-size:11px; }
+.pontoadmin-root .esp-v2-off { grid-column:2 / 6; color:#6f6f6f; font-size:12px; }
+.pontoadmin-root .esp-v2-cell { display:flex; align-items:center; justify-content:space-between; height:32px; margin:0 10px 0 -9px; padding:0 4px 0 8px; border:1px solid transparent; border-radius:6px; cursor:text; min-width:0; }
+.pontoadmin-root .esp-v2-cell:hover { border-color:#3a3a3a; background:#232323; }
+.pontoadmin-root .esp-v2-cell.input { border-color:#3a3a3a; background:#141414; }
+.pontoadmin-root .esp-v2-cell.input.changed { border-color:#e3a92f; }
+.pontoadmin-root .esp-v2-cell span, .pontoadmin-root .esp-v2-cell input { font-family:'IBM Plex Mono', monospace; font-size:13px; white-space:nowrap; }
+.pontoadmin-root .esp-v2-cell span.missing { color:#a07420; }
+.pontoadmin-root .esp-v2-cell b { margin-left:5px; font-size:10px; color:#6aa3ff; }
+.pontoadmin-root .esp-v2-cell input { width:100%; min-width:0; height:28px; border:0; background:transparent; outline:none; color:#ebebeb; color-scheme:dark; }
+.pontoadmin-root .esp-v2-cell button { flex:none; display:grid; place-items:center; width:22px; height:22px; padding:0; border:0; border-radius:4px; background:transparent; color:#ef6461; cursor:pointer; }
+.pontoadmin-root .esp-v2-cell button:hover { background:#3a1f1f; }
+.pontoadmin-root .esp-v2-number { text-align:right; font-family:'IBM Plex Mono', monospace; white-space:nowrap; }
+.pontoadmin-root .esp-v2-number.positive, .pontoadmin-root .esp-v2-total .positive { color:#4cc38a; }
+.pontoadmin-root .esp-v2-number.negative, .pontoadmin-root .esp-v2-total .negative { color:#ef6461; }
+.pontoadmin-root .esp-v2-status { display:flex; align-items:center; gap:7px; padding-left:16px; color:#8d8d8d; font-size:12px; white-space:nowrap; }
+.pontoadmin-root .esp-v2-status i { width:7px; height:7px; border-radius:50%; background:currentColor; flex:none; }
+.pontoadmin-root .esp-v2-status.st-ok, .pontoadmin-root .esp-v2-status.st-justified { color:#4cc38a; }
+.pontoadmin-root .esp-v2-status.st-incomplete, .pontoadmin-root .esp-v2-status.st-absent { color:#e3a92f; }
+.pontoadmin-root .esp-v2-status.st-holiday, .pontoadmin-root .esp-v2-status.st-ferias { color:#6aa3ff; }
+.pontoadmin-root .esp-v2-edit-action { display:flex; justify-content:flex-end; }
+.pontoadmin-root .esp-v2-edit-action button, .pontoadmin-root .esp-v2-panel-head button { width:30px; height:30px; display:grid; place-items:center; padding:0; border:1px solid #2c2c2c; border-radius:6px; background:transparent; color:#8d8d8d; cursor:pointer; }
+.pontoadmin-root .esp-v2-edit-action button:hover, .pontoadmin-root .esp-v2-panel-head button:hover { color:#e3a92f; border-color:#6b5320; background:#2a2414; }
+.pontoadmin-root .esp-v2-annotation { padding:0 16px 9px 72px; display:flex; gap:8px; align-items:center; color:#8d8d8d; font-size:12px; }
+.pontoadmin-root .esp-v2-annotation b { color:#4cc38a; }
+.pontoadmin-root .esp-v2-annotation.note b { color:#6aa3ff; }
+.pontoadmin-root .esp-v2-editor { display:grid; gap:8px; padding:4px 16px 14px 64px; }
+.pontoadmin-root .esp-v2-change { display:grid; grid-template-columns:90px 150px 220px minmax(150px,1fr); gap:12px; align-items:center; font-size:12px; }
+.pontoadmin-root .esp-v2-change-time { font-family:'IBM Plex Mono', monospace; color:#7a7a7a; }
+.pontoadmin-root .esp-v2-change-time b { color:#e3a92f; }
+.pontoadmin-root .esp-v2-change-time b.removed { color:#ef6461; }
+.pontoadmin-root .esp-v2-change select, .pontoadmin-root .esp-v2-change input { height:32px; min-width:0; box-sizing:border-box; border:1px solid #3a3a3a; border-radius:7px; background:#141414; color:#ebebeb; padding:0 8px; font:inherit; font-size:12px; }
+.pontoadmin-root .esp-v2-change select:invalid { border-color:#6b5320; }
+.pontoadmin-root .esp-v2-editor-footer { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; color:#8d8d8d; font-size:12px; }
+.pontoadmin-root .esp-v2-editor-footer > div { display:flex; gap:8px; margin-left:auto; }
+.pontoadmin-root .esp-v2-editor-footer button { height:34px; padding:0 14px; border:1px solid #2f2f2f; border-radius:7px; background:transparent; color:#bdbdbd; cursor:pointer; }
+.pontoadmin-root .esp-v2-editor-footer button.save { border:0; background:#e3a92f; color:#1a1408; font-weight:600; }
+.pontoadmin-root .esp-v2-editor-footer button.save:disabled { background:#2a2a2a; color:#6f6f6f; cursor:not-allowed; }
+.pontoadmin-root .esp-v2-total { display:grid; grid-template-columns:64px repeat(4,minmax(84px,1fr)) 84px 76px 110px 44px; align-items:center; height:46px; padding:0 16px; background:#1b1b1b; font-size:13px; }
+.pontoadmin-root .esp-v2-total strong { grid-column:1 / 6; color:#8d8d8d; }
+.pontoadmin-root .esp-v2-total span { text-align:right; font-family:'IBM Plex Mono', monospace; }
+.pontoadmin-root .esp-v2-panel { position:sticky; top:20px; border:1px solid #2f2f2f; border-radius:12px; background:#1a1a1a; overflow:hidden; }
+.pontoadmin-root .esp-v2-panel-head { display:flex; justify-content:space-between; gap:8px; padding:18px 20px; border-bottom:1px solid #2f2f2f; }
+.pontoadmin-root .esp-v2-panel-head h3 { margin:0 0 8px; font-size:16px; text-transform:capitalize; }
+.pontoadmin-root .esp-v2-panel-head .esp-v2-status { padding:0; }
+.pontoadmin-root .esp-v2-panel-head > div:last-child { display:flex; gap:4px; }
+.pontoadmin-root .esp-v2-panel-stats { display:grid; grid-template-columns:repeat(3,1fr); border-bottom:1px solid #2f2f2f; }
+.pontoadmin-root .esp-v2-panel-stats > div { padding:14px; display:grid; gap:5px; }
+.pontoadmin-root .esp-v2-panel-stats small { color:#8d8d8d; font-size:11px; }
+.pontoadmin-root .esp-v2-panel-stats strong { font-family:'IBM Plex Mono', monospace; font-size:15px; }
+.pontoadmin-root .esp-v2-panel-points { padding:12px 20px; }
+.pontoadmin-root .esp-v2-panel-points > div { display:grid; grid-template-columns:58px minmax(0,1fr) auto; gap:8px; align-items:center; padding:10px 0; border-bottom:1px solid #262626; font-size:12px; }
+.pontoadmin-root .esp-v2-panel-points strong { font-family:'IBM Plex Mono', monospace; font-size:14px; }
+.pontoadmin-root .esp-v2-panel-points span { min-width:0; }
+.pontoadmin-root .esp-v2-panel-points small { display:block; color:#7a7a7a; line-height:1.5; }
+.pontoadmin-root .esp-v2-panel-points button, .pontoadmin-root .esp-v2-panel-occ button { border:0; background:transparent; color:#e3a92f; font-size:12px; cursor:pointer; }
+.pontoadmin-root .esp-v2-panel-occ { margin:0 20px 12px; padding:12px; border-radius:8px; background:#16201a; color:#4cc38a; font-size:12px; }
+.pontoadmin-root .esp-v2-panel-occ p { margin:5px 0; color:#bdbdbd; }
+.pontoadmin-root .esp-v2-justify { margin:8px 20px 20px; height:36px; border:1px solid #6b5320; border-radius:7px; background:#2a2414; color:#e3a92f; cursor:pointer; }
+.pontoadmin-root .esp-v2-toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); z-index:60; padding:13px 18px; border-radius:10px; background:#262626; box-shadow:0 8px 24px #0008; font-size:13px; }
+.pontoadmin-root .esp-v2-toast button { margin-left:16px; border:0; background:transparent; color:#e3a92f; font-weight:600; cursor:pointer; }
+@media (max-width:1239px) { .pontoadmin-root .esp-v2-panel { position:fixed; top:0; right:0; bottom:0; z-index:30; width:min(380px,100vw); border-radius:0; box-shadow:-16px 0 40px #0009; overflow-y:auto; } }
+@media (max-width:700px) { .pontoadmin-root .esp-v2-change { grid-template-columns:1fr 1fr; } }

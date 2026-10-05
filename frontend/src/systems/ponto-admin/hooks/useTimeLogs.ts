@@ -36,6 +36,8 @@ export interface TimeLogUpdate {
   created_at: string
   status?: TimeLog['status']
   notes?: string
+  reason?: string
+  observation?: string
 }
 
 export function useUpdateTimeLog() {
@@ -70,12 +72,41 @@ export interface ManualTimeLogCreate {
   type: TimeLog['type']
   created_at: string
   notes?: string
+  reason?: string
+  observation?: string
 }
 
 export function useCreateManualTimeLog() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (data: ManualTimeLogCreate) => api.post('/api/v1/time-logs/manual', data),
+    mutationFn: (data: ManualTimeLogCreate) => api.post<TimeLog>('/api/v1/time-logs/manual', data),
+    onSuccess: async () => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['time-logs'] }),
+        qc.invalidateQueries({ queryKey: ['reports'] }),
+      ])
+    },
+  })
+}
+
+export function useDiscardTimeLog() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, reason, observation }: { id: string; reason: string; observation?: string }) =>
+      api.post<void>(`/api/v1/time-logs/${id}/discard`, { reason, observation }),
+    onSuccess: async () => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['time-logs'] }),
+        qc.invalidateQueries({ queryKey: ['reports'] }),
+      ])
+    },
+  })
+}
+
+export function useRestoreTimeLog() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => api.post<void>(`/api/v1/time-logs/${id}/restore`, {}),
     onSuccess: async () => {
       await Promise.all([
         qc.invalidateQueries({ queryKey: ['time-logs'] }),

@@ -100,3 +100,38 @@
   .pontoadmin-root .report-period-fields { width: 100%; }
   .pontoadmin-root .report-export-dates { grid-template-columns: 1fr; gap: 0; }
 }
+
+/* Barra e indicadores do relatório v2. */
+.pontoadmin-root .report-v2-top { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:20px; }
+.pontoadmin-root .report-v2-scope { min-width:min(100%,340px); }
+.pontoadmin-root .report-v2-employee { display:flex; position:relative; height:52px; border:1px solid #2c2c2c; border-radius:10px; background:#1a1a1a; overflow:visible; }
+.pontoadmin-root .report-v2-employee > button { border:0; background:transparent; color:#8d8d8d; cursor:pointer; }
+.pontoadmin-root .report-v2-employee > button.report-v2-step { width:36px; flex:none; font-size:24px; }
+.pontoadmin-root .report-v2-employee > button.report-v2-step:hover { color:#ebebeb; }
+.pontoadmin-root .report-v2-employee > button.report-v2-employee-current { flex:1; min-width:0; color:#ebebeb; }
+.pontoadmin-root .report-v2-employee-current strong, .pontoadmin-root .report-v2-employee-current small { display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.pontoadmin-root .report-v2-employee-current strong { font-size:15px; }
+.pontoadmin-root .report-v2-employee-current small { margin-top:3px; color:#8d8d8d; font-size:12px; }
+.pontoadmin-root .report-v2-scope-footer { display:flex; gap:6px; padding:8px; border-top:1px solid #2c2c2c; }
+.pontoadmin-root .report-v2-scope-footer button { flex:1; border:1px solid #363636; border-radius:6px; background:#242424; color:#bdbdbd; padding:8px 5px; font-size:11px; cursor:pointer; }
+.pontoadmin-root .report-v2-other-scope { display:flex; align-items:center; gap:10px; min-height:48px; }
+.pontoadmin-root .report-v2-other-scope button { border:1px solid #2c2c2c; border-radius:8px; background:#1a1a1a; color:#e3a92f; padding:10px; cursor:pointer; }
+.pontoadmin-root .report-v2-top-actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.pontoadmin-root .report-v2-period { display:flex; align-items:center; height:40px; border:1px solid #2c2c2c; border-radius:8px; background:#1a1a1a; }
+.pontoadmin-root .report-v2-period button { width:34px; height:38px; border:0; background:transparent; color:#8d8d8d; font-size:22px; cursor:pointer; }
+.pontoadmin-root .report-v2-period button:hover { color:#ebebeb; }
+.pontoadmin-root .report-v2-period strong { min-width:136px; text-align:center; text-transform:capitalize; font-weight:500; font-size:14px; }
+.pontoadmin-root .report-v2-view-switch, .pontoadmin-root .report-v2-export { height:40px; padding:0 14px; border:1px solid #2c2c2c; border-radius:8px; background:#1a1a1a; color:#bdbdbd; font-size:13px; cursor:pointer; }
+.pontoadmin-root .report-v2-export { border-color:#6b5320; color:#e3a92f; }
+.pontoadmin-root .report-summary-strip { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); flex-wrap:unset; border-color:#262626; border-radius:12px; background:#181818; }
+.pontoadmin-root .report-summary-strip > div, .pontoadmin-root .report-summary-strip > button { min-width:0; padding:16px 20px; border:0; border-right:1px solid #262626; background:transparent; text-align:left; }
+.pontoadmin-root .report-summary-strip > button:last-child { border-right:0; }
+.pontoadmin-root .report-summary-strip span { display:block; color:#8d8d8d; font-size:12px; }
+.pontoadmin-root .report-summary-strip strong { display:block; margin-top:6px; font-size:26px; line-height:1.1; }
+.pontoadmin-root .report-summary-strip small { display:block; margin-top:5px; color:#6f6f6f; font-size:12px; }
+.pontoadmin-root .report-v2-pending-kpi { cursor:pointer; }
+.pontoadmin-root .report-v2-pending-kpi:hover { background:#1e1c17; }
+.pontoadmin-root .report-v2-pending-kpi strong { color:#e3a92f; }
+.pontoadmin-root .report-v2-pending-kpi small { color:#e3a92f; }
+@media (max-width:900px) { .pontoadmin-root .report-summary-strip { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+@media (max-width:600px) { .pontoadmin-root .report-v2-top-actions { width:100%; } .pontoadmin-root .report-summary-strip { grid-template-columns:repeat(2,minmax(0,1fr)); } .pontoadmin-root .report-summary-strip strong { font-size:21px; } }

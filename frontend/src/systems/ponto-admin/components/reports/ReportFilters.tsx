@@ -14,12 +14,13 @@ interface ReportFiltersProps {
   sectors: Sector[]
   selectedEmployee: string
   onPickEmployee: (id: string) => void
+  onStepEmployee?: (direction: number) => void
   selectedSector: string
   onSelectSector: (id: string) => void
 }
 
 export default function ReportFilters({
-  scope, onChangeScope, employees, sectorMap, sectors,
+  scope, onChangeScope, employees, sectorMap, sectors, onStepEmployee,
   selectedEmployee, onPickEmployee, selectedSector, onSelectSector,
 }: ReportFiltersProps) {
   const [dropOpen,  setDropOpen]  = useState(false)
@@ -62,39 +63,30 @@ export default function ReportFilters({
     // `.grid-kpi` logo abaixo — que dashboard-dark.css força para z-index 5
     // (ver comentário lá). Sem isto o dropdown de colaborador fica atrás
     // dos cards de métricas.
-    <div className="card" style={{ marginBottom: 20, padding: '14px 16px', position: 'relative', zIndex: 6 }}>
-      <div style={{ display: 'flex', borderRadius: 8, overflow: 'hidden', border: 'var(--mg-border)', width: 'fit-content', marginBottom: 14 }}>
-        {(['employee', 'sector', 'team'] as const).map(s => (
-          <button key={s} onClick={() => onChangeScope(s)}
-            style={{
-              padding: '6px 18px', fontSize: 12, border: 'none', cursor: 'pointer',
-              background: scope === s ? 'var(--mg-gold)' : 'transparent',
-              color: scope === s ? '#111' : 'var(--mg-muted)',
-              fontWeight: scope === s ? 700 : 400,
-              transition: 'all 0.15s',
-            }}>
-            {s === 'employee' ? 'Colaborador' : s === 'sector' ? 'Setor' : 'Equipe toda'}
-          </button>
-        ))}
-      </div>
+    <div className="report-v2-scope" style={{ position: 'relative', zIndex: 6 }}>
 
       {/* Dropdown colaborador */}
       {scope === 'employee' && (
-        <div ref={dropRef} style={{ position: 'relative', maxWidth: 360 }}>
+        <div ref={dropRef} className="report-v2-employee">
+          <button type="button" className="report-v2-step" aria-label="Colaborador anterior" onClick={() => onStepEmployee?.(-1)}>‹</button>
           <button
+            type="button"
+            className="report-v2-employee-current"
             onClick={() => setDropOpen(o => !o)}
             style={{
               display: 'flex', alignItems: 'center', gap: 10, width: '100%',
-              padding: '8px 14px', borderRadius: 8, cursor: 'pointer',
+              padding: '8px 14px', cursor: 'pointer',
               background: 'var(--mg-bg2)', border: 'var(--mg-border)',
               color: '#fff', fontSize: 13,
             }}>
-            {selectedEmpObj && <Avatar name={selectedEmpObj.name} size={22} />}
+            {selectedEmpObj && <Avatar name={selectedEmpObj.name} size={32} />}
             <span style={{ flex: 1, textAlign: 'left' }}>
-              {selectedEmpObj?.name ?? 'Selecionar colaborador'}
+              <strong>{selectedEmpObj?.name ?? 'Selecionar colaborador'}</strong>
+              <small>{selectedEmpObj?.sector_id ? sectorMap[selectedEmpObj.sector_id]?.name ?? 'Sem setor' : 'Sem setor'}</small>
             </span>
             <span style={{ color: 'var(--mg-muted)', fontSize: 10 }}>{dropOpen ? '▲' : '▼'}</span>
           </button>
+          <button type="button" className="report-v2-step" aria-label="Próximo colaborador" onClick={() => onStepEmployee?.(1)}>›</button>
 
           {dropOpen && (
             <div style={{
@@ -146,6 +138,10 @@ export default function ReportFilters({
                   )
                 })}
               </div>
+              <div className="report-v2-scope-footer">
+                <button type="button" onClick={() => { onChangeScope('sector'); setDropOpen(false) }}>Ver setor inteiro</button>
+                <button type="button" onClick={() => { onChangeScope('team'); setDropOpen(false) }}>Ver equipe toda</button>
+              </div>
             </div>
           )}
         </div>
@@ -153,12 +149,14 @@ export default function ReportFilters({
 
       {/* Select de setor */}
       {scope === 'sector' && (
+        <div className="report-v2-other-scope"><button type="button" onClick={() => onChangeScope('employee')}>‹ Colaborador</button>
         <select className="form-input" style={{ fontSize: 12, padding: '6px 10px', maxWidth: 300 }}
           value={selectedSector} onChange={e => onSelectSector(e.target.value)}>
           <option value="">— Selecione o setor —</option>
           {sectors.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-        </select>
+        </select></div>
       )}
+      {scope === 'team' && <div className="report-v2-other-scope"><button type="button" onClick={() => onChangeScope('employee')}>‹ Colaborador</button><strong>Equipe toda</strong></div>}
     </div>
   )
 }

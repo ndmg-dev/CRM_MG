@@ -1,389 +1,354 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { ChevronLeft, ChevronRight, Pencil, X } from 'lucide-react'
 import { openAttachment } from '../lib/api'
-import { Modal } from './Modal'
-import type { MirrorResponse, MirrorRow, MirrorCorrection } from '../hooks/useReports'
+import type { MirrorResponse, MirrorRow } from '../hooks/useReports'
 import { useHomologarMirror, useReabrirMirror } from '../hooks/useReports'
-import type { TimeLog } from '../hooks/useTimeLogs'
+import { useCreateManualTimeLog, useDiscardTimeLog, useRestoreTimeLog, useUpdateTimeLog, type TimeLog } from '../hooks/useTimeLogs'
 import { toInputDate, toInputTime } from '../utils/date'
 import { TYPE_LABELS } from '../utils/labels'
 import '../styles/espelho.css'
 
+type PunchType = 'ENTRADA' | 'SAIDA_ALMOCO' | 'RETORNO_ALMOCO' | 'SAIDA'
+type Filter = 'all' | 'pending' | 'justified'
+type Reason = '' | 'Esquecimento de marcação' | 'Falha no relógio/app' | 'Trabalho externo' | 'Atestado/consulta' | 'Erro de marcação' | 'Outro'
+type Draft = { date: string; only: number | null; values: string[]; reasons: Reason[]; observations: string[] }
+type Change = { index: number; before: string; after: string; log?: TimeLog; reason: Reason; observation: string }
+type UndoStep = { kind: 'update'; log: TimeLog } | { kind: 'create'; id: string } | { kind: 'discard'; id: string }
+type Toast = { message: string; undo: UndoStep[] | null }
+
 interface Props {
-  data:         MirrorResponse | undefined
-  error:        Error | null
-  logsLoading:  boolean
-  logsError:    Error | null
-  employeeId:   string
-  year:         number
-  month:        number
-  /** Permissão "corrections" — só quem pode aprovar correções homologa/reabre o mês. */
-  canManage:    boolean
-  canJustify:   boolean
-  mode:         'month' | 'week'
-  selectionScope: string
+  data: MirrorResponse | undefined
+  error: Error | null
+  logsLoading: boolean
+  logsError: Error | null
+  employeeId: string
+  year: number
+  month: number
+  canManage: boolean
+  canJustify: boolean
+  mode: 'month' | 'week'
   lockedMonths: Set<string>
-  logs:         TimeLog[]
-  onEditLog:    (log: TimeLog) => void
-  onAddLog:     (date: string) => void
-  onDeleteLog:  (log: TimeLog) => Promise<unknown>
+  logs: TimeLog[]
   onJustifyDay: (date: string) => void
+  filterRequest?: number
+  focusDate?: string | null
 }
 
-const STATUS_BADGE: Record<string, { variant: string; label: string }> = {
-  ok:         { variant: 'ok',         label: 'OK' },
-  incomplete: { variant: 'incomplete', label: 'Incompleto' },
-  absent:     { variant: 'absent',     label: 'Falta' },
-  justified:  { variant: 'incomplete', label: 'Falta justificada' },
-  holiday:    { variant: 'info',       label: 'Feriado' },
-  special:    { variant: 'neutral',    label: 'Jornada esp.' },
-  ferias:     { variant: 'info',       label: 'Férias' },
-  weekend:    { variant: 'neutral',    label: 'Fim de sem.' },
-  future:     { variant: 'neutral',    label: '—' },
+const TYPES: PunchType[] = ['ENTRADA', 'SAIDA_ALMOCO', 'RETORNO_ALMOCO', 'SAIDA']
+const SUGGESTED = ['08:00', '12:00', '13:00', '17:00']
+const REASONS: Reason[] = ['Esquecimento de marcação', 'Falha no relógio/app', 'Trabalho externo', 'Atestado/consulta', 'Erro de marcação', 'Outro']
+const FIELDS = ['entrada', 'saida_almoco', 'retorno_almoco', 'saida'] as const
+
+function minutes(value: string): number | null {
+  if (!/^\d\d:\d\d$/.test(value)) return null
+  const [hour, minute] = value.split(':').map(Number)
+  return hour < 24 && minute < 60 ? hour * 60 + minute : null
 }
 
-const OCC_APPROVAL: Record<string, { cls: string; icon: string }> = {
-  APROVADO:  { cls: 'approved', icon: '✓' },
-  PENDENTE:  { cls: 'pending',  icon: '⏳' },
-  REPROVADO: { cls: 'rejected', icon: '✕' },
+function formatMinutes(value: number, signed = false) {
+  const rounded = Math.round(value)
+  const prefix = signed ? rounded > 0 ? '+' : rounded < 0 ? '−' : '' : ''
+  const amount = Math.abs(rounded)
+  return `${prefix}${Math.floor(amount / 60)}h${String(amount % 60).padStart(2, '0')}`
 }
 
-function fmtH(h: number) {
-  const sign  = h < 0 ? '−' : h > 0 ? '+' : ''
-  const total = Math.round(Math.abs(h) * 60)
-  const hh    = Math.floor(total / 60)
-  const mm    = total % 60
-  return `${sign}${hh}h${mm > 0 ? mm.toString().padStart(2, '0') : ''}`
+function balance(row: MirrorRow) {
+  return Math.round((row.worked_h + row.justified_h - row.expected_h) * 60)
 }
 
-function fmtHPlain(h: number) {
-  const total = Math.round(h * 60)
-  const hh    = Math.floor(total / 60)
-  const mm    = total % 60
-  return mm > 0 ? `${hh}h${mm.toString().padStart(2, '0')}` : `${hh}h`
+function preview(row: MirrorRow, values: string[]) {
+  const [entry, lunchOut, lunchBack, exit] = values.map(minutes)
+  let worked = 0
+  if (entry != null && exit != null) {
+    worked = lunchOut != null && lunchBack != null
+      ? Math.max(0, lunchOut - entry) + Math.max(0, exit - lunchBack)
+      : Math.max(0, exit - entry)
+  }
+  return { worked, balance: worked + Math.round(row.justified_h * 60) - Math.round(row.expected_h * 60) }
 }
 
-function fmtDateTime(iso: string | null) {
-  if (!iso) return ''
-  const d = new Date(iso)
-  return `${d.toLocaleDateString('pt-BR')} ${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`
+function dayLabel(date: string) {
+  const [year, month, day] = date.split('-').map(Number)
+  return new Date(year, month - 1, day).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })
 }
 
-// ─── Tooltip de horário corrigido ──────────────────────────────────────────
-
-function CorrectedTime({ value, info }: { value: string; info: MirrorCorrection }) {
-  const [open, setOpen] = useState(false)
-  return (
-    <span
-      style={{ position: 'relative' }}
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
-      onClick={() => setOpen(o => !o)}
-    >
-      <span className="esp-time-corrected">{value}</span>
-      {open && (
-        <span className="esp-tooltip" role="tooltip">
-          <div><span className="esp-tooltip-label">Original:</span>{info.original ?? '—'}</div>
-          <div><span className="esp-tooltip-label">Corrigido:</span>{value}</div>
-          <div><span className="esp-tooltip-label">Por:</span>{info.edited_by} · {fmtDateTime(info.edited_at)}</div>
-          {info.reason && <div><span className="esp-tooltip-label">Motivo:</span>{info.reason}</div>}
-        </span>
-      )}
-    </span>
-  )
+function localIso(date: string, time: string) {
+  return new Date(`${date}T${time}:00`).toISOString()
 }
 
-function TimeCell({ value, correction }: { value: string | null; correction?: MirrorCorrection }) {
-  if (!value) return <span className="esp-time-empty">—</span>
-  if (correction) return <CorrectedTime value={value} info={correction} />
-  return <span className="esp-time">{value}</span>
+function dayStatus(row: MirrorRow) {
+  const labels: Record<string, string> = {
+    ok: 'OK', incomplete: 'Incompleto', absent: 'Falta', justified: 'Justificado',
+    weekend: 'Folga', holiday: 'Feriado', future: '—', ferias: 'Férias', special: 'Jornada especial',
+  }
+  return labels[row.status] ?? row.status
 }
 
-function StatusBadge({ status }: { status: string }) {
-  const meta = STATUS_BADGE[status]
-  if (!meta) return null
-  return <span className={`esp-badge esp-badge-${meta.variant}`}>{meta.label}</span>
+function isOff(row: MirrorRow) {
+  return ['weekend', 'holiday', 'ferias', 'future'].includes(row.status)
 }
 
-// ─── Linha (desktop) e card (mobile) do dia ────────────────────────────────
-
-function dayBalance(r: MirrorRow): number | null {
-  if (r.status === 'weekend' || r.status === 'holiday' || r.status === 'ferias' || r.status === 'future') return null
-  return r.worked_h + r.justified_h - r.expected_h
+function noteFor(log: TimeLog | undefined) {
+  if (!log?.notes) return ''
+  return log.notes
 }
 
-function BalanceCell({ row }: { row: MirrorRow }) {
-  const bal = dayBalance(row)
-  if (bal === null) return <span className="esp-time-empty">—</span>
-  if (Math.abs(bal) <= 1 / 6) return <span className="esp-time-empty">—</span> // tolerância de 10min
-  return <span style={{ color: bal > 0 ? '#4ade80' : '#f87171', fontWeight: 600 }}>{fmtH(bal)}</span>
-}
+export default function MirrorTab({ data, error, logsLoading, logsError, employeeId, year, month, canManage, canJustify, mode, lockedMonths, logs, onJustifyDay, filterRequest, focusDate }: Props) {
+  const [filter, setFilter] = useState<Filter>(filterRequest ? 'pending' : 'all')
+  const [selectedDate, setSelectedDate] = useState<string | null>(focusDate ?? null)
+  const [draft, setDraft] = useState<Draft | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
+  const [toast, setToast] = useState<Toast | null>(null)
+  const [undoing, setUndoing] = useState(false)
+  const firstInput = useRef<HTMLInputElement>(null)
+  const updateLog = useUpdateTimeLog()
+  const createLog = useCreateManualTimeLog()
+  const discardLog = useDiscardTimeLog()
+  const restoreLog = useRestoreTimeLog()
+  const homologar = useHomologarMirror()
+  const reabrir = useReabrirMirror()
 
-function isNonWorkDay(status: string) {
-  return status === 'weekend' || status === 'holiday' || status === 'ferias'
-}
-
-function nonWorkLabel(row: MirrorRow) {
-  if (row.status === 'holiday') return row.holiday_name ?? 'Feriado'
-  if (row.status === 'ferias')  return 'Férias'
-  return 'Fim de semana'
-}
-
-function DayRow({ row: r, onManage }: { row: MirrorRow; onManage?: (date: string) => void }) {
-  const nonWork = isNonWorkDay(r.status)
-  const isAbsent = r.status === 'absent'
-  const approvedOcc = r.occurrences.find(o => o.status === 'APROVADO')
-  const hasDetail = r.occurrences.length > 0
-
-  return (
-    <>
-      <div className={`esp-row st-${r.status}`}>
-        <div><span className={`esp-cell-day ${isAbsent ? 'is-absent' : ''}`}>{r.date.slice(8)}/{r.date.slice(5, 7)}</span></div>
-        <div><span className="esp-cell-weekday">{r.weekday}</span></div>
-        {nonWork || isAbsent ? (
-          <div className={`esp-cell-merged ${isAbsent ? 'is-absent' : ''} ${r.status === 'ferias' ? 'is-ferias' : ''}`}>
-            {isAbsent ? (r.has_justification ? 'Falta justificada' : 'Falta') : nonWorkLabel(r)}
-          </div>
-        ) : (
-          <>
-            <div><TimeCell value={r.entrada} correction={r.corrections.entrada} /></div>
-            <div><TimeCell value={r.saida_almoco} correction={r.corrections.saida_almoco} /></div>
-            <div><TimeCell value={r.retorno_almoco} correction={r.corrections.retorno_almoco} /></div>
-            <div><TimeCell value={r.saida} correction={r.corrections.saida} /></div>
-            <div>{r.worked_h > 0 ? <span className="esp-worked">{fmtHPlain(r.worked_h)}</span> : <span className="esp-worked-empty">—</span>}</div>
-            <div>{r.total_h > 0 ? <span className="esp-worked">{fmtHPlain(r.total_h)}</span> : <span className="esp-worked-empty">—</span>}</div>
-            <div>{r.justified_h > 0 ? <span className="esp-worked">{fmtHPlain(r.justified_h)}</span> : <span className="esp-worked-empty">—</span>}</div>
-            <div className="esp-time-empty">{r.lunch_minutes != null ? `${r.lunch_minutes}min` : '—'}</div>
-          </>
-        )}
-        {(nonWork || isAbsent) && <div className="esp-time-empty" />}
-        {(nonWork || isAbsent) && <div className="esp-time-empty" />}
-        {(nonWork || isAbsent) && <div className="esp-time-empty" />}
-        {(nonWork || isAbsent) && <div className="esp-time-empty" />}
-        <div><BalanceCell row={r} /></div>
-        <div className="esp-status-cell" style={{ display: 'flex' }}>
-          {onManage && <button type="button" className="esp-edit-day" onClick={() => onManage(r.date)} aria-label={`Abrir pontos de ${r.date.slice(8)}/${r.date.slice(5, 7)}`}>Ajustar pontos</button>}
-          <StatusBadge status={r.status} />
-          {approvedOcc && (
-            <span className="esp-badge esp-badge-neutral esp-badge-just approved">
-              {approvedOcc.occurrence_type_label} ✓
-            </span>
-          )}
-          {!approvedOcc && r.occurrences[0] && (
-            <span className={`esp-badge esp-badge-neutral esp-badge-just ${OCC_APPROVAL[r.occurrences[0].status]?.cls ?? ''}`}>
-              {r.occurrences[0].occurrence_type_label} {OCC_APPROVAL[r.occurrences[0].status]?.icon}
-            </span>
-          )}
-        </div>
-      </div>
-      {hasDetail && (
-        <div className="esp-detail-row">
-          <div>
-            {r.occurrences.map(occ => (
-              <div key={occ.id} className="esp-detail-item">
-                <span className="esp-detail-time">
-                  {occ.start_time && occ.end_time ? `${occ.start_time.slice(0, 5)}–${occ.end_time.slice(0, 5)}`
-                    : occ.justified_hours != null ? `${occ.justified_hours}h abonado` : 'Dia inteiro'}
-                </span>
-                <span>· {occ.occurrence_type_label}</span>
-                <span>· {occ.reason}</span>
-                <span className={`esp-badge esp-badge-just ${OCC_APPROVAL[occ.status]?.cls ?? ''} esp-badge-neutral`}>
-                  {occ.status_label}
-                </span>
-                {occ.attachment_url && (
-                  <button className="esp-detail-attach" onClick={() => openAttachment(occ.attachment_url!)}>
-                    Ver anexo
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </>
-  )
-}
-
-function DayCard({ row: r, onManage }: { row: MirrorRow; onManage?: (date: string) => void }) {
-  const nonWork = isNonWorkDay(r.status)
-  const isAbsent = r.status === 'absent'
-  return (
-    <div className={`esp-card st-${r.status}`}>
-      <div className="esp-card-head">
-        <div>
-          <span className="esp-card-date">{r.date.slice(8)}/{r.date.slice(5, 7)}</span>
-          <span className="esp-card-weekday">{r.weekday}</span>
-        </div>
-        <div className="esp-card-badges">
-          <StatusBadge status={r.status} />
-          {r.occurrences[0] && (
-            <span className={`esp-badge esp-badge-neutral esp-badge-just ${OCC_APPROVAL[r.occurrences[0].status]?.cls ?? ''}`}>
-              {r.occurrences[0].occurrence_type_label} {OCC_APPROVAL[r.occurrences[0].status]?.icon}
-            </span>
-          )}
-        </div>
-      </div>
-      {nonWork || isAbsent ? (
-        <div className="esp-cell-merged" style={{ padding: '4px 0' }}>
-          {isAbsent ? (r.has_justification ? 'Falta justificada' : 'Falta') : nonWorkLabel(r)}
-        </div>
-      ) : (
-        <>
-          <div className="esp-card-times">
-            <TimeCell value={r.entrada} correction={r.corrections.entrada} />
-            <TimeCell value={r.saida_almoco} correction={r.corrections.saida_almoco} />
-            <TimeCell value={r.retorno_almoco} correction={r.corrections.retorno_almoco} />
-            <TimeCell value={r.saida} correction={r.corrections.saida} />
-          </div>
-          <div className="esp-card-meta">
-            Trabalhado {r.worked_h > 0 ? fmtHPlain(r.worked_h) : '—'}
-            {r.justified_h > 0 && ` · Justif. ${fmtHPlain(r.justified_h)}`}
-            {r.total_h > 0 && ` · Total ${fmtHPlain(r.total_h)}`}
-            {r.lunch_minutes != null && ` · Intervalo ${r.lunch_minutes}min`}
-            {' · Saldo '}<BalanceCell row={r} />
-          </div>
-        </>
-      )}
-      {onManage && <button type="button" className="esp-edit-day esp-edit-day-mobile" onClick={() => onManage(r.date)}>Ajustar pontos deste dia</button>}
-      {r.occurrences.map(occ => (
-        <div key={occ.id} className="esp-card-meta" style={{ marginTop: 6 }}>
-          {occ.justified_hours != null ? `${occ.justified_hours}h abonado` : 'Dia inteiro'} · {occ.occurrence_type_label} · {occ.reason}
-          {occ.attachment_url && (
-            <button className="esp-detail-attach" style={{ marginLeft: 6 }} onClick={() => openAttachment(occ.attachment_url!)}>
-              Ver anexo
-            </button>
-          )}
-        </div>
-      ))}
-    </div>
-  )
-}
-
-// ─── Aba Espelho de ponto ──────────────────────────────────────────────────
-
-export default function MirrorTab({ data, error, logsLoading, logsError, employeeId, year, month, canManage, canJustify, mode, selectionScope, lockedMonths, logs, onEditLog, onAddLog, onDeleteLog, onJustifyDay }: Props) {
-  const [selectedKey, setSelectedKey] = useState<string | null>(null)
-  const [dayError, setDayError] = useState('')
-  const [deletingId, setDeletingId] = useState<string | null>(null)
-  const homologarMutation = useHomologarMirror()
-  const reabrirMutation   = useReabrirMirror()
-  const closureError = homologarMutation.error ?? reabrirMutation.error
-
-  const rows = data?.rows.filter(r => r.status !== 'future') ?? []
+  const rows = useMemo(() => data?.rows.filter(row => row.status !== 'future') ?? [], [data])
   const summary = data?.summary
   const homologado = summary?.homologado ?? false
-  const dayPrefix = `${employeeId}:${selectionScope}:`
-  const selectedDay = !homologado && selectedKey?.startsWith(dayPrefix) ? selectedKey.slice(dayPrefix.length) : null
-  const dayLogs = selectedDay ? logs.filter(log => toInputDate(log.created_at) === selectedDay)
-    .sort((a, b) => a.created_at.localeCompare(b.created_at)) : []
-  const selectDay = (date: string) => { setDayError(''); setSelectedKey(`${dayPrefix}${date}`) }
-  const canEditDay = (date: string) => (canManage || canJustify) && !lockedMonths.has(date.slice(0, 7)) && !(mode === 'month' && homologado)
+  const logsByDay = useMemo(() => {
+    const grouped = new Map<string, TimeLog[]>()
+    for (const log of logs) {
+      const date = toInputDate(log.created_at)
+      grouped.set(date, [...(grouped.get(date) ?? []), log])
+    }
+    for (const day of grouped.values()) day.sort((a, b) => a.created_at.localeCompare(b.created_at))
+    return grouped
+  }, [logs])
 
-  async function deleteLog(log: TimeLog) {
-    if (!window.confirm(`Excluir ${TYPE_LABELS[log.type] ?? log.type} de ${toInputTime(log.created_at)}?`)) return
-    setDayError('')
-    setDeletingId(log.id)
-    try { await onDeleteLog(log) }
-    catch (e) { setDayError(e instanceof Error ? e.message : 'Não foi possível excluir a batida.') }
-    finally { setDeletingId(null) }
+  useEffect(() => { if (draft) firstInput.current?.focus() }, [draft])
+  useEffect(() => {
+    if (!toast) return
+    const timer = window.setTimeout(() => setToast(null), 6000)
+    return () => window.clearTimeout(timer)
+  }, [toast])
+  useEffect(() => {
+    function handlePanelKey(event: KeyboardEvent) {
+      if (!selectedDate || draft) return
+      if (event.key === 'Escape') setSelectedDate(null)
+      if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+        const index = rows.findIndex(row => row.date === selectedDate)
+        if (index < 0) return
+        event.preventDefault()
+        setSelectedDate(rows[Math.max(0, Math.min(rows.length - 1, index + (event.key === 'ArrowUp' ? -1 : 1)))].date)
+      }
+    }
+    window.addEventListener('keydown', handlePanelKey)
+    return () => window.removeEventListener('keydown', handlePanelKey)
+  }, [selectedDate, draft, rows])
+
+  function matches(row: MirrorRow) {
+    return filter === 'all' || filter === 'pending' && (row.status === 'incomplete' || row.status === 'absent') || filter === 'justified' && row.status === 'justified'
+  }
+  const visible = rows.filter(matches)
+  const pendingCount = rows.filter(row => row.status === 'incomplete' || row.status === 'absent').length
+  const justifiedCount = rows.filter(row => row.status === 'justified').length
+  const selectedRow = rows.find(row => row.date === selectedDate)
+
+  function findPunch(row: MirrorRow, index: number): TimeLog | undefined {
+    const value = row[FIELDS[index]]
+    if (!value) return undefined
+    const selectedId = row.punch_ids?.[FIELDS[index]]
+    if (selectedId) return (logsByDay.get(row.date) ?? []).find(log => log.id === selectedId)
+    const matches = (logsByDay.get(row.date) ?? []).filter(log => log.type === TYPES[index] && toInputTime(log.created_at) === value)
+    return matches.length === 1 ? matches[0] : undefined
+  }
+
+  function canEdit(row: MirrorRow) {
+    return canManage && !homologado && !lockedMonths.has(row.date.slice(0, 7)) && !logsLoading && !logsError && !isOff(row)
+  }
+
+  function begin(row: MirrorRow, only: number | null) {
+    if (!canEdit(row) || saving) return
+    setSaveError('')
+    if (!matches(row)) setFilter('all')
+    setSelectedDate(row.date)
+    setDraft({
+      date: row.date, only,
+      values: FIELDS.map((field, index) => row[field] || (only === index ? SUGGESTED[index] : '')),
+      reasons: ['', '', '', ''], observations: ['', '', '', ''],
+    })
+  }
+
+  function setValue(index: number, value: string) {
+    setDraft(current => current ? { ...current, values: current.values.map((item, i) => i === index ? value : item) } : current)
+  }
+  function setReason(index: number, value: Reason) {
+    setDraft(current => current ? { ...current, reasons: current.reasons.map((item, i) => i === index ? value : item) } : current)
+  }
+  function setObservation(index: number, value: string) {
+    setDraft(current => current ? { ...current, observations: current.observations.map((item, i) => i === index ? value : item) } : current)
+  }
+
+  function getChanges(row: MirrorRow): Change[] {
+    if (!draft || draft.date !== row.date) return []
+    return draft.values.flatMap((after, index) => {
+      const before = row[FIELDS[index]] ?? ''
+      if (after === before) return []
+      return [{ index, before, after, log: findPunch(row, index), reason: draft.reasons[index], observation: draft.observations[index] }]
+    })
+  }
+
+  function validChanges(changes: Change[]) {
+    return changes.length > 0 && changes.every(change =>
+      (!change.before || !!change.log) && (!change.after || minutes(change.after) != null) &&
+      !!change.reason && (change.reason !== 'Outro' || !!change.observation.trim()))
+  }
+
+  async function revert(step: UndoStep) {
+    if (step.kind === 'update') await updateLog.mutateAsync({
+      id: step.log.id, type: step.log.type, created_at: step.log.created_at,
+      status: step.log.status, notes: step.log.notes ?? '', reason: 'Desfazer alteração',
+    })
+    else if (step.kind === 'create') await discardLog.mutateAsync({ id: step.id, reason: 'Desfazer inclusão' })
+    else await restoreLog.mutateAsync(step.id)
+  }
+
+  async function save(row: MirrorRow) {
+    const changes = getChanges(row)
+    if (!validChanges(changes) || saving) return
+    setSaving(true); setSaveError('')
+    let completed = 0
+    const inverse: UndoStep[] = []
+    try {
+      for (const change of changes) {
+        const notes = `${change.reason}${change.observation.trim() ? ` — ${change.observation.trim()}` : ''}`
+        if (change.log && change.after) {
+          await updateLog.mutateAsync({ id: change.log.id, type: change.log.type, created_at: localIso(row.date, change.after), status: change.log.status, notes, reason: change.reason, observation: change.observation.trim() || undefined })
+          inverse.unshift({ kind: 'update', log: change.log })
+        } else if (change.after) {
+          const created = await createLog.mutateAsync({ employee_id: employeeId, type: TYPES[change.index], created_at: localIso(row.date, change.after), notes, reason: change.reason, observation: change.observation.trim() || undefined })
+          inverse.unshift({ kind: 'create', id: created.id })
+        } else if (change.log) {
+          await discardLog.mutateAsync({ id: change.log.id, reason: change.reason, observation: change.observation.trim() || undefined })
+          inverse.unshift({ kind: 'discard', id: change.log.id })
+        }
+        completed++
+      }
+      setDraft(null)
+      setToast({ message: `${completed} ${completed === 1 ? 'registro alterado' : 'registros alterados'} em ${row.date.slice(8)}/${row.date.slice(5, 7)}`, undo: inverse })
+    } catch (cause) {
+      let reverted = true
+      for (const step of inverse) {
+        try { await revert(step) } catch { reverted = false }
+      }
+      const detail = cause instanceof Error ? cause.message : 'Não foi possível salvar a batida.'
+      setSaveError(completed && !reverted ? `Parte das alterações foi aplicada. Confira o espelho antes de tentar novamente. ${detail}` : `As alterações não foram concluídas. ${detail}`)
+    } finally { setSaving(false) }
+  }
+
+  async function undo() {
+    if (!toast?.undo?.length || undoing) return
+    setUndoing(true); setSaveError('')
+    try {
+      for (const step of toast.undo) await revert(step)
+      setToast(null)
+    } catch (cause) {
+      setSaveError(cause instanceof Error ? cause.message : 'Não foi possível desfazer as alterações.')
+    } finally { setUndoing(false) }
   }
 
   function toggleHomologar() {
-    if (!employeeId) return
+    if (!employeeId || mode !== 'month') return
     if (homologado) {
-      if (window.confirm('Reabrir este mês para correções?')) reabrirMutation.mutate({ employeeId, year, month })
-    } else {
-      if (window.confirm('Homologar este mês? Não será mais possível corrigir pontos até reabrir.')) {
-        homologarMutation.mutate({ employeeId, year, month })
-      }
+      if (window.confirm('Reabrir este mês para correções?')) reabrir.mutate({ employeeId, year, month })
+    } else if (window.confirm('Homologar este mês? Não será mais possível corrigir pontos até reabrir.')) {
+      homologar.mutate({ employeeId, year, month })
     }
   }
 
-  if (!employeeId) return <div className="esp-state">Selecione um colaborador para ver o espelho.</div>
-
-  if (!data) {
-    return (
-      <div style={{ color: 'var(--mg-muted)', textAlign: 'center', padding: 32, fontSize: 13 }}>
-        {error ? `Não foi possível carregar o espelho: ${error.message}` : 'Carregando espelho...'}
-      </div>
-    )
+  function onRowKeyDown(event: React.KeyboardEvent, row: MirrorRow) {
+    if (event.key === 'Escape' && draft) { event.stopPropagation(); setDraft(null) }
+    if (event.key === 'Enter' && draft?.date === row.date && event.target instanceof HTMLInputElement) {
+      event.preventDefault(); void save(row)
+    }
   }
 
-  return (
-    <div className="esp-tab">
-      <div className="esp-toolbar">
-        {mode === 'month' ? (
-          <>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-              {summary && <span className={`esp-chip ${homologado ? 'esp-chip-homologado' : 'esp-chip-aberto'}`}>
-                {homologado ? 'Homologado' : 'Aberto'}
-              </span>}
-              {homologado && summary && <span style={{ fontSize: 11, color: 'var(--mg-muted)' }}>
-                {summary.homologado_by ? `por ${summary.homologado_by}` : ''}
-                {summary.homologado_em ? ` em ${fmtDateTime(summary.homologado_em)}` : ''}
-              </span>}
-            </div>
-            {canManage && <button type="button" className="btn-ghost" style={{ fontSize: 12 }}
-              disabled={homologarMutation.isPending || reabrirMutation.isPending} onClick={toggleHomologar}>
-              {homologado ? 'Reabrir mês' : 'Homologar mês'}
-            </button>}
-          </>
-        ) : <span className="esp-edit-help">A homologação é feita na visão mensal.</span>}
+  function stepSelection(direction: number) {
+    const index = rows.findIndex(row => row.date === selectedDate)
+    if (index >= 0) setSelectedDate(rows[Math.max(0, Math.min(rows.length - 1, index + direction))].date)
+  }
+
+  if (!employeeId) return <div className="esp-state">Selecione um colaborador para ver o espelho.</div>
+  if (!data) return <div className="esp-state">{error ? `Não foi possível carregar o espelho: ${error.message}` : 'Carregando espelho...'}</div>
+
+  return <div className="esp-v2">
+    <div className="esp-v2-toolbar">
+      <div className="esp-v2-filters" aria-label="Filtrar dias">
+        {([['all', 'Todos os dias', rows.length], ['pending', 'Pendências', pendingCount], ['justified', 'Justificados', justifiedCount]] as const).map(([key, label, count]) =>
+          <button key={key} type="button" className={filter === key ? 'active' : ''} aria-pressed={filter === key} onClick={() => setFilter(key)}>{label} <span>{count}</span></button>)}
       </div>
-      {closureError && <p className="report-export-error" role="alert">{closureError.message}</p>}
-
-      {rows.length === 0 ? (
-        <div className="esp-state">Nenhum registro neste período.</div>
-      ) : (
-        <>
-          {/* Desktop */}
-          <div className="esp-table-wrap">
-            <div className="esp-grid">
-              <div className="esp-grid-head">
-                <div>Data</div><div>Dia</div><div>Entrada</div><div>S. Almoço</div>
-                <div>R. Almoço</div><div>Saída</div><div>Trabalhado</div>
-                <div>Horas totais</div><div>Horas justif.</div><div>Intervalo</div>
-                <div>Saldo</div><div>Status / ações</div>
-              </div>
-              {rows.map(r => <DayRow key={r.date} row={r} onManage={canEditDay(r.date) ? selectDay : undefined} />)}
-            </div>
-            <div className="esp-legend">✎ horário ajustado manualmente — passe o cursor para ver o registro original</div>
-          </div>
-
-          {/* Mobile */}
-          <div className="esp-cards">
-            {rows.map(r => <DayCard key={r.date} row={r} onManage={canEditDay(r.date) ? selectDay : undefined} />)}
-          </div>
-
-        </>
-      )}
-
-      {selectedDay && (
-        <Modal open onClose={() => setSelectedKey(null)} title={`Pontos de ${selectedDay.slice(8)}/${selectedDay.slice(5, 7)}/${selectedDay.slice(0, 4)}`} maxWidth={520}>
-          <p className="esp-edit-help">Consulte as batidas deste dia e faça os ajustes permitidos para seu acesso.</p>
-          {logsError ? <p className="esp-edit-help">Não foi possível carregar as batidas: {logsError.message}</p>
-            : logsLoading ? <p className="esp-edit-help">Carregando batidas...</p>
-            : dayLogs.length > 0 ? (
-              <div className="esp-day-logs">
-                {dayLogs.map(log => (
-                  <div key={log.id} className="esp-day-log">
-                    <span>{TYPE_LABELS[log.type] ?? log.type}</span>
-                    <strong>{toInputTime(log.created_at)}</strong>
-                    {canManage && <button type="button" className="esp-day-action" onClick={() => { setSelectedKey(null); onEditLog(log) }}>Editar</button>}
-                    {canManage && <button type="button" className="esp-day-action esp-day-delete" disabled={deletingId === log.id}
-                      onClick={() => deleteLog(log)}>{deletingId === log.id ? 'Excluindo...' : 'Excluir'}</button>}
-                  </div>
-                ))}
-              </div>
-            ) : <p className="esp-edit-help">Nenhuma batida registrada neste dia.</p>}
-          {dayError && <p className="report-export-error" role="alert">{dayError}</p>}
-          <div className="modal-actions esp-day-actions">
-            <button type="button" className="btn-ghost" onClick={() => setSelectedKey(null)}>Fechar</button>
-            {canJustify && <button type="button" className="btn-ghost" onClick={() => { onJustifyDay(selectedDay); setSelectedKey(null) }}>Justificar dia</button>}
-            {canManage && <button type="button" className="btn-primary" disabled={logsLoading || !!logsError}
-              onClick={() => { onAddLog(selectedDay); setSelectedKey(null) }}>+ Adicionar batida</button>}
-          </div>
-        </Modal>
-      )}
+      <span className="esp-v2-hint">Clique num horário para editá-lo · ✎ edita o dia inteiro · Enter salva, Esc cancela</span>
     </div>
-  )
+    {mode === 'month' && <div className="esp-v2-month">
+      <span className={homologado ? 'closed' : ''}>● Mês {homologado ? 'homologado' : 'aberto'}</span>
+      {canManage && <button type="button" onClick={toggleHomologar} disabled={homologar.isPending || reabrir.isPending}>{homologado ? 'Reabrir mês' : 'Homologar mês'}</button>}
+    </div>}
+    {(homologar.error || reabrir.error || logsError || saveError) && <p className="report-export-error" role="alert">{saveError || homologar.error?.message || reabrir.error?.message || logsError?.message}</p>}
+    {logsLoading && <p className="esp-v2-hint" role="status">Carregando batidas...</p>}
+    <div className={`esp-v2-layout ${selectedRow ? 'with-panel' : ''}`}>
+      <div className="esp-v2-table-wrap">
+        <div className="esp-v2-table">
+          <div className="esp-v2-head"><span>Dia</span><span>Entrada</span><span>S. almoço</span><span>R. almoço</span><span>Saída</span><span>Trabalhado</span><span>Saldo</span><span>Situação</span><span /></div>
+          {visible.length === 0 && <div className="esp-state">Nenhum dia para este filtro.</div>}
+          {visible.map(row => {
+            const editing = draft?.date === row.date
+            const changes = editing ? getChanges(row) : []
+            const estimate = editing ? preview(row, draft.values) : null
+            const rowBalance = estimate?.balance ?? balance(row)
+            const work = estimate?.worked ?? Math.round(row.worked_h * 60)
+            const allowed = canEdit(row)
+            const merged = isOff(row)
+            const dayLogs = logsByDay.get(row.date) ?? []
+            const unmatchedPunch = changes.some(change => change.before && !change.log)
+            return <div key={row.date} className={`esp-v2-day st-${row.status} ${editing ? 'editing' : ''} ${selectedDate === row.date ? 'selected' : ''}`} onKeyDown={event => onRowKeyDown(event, row)}>
+              <div className="esp-v2-main" onClick={() => { if (!editing) setSelectedDate(selectedDate === row.date ? null : row.date) }}>
+                <span className="esp-v2-day-name"><strong>{row.date.slice(8)}</strong><small>{row.weekday}</small></span>
+                {merged ? <span className="esp-v2-off">{row.status === 'absent' ? 'Falta' : row.holiday_name || dayStatus(row)}</span> : TYPES.map((type, index) => {
+                  const value = row[FIELDS[index]]
+                  const isInput = editing && (draft.only === null || draft.only === index)
+                  const log = findPunch(row, index)
+                  return <div key={type} className={`esp-v2-cell ${isInput ? 'input' : ''} ${isInput && draft.values[index] !== (value ?? '') ? 'changed' : ''}`} onClick={event => { event.stopPropagation(); if (!editing) begin(row, index) }}>
+                    {isInput ? <><input ref={draft.only === index || draft.only === null && index === 0 ? firstInput : undefined} type="time" value={draft.values[index]} onChange={event => setValue(index, event.target.value)} aria-label={`${TYPE_LABELS[type]} de ${row.date}`} /><button type="button" title="Limpar horário" aria-label={`Limpar ${TYPE_LABELS[type]}`} onClick={event => { event.stopPropagation(); setValue(index, '') }}><X size={13} /></button></>
+                      : <span className={value ? '' : 'missing'}>{value || 'faltando'}{(row.corrections[FIELDS[index]] || log?.source === 'MANUAL') && <b title={noteFor(log) || 'Batida ajustada'}>●</b>}</span>}
+                  </div>
+                })}
+                {!merged && <><span className="esp-v2-number">{formatMinutes(work)}</span><span className={`esp-v2-number ${rowBalance >= 0 ? 'positive' : 'negative'}`}>{formatMinutes(rowBalance, true)}</span></>}
+                {merged && <><span /><span /></>}
+                <span className={`esp-v2-status st-${row.status}`}><i />{dayStatus(row)}</span>
+                <span className="esp-v2-edit-action">{allowed && !editing && <button type="button" title="Editar dia" aria-label={`Editar batidas de ${row.date}`} onClick={event => { event.stopPropagation(); begin(row, null) }}><Pencil size={14} /></button>}</span>
+              </div>
+              {row.occurrences.filter(occ => occ.status === 'APROVADO').map(occ => <div key={occ.id} className="esp-v2-annotation"><b>✓</b>{occ.occurrence_type_label} · {occ.reason}</div>)}
+              {!editing && row.adjustments?.map(adjustment => <div key={adjustment.id} className="esp-v2-annotation note"><b>●</b>{TYPE_LABELS[adjustment.type] ?? adjustment.type} {adjustment.action === 'UPDATE' ? `${adjustment.before ?? '—'} → ${adjustment.after ?? '—'}` : adjustment.action === 'CREATE' ? `incluída ${adjustment.after ?? ''}` : adjustment.action === 'DISCARD' ? 'excluída' : 'restaurada'} · {adjustment.reason}{adjustment.observation ? ` — ${adjustment.observation}` : ''}</div>)}
+              {!editing && !row.adjustments && dayLogs.filter(log => log.notes).map(log => <div key={log.id} className="esp-v2-annotation note"><b>●</b>{TYPE_LABELS[log.type]} {log.original_created_at ? `${toInputTime(log.original_created_at)} → ` : log.source === 'MANUAL' ? 'incluída ' : ''}{toInputTime(log.created_at)} · {log.notes}</div>)}
+              {editing && <div className="esp-v2-editor" onClick={event => event.stopPropagation()}>
+                {changes.map(change => <div className="esp-v2-change" key={change.index}>
+                  <span>{TYPE_LABELS[TYPES[change.index]]}</span>
+                  <span className="esp-v2-change-time">{change.before || 'vazio'} → <b className={change.after ? '' : 'removed'}>{change.after || 'excluir'}</b></span>
+                  <select value={change.reason} aria-label={`Justificativa para ${TYPE_LABELS[TYPES[change.index]]}`} onChange={event => setReason(change.index, event.target.value as Reason)}><option value="">Justificativa…</option>{REASONS.map(reason => <option key={reason} value={reason}>{reason}</option>)}</select>
+                  <input type="text" value={change.observation} onChange={event => setObservation(change.index, event.target.value)} placeholder={change.reason === 'Outro' ? 'Descreva o motivo (obrigatório)' : 'Observação (opcional)'} aria-label={`Observação para ${TYPE_LABELS[TYPES[change.index]]}`} />
+                </div>)}
+                <div className="esp-v2-editor-footer"><span>{unmatchedPunch ? 'Batida não vinculada com segurança ao registro original.' : changes.length ? `${changes.length} ${changes.length === 1 ? 'alteração' : 'alterações'}${validChanges(changes) ? '' : ' · informe a justificativa de cada batida alterada'}` : draft.only === null ? 'Altere os horários desejados' : 'Altere o horário'}</span><div><button type="button" onClick={() => setDraft(null)}>Cancelar</button><button type="button" className="save" disabled={!validChanges(changes) || saving} onClick={() => void save(row)}>{saving ? 'Salvando...' : 'Salvar'}</button></div></div>
+              </div>}
+            </div>
+          })}
+          <div className="esp-v2-total"><strong>Total do período</strong><span>{formatMinutes(Math.round((summary?.total_worked_h ?? 0) * 60))}</span><span className={(summary?.balance_h ?? 0) >= 0 ? 'positive' : 'negative'}>{formatMinutes(Math.round((summary?.balance_h ?? 0) * 60), true)}</span></div>
+        </div>
+      </div>
+      {selectedRow && <aside className="esp-v2-panel" aria-label={`Detalhes de ${selectedDate}`}>
+        <div className="esp-v2-panel-head"><div><h3>{dayLabel(selectedRow.date)}</h3><span className={`esp-v2-status st-${selectedRow.status}`}><i />{dayStatus(selectedRow)}</span></div><div><button type="button" aria-label="Dia anterior" onClick={() => stepSelection(-1)}><ChevronLeft size={16} /></button><button type="button" aria-label="Próximo dia" onClick={() => stepSelection(1)}><ChevronRight size={16} /></button><button type="button" aria-label="Fechar detalhes" onClick={() => setSelectedDate(null)}><X size={16} /></button></div></div>
+        <div className="esp-v2-panel-stats"><div><small>Trabalhado</small><strong>{formatMinutes(Math.round(selectedRow.worked_h * 60))}</strong></div><div><small>Intervalo</small><strong>{selectedRow.lunch_minutes == null ? '—' : formatMinutes(selectedRow.lunch_minutes)}</strong></div><div><small>Saldo</small><strong>{formatMinutes(balance(selectedRow), true)}</strong></div></div>
+        <div className="esp-v2-panel-points">{TYPES.map((type, index) => { const log = findPunch(selectedRow, index); const value = selectedRow[FIELDS[index]]; return <div key={type}><strong>{value || '--:--'}</strong><span>{TYPE_LABELS[type]}<small>{log?.original_created_at ? `Original ${toInputTime(log.original_created_at)} · ` : ''}{log?.address || (value ? 'Registro do espelho' : 'Registro não encontrado')}{log?.face_confidence != null ? ` · confiança ${Math.round(log.face_confidence * 100)}%` : ''}</small></span>{canEdit(selectedRow) && <button type="button" onClick={() => begin(selectedRow, index)}>{value ? 'Editar' : '+ Incluir'}</button>}</div> })}</div>
+        {selectedRow.occurrences.map(occ => <div key={occ.id} className="esp-v2-panel-occ"><strong>{occ.occurrence_type_label} · {occ.status_label}</strong><p>{occ.reason}</p>{occ.attachment_url && <button type="button" onClick={() => openAttachment(occ.attachment_url!)}>Ver anexo</button>}</div>)}
+        {canJustify && !homologado && <button type="button" className="esp-v2-justify" onClick={() => onJustifyDay(selectedRow.date)}>Justificar dia</button>}
+      </aside>}
+    </div>
+    {toast && <div className="esp-v2-toast" role="status">{toast.message}{toast.undo?.length ? <button type="button" disabled={undoing} onClick={() => void undo()}>{undoing ? 'Desfazendo...' : 'Desfazer'}</button> : null}</div>}
+  </div>
 }

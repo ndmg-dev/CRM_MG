@@ -415,7 +415,7 @@ interface MonthlyReportTabProps {
   justifications: Justification[]
   onOpenDetail: (log: TimeLog) => void
   onEditLog: (log: TimeLog) => void
-  onDeleteLog: (id: string) => void
+  onDeleteLog?: (id: string) => void
   onJustifyLog: (log: TimeLog) => void
   /** Nome do colaborador por id — quando informado, exibe a coluna "Colaborador"
    * na tabela (necessário nas visões por Setor/Equipe toda, onde os registros
@@ -606,10 +606,10 @@ export default function MonthlyReportTab({
                     onClick={() => onEditLog(log)}>
                     Editar
                   </button>
-                  <button className="btn-danger" style={{ padding: '3px 10px', fontSize: 11 }}
+                  {onDeleteLog && <button className="btn-danger" style={{ padding: '3px 10px', fontSize: 11 }}
                     onClick={() => { if (confirm('Excluir registro?')) onDeleteLog(log.id) }}>
                     🗑
-                  </button>
+                  </button>}
                 </div>
               </td>
             </tr>

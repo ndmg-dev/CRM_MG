@@ -279,6 +279,17 @@ export interface MirrorCorrection {
   reason:     string | null
 }
 
+export interface MirrorAdjustment {
+  id: string
+  type: string
+  action: 'CREATE' | 'UPDATE' | 'DISCARD' | 'RESTORE'
+  before: string | null
+  after: string | null
+  reason: string
+  observation: string | null
+  actor: string
+}
+
 export interface MirrorRow {
   date:            string
   weekday:         string
@@ -299,6 +310,8 @@ export interface MirrorRow {
   // presente quando aquele horário foi corrigido/lançado manualmente por
   // um admin (ver routers/time_logs.py).
   corrections:     Record<string, MirrorCorrection>
+  punch_ids?:      Partial<Record<'entrada' | 'saida_almoco' | 'retorno_almoco' | 'saida', string | null>>
+  adjustments?:    MirrorAdjustment[]
   occurrences:     MirrorOccurrence[]
 }
 

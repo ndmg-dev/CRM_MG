@@ -10,7 +10,7 @@ import ReportFilters from '../components/reports/ReportFilters'
 import ReportsExportModal from '../components/reports/ReportsExportModal'
 import MonthlyReportTab from '../components/reports/MonthlyReportTab'
 import { C } from '../components/reports/colors'
-import { useTimeLogs, useDeleteTimeLog, useUpdateTimeLog, useCreateManualTimeLog, type TimeLog } from '../hooks/useTimeLogs'
+import { useTimeLogs, useUpdateTimeLog, useCreateManualTimeLog, type TimeLog } from '../hooks/useTimeLogs'
 import { useJustifications, useCreateJustification } from '../hooks/useJustifications'
 import { useEmployees } from '../hooks/useEmployees'
 import { useSectors } from '../hooks/useSectors'
@@ -20,9 +20,10 @@ import { Modal } from '../components/Modal'
 import { useAuth } from '../hooks/useAuth'
 import '../styles/reports.css'
 
-const MONTHS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
-
-function fmtH(h: number) { return `${h.toFixed(1)}h` }
+function fmtH(h: number, signed = false) {
+  const total = Math.round(Math.abs(h) * 60)
+  return `${signed ? h > 0 ? '+' : h < 0 ? '−' : '' : ''}${Math.floor(total / 60)}h${String(total % 60).padStart(2, '0')}`
+}
 
 function combineWeeklyMirror(first: MirrorResponse, second: MirrorResponse | undefined, from: string, to: string): MirrorResponse {
   const rows = [...first.rows, ...(second?.rows ?? [])]
@@ -54,8 +55,8 @@ function combineWeeklyMirror(first: MirrorResponse, second: MirrorResponse | und
 
 // ─── Modal editar ponto ───────────────────────────────────────────────────────
 
-function EditLogModal({ log, employeeId, employees, initialDate, onClose }: {
-  log: TimeLog | null; employeeId: string; employees: { id: string; name: string }[]; initialDate?: string; onClose: () => void
+function EditLogModal({ log, employeeId, employees, initialDate, initialType, onClose }: {
+  log: TimeLog | null; employeeId: string; employees: { id: string; name: string }[]; initialDate?: string; initialType?: TimeLog['type']; onClose: () => void
 }) {
   const isNew = !log
   const createMutation = useCreateManualTimeLog()
@@ -64,20 +65,25 @@ function EditLogModal({ log, employeeId, employees, initialDate, onClose }: {
     employee_id: employeeId,
     date: log ? toInputDate(log.created_at) : initialDate ?? new Date().toLocaleDateString('en-CA'),
     time: log ? toInputTime(log.created_at) : '08:00',
-    type:   (log?.type   ?? 'ENTRADA')   as TimeLog['type'],
+    type:   (log?.type   ?? initialType ?? 'ENTRADA')   as TimeLog['type'],
     status: (log?.status ?? 'VERIFICADO') as TimeLog['status'],
-    notes: log?.notes ?? '',
+    reason: '',
+    observation: '',
   })
   const [err, setErr] = useState('')
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault(); setErr('')
+    if (!form.reason || form.reason === 'Outro' && !form.observation.trim()) {
+      setErr('Informe a justificativa e, se escolher Outro, descreva o motivo.')
+      return
+    }
     const created_at = new Date(`${form.date}T${form.time}:00`).toISOString()
     try {
       if (isNew) {
-        await createMutation.mutateAsync({ employee_id: form.employee_id, type: form.type, created_at, notes: form.notes || undefined })
+        await createMutation.mutateAsync({ employee_id: form.employee_id, type: form.type, created_at, reason: form.reason, observation: form.observation.trim() || undefined })
       } else {
-        await updateMutation.mutateAsync({ id: log!.id, type: form.type, created_at, status: form.status, notes: form.notes || undefined })
+        await updateMutation.mutateAsync({ id: log!.id, type: form.type, created_at, status: form.status, reason: form.reason, observation: form.observation.trim() || undefined })
       }
       onClose()
     } catch (e) { setErr(e instanceof Error ? e.message : 'Erro') }
@@ -124,9 +130,16 @@ function EditLogModal({ log, employeeId, employees, initialDate, onClose }: {
           </div>
         )}
         <div className="form-group">
+          <label className="form-label">Justificativa</label>
+          <select className="form-input" value={form.reason} required onChange={e => setForm(f => ({ ...f, reason: e.target.value }))}>
+            <option value="">Selecione o motivo</option>
+            {['Esquecimento de marcação', 'Falha no relógio/app', 'Trabalho externo', 'Atestado/consulta', 'Erro de marcação', 'Outro'].map(reason => <option key={reason} value={reason}>{reason}</option>)}
+          </select>
+        </div>
+        <div className="form-group">
           <label className="form-label">Observação</label>
-          <input className="form-input" value={form.notes} placeholder="Opcional"
-            onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
+          <input className="form-input" value={form.observation} required={form.reason === 'Outro'} placeholder={form.reason === 'Outro' ? 'Descreva o motivo' : 'Opcional'}
+            onChange={e => setForm(f => ({ ...f, observation: e.target.value }))} />
         </div>
         {err && <div style={{ fontSize: 12, color: 'var(--mg-red)', marginBottom: 12 }}>{err}</div>}
         <div className="modal-actions">
@@ -206,6 +219,7 @@ export default function Reports() {
   const [expandedLogs, setExpandedLogs] = useState(false)
   const [editLog,    setEditLog]    = useState<TimeLog | null | 'new'>()
   const [editDate,   setEditDate]   = useState<string>()
+  const [editType,   setEditType]   = useState<TimeLog['type']>()
   const [justifyLog, setJustifyLog] = useState<TimeLog | null>()
   const [detailLog,  setDetailLog]  = useState<TimeLog | null>(null)
   const [calYear,  setCalYear]  = useState(now.getFullYear())
@@ -213,6 +227,9 @@ export default function Reports() {
   const [innerTab, setInnerTab] = useState<'registros' | 'espelho' | 'anomalias' | 'banco'>('espelho')
   const [showExport, setShowExport] = useState(false)
   const [justifyDate, setJustifyDate] = useState<string>()
+  const [mirrorFilterRequest, setMirrorFilterRequest] = useState(0)
+  const [mirrorFocus, setMirrorFocus] = useState<string | null>(null)
+  const [mirrorFocusRequest, setMirrorFocusRequest] = useState(0)
   const { can } = useAuth()
 
   const { data: employees = [] } = useEmployees()
@@ -296,8 +313,6 @@ export default function Reports() {
     scope === 'employee' && selectedEmployee ? { employee_id: selectedEmployee } : undefined
   )
 
-  const deleteLogMutation = useDeleteTimeLog()
-
   const { data: calendarDays = [] } = useCalendarReport(calYear, calMonth, apiScope, idsParam, sectorParam)
 
   // Aggregated totals come from the server — no business logic on the frontend
@@ -344,16 +359,35 @@ export default function Reports() {
 
   function changeScope(s: typeof scope) {
     setScope(s); closePanels()
+    setMirrorFocus(null)
+    setMirrorFilterRequest(0)
     setInnerTab(s === 'employee' ? 'espelho' : 'registros')
   }
 
   function changePeriod(p: typeof period) {
     setPeriod(p); closePanels()
+    setMirrorFilterRequest(0)
+    setMirrorFocus(null)
     if (p === 'week' && (innerTab === 'anomalias' || innerTab === 'banco')) setInnerTab('espelho')
   }
 
   function onPickEmployee(id: string) {
     setSelectedEmployee(id); closePanels()
+    setMirrorFilterRequest(0)
+    setMirrorFocus(null)
+  }
+
+  function stepEmployee(direction: number) {
+    const index = sortedEmployees.findIndex(employee => employee.id === selectedEmployee)
+    if (index < 0 || sortedEmployees.length === 0) return
+    onPickEmployee(sortedEmployees[(index + direction + sortedEmployees.length) % sortedEmployees.length].id)
+  }
+
+  function stepMonth(direction: number) {
+    const next = new Date(year, month - 1 + direction, 1)
+    setYear(next.getFullYear()); setMonth(next.getMonth() + 1)
+    setMirrorFilterRequest(0)
+    setMirrorFocus(null)
   }
 
   function prevCalMonth() {
@@ -370,58 +404,40 @@ export default function Reports() {
   return (
     <div className="dashboard-page animate-in">
 
-      <div className="page-header" style={{ flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <h1 className="page-title">Ponto</h1>
-          <p className="report-page-subtitle">Confira e ajuste as batidas no espelho de ponto.</p>
+      <div className="report-v2-top">
+        <ReportFilters
+          scope={scope}
+          onChangeScope={changeScope}
+          employees={sortedEmployees}
+          sectorMap={sectorMap}
+          sectors={sectors}
+          selectedEmployee={selectedEmployee}
+          onPickEmployee={onPickEmployee}
+          onStepEmployee={stepEmployee}
+          selectedSector={selectedSector}
+          onSelectSector={setSelectedSector}
+        />
+        <div className="report-v2-top-actions">
+          <div className="report-v2-period" aria-label="Período da consulta">
+            <button type="button" aria-label="Período anterior" onClick={() => period === 'month' ? stepMonth(-1) : setWeekAnchor(d => { const next = new Date(d); next.setDate(next.getDate() - 7); return next })}>‹</button>
+            <strong>{period === 'month' ? new Date(year, month - 1, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) : weekLabel}</strong>
+            <button type="button" aria-label="Próximo período" onClick={() => period === 'month' ? stepMonth(1) : setWeekAnchor(d => { const next = new Date(d); next.setDate(next.getDate() + 7); return next })}>›</button>
+          </div>
+          <button type="button" className="report-v2-view-switch" onClick={() => changePeriod(period === 'month' ? 'week' : 'month')}>{period === 'month' ? 'Visão semanal' : 'Visão mensal'}</button>
+          <button type="button" className="report-v2-export" onClick={() => setShowExport(true)}>Exportar ▾</button>
         </div>
-        <button type="button" className="btn-primary" onClick={() => setShowExport(true)}>Relatórios</button>
       </div>
-
-      {/* Barra de filtros */}
-      <ReportFilters
-        scope={scope}
-        onChangeScope={changeScope}
-        employees={sortedEmployees}
-        sectorMap={sectorMap}
-        sectors={sectors}
-        selectedEmployee={selectedEmployee}
-        onPickEmployee={onPickEmployee}
-        selectedSector={selectedSector}
-        onSelectSector={setSelectedSector}
-      />
 
       {/* Card de registros */}
       <div className="card report-main-card" style={{ marginBottom: 20 }}>
-        <div className="report-period-bar">
-          <div className="report-period-switch" role="group" aria-label="Período da consulta">
-            <button type="button" aria-pressed={period === 'month'} className={period === 'month' ? 'active' : ''} onClick={() => changePeriod('month')}>Mensal</button>
-            <button type="button" aria-pressed={period === 'week'} className={period === 'week' ? 'active' : ''} onClick={() => changePeriod('week')}>Semanal</button>
-          </div>
-          {period === 'month' ? (
-            <div className="report-period-fields">
-              <label className="report-field"><span>Mês</span>
-                <select className="form-input" value={month} onChange={e => setMonth(Number(e.target.value))}>
-                  {MONTHS.map((name, index) => <option key={name} value={index + 1}>{name}</option>)}
-                </select></label>
-              <label className="report-field"><span>Ano</span>
-                <input className="form-input" type="number" min="2000" max="2100" value={year} onChange={e => setYear(Number(e.target.value))} />
-              </label>
-            </div>
-          ) : (
-            <div className="report-period-fields">
-              <button type="button" className="btn-ghost" aria-label="Semana anterior"
-                onClick={() => setWeekAnchor(d => { const next = new Date(d); next.setDate(next.getDate() - 7); return next })}>‹</button>
-              <label className="report-field"><span>Semana de {weekLabel}</span>
-                <input className="form-input" type="date" value={toInputDateLocal(weekAnchor)}
-                  onChange={e => { if (e.target.value) setWeekAnchor(new Date(`${e.target.value}T12:00:00`)) }} />
-              </label>
-              <button type="button" className="btn-ghost" aria-label="Próxima semana"
-                onClick={() => setWeekAnchor(d => { const next = new Date(d); next.setDate(next.getDate() + 7); return next })}>›</button>
-            </div>
-          )}
+        {totalsRefreshing && <div className="report-refresh-status" role="status">Atualizando dados do período...</div>}
+        <div className="report-summary-strip" aria-label="Resumo do período">
+          <div><span>Saldo do período</span><strong className={(serverTotals?.total_balance ?? 0) >= 0 ? 'positive' : 'negative'}>{fmtH(serverTotals?.total_balance ?? 0, true)}</strong></div>
+          <div><span>Trabalhadas</span><strong>{fmtH(totals.wrk)}</strong><small>de {fmtH(totals.exp)} esperadas</small></div>
+          <div><span>Justificadas</span><strong>{fmtH(totals.just)}</strong></div>
+          <div><span>Presença</span><strong>{Math.round(totals.avgPct)}%</strong></div>
+          <button type="button" className="report-v2-pending-kpi" disabled={!isEmployeeScope} onClick={() => { setMirrorFocus(null); setInnerTab('espelho'); setMirrorFilterRequest(value => value + 1) }}><span>Pendências</span><strong>{isEmployeeScope ? (mirrorData?.summary.incomplete_count ?? 0) + (mirrorData?.summary.absent_count ?? 0) : '—'}</strong><small>Revisar →</small></button>
         </div>
-
         {isEmployeeScope && (
           <div className="report-tabs" role="tablist" aria-label="Visões do ponto">
             {(isWeek ? [
@@ -440,10 +456,10 @@ export default function Reports() {
                 aria-selected={innerTab === key}
                 onClick={() => setInnerTab(key as typeof innerTab)}
                 style={{
-                  padding: '8px 14px', fontSize: 12,
+                  padding: '12px 14px', fontSize: 14,
                   background: 'none', border: 'none', cursor: 'pointer',
-                  color: innerTab === key ? '#f5c842' : '#666',
-                  borderBottom: innerTab === key ? '2px solid #f5c842' : '2px solid transparent',
+                  color: innerTab === key ? '#ebebeb' : '#7a7a7a',
+                  borderBottom: innerTab === key ? '2px solid #e3a92f' : '2px solid transparent',
                   marginBottom: -1, whiteSpace: 'nowrap',
                   transition: 'color 0.15s',
                 }}
@@ -463,17 +479,6 @@ export default function Reports() {
             ))}
           </div>
         )}
-
-        {totalsRefreshing && <div className="report-refresh-status" role="status">Atualizando dados do período...</div>}
-        <div className="report-summary-strip" aria-label="Resumo do período">
-          <div><span>Previsto</span><strong>{fmtH(totals.exp)}</strong></div>
-          <div><span>Trabalhado</span><strong>{fmtH(totals.wrk)}</strong></div>
-          <div><span>Justificado</span><strong>{fmtH(totals.just)}</strong></div>
-          <div><span>Saldo</span><strong className={(serverTotals?.total_balance ?? 0) >= 0 ? 'positive' : 'negative'}>
-            {fmtH(serverTotals?.total_balance ?? 0)}
-          </strong></div>
-          <div><span>Presença</span><strong>{totals.avgPct.toFixed(1)}%</strong></div>
-        </div>
 
         {/* Cabeçalho — título e ações condicionais por aba */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
@@ -507,7 +512,7 @@ export default function Reports() {
                 </>
               )}
               <button className="btn-primary" style={{ fontSize: 12, padding: '5px 12px' }}
-                onClick={() => { setEditDate(undefined); setEditLog('new') }}>
+                onClick={() => { setEditDate(undefined); setEditType(undefined); setEditLog('new') }}>
                 + Adicionar ponto
               </button>
             </div>
@@ -532,9 +537,13 @@ export default function Reports() {
             expandedLogs={expandedLogs}
             onExpandLogs={() => setExpandedLogs(true)}
             justifications={justifications}
-            onOpenDetail={setDetailLog}
+            onOpenDetail={log => {
+              if (!isEmployeeScope) { setDetailLog(log); return }
+              setMirrorFocus(toInputDate(log.created_at))
+              setMirrorFocusRequest(value => value + 1)
+              setInnerTab('espelho')
+            }}
             onEditLog={setEditLog}
-            onDeleteLog={id => deleteLogMutation.mutate(id)}
             onJustifyLog={log => { setJustifyDate(undefined); setJustifyLog(log) }}
             employeeNames={scope !== 'employee' ? employeeNameMap : undefined}
             employeeName={scope === 'employee' ? sectionTitle : undefined}
@@ -544,6 +553,7 @@ export default function Reports() {
         {/* ── Aba Espelho de ponto ───────────────────────────────────────── */}
         {innerTab === 'espelho' && (
           <MirrorTab
+            key={`${selectedEmployee}:${period}:${isWeek ? weekFrom : `${year}-${month}`}:${mirrorFilterRequest}:${mirrorFocusRequest}`}
             data={mirrorData}
             error={mirrorError}
             logsLoading={logsLoading}
@@ -554,13 +564,11 @@ export default function Reports() {
             canManage={can('corrections')}
             canJustify={can('justifications')}
             mode={period}
-            selectionScope={isWeek ? weekFrom : `${year}-${month}`}
             lockedMonths={lockedMonths}
             logs={logs.filter(log => log.employee_id === selectedEmployee)}
-            onEditLog={setEditLog}
-            onAddLog={date => { setEditDate(date); setEditLog('new') }}
-            onDeleteLog={log => deleteLogMutation.mutateAsync(log.id)}
             onJustifyDay={date => { setJustifyLog(null); setJustifyDate(date) }}
+            filterRequest={mirrorFilterRequest}
+            focusDate={mirrorFocus}
           />
         )}
 
@@ -605,7 +613,8 @@ export default function Reports() {
           employeeId={selectedEmployee || sortedEmployees[0]?.id || ''}
           employees={sortedEmployees}
           initialDate={editDate}
-          onClose={() => { setEditLog(undefined); setEditDate(undefined) }}
+          initialType={editType}
+          onClose={() => { setEditLog(undefined); setEditDate(undefined); setEditType(undefined) }}
         />
       )}
       {(justifyLog || justifyDate) && (
