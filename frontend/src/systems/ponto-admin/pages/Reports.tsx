@@ -432,11 +432,11 @@ export default function Reports() {
       <div className="card report-main-card" style={{ marginBottom: 20 }}>
         {totalsRefreshing && <div className="report-refresh-status" role="status">Atualizando dados do período...</div>}
         <div className="report-summary-strip" aria-label="Resumo do período">
-          <div><span>Saldo do período</span><strong className={(serverTotals?.total_balance ?? 0) >= 0 ? 'positive' : 'negative'}>{fmtH(serverTotals?.total_balance ?? 0, true)}</strong></div>
-          <div><span>Trabalhadas</span><strong>{fmtH(totals.wrk)}</strong><small>de {fmtH(totals.exp)} esperadas</small></div>
-          <div><span>Justificadas</span><strong>{fmtH(totals.just)}</strong></div>
-          <div><span>Presença</span><strong>{Math.round(totals.avgPct)}%</strong></div>
-          <button type="button" className="report-v2-pending-kpi" disabled={!isEmployeeScope} onClick={() => { setMirrorFocus(null); setInnerTab('espelho'); setMirrorFilterRequest(value => value + 1) }}><span>Pendências</span><strong>{isEmployeeScope ? (mirrorData?.summary.incomplete_count ?? 0) + (mirrorData?.summary.absent_count ?? 0) : '—'}</strong><small>Revisar →</small></button>
+          <div className="report-kpi report-kpi-balance"><span>Saldo do período</span><strong className={(serverTotals?.total_balance ?? 0) >= 0 ? 'positive' : 'negative'}>{fmtH(serverTotals?.total_balance ?? 0, true)}</strong><small>Trabalhadas menos horas esperadas</small></div>
+          <div className="report-kpi"><span>Trabalhadas</span><strong>{fmtH(totals.wrk)}</strong><small>de {fmtH(totals.exp)} esperadas</small></div>
+          <div className="report-kpi"><span>Justificadas</span><strong>{fmtH(totals.just)}</strong><small>Horas aprovadas no período</small></div>
+          <div className="report-kpi"><span>Presença</span><strong>{Math.round(totals.avgPct)}%</strong><small>Média de comparecimento</small></div>
+          <button type="button" className="report-kpi report-v2-pending-kpi" disabled={!isEmployeeScope} onClick={() => { setMirrorFocus(null); setInnerTab('espelho'); setMirrorFilterRequest(value => value + 1) }}><span>Pendências</span><strong>{isEmployeeScope ? (mirrorData?.summary.incomplete_count ?? 0) + (mirrorData?.summary.absent_count ?? 0) : '—'}</strong><small>Revisar batidas <b aria-hidden="true">→</b></small></button>
         </div>
         {isEmployeeScope && (
           <div className="report-tabs" role="tablist" aria-label="Visões do ponto">

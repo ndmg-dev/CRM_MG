@@ -123,15 +123,85 @@
 .pontoadmin-root .report-v2-period strong { min-width:136px; text-align:center; text-transform:capitalize; font-weight:500; font-size:14px; }
 .pontoadmin-root .report-v2-view-switch, .pontoadmin-root .report-v2-export { height:40px; padding:0 14px; border:1px solid #2c2c2c; border-radius:8px; background:#1a1a1a; color:#bdbdbd; font-size:13px; cursor:pointer; }
 .pontoadmin-root .report-v2-export { border-color:#6b5320; color:#e3a92f; }
-.pontoadmin-root .report-summary-strip { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); flex-wrap:unset; border-color:#262626; border-radius:12px; background:#181818; }
-.pontoadmin-root .report-summary-strip > div, .pontoadmin-root .report-summary-strip > button { min-width:0; padding:16px 20px; border:0; border-right:1px solid #262626; background:transparent; text-align:left; }
-.pontoadmin-root .report-summary-strip > button:last-child { border-right:0; }
-.pontoadmin-root .report-summary-strip span { display:block; color:#8d8d8d; font-size:12px; }
-.pontoadmin-root .report-summary-strip strong { display:block; margin-top:6px; font-size:26px; line-height:1.1; }
-.pontoadmin-root .report-summary-strip small { display:block; margin-top:5px; color:#6f6f6f; font-size:12px; }
-.pontoadmin-root .report-v2-pending-kpi { cursor:pointer; }
-.pontoadmin-root .report-v2-pending-kpi:hover { background:#1e1c17; }
-.pontoadmin-root .report-v2-pending-kpi strong { color:#e3a92f; }
-.pontoadmin-root .report-v2-pending-kpi small { color:#e3a92f; }
-@media (max-width:900px) { .pontoadmin-root .report-summary-strip { grid-template-columns:repeat(3,minmax(0,1fr)); } }
-@media (max-width:600px) { .pontoadmin-root .report-v2-top-actions { width:100%; } .pontoadmin-root .report-summary-strip { grid-template-columns:repeat(2,minmax(0,1fr)); } .pontoadmin-root .report-summary-strip strong { font-size:21px; } }
+.pontoadmin-root .report-summary-strip {
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:12px;
+  margin:0 0 20px;
+  border:0;
+  border-radius:0;
+  background:transparent;
+}
+.pontoadmin-root .report-summary-strip > .report-kpi {
+  box-sizing:border-box;
+  display:flex;
+  min-width:0;
+  min-height:108px;
+  flex-direction:column;
+  align-items:flex-start;
+  justify-content:center;
+  padding:17px 18px;
+  border:1px solid #2b2b2b;
+  border-radius:11px;
+  background:linear-gradient(145deg,#1d1d1d 0%,#191919 100%);
+  text-align:left;
+  transition:border-color .16s ease, transform .16s ease, background .16s ease;
+}
+.pontoadmin-root .report-summary-strip .report-kpi > span {
+  display:block;
+  color:#929292;
+  font-size:11px;
+  font-weight:600;
+  letter-spacing:.045em;
+  line-height:1.3;
+  text-transform:uppercase;
+}
+.pontoadmin-root .report-summary-strip .report-kpi > strong {
+  display:block;
+  margin-top:9px;
+  color:#f0f0f0;
+  font-size:25px;
+  font-weight:650;
+  font-variant-numeric:tabular-nums;
+  letter-spacing:-.035em;
+  line-height:1;
+  white-space:nowrap;
+}
+.pontoadmin-root .report-summary-strip .report-kpi > strong.positive { color:#4cc38a; }
+.pontoadmin-root .report-summary-strip .report-kpi > strong.negative { color:#ef6461; }
+.pontoadmin-root .report-summary-strip .report-kpi > small {
+  display:block;
+  min-height:15px;
+  margin-top:8px;
+  color:#777;
+  font-size:11px;
+  line-height:1.35;
+}
+.pontoadmin-root .report-summary-strip > .report-kpi-balance { border-top:2px solid #6b3433; }
+.pontoadmin-root .report-summary-strip > .report-v2-pending-kpi {
+  cursor:pointer;
+  border-color:#4a3a1e;
+  background:linear-gradient(145deg,#211e18 0%,#1b1a17 100%);
+}
+.pontoadmin-root .report-summary-strip > .report-v2-pending-kpi:hover:not(:disabled) {
+  transform:translateY(-2px);
+  border-color:#92702d;
+  background:linear-gradient(145deg,#292316 0%,#201d17 100%);
+}
+.pontoadmin-root .report-summary-strip > .report-v2-pending-kpi:focus-visible { outline:2px solid #e3a92f; outline-offset:2px; }
+.pontoadmin-root .report-summary-strip > .report-v2-pending-kpi:disabled { cursor:default; opacity:.65; }
+.pontoadmin-root .report-summary-strip .report-v2-pending-kpi > span { color:#c29a47; }
+.pontoadmin-root .report-summary-strip .report-v2-pending-kpi > strong { color:#f0b941; }
+.pontoadmin-root .report-summary-strip .report-v2-pending-kpi > small { color:#d0a743; }
+.pontoadmin-root .report-v2-pending-kpi small b { padding-left:3px; font-size:14px; font-weight:500; }
+@media (max-width:1100px) { .pontoadmin-root .report-summary-strip { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+@media (max-width:700px) {
+  .pontoadmin-root .report-v2-top-actions { width:100%; }
+  .pontoadmin-root .report-summary-strip { grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+  .pontoadmin-root .report-summary-strip > .report-kpi { min-height:100px; padding:15px; }
+  .pontoadmin-root .report-summary-strip .report-kpi > strong { font-size:22px; }
+}
+@media (max-width:360px) {
+  .pontoadmin-root .report-summary-strip { grid-template-columns:1fr; }
+  .pontoadmin-root .report-summary-strip > .report-kpi { min-height:90px; }
+}
