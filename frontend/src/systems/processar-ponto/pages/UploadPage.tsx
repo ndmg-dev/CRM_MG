@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { Settings } from "lucide-react";
 import { UploadCard } from "@ponto/components/UploadCard";
 import { uploadFile } from "@ponto/api/client";
 
@@ -19,6 +20,11 @@ export function UploadPage() {
 
   return (
     <div className="max-w-4xl mx-auto py-12 px-4">
+      <div className="flex justify-end mb-4">
+        <Link to="configuracoes/dominio" className="flex items-center gap-1.5 text-sm text-textSecondary hover:text-textPrimary">
+          <Settings size={16} /> Integração Domínio
+        </Link>
+      </div>
       <div className="text-center mb-10">
         <h1 className="text-4xl font-bold text-primary mb-4">Leitor de Espelho de Ponto</h1>
         <p className="text-lg text-textSecondary max-w-2xl mx-auto">

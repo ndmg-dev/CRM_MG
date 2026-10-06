@@ -4,7 +4,7 @@ import { getUploadResult, generateReport } from "@ponto/api/client";
 import type { UploadResult } from "@ponto/types/point";
 import { SummaryCards } from "@ponto/components/SummaryCards";
 import { EmployeeCard } from "@ponto/components/EmployeeCard";
-import { Download, ArrowLeft, Search } from "lucide-react";
+import { Download, ArrowLeft, Search, Send } from "lucide-react";
 
 export function ResultPage() {
   const { uploadId } = useParams<{ uploadId: string }>();
@@ -72,14 +72,23 @@ export function ResultPage() {
           <h2 className="text-3xl font-bold text-textPrimary">Resultado do Processamento</h2>
           <p className="text-textSecondary">Arquivo: <span className="font-medium text-textPrimary">{data.file_name}</span></p>
         </div>
-        <button
-          onClick={handleGenerateReport}
-          disabled={reportLoading}
-          className="flex items-center gap-2 bg-secondary text-black px-5 py-2.5 rounded-lg font-bold shadow-md hover:bg-secondaryHover hover:shadow-lg transition-all disabled:opacity-50"
-        >
-          <Download size={20} />
-          {reportLoading ? "Gerando..." : "Baixar Relatório PDF"}
-        </button>
+        <div className="flex gap-3">
+          <Link
+            to="dominio"
+            className="flex items-center gap-2 bg-primary text-background px-5 py-2.5 rounded-lg font-bold shadow-md hover:opacity-90 hover:shadow-lg transition-all"
+          >
+            <Send size={20} />
+            Enviar ao Domínio
+          </Link>
+          <button
+            onClick={handleGenerateReport}
+            disabled={reportLoading}
+            className="flex items-center gap-2 bg-secondary text-black px-5 py-2.5 rounded-lg font-bold shadow-md hover:bg-secondaryHover hover:shadow-lg transition-all disabled:opacity-50"
+          >
+            <Download size={20} />
+            {reportLoading ? "Gerando..." : "Baixar Relatório PDF"}
+          </button>
+        </div>
       </div>
 
       <SummaryCards
