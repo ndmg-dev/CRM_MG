@@ -96,6 +96,24 @@ class Settings(BaseSettings):
     EVOLUTION_API_KEY: str = "dev_evolution_key_123"
     EVOLUTION_INSTANCE: str = "default"
 
+    # Integração Processar Ponto -> Domínio Folha (Onvio API, Thomson
+    # Reuters). Desligada por padrão e em modo mock enquanto não houver
+    # credenciais reais (ver INTEGRACAO_DOMINIO_FOLHA_API.md, regras 9-10).
+    # Nunca habilitar DOMINIO_API_ENABLED sem ter configurado client
+    # id/secret e DOMINIO_ENCRYPTION_KEY de verdade.
+    DOMINIO_API_ENABLED: bool = False
+    DOMINIO_API_MOCK: bool = True
+    DOMINIO_CLIENT_ID: str = ""
+    DOMINIO_CLIENT_SECRET: str = ""
+    DOMINIO_API_BASE_URL: str = "https://api.onvio.com.br"
+    DOMINIO_AUTH_URL: str = "https://auth.thomsonreuters.com/oauth/token"
+    DOMINIO_AUDIENCE: str = "409f91f6-dc17-44c8-a5d8-e0a1bafd8b67"
+    # Chave Fernet (Fernet.generate_key()) usada só pra cifrar a chave de
+    # integração do Onvio e o CPF do colaborador em repouso. Vazia em dev;
+    # qualquer tentativa de cifrar/decifrar sem ela responde 503, nunca
+    # guarda em texto plano como fallback (ver app/core/crypto.py).
+    DOMINIO_ENCRYPTION_KEY: str = ""
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
