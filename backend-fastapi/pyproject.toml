@@ -31,7 +31,10 @@ dependencies = [
     "aiofiles>=23.0.0",
     "python-multipart>=0.0.9",
     "openai>=1.30.0",
-    "cachetools>=5.3.0"
+    "cachetools>=5.3.0",
+    # Cifragem da chave de integração Onvio e do CPF do colaborador em
+    # repouso (app/core/crypto.py) — integração Processar Ponto -> Domínio.
+    "cryptography>=42.0.0"
 ]
 
 [project.optional-dependencies]

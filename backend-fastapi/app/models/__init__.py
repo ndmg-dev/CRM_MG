@@ -14,6 +14,11 @@ from app.models.system_access_log import SystemAccessLog
 from app.models.release import Release, ReleaseNote, ReleaseRead
 from app.models.vps_monitor import VpsInsightEvent, VpsMetricSnapshot
 from app.models.pomodoro import PomodoroPreferencia, PomodoroSetorEstado
+from app.models.dominio_integration import DominioIntegration
+from app.models.dominio_rubric_mapping import DominioRubricMapping
+from app.models.dominio_employee_profile import DominioEmployeeProfile
+from app.models.dominio_export import DominioExport
+from app.models.dominio_export_item import DominioExportItem
 
 # Expose models to Alembic and other parts of the application
 __all__ = [
@@ -36,4 +41,9 @@ __all__ = [
     "VpsInsightEvent",
     "PomodoroPreferencia",
     "PomodoroSetorEstado",
+    "DominioIntegration",
+    "DominioRubricMapping",
+    "DominioEmployeeProfile",
+    "DominioExport",
+    "DominioExportItem",
 ]
