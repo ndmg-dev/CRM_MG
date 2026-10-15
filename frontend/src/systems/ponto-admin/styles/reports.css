@@ -194,10 +194,11 @@
 .pontoadmin-root .report-summary-strip .report-v2-pending-kpi > strong { color:#e3a92f; font-weight:600; }
 .pontoadmin-root .report-summary-strip .report-v2-pending-kpi > small { color:#e3a92f; }
 .pontoadmin-root .report-tab-bar { display:flex; align-items:stretch; justify-content:space-between; gap:12px; min-height:43px; margin-bottom:20px; border-bottom:1px solid #292929; }
-.pontoadmin-root .report-tab-bar .report-tabs { display:flex; align-items:stretch; gap:4px; min-width:0; margin:0; overflow-x:auto; border:0; }
-.pontoadmin-root .report-tab-bar .report-tabs button { flex:none; padding:0 14px; margin-bottom:-1px; border:0; border-bottom:2px solid transparent; background:transparent; color:#858585; font-size:14px; white-space:nowrap; cursor:pointer; }
+.pontoadmin-root .report-tab-bar .report-tabs { display:flex; align-items:stretch; gap:4px; min-width:0; margin:0; overflow-x:auto; overflow-y:hidden; scrollbar-width:none; border:0; }
+.pontoadmin-root .report-tab-bar .report-tabs::-webkit-scrollbar { display:none; }
+.pontoadmin-root .report-tab-bar .report-tabs button { flex:none; padding:0 14px; border:0; background:transparent; color:#858585; font-size:14px; white-space:nowrap; cursor:pointer; }
 .pontoadmin-root .report-tab-bar .report-tabs button:hover { color:#d0d0d0; }
-.pontoadmin-root .report-tab-bar .report-tabs button.active { border-bottom-color:#e3a92f; color:#ebebeb; font-weight:500; }
+.pontoadmin-root .report-tab-bar .report-tabs button.active { box-shadow:inset 0 -2px #e3a92f; color:#ebebeb; font-weight:500; }
 .pontoadmin-root .report-month-action { display:flex; flex:none; align-items:center; gap:14px; padding-bottom:7px; }
 .pontoadmin-root .report-month-action > span { display:flex; align-items:center; gap:7px; color:#e3a92f; font-size:11px; white-space:nowrap; }
 .pontoadmin-root .report-month-action > span.closed { color:#4cc38a; }
