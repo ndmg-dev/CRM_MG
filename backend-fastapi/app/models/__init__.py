@@ -19,6 +19,9 @@ from app.models.dominio_rubric_mapping import DominioRubricMapping
 from app.models.dominio_employee_profile import DominioEmployeeProfile
 from app.models.dominio_export import DominioExport
 from app.models.dominio_export_item import DominioExportItem
+from app.models.extrato_processado import ExtratoProcessado
+from app.models.movimentacao_socio import MovimentacaoSocio
+from app.models.consolidado_socio_ano import ConsolidadoSocioAno
 
 # Expose models to Alembic and other parts of the application
 __all__ = [
@@ -46,4 +49,7 @@ __all__ = [
     "DominioEmployeeProfile",
     "DominioExport",
     "DominioExportItem",
+    "ExtratoProcessado",
+    "MovimentacaoSocio",
+    "ConsolidadoSocioAno",
 ]

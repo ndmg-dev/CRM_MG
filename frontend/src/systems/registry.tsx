@@ -104,6 +104,12 @@ export const systemRegistry: Record<string, LazyExoticComponent<ComponentType>> 
   // a lista vive no próprio componente. Slug 'sistemas-externos', setor
   // GERAL (todos veem), url '#'. Precisa de INSERT em public.sistemas.
   'sistemas-externos': lazy(() => import('@sistemasexternos/SistemasExternosApp')),
+  // Sistema novo (não é migração de iframe): espelho somente-leitura dos
+  // extratos de sócios processados pelo n8n, consolidado por empresa. Slug
+  // 'extratos-socios' (setor CONTABIL, url '#') — INSERT em public.sistemas no
+  // sistemas_seed.sql, igual ao vps-monitor/pomodoro-ti. Lê do backend em
+  // app/api/v1/endpoints/extratos.py.
+  'extratos-socios': lazy(() => import('@extratos/ExtratosSociosApp')),
 }
 
 /**

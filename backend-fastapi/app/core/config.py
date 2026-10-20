@@ -13,9 +13,20 @@ class Settings(BaseSettings):
     POSTGRES_HOST: str = "localhost"
     POSTGRES_PORT: int = 5432
     POSTGRES_USER: str = "crm_admin"
-    POSTGRES_PASSWORD: str = "crm_dev_password_2024"
+    # Sem default de propósito — falha no boot se ausente, igual ao JWT_SECRET.
+    # Um default hardcoded era uma credencial de banco versionada no repo
+    # (achado da varredura de segurança/PENDENCIAS.md). O compose e o .env
+    # injetam o valor por env.
+    POSTGRES_PASSWORD: str
     POSTGRES_DB: str = "crm_mendonca_galvao"
     
+    # Ingestão máquina-a-máquina do n8n (fluxo "Extrato Mensal - Sócios").
+    # Segredo compartilhado do HMAC-SHA256 do corpo (header X-Signature),
+    # validado em app/core/security.verify_n8n_signature. Sem default de
+    # propósito — falha no boot se ausente, igual ao JWT_SECRET. Nunca vai pro
+    # navegador: só o n8n (que assina) e o backend (que confere) o conhecem.
+    N8N_INGEST_SECRET: str
+
     # JWT & Auth
     JWT_SECRET: str
     # Era 7 dias (604800s). Sem revogação por sessão (user_sessions hoje é só
@@ -93,7 +104,10 @@ class Settings(BaseSettings):
     VPS_NOTIFY_SEVERITIES: List[str] = ["critical"]
 
     EVOLUTION_API_URL: str = "http://evolution-api:8080"
-    EVOLUTION_API_KEY: str = "dev_evolution_key_123"
+    # Sem default de propósito — falha no boot se ausente, igual ao JWT_SECRET.
+    # O default hardcoded era uma chave de API versionada no repo (achado da
+    # varredura de segurança/PENDENCIAS.md). Injetada via .env.
+    EVOLUTION_API_KEY: str
     EVOLUTION_INSTANCE: str = "default"
 
     # Integração Processar Ponto -> Domínio Folha (Onvio API, Thomson

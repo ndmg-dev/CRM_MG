@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import auth, users, sectors, clients, systems, tasks, access, dashboard, audit_logs, portal, documents, notifications, search, sessions, system_tracking, releases, abertura_empresa_proxy, dre_proxy, mgprospect_proxy, ouvidoria_proxy, fronteira_proxy, vps_monitor, vps_collectors, vps_coolify, pomodoro, dominio
+from app.api.v1.endpoints import auth, users, sectors, clients, systems, tasks, access, dashboard, audit_logs, portal, documents, notifications, search, sessions, system_tracking, releases, abertura_empresa_proxy, dre_proxy, mgprospect_proxy, ouvidoria_proxy, fronteira_proxy, vps_monitor, vps_collectors, vps_coolify, pomodoro, dominio, extratos
 
 api_router = APIRouter()
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
@@ -28,3 +28,6 @@ api_router.include_router(vps_collectors.router, prefix="/vps", tags=["vps-monit
 api_router.include_router(vps_coolify.router, prefix="/vps", tags=["vps-monitor"])
 api_router.include_router(pomodoro.router, prefix="/pomodoro", tags=["pomodoro"])
 api_router.include_router(dominio.router, prefix="/dominio", tags=["dominio"])
+# Sem prefixo: os caminhos completos (/integracoes/n8n/extratos, /dashboard/extratos,
+# /extratos/...) já ficam sob o /api/v1 do mount em main.py.
+api_router.include_router(extratos.router, tags=["extratos"])
