@@ -4,11 +4,29 @@
 import type { Money } from './types'
 
 export const MESES_CURTOS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+export const MESES_LONGOS = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
 
 export function fmtBRL(v: Money | null | undefined): string {
   const n = Number(v ?? 0)
   if (Number.isNaN(n)) return '—'
   return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+}
+
+/** Sem centavos — "R$ 90.000". Usado em cards de sócio e no heatmap. */
+export function fmtBRL0(v: Money | null | undefined): string {
+  const n = Number(v ?? 0)
+  if (Number.isNaN(n)) return '—'
+  return `R$ ${Math.round(n).toLocaleString('pt-BR')}`
+}
+
+/** Compacto pros KPIs — "R$ 4,82 mi", "R$ 820 mil". */
+export function fmtBRLCompact(v: Money | null | undefined): string {
+  const n = Number(v ?? 0)
+  if (Number.isNaN(n)) return '—'
+  const abs = Math.abs(n)
+  if (abs >= 1_000_000) return `R$ ${(n / 1_000_000).toLocaleString('pt-BR', { maximumFractionDigits: 2 })} mi`
+  if (abs >= 10_000) return `R$ ${(n / 1_000).toLocaleString('pt-BR', { maximumFractionDigits: 0 })} mil`
+  return fmtBRL0(n)
 }
 
 export function fmtCNPJ(cnpj: string | null | undefined): string {
@@ -32,4 +50,12 @@ export function iniciais(nome: string | null | undefined): string {
     .map((w) => w[0])
     .join('')
     .toUpperCase()
+}
+
+/** Quantos meses são "esperados" num ano: até o mês corrente no ano atual, 12 em anos passados. */
+export function mesesEsperados(ano: number): number {
+  const agora = new Date()
+  if (ano < agora.getFullYear()) return 12
+  if (ano > agora.getFullYear()) return 0
+  return agora.getMonth() + 1
 }

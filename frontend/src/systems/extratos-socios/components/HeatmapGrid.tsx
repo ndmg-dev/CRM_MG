@@ -1,10 +1,10 @@
-// Grade 12 meses × sócios (heatmap). Reutilizável: recebe as linhas (sócios)
-// e os meses com extrato (com link do Drive). Verde = mês processado; vazio =
+// Grade 12 meses × sócios (heatmap). Reutilizável: recebe as linhas (sócios) e
+// os meses com extrato (com link do Drive). Verde = mês processado; vazio =
 // faltando; meses futuros do ano corrente aparecem apagados. Clicar num mês
 // processado abre o PDF no Drive (ou dispara onCellClick).
 //
-// Cores vindas do protótipo de design (ExtratosSocios/HeatmapGrid), em oklch.
-import { MESES_CURTOS, fmtBRL, iniciais } from '../lib/format'
+// Cores do protótipo de design (oklch).
+import { MESES_CURTOS, fmtBRL0, iniciais } from '../lib/format'
 import type { Money } from '../lib/types'
 
 export interface HeatmapRow {
@@ -24,7 +24,6 @@ interface HeatmapGridProps {
 
 const COR = {
   done: 'oklch(0.72 0.15 150)',
-  doneBorder: 'oklch(0.72 0.15 150)',
   missingBg: 'oklch(0.22 0.009 70 / 0.45)',
   missingBorder: 'oklch(0.275 0.009 70)',
   futureBg: 'oklch(0.19 0.01 70 / 0.4)',
@@ -61,11 +60,8 @@ export function HeatmapGrid({ ano, rows, monthLinks, onCellClick }: HeatmapGridP
               <div className="ex-heatmap-socio-nome" title={row.nome}>
                 {row.nome}
               </div>
-              {(row.totalRetiradas != null || row.totalAportes != null) && (
-                <div className="ex-heatmap-socio-total">
-                  <span className="ex-ret">↓ {fmtBRL(row.totalRetiradas)}</span>
-                  <span className="ex-apo">↑ {fmtBRL(row.totalAportes)}</span>
-                </div>
+              {row.totalRetiradas != null && (
+                <div className="ex-heatmap-socio-total">Retiradas {fmtBRL0(row.totalRetiradas)}</div>
               )}
             </div>
           </div>
@@ -77,7 +73,7 @@ export function HeatmapGrid({ ano, rows, monthLinks, onCellClick }: HeatmapGridP
             const clicavel = presente && (temLink || Boolean(onCellClick))
 
             const style = presente
-              ? { background: COR.done, border: `1px solid ${COR.doneBorder}` }
+              ? { background: COR.done, border: `1px solid ${COR.done}` }
               : futuro
                 ? { background: COR.futureBg, border: `1px solid ${COR.futureBorder}` }
                 : { background: COR.missingBg, border: `1px solid ${COR.missingBorder}` }
