@@ -16,6 +16,13 @@ class Settings(BaseSettings):
     POSTGRES_PASSWORD: str = "crm_dev_password_2024"
     POSTGRES_DB: str = "crm_mendonca_galvao"
     
+    # Ingestão máquina-a-máquina do n8n (fluxo "Extrato Mensal - Sócios").
+    # Segredo compartilhado do HMAC-SHA256 do corpo (header X-Signature),
+    # validado em app/core/security.verify_n8n_signature. Sem default de
+    # propósito — falha no boot se ausente, igual ao JWT_SECRET. Nunca vai pro
+    # navegador: só o n8n (que assina) e o backend (que confere) o conhecem.
+    N8N_INGEST_SECRET: str
+
     # JWT & Auth
     JWT_SECRET: str
     # Era 7 dias (604800s). Sem revogação por sessão (user_sessions hoje é só

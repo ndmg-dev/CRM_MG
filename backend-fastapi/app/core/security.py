@@ -1,8 +1,10 @@
+import hashlib
+import hmac
 import jwt
 from datetime import datetime, timedelta
 from uuid import UUID
 from typing import Optional, Any
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, Header, HTTPException, Request, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -99,6 +101,36 @@ async def get_current_session(
     nova; logout simplesmente não tem o que revogar server-side)."""
     payload = _decode_token(token.credentials)
     return await _load_session(db, payload)
+
+async def verify_n8n_signature(
+    request: Request,
+    x_signature: Optional[str] = Header(default=None),
+) -> None:
+    """Autentica a origem da ingestão n8n->CRM por HMAC-SHA256 do corpo cru.
+
+    Máquina-a-máquina: NÃO usa o JWT de usuário. O n8n assina o corpo com
+    `N8N_INGEST_SECRET` e manda o hex no header `X-Signature` (com ou sem o
+    prefixo `sha256=`). O backend recalcula sobre os mesmos bytes e compara em
+    tempo constante; qualquer divergência (ou header ausente) -> 401.
+
+    Ler `request.body()` aqui é seguro: o Starlette faz cache do corpo, então a
+    validação do payload Pydantic no endpoint reaproveita os mesmos bytes."""
+    if not x_signature:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Assinatura ausente",
+        )
+    body = await request.body()
+    esperado = hmac.new(
+        settings.N8N_INGEST_SECRET.encode(), body, hashlib.sha256
+    ).hexdigest()
+    recebida = x_signature[7:] if x_signature.startswith("sha256=") else x_signature
+    if not hmac.compare_digest(esperado, recebida.strip().lower()):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Assinatura inválida",
+        )
+
 
 def require_roles(roles: list[str]):
     async def role_checker(current_user: Usuario = Depends(get_current_user)) -> Usuario:
