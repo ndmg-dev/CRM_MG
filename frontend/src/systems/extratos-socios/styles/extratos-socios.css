@@ -1,0 +1,516 @@
+/* Tudo escopado sob .extratos-root pra não vazar pro resto do CRM. O Topbar é
+   portalizado pro #system-menu-slot (fora desta árvore), então NÃO usa
+   var(--ex-*) — cores em hex direto lá. Paleta oklch vinda do protótipo de
+   design (ExtratosSocios/HeatmapGrid), hue 70 (warm-gray). */
+
+.extratos-root {
+  --ex-bg: oklch(0.155 0.01 70);
+  --ex-panel: oklch(0.195 0.009 70);
+  --ex-panel-2: oklch(0.23 0.009 70);
+  --ex-border: oklch(0.275 0.009 70);
+  --ex-border-strong: oklch(0.31 0.012 70);
+  --ex-text: oklch(0.93 0.005 70);
+  --ex-text-dim: oklch(0.62 0.01 70);
+  --ex-gold: oklch(0.86 0.11 90);
+  --ex-ret: oklch(0.72 0.15 150); /* retiradas / processado (verde) */
+  --ex-apo: oklch(0.80 0.15 75); /* aportes (âmbar) */
+  --ex-warn: oklch(0.80 0.15 75);
+  --ex-bad: oklch(0.66 0.19 25);
+
+  color: var(--ex-text);
+  background: var(--ex-bg);
+  min-height: 100%;
+  font-size: 14px;
+}
+
+.extratos-root * {
+  box-sizing: border-box;
+}
+
+.ex-main {
+  padding: 20px;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+/* --- Cabeçalho de página --- */
+.ex-page-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.ex-page-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 4px;
+}
+
+.ex-page-sub {
+  color: var(--ex-text-dim);
+  font-size: 13px;
+  margin: 0;
+  max-width: 640px;
+}
+
+.ex-select {
+  background: var(--ex-panel-2);
+  color: var(--ex-text);
+  border: 1px solid var(--ex-border);
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.ex-mt {
+  margin-top: 16px;
+}
+
+/* --- KPIs --- */
+.ex-kpi-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+}
+
+.ex-kpi {
+  background: var(--ex-panel);
+  border: 1px solid var(--ex-border);
+  border-radius: 12px;
+  padding: 16px;
+  border-left: 3px solid var(--ex-border-strong);
+}
+
+.ex-kpi.ret {
+  border-left-color: var(--ex-ret);
+}
+.ex-kpi.apo {
+  border-left-color: var(--ex-apo);
+}
+.ex-kpi.warn {
+  border-left-color: var(--ex-warn);
+}
+
+.ex-kpi-label {
+  font-size: 12px;
+  color: var(--ex-text-dim);
+  margin-bottom: 8px;
+}
+
+.ex-kpi-value {
+  font-size: 24px;
+  font-weight: 650;
+  line-height: 1.1;
+}
+
+.ex-kpi-hint {
+  font-size: 11px;
+  color: var(--ex-text-dim);
+  margin-top: 4px;
+}
+
+/* --- Card --- */
+.ex-card {
+  background: var(--ex-panel);
+  border: 1px solid var(--ex-border);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.ex-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.ex-card-head h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--ex-text-dim);
+}
+
+.ex-card-hint {
+  font-size: 11px;
+  color: var(--ex-text-dim);
+}
+
+/* --- Lista de empresas --- */
+.ex-empresa-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ex-empresa-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  color: inherit;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.ex-empresa-row:hover {
+  background: var(--ex-panel-2);
+  border-color: var(--ex-border);
+}
+
+.ex-empresa-ident {
+  min-width: 0;
+  flex: 1;
+}
+
+.ex-empresa-nome {
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ex-empresa-cnpj {
+  font-size: 12px;
+  color: var(--ex-text-dim);
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+.ex-mini-meses {
+  display: flex;
+  gap: 3px;
+  flex: none;
+}
+
+.ex-mini-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  background: oklch(0.22 0.009 70 / 0.6);
+  border: 1px solid var(--ex-border);
+}
+
+.ex-mini-dot.on {
+  background: var(--ex-ret);
+  border-color: var(--ex-ret);
+}
+
+.ex-empresa-count {
+  font-size: 12px;
+  color: var(--ex-text-dim);
+  font-variant-numeric: tabular-nums;
+  flex: none;
+  width: 34px;
+  text-align: right;
+}
+
+.ex-empresa-chevron {
+  color: var(--ex-text-dim);
+  flex: none;
+}
+
+/* --- Consolidado por sócio --- */
+.ex-socio-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+
+.ex-socio-card {
+  background: var(--ex-panel-2);
+  border: 1px solid var(--ex-border);
+  border-radius: 10px;
+  padding: 14px;
+}
+
+.ex-socio-nome {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.ex-socio-vals {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ex-socio-val {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ex-socio-val.ret {
+  color: var(--ex-ret);
+}
+.ex-socio-val.apo {
+  color: var(--ex-apo);
+}
+
+.ex-socio-val > div {
+  display: flex;
+  flex-direction: column;
+}
+
+.ex-socio-val-label {
+  font-size: 11px;
+  color: var(--ex-text-dim);
+}
+
+.ex-socio-val-num {
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Heatmap (componente reutilizável) --- */
+.ex-heatmap-scroll {
+  overflow-x: auto;
+}
+
+.ex-heatmap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 620px;
+}
+
+.ex-heatmap-head,
+.ex-heatmap-row {
+  display: grid;
+  grid-template-columns: 180px repeat(12, minmax(26px, 1fr));
+  gap: 4px;
+}
+
+.ex-heatmap-head {
+  align-items: end;
+  padding: 0 2px 2px;
+}
+
+.ex-heatmap-month {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ex-text-dim);
+}
+
+.ex-heatmap-row {
+  align-items: center;
+}
+
+.ex-heatmap-socio {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  min-width: 0;
+  padding-right: 8px;
+}
+
+.ex-avatar {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  background: var(--ex-panel-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: oklch(0.80 0.01 70);
+}
+
+.ex-heatmap-socio-info {
+  min-width: 0;
+}
+
+.ex-heatmap-socio-nome {
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ex-heatmap-socio-total {
+  font-size: 10px;
+  display: flex;
+  gap: 8px;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+.ex-heatmap-socio-total .ex-ret {
+  color: var(--ex-ret);
+}
+.ex-heatmap-socio-total .ex-apo {
+  color: var(--ex-apo);
+}
+
+.ex-heatmap-cell {
+  height: 30px;
+  border-radius: 8px;
+  padding: 0;
+  transition: filter 0.15s ease;
+}
+
+.ex-heatmap-cell:not(:disabled):hover {
+  filter: brightness(1.12);
+}
+
+.ex-heatmap-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  margin-top: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ex-border);
+}
+
+.ex-legend-item {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  font-size: 12px;
+  color: var(--ex-text-dim);
+}
+
+.ex-legend-swatch {
+  width: 13px;
+  height: 13px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+}
+
+/* --- Voltar --- */
+.ex-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  color: var(--ex-text-dim);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 4px 0;
+  margin-bottom: 10px;
+}
+
+.ex-back:hover {
+  color: var(--ex-text);
+}
+
+/* --- Tabela (não vinculados) --- */
+.ex-table-wrap {
+  overflow-x: auto;
+}
+
+.ex-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.ex-table th {
+  text-align: left;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--ex-text-dim);
+  font-weight: 600;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--ex-border);
+}
+
+.ex-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid oklch(0.22 0.009 70 / 0.5);
+}
+
+.ex-table tr:last-child td {
+  border-bottom: none;
+}
+
+.ex-mono {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+.ex-truncate {
+  max-width: 220px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ex-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ex-gold);
+  text-decoration: none;
+}
+
+.ex-link:hover {
+  text-decoration: underline;
+}
+
+/* --- Estados --- */
+.ex-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: var(--ex-text-dim);
+  padding: 32px 16px;
+  text-align: center;
+  font-size: 13px;
+}
+
+.ex-state.error {
+  color: var(--ex-bad);
+}
+
+.ex-spin {
+  animation: ex-spin 0.9s linear infinite;
+}
+
+@keyframes ex-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.ex-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ex-skeleton-row {
+  height: 44px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--ex-panel-2) 25%, var(--ex-border) 50%, var(--ex-panel-2) 75%);
+  background-size: 200% 100%;
+  animation: ex-shimmer 1.4s ease infinite;
+}
+
+@keyframes ex-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}

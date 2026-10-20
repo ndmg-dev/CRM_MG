@@ -48,6 +48,7 @@ export default defineConfig(({ mode }) => {
         '@vpsmonitor': path.resolve(__dirname, './src/systems/vps-monitor'),
         '@pomodoro': path.resolve(__dirname, './src/systems/pomodoro-ti'),
         '@sistemasexternos': path.resolve(__dirname, './src/systems/sistemas-externos'),
+        '@extratos': path.resolve(__dirname, './src/systems/extratos-socios'),
       },
     },
     server: {
