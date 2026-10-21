@@ -36,7 +36,7 @@ from app.schemas.extrato import (
     VincularRequest,
     VincularResponse,
 )
-from app.services.extrato_ingest_service import ingest_extrato, vincular_cnpj
+from app.services.extrato_ingest_service import ingest_extrato, reprocessar_nao_vinculados, vincular_cnpj
 
 router = APIRouter()
 
@@ -219,6 +219,17 @@ async def vincular_extrato(
     if cliente is None:
         raise HTTPException(status_code=404, detail="Cliente não encontrado")
     return await vincular_cnpj(db, body.cnpj, body.client_id, usuario_id=current_user.id)
+
+
+@router.post("/extratos/nao-vinculados/reprocessar", response_model=VincularResponse)
+async def reprocessar_extratos(
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user),
+):
+    """Re-resolve os extratos órfãos contra o cadastro atual de clientes — pega
+    os casos em que o cliente foi cadastrado depois do extrato ter chegado."""
+    res = await reprocessar_nao_vinculados(db, usuario_id=current_user.id)
+    return VincularResponse(vinculados=res["vinculados"], anos=[])
 
 
 @router.get("/extratos/nao-vinculados", response_model=list[NaoVinculadoItem])

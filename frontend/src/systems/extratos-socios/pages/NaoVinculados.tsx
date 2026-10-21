@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { FileText, FileSpreadsheet, Link as LinkIcon, CheckCheck } from 'lucide-react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { FileText, FileSpreadsheet, Link as LinkIcon, CheckCheck, RefreshCw, Loader2 } from 'lucide-react'
 import { extratosApi, extratosQueryOptions } from '../lib/api'
 import { fmtCNPJ, MESES_CURTOS } from '../lib/format'
 import { ErrorMsg, EmptyState, Skeleton } from '../components/ui'
@@ -14,11 +14,25 @@ function iconeArquivo(nome: string | null) {
 export default function NaoVinculados() {
   const [vinculando, setVinculando] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
+  const qc = useQueryClient()
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['extratos', 'nao-vinculados'],
     queryFn: () => extratosApi.naoVinculados(),
     ...extratosQueryOptions,
+  })
+
+  const reprocessar = useMutation({
+    mutationFn: () => extratosApi.reprocessar(),
+    onSuccess: (res) => {
+      qc.invalidateQueries({ queryKey: ['extratos'] })
+      setAviso(
+        res.vinculados > 0
+          ? `${res.vinculados} extrato${res.vinculados === 1 ? '' : 's'} vinculado${res.vinculados === 1 ? '' : 's'} ao cadastro atual.`
+          : 'Nenhum órfão casou com o cadastro atual.',
+      )
+      setTimeout(() => setAviso(null), 3500)
+    },
   })
 
   return (
@@ -39,9 +53,15 @@ export default function NaoVinculados() {
         <div>
           <h2 className="ex-page-title">Extratos não vinculados</h2>
           <p className="ex-page-sub">
-            Extratos cujo CNPJ não casou com nenhum cliente cadastrado. Vincule-os para que as movimentações entrem no consolidado.
+            Extratos cujo CNPJ não casou com nenhum cliente cadastrado. Reprocesse para religar os que já têm cliente, ou vincule manualmente.
           </p>
         </div>
+        {data && data.length > 0 && (
+          <button type="button" className="ex-btn-reprocessar" onClick={() => reprocessar.mutate()} disabled={reprocessar.isPending}>
+            {reprocessar.isPending ? <Loader2 size={15} className="ex-spin" /> : <RefreshCw size={15} />}
+            Reprocessar
+          </button>
+        )}
       </div>
 
       {isLoading ? (

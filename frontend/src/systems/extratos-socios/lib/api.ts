@@ -59,6 +59,7 @@ export const extratosApi = {
   // Seletor de cliente (reusa o endpoint existente /clientes, paginado).
   clientes: (search: string) =>
     apiFetch<{ content: ClientePick[] }>(`/clientes?size=20&search=${encodeURIComponent(search)}`).then((r) => r.content),
+  reprocessar: () => apiFetch<VincularResult>(`/extratos/nao-vinculados/reprocessar`, { method: 'POST' }),
   vincular: (cnpj: string, clientId: string) =>
     apiFetch<VincularResult>(`/extratos/vincular`, {
       method: 'POST',

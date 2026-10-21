@@ -178,6 +178,26 @@ async def test_vincular_cnpj_orfao_e_duravel(client):
     assert r.json()["vinculado"] is True
 
 
+async def test_reprocessar_vincula_cliente_cadastrado_depois(client):
+    # Extrato órfão ingerido antes do cliente existir.
+    await _post_assinado(client, _payload(CNPJ_SEM_CLIENTE, "a1" * 32))
+    r = await client.get("/api/v1/extratos/nao-vinculados")
+    assert any(i["cnpj"] == CNPJ_SEM_CLIENTE for i in r.json())
+
+    # Cadastra o cliente com o MESMO CNPJ depois.
+    async with AsyncSessionLocal() as s:
+        s.add(Cliente(id=uuid.uuid4(), razao_social="Nova Empresa LTDA", cnpj=CNPJ_SEM_CLIENTE))
+        await s.commit()
+
+    # Reprocessa: o órfão passa a apontar para o cliente novo.
+    r = await client.post("/api/v1/extratos/nao-vinculados/reprocessar")
+    assert r.status_code == 200
+    assert r.json()["vinculados"] == 1
+
+    r = await client.get("/api/v1/extratos/nao-vinculados")
+    assert not any(i["cnpj"] == CNPJ_SEM_CLIENTE for i in r.json())
+
+
 async def test_dashboard_e_detalhe_empresa(client):
     await _post_assinado(client, _payload(CNPJ_COM_CLIENTE, "e" * 64))
 
