@@ -153,6 +153,31 @@ async def test_cada_ingest_gera_audit_log(client):
         assert logs == 1
 
 
+async def test_vincular_cnpj_orfao_e_duravel(client):
+    # Extrato órfão (CNPJ não casa com nenhum cliente).
+    await _post_assinado(client, _payload(CNPJ_SEM_CLIENTE, "f" * 64))
+    r = await client.get("/api/v1/extratos/nao-vinculados")
+    assert any(i["cnpj"] == CNPJ_SEM_CLIENTE for i in r.json())
+
+    # Descobre o id do cliente existente (CNPJ_COM_CLIENTE).
+    async with AsyncSessionLocal() as s:
+        cliente_id = await s.scalar(select(Cliente.id).where(Cliente.cnpj == CNPJ_COM_CLIENTE))
+
+    # Vincula o CNPJ órfão a esse cliente.
+    r = await client.post("/api/v1/extratos/vincular", json={"cnpj": CNPJ_SEM_CLIENTE, "client_id": str(cliente_id)})
+    assert r.status_code == 200
+    assert r.json()["vinculados"] == 1
+
+    # Saiu dos não vinculados.
+    r = await client.get("/api/v1/extratos/nao-vinculados")
+    assert not any(i["cnpj"] == CNPJ_SEM_CLIENTE for i in r.json())
+
+    # Durabilidade: reenviar o mesmo extrato mantém o vínculo (resolve via override).
+    r = await _post_assinado(client, _payload(CNPJ_SEM_CLIENTE, "f" * 64))
+    assert r.status_code == 200
+    assert r.json()["vinculado"] is True
+
+
 async def test_dashboard_e_detalhe_empresa(client):
     await _post_assinado(client, _payload(CNPJ_COM_CLIENTE, "e" * 64))
 

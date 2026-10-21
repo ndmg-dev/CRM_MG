@@ -33,8 +33,10 @@ from app.schemas.extrato import (
     MesExtrato,
     NaoVinculadoItem,
     SocioConsolidado,
+    VincularRequest,
+    VincularResponse,
 )
-from app.services.extrato_ingest_service import ingest_extrato
+from app.services.extrato_ingest_service import ingest_extrato, vincular_cnpj
 
 router = APIRouter()
 
@@ -203,6 +205,20 @@ async def extratos_empresa(
         socios=socios,
         meses=meses,
     )
+
+
+@router.post("/extratos/vincular", response_model=VincularResponse)
+async def vincular_extrato(
+    body: VincularRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user),
+):
+    """Vincula manualmente um CNPJ órfão a um cliente. Grava um override durável
+    (sobrevive a reenvios do n8n) e reprocessa os extratos órfãos desse CNPJ."""
+    cliente = await db.get(Cliente, body.client_id)
+    if cliente is None:
+        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+    return await vincular_cnpj(db, body.cnpj, body.client_id, usuario_id=current_user.id)
 
 
 @router.get("/extratos/nao-vinculados", response_model=list[NaoVinculadoItem])

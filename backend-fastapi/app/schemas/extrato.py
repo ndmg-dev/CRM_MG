@@ -126,6 +126,16 @@ class EmpresaDetalheResponse(BaseModel):
     meses: List[MesExtrato]  # linha dos 12 meses: só os presentes vêm preenchidos
 
 
+class VincularRequest(BaseModel):
+    cnpj: str
+    client_id: UUID
+
+
+class VincularResponse(BaseModel):
+    vinculados: int  # extratos órfãos que passaram a apontar para o cliente
+    anos: List[int]
+
+
 class NaoVinculadoItem(BaseModel):
     id: UUID
     cnpj: str
