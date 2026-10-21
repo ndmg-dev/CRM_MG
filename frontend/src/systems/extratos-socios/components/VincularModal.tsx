@@ -15,10 +15,16 @@ export function VincularModal({ cnpj, onClose, onDone }: Props) {
   const [busca, setBusca] = useState('')
   const qc = useQueryClient()
 
+  // O CRM guarda CNPJ como 14 dígitos. Se o texto é um CNPJ (só dígitos e
+  // pontuação), manda só os dígitos; senão, manda como nome/razão social.
+  const termo = busca.trim()
+  const ehCnpj = termo.length > 0 && /^[\d.\-/\s]+$/.test(termo)
+  const consulta = ehCnpj ? termo.replace(/\D/g, '') : termo
+
   const { data: clientes, isFetching } = useQuery({
-    queryKey: ['extratos', 'clientes', busca],
-    queryFn: () => extratosApi.clientes(busca),
-    enabled: busca.trim().length >= 2,
+    queryKey: ['extratos', 'clientes', consulta],
+    queryFn: () => extratosApi.clientes(consulta),
+    enabled: consulta.length >= 2,
     retry: 1,
   })
 
@@ -55,14 +61,16 @@ export function VincularModal({ cnpj, onClose, onDone }: Props) {
         </div>
 
         <div className="ex-modal-list">
-          {busca.trim().length < 2 ? (
-            <div className="ex-modal-hint">Digite ao menos 2 caracteres para buscar.</div>
+          {consulta.length < 2 ? (
+            <div className="ex-modal-hint">Busque o cliente pela razão social ou pelo CNPJ dele.</div>
           ) : isFetching ? (
             <div className="ex-modal-hint">
               <Loader2 size={16} className="ex-spin" /> Buscando…
             </div>
           ) : !clientes || clientes.length === 0 ? (
-            <div className="ex-modal-hint">Nenhum cliente encontrado.</div>
+            <div className="ex-modal-hint">
+              Nenhum cliente encontrado{ehCnpj ? ' com esse CNPJ' : ''}. Tente pela razão social — o extrato é órfão porque nenhum cliente tem o CNPJ dele.
+            </div>
           ) : (
             clientes.map((c: ClientePick) => (
               <button

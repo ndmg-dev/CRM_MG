@@ -125,12 +125,59 @@ async def ingest_extrato(db: AsyncSession, payload: IngestExtratoPayload) -> Ext
 
 
 async def _resolver_client_id(db: AsyncSession, cnpj: str):
-    """Resolve o cliente de um CNPJ: primeiro em `clientes.cnpj`, depois na
-    tabela de vínculos manuais (override do setor contábil). None se órfão."""
+    """Resolve o cliente de um CNPJ. Ordem: (1) `clientes.cnpj` exato (dígitos);
+    (2) `clientes.cnpj` normalizado por dígitos (tolera cadastro salvo com
+    máscara); (3) tabela de vínculos manuais. None se continuar órfão."""
     client_id = await db.scalar(select(Cliente.id).where(Cliente.cnpj == cnpj))
     if client_id is not None:
         return client_id
+    client_id = await db.scalar(
+        select(Cliente.id).where(func.regexp_replace(Cliente.cnpj, r"[^0-9]", "", "g") == cnpj)
+    )
+    if client_id is not None:
+        return client_id
     return await db.scalar(select(VinculoCnpjExtrato.client_id).where(VinculoCnpjExtrato.cnpj == cnpj))
+
+
+async def reprocessar_nao_vinculados(db: AsyncSession, usuario_id=None) -> dict:
+    """Re-resolve todos os extratos órfãos contra o cadastro atual de clientes
+    (e os vínculos manuais). Pega o caso comum de o cliente ter sido cadastrado
+    DEPOIS do extrato ter sido ingerido."""
+    orfaos = (
+        (await db.execute(select(ExtratoProcessado).where(ExtratoProcessado.client_id.is_(None))))
+        .scalars()
+        .all()
+    )
+    por_cliente: dict = {}
+    n = 0
+    for e in orfaos:
+        cid = await _resolver_client_id(db, e.cnpj)
+        if cid is None:
+            continue
+        e.client_id = cid
+        e.vinculado = True
+        n += 1
+        await db.execute(
+            update(MovimentacaoSocio).where(MovimentacaoSocio.extrato_id == e.id).values(client_id=cid)
+        )
+        por_cliente.setdefault(cid, set()).add(e.ano)
+
+    await db.flush()
+    for cid, anos in por_cliente.items():
+        for ano in anos:
+            await _recalcular_consolidado(db, cid, ano)
+
+    if n:
+        db.add(
+            LogAuditoria(
+                usuario_id=usuario_id,
+                acao="REPROCESSAR_NAO_VINCULADOS",
+                alvo=None,
+                detalhes={"vinculados": n},
+            )
+        )
+    await db.commit()
+    return {"vinculados": n}
 
 
 async def vincular_cnpj(db: AsyncSession, cnpj: str, client_id, usuario_id=None) -> dict:

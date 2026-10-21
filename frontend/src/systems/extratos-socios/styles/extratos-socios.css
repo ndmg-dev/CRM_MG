@@ -730,6 +730,23 @@
   background: var(--ex-panel-list);
 }
 
+.ex-btn-reprocessar {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  padding: 9px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--ex-border);
+  background: var(--ex-panel-list);
+  color: var(--ex-text-2);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.ex-btn-reprocessar:hover:not(:disabled) { background: var(--ex-panel-2); color: var(--ex-text); }
+.ex-btn-reprocessar:disabled { opacity: 0.6; cursor: default; }
+
 /* toast */
 .ex-toast {
   position: fixed;
