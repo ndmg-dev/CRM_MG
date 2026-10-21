@@ -22,6 +22,7 @@ from app.models.dominio_export_item import DominioExportItem
 from app.models.extrato_processado import ExtratoProcessado
 from app.models.movimentacao_socio import MovimentacaoSocio
 from app.models.consolidado_socio_ano import ConsolidadoSocioAno
+from app.models.vinculo_cnpj_extrato import VinculoCnpjExtrato
 
 # Expose models to Alembic and other parts of the application
 __all__ = [
@@ -52,4 +53,5 @@ __all__ = [
     "ExtratoProcessado",
     "MovimentacaoSocio",
     "ConsolidadoSocioAno",
+    "VinculoCnpjExtrato",
 ]

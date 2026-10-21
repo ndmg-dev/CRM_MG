@@ -45,6 +45,18 @@ export interface EmpresaDetalhe {
   meses: MesExtrato[]
 }
 
+export interface ClientePick {
+  id: string
+  razao_social: string
+  nome_fantasia: string | null
+  cnpj: string
+}
+
+export interface VincularResult {
+  vinculados: number
+  anos: number[]
+}
+
 export interface NaoVinculado {
   id: string
   cnpj: string

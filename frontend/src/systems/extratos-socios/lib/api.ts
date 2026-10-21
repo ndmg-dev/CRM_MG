@@ -3,7 +3,7 @@
 // do vps-monitor: base absoluta (VITE_API_BASE_URL), token do CRM via
 // localStorage, 401 -> volta pro login.
 
-import type { DashboardExtratos, EmpresaDetalhe, NaoVinculado } from './types'
+import type { ClientePick, DashboardExtratos, EmpresaDetalhe, NaoVinculado, VincularResult } from './types'
 
 const API_ROOT = import.meta.env.VITE_API_BASE_URL || '/api/v1'
 
@@ -56,4 +56,13 @@ export const extratosApi = {
   empresa: (clientId: string, ano?: number) =>
     apiFetch<EmpresaDetalhe>(`/extratos/empresa/${clientId}${ano ? `?ano=${ano}` : ''}`),
   naoVinculados: () => apiFetch<NaoVinculado[]>(`/extratos/nao-vinculados`),
+  // Seletor de cliente (reusa o endpoint existente /clientes, paginado).
+  clientes: (search: string) =>
+    apiFetch<{ content: ClientePick[] }>(`/clientes?size=20&search=${encodeURIComponent(search)}`).then((r) => r.content),
+  vincular: (cnpj: string, clientId: string) =>
+    apiFetch<VincularResult>(`/extratos/vincular`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cnpj, client_id: clientId }),
+    }),
 }

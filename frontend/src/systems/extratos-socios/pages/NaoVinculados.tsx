@@ -1,8 +1,10 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { FileText, FileSpreadsheet, Link as LinkIcon, CheckCheck } from 'lucide-react'
 import { extratosApi, extratosQueryOptions } from '../lib/api'
 import { fmtCNPJ, MESES_CURTOS } from '../lib/format'
 import { ErrorMsg, EmptyState, Skeleton } from '../components/ui'
+import { VincularModal } from '../components/VincularModal'
 
 function iconeArquivo(nome: string | null) {
   const ext = (nome || '').split('.').pop()?.toLowerCase()
@@ -10,6 +12,9 @@ function iconeArquivo(nome: string | null) {
 }
 
 export default function NaoVinculados() {
+  const [vinculando, setVinculando] = useState<string | null>(null)
+  const [aviso, setAviso] = useState<string | null>(null)
+
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['extratos', 'nao-vinculados'],
     queryFn: () => extratosApi.naoVinculados(),
@@ -18,6 +23,18 @@ export default function NaoVinculados() {
 
   return (
     <div>
+      {aviso && <div className="ex-toast">{aviso}</div>}
+      {vinculando && (
+        <VincularModal
+          cnpj={vinculando}
+          onClose={() => setVinculando(null)}
+          onDone={(n) => {
+            setVinculando(null)
+            setAviso(`Vínculo criado · ${n} extrato${n === 1 ? '' : 's'} reprocessado${n === 1 ? '' : 's'}.`)
+            setTimeout(() => setAviso(null), 3500)
+          }}
+        />
+      )}
       <div className="ex-page-head">
         <div>
           <h2 className="ex-page-title">Extratos não vinculados</h2>
@@ -66,7 +83,7 @@ export default function NaoVinculados() {
                   <span className="ex-badge-motivo">CNPJ não cadastrado</span>
                 </div>
                 <div>
-                  <button type="button" className="ex-btn-vincular" disabled title="Vinculação manual — em breve">
+                  <button type="button" className="ex-btn-vincular" onClick={() => setVinculando(e.cnpj)}>
                     <LinkIcon size={14} /> Vincular
                   </button>
                 </div>

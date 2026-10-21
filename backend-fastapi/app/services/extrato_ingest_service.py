@@ -15,7 +15,7 @@ O n8n é a fonte da verdade; aqui só espelhamos o resultado. Cada chamada:
 from datetime import datetime, timezone
 from decimal import Decimal
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -25,6 +25,7 @@ from app.models.client import Cliente
 from app.models.consolidado_socio_ano import ConsolidadoSocioAno
 from app.models.extrato_processado import ExtratoProcessado
 from app.models.movimentacao_socio import MovimentacaoSocio
+from app.models.vinculo_cnpj_extrato import VinculoCnpjExtrato
 from app.schemas.extrato import IngestExtratoPayload
 
 
@@ -48,9 +49,8 @@ async def ingest_extrato(db: AsyncSession, payload: IngestExtratoPayload) -> Ext
     sha256 = payload.sha256_hex
 
     # 1. Resolução de empresa por CNPJ — nunca cria cliente.
-    cliente = await db.scalar(select(Cliente).where(Cliente.cnpj == cnpj))
-    client_id = cliente.id if cliente else None
-    vinculado = cliente is not None
+    client_id = await _resolver_client_id(db, cnpj)
+    vinculado = client_id is not None
 
     # 2. Upsert do extrato por sha256 (idempotência garantida pelo unique).
     valores = {
@@ -122,6 +122,76 @@ async def ingest_extrato(db: AsyncSession, payload: IngestExtratoPayload) -> Ext
     await db.commit()
     extrato = await db.get(ExtratoProcessado, extrato_id)
     return extrato
+
+
+async def _resolver_client_id(db: AsyncSession, cnpj: str):
+    """Resolve o cliente de um CNPJ: primeiro em `clientes.cnpj`, depois na
+    tabela de vínculos manuais (override do setor contábil). None se órfão."""
+    client_id = await db.scalar(select(Cliente.id).where(Cliente.cnpj == cnpj))
+    if client_id is not None:
+        return client_id
+    return await db.scalar(select(VinculoCnpjExtrato.client_id).where(VinculoCnpjExtrato.cnpj == cnpj))
+
+
+async def vincular_cnpj(db: AsyncSession, cnpj: str, client_id, usuario_id=None) -> dict:
+    """Vincula manualmente um CNPJ órfão a um cliente existente.
+
+    Grava o override (durável contra reenvios do n8n) e aplica aos extratos
+    órfãos já existentes desse CNPJ: seta client_id/vinculado, propaga às
+    movimentações e recalcula o consolidado dos anos afetados.
+    """
+    cnpj = _so_digitos(cnpj)
+
+    # Upsert do vínculo (um CNPJ -> um cliente).
+    await db.execute(
+        pg_insert(VinculoCnpjExtrato)
+        .values(cnpj=cnpj, client_id=client_id, created_by=usuario_id)
+        .on_conflict_do_update(
+            index_elements=["cnpj"],
+            set_={"client_id": client_id, "created_by": usuario_id},
+        )
+    )
+
+    # Aplica aos extratos órfãos já existentes desse CNPJ.
+    extratos = (
+        (
+            await db.execute(
+                select(ExtratoProcessado).where(
+                    ExtratoProcessado.cnpj == cnpj,
+                    ExtratoProcessado.client_id.is_(None),
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+    anos = set()
+    ids = []
+    for e in extratos:
+        e.client_id = client_id
+        e.vinculado = True
+        anos.add(e.ano)
+        ids.append(e.id)
+
+    if ids:
+        await db.execute(
+            update(MovimentacaoSocio).where(MovimentacaoSocio.extrato_id.in_(ids)).values(client_id=client_id)
+        )
+    await db.flush()
+
+    for ano in anos:
+        await _recalcular_consolidado(db, client_id, ano)
+
+    db.add(
+        LogAuditoria(
+            usuario_id=usuario_id,
+            acao="VINCULAR_EXTRATO_CNPJ",
+            alvo=cnpj,
+            detalhes={"client_id": str(client_id), "extratos": len(extratos), "anos": sorted(anos)},
+        )
+    )
+    await db.commit()
+    return {"vinculados": len(extratos), "anos": sorted(anos)}
 
 
 async def _recalcular_consolidado(db: AsyncSession, client_id, ano: int) -> None:
