@@ -4,7 +4,8 @@ import { getUploadResult, generateReport } from "@ponto/api/client";
 import type { UploadResult } from "@ponto/types/point";
 import { SummaryCards } from "@ponto/components/SummaryCards";
 import { EmployeeCard } from "@ponto/components/EmployeeCard";
-import { Download, ArrowLeft, Search, Send } from "lucide-react";
+import { downloadFolhasDePontoTxt } from "@ponto/lib/folhaPontoTxt";
+import { Download, ArrowLeft, Search, Send, FileText } from "lucide-react";
 
 export function ResultPage() {
   const { uploadId } = useParams<{ uploadId: string }>();
@@ -80,6 +81,13 @@ export function ResultPage() {
             <Send size={20} />
             Enviar ao Domínio
           </Link>
+          <button
+            onClick={() => downloadFolhasDePontoTxt(data)}
+            className="flex items-center gap-2 bg-surface border border-border text-textPrimary px-5 py-2.5 rounded-lg font-bold shadow-sm hover:border-borderStrong transition-all"
+          >
+            <FileText size={20} />
+            Baixar Folhas de Ponto (.txt)
+          </button>
           <button
             onClick={handleGenerateReport}
             disabled={reportLoading}
