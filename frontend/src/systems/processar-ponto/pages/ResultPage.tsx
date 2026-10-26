@@ -65,15 +65,17 @@ export function ResultPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex justify-between items-center">
-        <div>
+      <div className="flex justify-between items-center gap-4 flex-wrap">
+        <div className="min-w-0 flex-1">
           <Link to=".." className="flex items-center gap-2 text-secondary hover:underline mb-2">
             <ArrowLeft size={20} /> Voltar
           </Link>
           <h2 className="text-3xl font-bold text-textPrimary">Resultado do Processamento</h2>
-          <p className="text-textSecondary">Arquivo: <span className="font-medium text-textPrimary">{data.file_name}</span></p>
+          <p className="text-textSecondary truncate" title={data.file_name}>
+            Arquivo: <span className="font-medium text-textPrimary">{data.file_name}</span>
+          </p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-3 shrink-0">
           <button
             onClick={() => downloadFolhasDePontoTxt(data)}
             className="flex items-center gap-2 bg-surface border border-border text-textPrimary px-5 py-2.5 rounded-lg font-bold shadow-sm hover:border-borderStrong transition-all"
