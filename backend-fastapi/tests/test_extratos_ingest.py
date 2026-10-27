@@ -199,6 +199,14 @@ async def test_reprocessar_vincula_cliente_cadastrado_depois(client):
     assert not any(i["cnpj"] == CNPJ_SEM_CLIENTE for i in r.json())
 
 
+async def test_dashboard_sinaliza_acima_do_limite(client):
+    movs = [{"socio": "CHEFE", "cpf": "22222222222", "data": "2026-03-10", "tipo": "retirada", "valor": 60000.00, "descricao": "retirada"}]
+    await _post_assinado(client, _payload(CNPJ_COM_CLIENTE, "b9" * 32, movimentacoes=movs))
+    r = await client.get("/api/v1/dashboard/extratos?ano=2026")
+    emp = r.json()["empresas"][0]
+    assert emp["sociosAcimaLimite"] == 1  # 60.000 > 50.000
+
+
 async def test_dashboard_e_detalhe_empresa(client):
     await _post_assinado(client, _payload(CNPJ_COM_CLIENTE, "e" * 64))
 
@@ -208,6 +216,7 @@ async def test_dashboard_e_detalhe_empresa(client):
     assert data["empresasComExtrato"] == 1
     assert float(data["totalRetiradasAno"]) == 5000.00
     assert data["empresas"][0]["mesesProcessados"] == [9]
+    assert data["empresas"][0]["sociosAcimaLimite"] == 0  # FULANO abaixo do limite
 
     client_id = data["empresas"][0]["clientId"]
     r2 = await client.get(f"/api/v1/extratos/empresa/{client_id}?ano=2026")

@@ -97,6 +97,7 @@ class EmpresaResumo(BaseModel):
     razaoSocial: Optional[str] = None
     cnpj: str
     mesesProcessados: List[int]  # meses do ano com extrato (1..12)
+    sociosAcimaLimite: int = 0  # sócios que passaram do limite operacional no ano
 
 
 class DashboardExtratosResponse(BaseModel):

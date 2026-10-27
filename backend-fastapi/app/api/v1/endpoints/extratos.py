@@ -114,6 +114,23 @@ async def dashboard_extratos(
             .scalars()
             .all()
         )
+        # Sócios acima do limite operacional, por empresa (líquido = retiradas - aportes).
+        limite = Decimal(str(settings.EXTRATOS_LIMITE_ANUAL_SOCIO))
+        acima_por_empresa: dict[UUID, int] = {}
+        cons_rows = await db.execute(
+            select(
+                ConsolidadoSocioAno.client_id,
+                ConsolidadoSocioAno.total_retiradas,
+                ConsolidadoSocioAno.total_aportes,
+            ).where(
+                ConsolidadoSocioAno.client_id.in_(list(por_empresa.keys())),
+                ConsolidadoSocioAno.ano == ano,
+            )
+        )
+        for cid, ret, apo in cons_rows.all():
+            if (ret or Decimal(0)) - (apo or Decimal(0)) > limite:
+                acima_por_empresa[cid] = acima_por_empresa.get(cid, 0) + 1
+
         for c in sorted(clientes, key=lambda x: (x.razao_social or "").lower()):
             empresas.append(
                 EmpresaResumo(
@@ -121,6 +138,7 @@ async def dashboard_extratos(
                     razaoSocial=c.razao_social,
                     cnpj=c.cnpj,
                     mesesProcessados=sorted(por_empresa[c.id]),
+                    sociosAcimaLimite=acima_por_empresa.get(c.id, 0),
                 )
             )
 

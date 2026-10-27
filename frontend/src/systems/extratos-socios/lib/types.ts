@@ -10,6 +10,7 @@ export interface EmpresaResumo {
   razaoSocial: string | null
   cnpj: string
   mesesProcessados: number[]
+  sociosAcimaLimite: number
 }
 
 export interface DashboardExtratos {
