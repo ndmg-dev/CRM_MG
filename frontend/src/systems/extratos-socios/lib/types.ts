@@ -46,6 +46,11 @@ export interface MovimentacaoItem {
   tipo: 'retirada' | 'aporte'
   valor: Money
   descricao: string | null
+  nomeExtrato: string | null
+  contraparte: string | null
+  papel: string | null
+  documento: string | null
+  historico: string | null
   driveUrl: string | null
 }
 

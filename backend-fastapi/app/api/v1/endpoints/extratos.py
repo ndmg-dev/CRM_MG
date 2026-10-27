@@ -225,6 +225,11 @@ async def extratos_empresa(
                     tipo=m.tipo,
                     valor=m.valor,
                     descricao=m.descricao,
+                    nomeExtrato=m.nome_extrato,
+                    contraparte=m.contraparte,
+                    papel=m.papel,
+                    documento=m.documento,
+                    historico=m.historico,
                     driveUrl=drive_por_mes.get(mes),
                 )
             )

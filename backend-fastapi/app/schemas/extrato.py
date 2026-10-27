@@ -47,6 +47,12 @@ class MovimentacaoIn(BaseModel):
     tipo: TipoMovimentacao
     valor: Decimal
     descricao: Optional[str] = None
+    # Opcionais de análise (colunas do relatório "Transações Identificadas").
+    nome_extrato: Optional[str] = None
+    contraparte: Optional[str] = None
+    papel: Optional[str] = None
+    documento: Optional[str] = None
+    historico: Optional[str] = None
 
 
 class ConsolidadoIn(BaseModel):
@@ -127,6 +133,11 @@ class MovimentacaoItem(BaseModel):
     tipo: TipoMovimentacao
     valor: Decimal
     descricao: Optional[str] = None
+    nomeExtrato: Optional[str] = None
+    contraparte: Optional[str] = None
+    papel: Optional[str] = None
+    documento: Optional[str] = None
+    historico: Optional[str] = None
     driveUrl: Optional[str] = None  # PDF do extrato do mês
 
 
