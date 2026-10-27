@@ -26,6 +26,8 @@ export interface SocioConsolidado {
   socio: string
   totalRetiradas: Money
   totalAportes: Money
+  totalMovimentado: Money
+  excedente: Money
   meses: number[]
 }
 
@@ -36,13 +38,26 @@ export interface MesExtrato {
   sha256: string
 }
 
+export interface MovimentacaoItem {
+  data: string | null
+  mes: number
+  socio: string
+  cpf: string | null
+  tipo: 'retirada' | 'aporte'
+  valor: Money
+  descricao: string | null
+  driveUrl: string | null
+}
+
 export interface EmpresaDetalhe {
   clientId: string
   razaoSocial: string | null
   cnpj: string | null
   ano: number
+  limiteAnual: Money
   socios: SocioConsolidado[]
   meses: MesExtrato[]
+  movimentacoes: MovimentacaoItem[]
 }
 
 export interface ClientePick {

@@ -214,6 +214,11 @@ async def test_dashboard_e_detalhe_empresa(client):
     det = r2.json()
     assert det["socios"][0]["socio"] == "FULANO"
     assert float(det["socios"][0]["totalRetiradas"]) == 5000.00
+    assert float(det["socios"][0]["totalMovimentado"]) == 4000.00  # 5000 - 1000
+    assert float(det["socios"][0]["excedente"]) == 0.0  # abaixo do limite
     assert det["socios"][0]["meses"] == [9]
     assert det["meses"][0]["mes"] == 9
     assert det["meses"][0]["driveUrl"].startswith("https://drive.google.com")
+    assert float(det["limiteAnual"]) == 50000.0
+    assert len(det["movimentacoes"]) == 2
+    assert det["movimentacoes"][0]["tipo"] in ("retirada", "aporte")

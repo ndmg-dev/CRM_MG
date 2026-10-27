@@ -18,6 +18,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.security import get_current_user, verify_n8n_signature
 from app.db.session import get_db
 from app.models.client import Cliente
@@ -31,6 +32,7 @@ from app.schemas.extrato import (
     EmpresaResumo,
     IngestExtratoPayload,
     MesExtrato,
+    MovimentacaoItem,
     NaoVinculadoItem,
     SocioConsolidado,
     VincularRequest,
@@ -187,23 +189,55 @@ async def extratos_empresa(
         .scalars()
         .all()
     )
-    socios = [
-        SocioConsolidado(
-            socio=c.socio,
-            totalRetiradas=c.total_retiradas,
-            totalAportes=c.total_aportes,
-            meses=sorted(meses_por_socio.get(c.socio, set())),
+    limite = Decimal(str(settings.EXTRATOS_LIMITE_ANUAL_SOCIO))
+    socios = []
+    for c in sorted(consolidados, key=lambda x: x.socio.lower()):
+        total_mov = (c.total_retiradas or Decimal(0)) - (c.total_aportes or Decimal(0))
+        excedente = total_mov - limite if total_mov > limite else Decimal(0)
+        socios.append(
+            SocioConsolidado(
+                socio=c.socio,
+                totalRetiradas=c.total_retiradas,
+                totalAportes=c.total_aportes,
+                totalMovimentado=total_mov,
+                excedente=excedente,
+                meses=sorted(meses_por_socio.get(c.socio, set())),
+            )
         )
-        for c in sorted(consolidados, key=lambda x: x.socio.lower())
-    ]
+
+    # Transações identificadas (grid de análise), ordenadas por data.
+    drive_por_mes = {e.mes: e.drive_url for e in extratos}
+    movimentacoes = []
+    if extratos:
+        rows = await db.execute(
+            select(MovimentacaoSocio, ExtratoProcessado.mes)
+            .join(ExtratoProcessado, ExtratoProcessado.id == MovimentacaoSocio.extrato_id)
+            .where(ExtratoProcessado.client_id == client_id, ExtratoProcessado.ano == ano)
+            .order_by(MovimentacaoSocio.data.asc().nullslast(), MovimentacaoSocio.valor.desc())
+        )
+        for m, mes in rows.all():
+            movimentacoes.append(
+                MovimentacaoItem(
+                    data=m.data,
+                    mes=mes,
+                    socio=m.socio,
+                    cpf=m.cpf,
+                    tipo=m.tipo,
+                    valor=m.valor,
+                    descricao=m.descricao,
+                    driveUrl=drive_por_mes.get(mes),
+                )
+            )
 
     return EmpresaDetalheResponse(
         clientId=cliente.id,
         razaoSocial=cliente.razao_social,
         cnpj=cliente.cnpj,
         ano=ano,
+        limiteAnual=limite,
         socios=socios,
         meses=meses,
+        movimentacoes=movimentacoes,
     )
 
 
