@@ -27,6 +27,11 @@ class Settings(BaseSettings):
     # navegador: só o n8n (que assina) e o backend (que confere) o conhecem.
     N8N_INGEST_SECRET: str
 
+    # Limite operacional anual por sócio (módulo Extratos de Sócios). Espelha a
+    # regra que o n8n aplica no relatório; o dashboard destaca o excedente. Em
+    # reais, por sócio, por ano.
+    EXTRATOS_LIMITE_ANUAL_SOCIO: float = 50000.0
+
     # JWT & Auth
     JWT_SECRET: str
     # Era 7 dias (604800s). Sem revogação por sessão (user_sessions hoje é só

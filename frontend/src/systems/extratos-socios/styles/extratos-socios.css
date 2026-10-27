@@ -404,6 +404,82 @@
 .ex-val-ret { font-size: 14px; font-weight: 600; color: var(--ex-red); }
 .ex-val-apo { font-size: 14px; font-weight: 600; color: var(--ex-green); }
 
+/* --- Alerta de limite --- */
+.ex-alert {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  margin-bottom: 18px;
+  border-radius: 12px;
+  background: oklch(0.66 0.19 25 / 0.1);
+  border: 1px solid oklch(0.66 0.19 25 / 0.35);
+  color: oklch(0.84 0.1 25);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.ex-alert svg { flex: none; margin-top: 1px; color: var(--ex-red); }
+.ex-alert strong { color: oklch(0.88 0.08 25); font-weight: 600; }
+
+.ex-socio-card.alerta { border-color: oklch(0.66 0.19 25 / 0.4); }
+
+.ex-socio-line.total { border-top-width: 1px; }
+.ex-socio-line.total .ex-socio-tag { font-weight: 600; color: var(--ex-text); flex-wrap: wrap; }
+.ex-tag-excede {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--ex-red);
+  background: oklch(0.66 0.19 25 / 0.14);
+  padding: 2px 6px;
+  border-radius: 6px;
+  margin-left: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* --- Grid de transações --- */
+.ex-table-wrap { overflow-x: auto; }
+.ex-tx-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 560px;
+}
+.ex-tx-table th {
+  text-align: left;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ex-dim);
+  font-weight: 600;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--ex-border);
+}
+.ex-tx-table th.right, .ex-tx-table td.right { text-align: right; }
+.ex-tx-table td {
+  padding: 10px;
+  border-bottom: 1px solid var(--ex-border-soft);
+  color: var(--ex-text-2);
+}
+.ex-tx-table tr:last-child td { border-bottom: none; }
+.ex-tx-socio, .ex-tx-hist {
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ex-tx-tipo {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 7px;
+}
+.ex-tx-tipo.retirada { color: var(--ex-red); background: oklch(0.66 0.19 25 / 0.14); }
+.ex-tx-tipo.aporte { color: var(--ex-green); background: oklch(0.72 0.15 150 / 0.14); }
+
+.ex-link { display: inline-flex; align-items: center; gap: 4px; color: var(--ex-gold); text-decoration: none; }
+.ex-link:hover { color: var(--ex-gold-br); }
+
 /* --- Heatmap --- */
 .ex-heatmap-scroll { overflow-x: auto; padding-bottom: 4px; }
 

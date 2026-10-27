@@ -107,6 +107,8 @@ class SocioConsolidado(BaseModel):
     socio: str
     totalRetiradas: Decimal
     totalAportes: Decimal
+    totalMovimentado: Decimal  # retiradas - aportes (líquido no ano)
+    excedente: Decimal  # quanto o total movimentado passou do limite anual (0 se não passou)
     meses: List[int]  # meses do ano em que o sócio tem movimentação
 
 
@@ -117,13 +119,26 @@ class MesExtrato(BaseModel):
     sha256: str
 
 
+class MovimentacaoItem(BaseModel):
+    data: Optional[date] = None
+    mes: int
+    socio: str
+    cpf: Optional[str] = None
+    tipo: TipoMovimentacao
+    valor: Decimal
+    descricao: Optional[str] = None
+    driveUrl: Optional[str] = None  # PDF do extrato do mês
+
+
 class EmpresaDetalheResponse(BaseModel):
     clientId: UUID
     razaoSocial: Optional[str] = None
     cnpj: Optional[str] = None
     ano: int
+    limiteAnual: Decimal  # limite operacional por sócio no ano
     socios: List[SocioConsolidado]
     meses: List[MesExtrato]  # linha dos 12 meses: só os presentes vêm preenchidos
+    movimentacoes: List[MovimentacaoItem]  # transações identificadas (grid de análise)
 
 
 class VincularRequest(BaseModel):
