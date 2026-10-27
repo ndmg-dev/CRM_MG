@@ -10,6 +10,7 @@ export interface EmpresaResumo {
   razaoSocial: string | null
   cnpj: string
   mesesProcessados: number[]
+  sociosAcimaLimite: number
 }
 
 export interface DashboardExtratos {
@@ -46,6 +47,11 @@ export interface MovimentacaoItem {
   tipo: 'retirada' | 'aporte'
   valor: Money
   descricao: string | null
+  nomeExtrato: string | null
+  contraparte: string | null
+  papel: string | null
+  documento: string | null
+  historico: string | null
   driveUrl: string | null
 }
 

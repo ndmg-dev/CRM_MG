@@ -55,7 +55,8 @@ def _payload(cnpj: str, sha: str, movimentacoes=None):
             "processado_em": "2026-10-20T14:30:00Z",
         },
         "movimentacoes_socios": movimentacoes if movimentacoes is not None else [
-            {"socio": "FULANO", "cpf": "11111111111", "data": "2026-09-05", "tipo": "retirada", "valor": 5000.00, "descricao": "pró-labore"},
+            {"socio": "FULANO", "cpf": "11111111111", "data": "2026-09-05", "tipo": "retirada", "valor": 5000.00, "descricao": "pró-labore",
+             "nome_extrato": "FULANO DE TAL", "contraparte": "FULANO DE TAL", "papel": "Destinatário", "documento": "90102", "historico": "Pix - Enviado"},
             {"socio": "FULANO", "cpf": "11111111111", "data": "2026-09-20", "tipo": "aporte", "valor": 1000.00, "descricao": "aporte"},
         ],
         "consolidado_ano": [
@@ -198,6 +199,14 @@ async def test_reprocessar_vincula_cliente_cadastrado_depois(client):
     assert not any(i["cnpj"] == CNPJ_SEM_CLIENTE for i in r.json())
 
 
+async def test_dashboard_sinaliza_acima_do_limite(client):
+    movs = [{"socio": "CHEFE", "cpf": "22222222222", "data": "2026-03-10", "tipo": "retirada", "valor": 60000.00, "descricao": "retirada"}]
+    await _post_assinado(client, _payload(CNPJ_COM_CLIENTE, "b9" * 32, movimentacoes=movs))
+    r = await client.get("/api/v1/dashboard/extratos?ano=2026")
+    emp = r.json()["empresas"][0]
+    assert emp["sociosAcimaLimite"] == 1  # 60.000 > 50.000
+
+
 async def test_dashboard_e_detalhe_empresa(client):
     await _post_assinado(client, _payload(CNPJ_COM_CLIENTE, "e" * 64))
 
@@ -207,6 +216,7 @@ async def test_dashboard_e_detalhe_empresa(client):
     assert data["empresasComExtrato"] == 1
     assert float(data["totalRetiradasAno"]) == 5000.00
     assert data["empresas"][0]["mesesProcessados"] == [9]
+    assert data["empresas"][0]["sociosAcimaLimite"] == 0  # FULANO abaixo do limite
 
     client_id = data["empresas"][0]["clientId"]
     r2 = await client.get(f"/api/v1/extratos/empresa/{client_id}?ano=2026")
@@ -222,3 +232,9 @@ async def test_dashboard_e_detalhe_empresa(client):
     assert float(det["limiteAnual"]) == 50000.0
     assert len(det["movimentacoes"]) == 2
     assert det["movimentacoes"][0]["tipo"] in ("retirada", "aporte")
+    # Campos opcionais de análise persistidos e devolvidos.
+    retirada = next(m for m in det["movimentacoes"] if m["tipo"] == "retirada")
+    assert retirada["historico"] == "Pix - Enviado"
+    assert retirada["contraparte"] == "FULANO DE TAL"
+    assert retirada["papel"] == "Destinatário"
+    assert retirada["documento"] == "90102"

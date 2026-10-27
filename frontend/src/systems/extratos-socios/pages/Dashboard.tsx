@@ -129,6 +129,15 @@ export default function Dashboard() {
                     <div className="ex-empresa-nome">{e.razaoSocial || '(sem razão social)'}</div>
                     <div className="ex-empresa-cnpj">{fmtCNPJ(e.cnpj)}</div>
                   </div>
+                  {e.sociosAcimaLimite > 0 && (
+                    <span
+                      className="ex-badge-limite"
+                      title={`${e.sociosAcimaLimite} sócio(s) acima do limite operacional`}
+                    >
+                      <AlertTriangle size={13} />
+                      {e.sociosAcimaLimite > 1 ? `${e.sociosAcimaLimite} acima do limite` : 'acima do limite'}
+                    </span>
+                  )}
                   <MesesBar meses={e.mesesProcessados} ano={ano} />
                   <span className={`ex-badge ${tone}`}>
                     {done}/{rel} meses

@@ -125,47 +125,64 @@ export default function EmpresaDetalhe() {
             )}
           </Card>
 
-          {/* Transações identificadas */}
-          <Card title="Transações identificadas" sub={`${data.movimentacoes.length} movimentações no ano`} className="ex-mt">
-            {data.movimentacoes.length === 0 ? (
-              <div className="ex-state">Sem movimentações registradas.</div>
-            ) : (
-              <div className="ex-table-wrap">
-                <table className="ex-tx-table">
-                  <thead>
-                    <tr>
-                      <th>Data</th>
-                      <th>Sócio</th>
-                      <th>Histórico</th>
-                      <th>Tipo</th>
-                      <th className="right">Valor</th>
-                      <th />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.movimentacoes.map((m, i) => (
-                      <tr key={i}>
-                        <td className="ex-mono">{m.data ? fmtData(m.data) : MESES_CURTOS[m.mes - 1]}</td>
-                        <td className="ex-tx-socio" title={m.socio}>{m.socio}</td>
-                        <td className="ex-tx-hist" title={m.descricao || ''}>{m.descricao || '—'}</td>
-                        <td>
-                          <span className={`ex-tx-tipo ${m.tipo}`}>{m.tipo === 'retirada' ? 'Débito' : 'Crédito'}</span>
-                        </td>
-                        <td className={`right ex-mono ${m.tipo === 'retirada' ? 'ex-val-ret' : 'ex-val-apo'}`}>{fmtBRL0(m.valor)}</td>
-                        <td>
-                          {m.driveUrl && (
-                            <a className="ex-link" href={m.driveUrl} target="_blank" rel="noopener noreferrer" title="Abrir PDF do mês">
-                              <ExternalLink size={13} />
-                            </a>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </Card>
+          {/* Transações identificadas. Colunas opcionais (contraparte, papel,
+              documento) só aparecem quando o n8n envia esses campos. */}
+          {(() => {
+            const mv = data.movimentacoes
+            const temContraparte = mv.some((m) => m.contraparte)
+            const temPapel = mv.some((m) => m.papel)
+            const temDocumento = mv.some((m) => m.documento)
+            return (
+              <Card title="Transações identificadas" sub={`${mv.length} movimentações no ano`} className="ex-mt">
+                {mv.length === 0 ? (
+                  <div className="ex-state">Sem movimentações registradas.</div>
+                ) : (
+                  <div className="ex-table-wrap">
+                    <table className="ex-tx-table">
+                      <thead>
+                        <tr>
+                          <th>Data</th>
+                          <th>Sócio</th>
+                          {temContraparte && <th>Contraparte</th>}
+                          {temPapel && <th>Papel</th>}
+                          <th>Histórico</th>
+                          {temDocumento && <th>Documento</th>}
+                          <th>Tipo</th>
+                          <th className="right">Valor</th>
+                          <th />
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {mv.map((m, i) => (
+                          <tr key={i}>
+                            <td className="ex-mono">{m.data ? fmtData(m.data) : MESES_CURTOS[m.mes - 1]}</td>
+                            <td className="ex-tx-socio" title={m.socio}>{m.nomeExtrato || m.socio}</td>
+                            {temContraparte && (
+                              <td className="ex-tx-socio" title={m.contraparte || ''}>{m.contraparte || '—'}</td>
+                            )}
+                            {temPapel && <td>{m.papel || '—'}</td>}
+                            <td className="ex-tx-hist" title={m.historico || m.descricao || ''}>{m.historico || m.descricao || '—'}</td>
+                            {temDocumento && <td className="ex-mono">{m.documento || '—'}</td>}
+                            <td>
+                              <span className={`ex-tx-tipo ${m.tipo}`}>{m.tipo === 'retirada' ? 'Débito' : 'Crédito'}</span>
+                            </td>
+                            <td className={`right ex-mono ${m.tipo === 'retirada' ? 'ex-val-ret' : 'ex-val-apo'}`}>{fmtBRL0(m.valor)}</td>
+                            <td>
+                              {m.driveUrl && (
+                                <a className="ex-link" href={m.driveUrl} target="_blank" rel="noopener noreferrer" title="Abrir PDF do mês">
+                                  <ExternalLink size={13} />
+                                </a>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </Card>
+            )
+          })()}
         </>
       )}
     </div>

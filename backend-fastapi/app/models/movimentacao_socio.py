@@ -26,4 +26,11 @@ class MovimentacaoSocio(Base):
     tipo = Column(String(10), nullable=False)  # TipoMovimentacao
     valor = Column(Numeric(14, 2), nullable=False)
     descricao = Column(String(500), nullable=True)
+    # Campos opcionais de análise (quando o n8n os envia) — espelham as colunas
+    # do relatório "Transações Identificadas".
+    nome_extrato = Column(String(255), nullable=True)  # nome como aparece no extrato
+    contraparte = Column(String(255), nullable=True)
+    papel = Column(String(30), nullable=True)  # Remetente / Destinatário
+    documento = Column(String(100), nullable=True)  # nº do documento/transação
+    historico = Column(String(255), nullable=True)  # ex. "Pix - Enviado"
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)

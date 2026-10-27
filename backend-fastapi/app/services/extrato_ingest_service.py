@@ -92,6 +92,11 @@ async def ingest_extrato(db: AsyncSession, payload: IngestExtratoPayload) -> Ext
                 tipo=m.tipo.value,
                 valor=m.valor,
                 descricao=m.descricao,
+                nome_extrato=m.nome_extrato,
+                contraparte=m.contraparte,
+                papel=m.papel,
+                documento=m.documento,
+                historico=m.historico,
             )
         )
     await db.flush()
