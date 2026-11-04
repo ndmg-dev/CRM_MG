@@ -82,6 +82,11 @@ class Settings(BaseSettings):
     # motor (nome "crm") e o nome "crm" em REGRAS_ADMIN_SISTEMAS para publicar regras.
     MOTOR_ICMS_URL: str = ""
     MOTOR_ICMS_API_KEY: str = ""
+    # Pastas das empresas no Drive (workflow n8n "Motor ICMS – Preparar pastas"): URL do webhook e token (cabeçalho
+    # X-Painel-Token), as duas juntas ou nenhuma. Vazias = o botão "Criar pastas no Drive" responde 503 e o cadastro de empresa
+    # segue normal. Ver app/integrations/icms_saidas/n8n.py.
+    ICMS_N8N_URL_PASTAS: str = ""
+    ICMS_N8N_TOKEN: str = ""
 
     # Monitoramento da VPS Hostinger (aba Tecnologia/TI). O token é gerado no
     # hPanel (Dev Tools → API), herda as permissões do usuário e NUNCA chega

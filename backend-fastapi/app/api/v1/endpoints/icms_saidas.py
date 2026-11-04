@@ -9,13 +9,16 @@ from __future__ import annotations
 from typing import Annotated
 from uuid import UUID
 
+import httpx
 from fastapi import APIRouter, Depends, Path, Query, Request
-from fastapi.responses import Response
+from fastapi.responses import JSONResponse, Response
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.background import BackgroundTask
 
 from app.core.security import get_current_user
 from app.db.session import get_db
+from app.integrations.icms_saidas import n8n
 from app.integrations.icms_saidas import permissoes as perm
 from app.integrations.icms_saidas.cliente import (
     _campo,
@@ -138,10 +141,35 @@ async def listar_empresas(request: Request, usuario: Consultar, apenas_ativas: b
     return await chamar_motor(request, usuario, "GET", "/v1/empresas", params=_parametros(apenas_ativas=apenas_ativas))
 
 
+def disparador_n8n(request: Request) -> n8n.Disparador:
+    """Um disparador por processo (guarda a janela de agrupamento dos pedidos)."""
+    d = getattr(request.app.state, "icms_n8n", None)
+    if d is None:
+        d = n8n.Disparador(httpx.AsyncClient(follow_redirects=False, trust_env=False, timeout=n8n.TIMEOUT))
+        request.app.state.icms_n8n = d
+    return d
+
+
 @router.post("/empresas")
 async def criar_empresa(request: Request, usuario: GerirEmpresas, dados: EmpresaIn) -> Response:
     resposta = await chamar_motor(request, usuario, "POST", "/v1/empresas", corpo_json=dados.model_dump())
+    if resposta.status_code < 300:
+        # Pastas da empresa no Drive (n8n), depois de responder: falha aqui não afeta o cadastro.
+        resposta.background = BackgroundTask(disparador_n8n(request).solicitar_sem_falhar, usuario.email, "empresa criada")
     return resposta
+
+
+@router.post("/drive/preparar-pastas", status_code=202)
+async def preparar_pastas(request: Request, usuario: GerirEmpresas) -> JSONResponse:
+    """Pede ao n8n que crie no Drive as pastas das empresas que ainda não têm (agrupado: no máximo um disparo por minuto)."""
+    if not n8n.Disparador.configurado():
+        raise ErroApi(503, "INTEGRACAO_DESATIVADA", "A integração com o Drive (n8n) não está configurada.")
+    situacao, ok = await disparador_n8n(request).solicitar(usuario.email, "botao")
+    if not ok:
+        raise ErroApi(502, "N8N_INDISPONIVEL", "O n8n não respondeu. As pastas serão criadas na próxima rodada (de hora em hora).")
+    if situacao == "agendado":
+        return JSONResponse({"situacao": situacao, "mensagem": "Pedido recebido. As pastas serão criadas em até 1 minuto."}, status_code=202)
+    return JSONResponse({"situacao": situacao, "mensagem": "Pastas solicitadas. Elas aparecem no Drive em instantes."}, status_code=202)
 
 
 @router.get("/empresas/{codigo}")

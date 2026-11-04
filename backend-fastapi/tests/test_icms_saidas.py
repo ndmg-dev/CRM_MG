@@ -26,6 +26,7 @@ ROTAS = [
     ("GET", "/painel", perm.CONSULTAR),
     ("GET", "/empresas", perm.CONSULTAR),
     ("POST", "/empresas", perm.GERIR_EMPRESAS),
+    ("POST", "/drive/preparar-pastas", perm.GERIR_EMPRESAS),
     ("GET", "/empresas/MM", perm.CONSULTAR),
     ("PATCH", "/empresas/MM", perm.GERIR_EMPRESAS),
     ("GET", "/regras", perm.CONSULTAR),
