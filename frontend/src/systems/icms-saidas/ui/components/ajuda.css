@@ -1,0 +1,88 @@
+/* [escopado] tudo sob .icms-root (não vaza para o resto do CRM) */
+.icms-root {
+  .ajuda {
+    position: relative;
+    display: inline-flex;
+    vertical-align: middle;
+  }
+
+  /* Desenho 20×20; área clicável 32×32 pelo pseudo-elemento. */
+  .ajuda__botao {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--esp-5);
+    height: var(--esp-5);
+    padding: 0;
+    font: var(--tipo-rotulo);
+    color: var(--cor-texto-secundario);
+    background: var(--cor-superficie-elevada);
+    border: 1px solid var(--cor-borda-controle);
+    border-radius: var(--raio-pilula);
+    cursor: pointer;
+  }
+  .ajuda__botao::after {
+    content: "";
+    position: absolute;
+    inset: calc((var(--esp-5) - var(--alt-compacta)) / 2);
+  }
+  .ajuda__botao:hover,
+  .ajuda__botao[aria-expanded="true"] {
+    color: var(--cor-texto-sobre-acento);
+    background: var(--cor-acento);
+    border-color: var(--cor-acento);
+  }
+  .ajuda__botao[aria-expanded="true"]:focus-visible {
+    outline-color: var(--cor-texto);
+  }
+
+  .ajuda__balao {
+    position: absolute;
+    top: calc(100% + var(--esp-2));
+    left: calc(-1 * var(--esp-2));
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--esp-2);
+    width: max-content;
+    max-width: min(320px, 80vw);
+    padding: var(--esp-3);
+    font: var(--tipo-apoio);
+    color: var(--cor-texto);
+    text-align: left;
+    text-transform: none;
+    white-space: normal;
+    background: var(--cor-superficie-elevada);
+    border: 1px solid var(--cor-borda-controle);
+    border-radius: var(--raio-cartao);
+    box-shadow: var(--sombra);
+  }
+  /* Pedido pelo componente ou por estar numa coluna numérica da Tabela (th/td com data-alinhar="fim"). */
+  [data-alinhar="fim"] .ajuda__balao {
+    left: auto;
+    right: calc(-1 * var(--esp-2));
+  }
+
+  .ajuda__fechar {
+    min-height: var(--esp-6);
+    padding: 0 var(--esp-1);
+    font: var(--tipo-rotulo);
+    color: var(--cor-acento);
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
+  .ajuda__fechar:hover {
+    text-decoration: underline;
+  }
+
+  /* Rótulo com ajuda ao lado (o "?" fica fora do <label>). */
+  .rotulo-com-ajuda {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--esp-1);
+  }
+}
+

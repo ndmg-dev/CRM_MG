@@ -1,0 +1,104 @@
+/* [escopado] tudo sob .icms-root (não vaza para o resto do CRM) */
+.icms-root {
+  .envio {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-2);
+  }
+
+  /* Área de soltar (vazio) */
+  .envio__area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--esp-1);
+    padding: var(--esp-6) var(--esp-4);
+    text-align: center;
+    color: var(--cor-texto);
+    background: var(--cor-fundo);
+    border: 1px dashed var(--cor-borda-controle);
+    border-radius: var(--raio-cartao);
+    cursor: pointer;
+  }
+  .envio__area:hover,
+  .envio[data-arrastando] .envio__area {
+    border-color: var(--cor-acento);
+    border-style: solid;
+  }
+  .envio__icone {
+    color: var(--cor-texto-secundario);
+  }
+  .envio__escolher {
+    font-weight: 600;
+    color: var(--cor-acento);
+    text-decoration: underline;
+  }
+  .envio__dica {
+    font: var(--tipo-apoio);
+    color: var(--cor-texto-secundario);
+  }
+
+  /* O <input> está visualmente oculto: o foco aparece no rótulo que o representa. */
+  .envio__campo:focus-visible + .envio__area,
+  .envio__campo:focus-visible + .envio__selecionado .envio__trocar {
+    outline: 2px solid var(--cor-acento);
+    outline-offset: 2px;
+  }
+
+  /* Selecionado: nome + tamanho + Trocar */
+  .envio__selecionado {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-3);
+    padding: var(--esp-3);
+    background: var(--cor-fundo);
+    border: 1px solid var(--cor-borda-controle);
+    border-radius: var(--raio-cartao);
+  }
+  .envio__info {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .envio__nome {
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+  .envio__tamanho {
+    font: var(--tipo-apoio);
+    color: var(--cor-texto-secundario);
+  }
+  .envio__trocar {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--alt-compacta);
+    padding: 0 var(--esp-3);
+    font-weight: 600;
+    color: var(--cor-texto);
+    border: 1px solid var(--cor-borda-controle);
+    border-radius: var(--raio-controle);
+    cursor: pointer;
+  }
+  .envio__trocar:hover {
+    color: var(--cor-acento-forte);
+    border-color: var(--cor-acento);
+  }
+
+  /* Travado (processando) */
+  .envio[data-travado] .envio__area,
+  .envio[data-travado] .envio__trocar {
+    color: var(--cor-texto-secundario);
+    border-color: var(--cor-linha);
+    cursor: not-allowed;
+  }
+  .envio[data-travado] .envio__escolher {
+    color: var(--cor-texto-secundario);
+  }
+
+  .envio__erro {
+    font: var(--tipo-apoio);
+    color: var(--cor-erro-texto);
+  }
+}
+

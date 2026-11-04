@@ -466,6 +466,33 @@ aplicacoes:
     porta_local: DESCONHECIDO
     variaveis_ambiente: []
 
+  - slug: icms-saidas
+    nome: "ICMS Saídas"
+    status: desenvolvimento
+    criticidade: alta
+    setores: [fiscal]
+    setor_responsavel: fiscal
+    funcao: >
+      Apuração mensal de ICMS das saídas (Outros Débitos / Estornos de Débito) a partir do relatório de vendas, com memória
+      tributária por empresa versionada por vigência e regras fiscais configuráveis. UI nativa no CRM; cálculo no motor
+      (repo tnunes8/motor-calculos), chamado só pelo backend do CRM.
+    repositorio: ./frontend/src/systems/icms-saidas
+    url_producao: DESCONHECIDO
+    stack:
+      frontend: { framework: React (embutido), versao: "19.2.6", linguagem: TypeScript, build: Vite }
+      backend: { framework: "Proxy fechado via backend-fastapi (icms_saidas) + motor FastAPI/Postgres externo", versao: DESCONHECIDO, runtime: "Python 3.12", }
+      infra: { hospedagem: Coolify, containerizacao: Docker, proxy: backend-fastapi }
+      bibliotecas_chave: [react-router-dom, vitest]
+    banco_de_dados:
+      - { tipo: postgres, provedor: DESCONHECIDO, nome_logico: crm (usuario_permissoes) + motor-icms (dados fiscais), migrations: alembic, rls: nao, multi_tenant: sim (empresa no motor), chave_isolamento: empresa_id }
+    autenticacao: { metodo: "JWT do CRM", rbac: sim, papeis: ["icms_saidas.consultar", "icms_saidas.operar", "icms_saidas.aprovar_lotes", "icms_saidas.gerir_empresas", "icms_saidas.editar_regras"] }
+    pwa: { perfil: nao-aplicavel, manifest: nao, service_worker: nao, offline: nenhum }
+    dados_pessoais_lgpd: { trata_dados_pessoais: DESCONHECIDO, categorias: [dados_fiscais], retencao_definida: DESCONHECIDO }
+    integracoes: ["Motor ICMS (motor-calculos)", "n8n - Preparar pastas (Drive)"]
+    dependencias_internas: [crm-mg, backend-fastapi]
+    porta_local: DESCONHECIDO
+    variaveis_ambiente: [MOTOR_ICMS_URL, MOTOR_ICMS_API_KEY, ICMS_N8N_URL_PASTAS, ICMS_N8N_TOKEN]
+
   # ============================================================
   # SOCIETÁRIO
   # ============================================================

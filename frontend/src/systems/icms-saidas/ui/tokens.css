@@ -1,0 +1,85 @@
+/* Tokens do módulo ICMS Saídas, escopados em .icms-root e mapeados para os tokens do CRM (--mg-*). Significado fixo das cores:
+   vermelho só para OD, azul só para ED, amarelo (âmbar) só para pendência ou aviso. O acento do CRM é dourado: nas telas ele aparece
+   em botões/links/seleção; a pendência sempre vem com texto e borda próprios, nunca só pela cor. */
+
+.icms-root {
+  /* ---------------------------------------------------------------- cores (paleta do CRM; ver docs/aplicacoes/icms-saidas) */
+  --cor-fundo: var(--mg-color-bg-base);
+  --cor-superficie: var(--mg-color-bg-card);
+  --cor-superficie-elevada: var(--mg-color-bg-raised);
+  --cor-linha: var(--mg-color-border-default); /* decorativa: nunca a única borda de um controle */
+  --cor-borda-controle: #6e7077; /* input, botão secundário, checkbox, seletor (≥ 3:1 sobre a superfície) */
+  --cor-texto: var(--mg-color-text-primary);
+  --cor-texto-secundario: var(--mg-color-text-secondary);
+  --cor-acento: var(--mg-color-gold-base);
+  --cor-acento-forte: var(--mg-color-gold-hover); /* hover de links e botões */
+  --cor-acento-fundo: var(--mg-color-gold-soft); /* linha selecionada, etiqueta "Ativa" */
+  --cor-texto-sobre-acento: #1a1405;
+  --cor-od: #f2837a;
+  --cor-ed: var(--mg-color-status-info);
+  --cor-pendencia-fundo: var(--mg-color-status-warning-soft);
+  --cor-pendencia-texto: #ecc866;
+  --cor-pendencia-borda: rgb(216 174 66 / 45%);
+  --cor-erro-fundo: var(--mg-color-status-error-soft);
+  --cor-erro-texto: #f6b8b2;
+  --cor-erro-borda: var(--mg-color-status-error);
+  --cor-sucesso-fundo: var(--mg-color-status-success-soft);
+  --cor-sucesso-texto: var(--mg-color-status-success);
+  --cor-sucesso-borda: rgb(85 217 165 / 45%);
+  --cor-sobreposicao: rgb(0 0 0 / 72%);
+  --sombra: 0 4px 16px rgb(0 0 0 / 45%);
+
+  /* ---------------------------------------------------------------- tipografia (uso: `font: var(--tipo-…)`) */
+  --fonte: var(--mg-font-family-base);
+  --tipo-valor-destaque: 600 32px/40px var(--fonte);
+  --tipo-valor-kpi: 600 28px/36px var(--fonte);
+  --tipo-titulo-pagina: 600 24px/32px var(--fonte);
+  --tipo-titulo-secao: 600 18px/26px var(--fonte);
+  --tipo-titulo-cartao: 600 16px/24px var(--fonte);
+  --tipo-corpo: 400 14px/20px var(--fonte);
+  --tipo-apoio: 400 13px/18px var(--fonte);
+  --tipo-rotulo: 600 12px/16px var(--fonte);
+
+  /* ---------------------------------------------------------------- espaçamento (base 4 px) */
+  --esp-1: 4px;
+  --esp-2: 8px;
+  --esp-3: 12px;
+  --esp-4: 16px;
+  --esp-5: 20px;
+  --esp-6: 24px;
+  --esp-8: 32px;
+  --esp-12: 48px;
+  --esp-16: 64px;
+
+  /* ---------------------------------------------------------------- raios */
+  --raio-chip: 4px;
+  --raio-controle: 6px;
+  --raio-cartao: 8px;
+  --raio-dialogo: 10px;
+  --raio-pilula: 999px;
+
+  /* ---------------------------------------------------------------- alturas */
+  --alt-compacta: 32px; /* controle dentro de tabela */
+  --alt-padrao: 40px;
+  --alt-principal: 44px; /* ação principal da tela */
+  --alt-linha-painel: 52px;
+  --alt-linha-lote: 56px; /* mínimo */
+
+  /* ---------------------------------------------------------------- layout */
+  --largura-max: 1360px;
+  --margem-lateral: var(--esp-4);
+  --alt-cabecalho: 56px;
+  color-scheme: dark; /* controles nativos (file, rolagem, seleção) também no escuro */
+  color: var(--cor-texto);
+  background: var(--cor-fundo);
+  font: var(--tipo-corpo);
+  font-variant-numeric: tabular-nums;
+  min-height: calc(100vh - 92px);
+  border-radius: 14px;
+}
+
+@media (min-width: 1024px) {
+  .icms-root {
+    --margem-lateral: var(--esp-8);
+  }
+}

@@ -1,0 +1,163 @@
+/* [escopado] tudo sob .icms-root (não vaza para o resto do CRM) */
+.icms-root {
+  .seletor-competencia {
+    position: relative;
+    display: inline-flex;
+    flex-direction: column;
+    gap: var(--esp-1);
+  }
+  .seletor-competencia[data-modo="inline"] {
+    flex-direction: row;
+    align-items: stretch;
+    gap: 0;
+  }
+
+  .seletor-competencia button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 var(--esp-2);
+    border-radius: var(--raio-controle);
+    font: var(--tipo-corpo);
+    color: var(--cor-texto);
+    background: transparent;
+    border: 1px solid var(--cor-borda-controle);
+    cursor: pointer;
+  }
+  .seletor-competencia button:hover:not(:disabled) {
+    border-color: var(--cor-acento);
+    color: var(--cor-acento-forte);
+  }
+  .seletor-competencia button:disabled {
+    color: var(--cor-texto-secundario);
+    border-color: var(--cor-linha);
+    cursor: not-allowed;
+  }
+
+  /* ‹ MM/AAAA › */
+  .seletor-competencia__passo {
+    width: var(--alt-padrao);
+    min-height: var(--alt-padrao);
+    font-weight: 600;
+  }
+  .seletor-competencia__passo:first-child {
+    border-radius: var(--raio-controle) 0 0 var(--raio-controle);
+  }
+  .seletor-competencia__passo:last-of-type {
+    border-radius: 0 var(--raio-controle) var(--raio-controle) 0;
+  }
+  .seletor-competencia .seletor-competencia__atual {
+    min-width: 104px;
+    min-height: var(--alt-padrao);
+    padding: 0 var(--esp-3);
+    font-weight: 600;
+    border-left: none;
+    border-right: none;
+    border-radius: 0;
+  }
+  .seletor-competencia[data-modo="inline"] button:focus-visible {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Campo de formulário */
+  .seletor-competencia__campo {
+    display: flex;
+  }
+  .seletor-competencia__campo input {
+    flex: 1;
+    min-width: 0;
+    min-height: var(--alt-padrao);
+    padding: 0 var(--esp-3);
+    font: var(--tipo-corpo);
+    color: var(--cor-texto);
+    background: var(--cor-fundo);
+    border: 1px solid var(--cor-borda-controle);
+    border-right: none;
+    border-radius: var(--raio-controle) 0 0 var(--raio-controle);
+  }
+  .seletor-competencia__campo input::placeholder {
+    color: var(--cor-texto-secundario);
+  }
+  .seletor-competencia__campo input[aria-invalid="true"] {
+    border-color: var(--cor-erro-borda);
+  }
+  .seletor-competencia__campo input:disabled {
+    color: var(--cor-texto-secundario);
+    cursor: not-allowed;
+  }
+  .seletor-competencia .seletor-competencia__abrir {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--alt-padrao);
+    border-radius: 0 var(--raio-controle) var(--raio-controle) 0;
+  }
+
+  .seletor-competencia__erro {
+    font: var(--tipo-apoio);
+    color: var(--cor-erro-texto);
+  }
+
+  /* Popover: campo digitável + grade de 12 meses */
+  .seletor-competencia__popover {
+    position: absolute;
+    top: calc(100% + var(--esp-2));
+    left: 0;
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-3);
+    width: 272px;
+    padding: var(--esp-3);
+    background: var(--cor-superficie-elevada);
+    border: 1px solid var(--cor-borda-controle);
+    border-radius: var(--raio-cartao);
+    box-shadow: var(--sombra);
+  }
+  .seletor-competencia__digitar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-1);
+    font: var(--tipo-rotulo);
+  }
+  .seletor-competencia__digitar input {
+    min-height: var(--alt-compacta);
+    padding: 0 var(--esp-2);
+    font: var(--tipo-corpo);
+    color: var(--cor-texto);
+    background: var(--cor-fundo);
+    border: 1px solid var(--cor-borda-controle);
+    border-radius: var(--raio-controle);
+  }
+  .seletor-competencia__ano {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-weight: 600;
+  }
+  .seletor-competencia__ano button {
+    width: var(--alt-compacta);
+    min-height: var(--alt-compacta);
+    border-radius: var(--raio-controle);
+  }
+  .seletor-competencia__grade {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--esp-1);
+  }
+  .seletor-competencia__grade button {
+    min-height: var(--alt-compacta);
+    border-radius: var(--raio-controle);
+  }
+  .seletor-competencia__grade button[aria-pressed="true"] {
+    font-weight: 600;
+    color: var(--cor-texto-sobre-acento);
+    background: var(--cor-acento);
+    border-color: var(--cor-acento);
+  }
+  .seletor-competencia__grade button[aria-pressed="true"]:focus-visible {
+    outline-color: var(--cor-texto);
+  }
+}
+

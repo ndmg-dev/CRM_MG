@@ -1,0 +1,120 @@
+/* [escopado] tudo sob .icms-root (não vaza para o resto do CRM) */
+.icms-root {
+  .botao {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--esp-2);
+    min-height: var(--alt-padrao);
+    padding: 0 var(--esp-4);
+    font: var(--tipo-corpo);
+    font-weight: 600;
+    white-space: nowrap;
+    text-decoration: none;
+    border: 1px solid transparent;
+    border-radius: var(--raio-controle);
+    cursor: pointer;
+  }
+  .botao--compacto {
+    min-height: var(--alt-compacta);
+    padding: 0 var(--esp-3);
+  }
+  .botao--principal {
+    min-height: var(--alt-principal);
+    padding: 0 var(--esp-6);
+  }
+
+  .botao--primario {
+    color: var(--cor-texto-sobre-acento);
+    background: var(--cor-acento);
+    border-color: var(--cor-acento);
+  }
+  .botao--primario:hover:not(:disabled, [aria-disabled="true"]) {
+    background: var(--cor-acento-forte);
+    border-color: var(--cor-acento-forte);
+  }
+  .botao--primario:focus-visible {
+    outline-color: var(--cor-texto);
+  }
+
+  .botao--secundario {
+    color: var(--cor-texto);
+    background: transparent;
+    border-color: var(--cor-borda-controle);
+  }
+  .botao--secundario:hover:not(:disabled, [aria-disabled="true"]) {
+    color: var(--cor-acento-forte);
+    border-color: var(--cor-acento);
+  }
+
+  .botao--perigo {
+    color: var(--cor-erro-texto);
+    background: transparent;
+    border-color: var(--cor-erro-borda);
+  }
+  .botao--perigo:hover:not(:disabled, [aria-disabled="true"]) {
+    background: var(--cor-erro-fundo);
+  }
+
+  .botao--fantasma {
+    min-height: var(--alt-compacta);
+    padding: 0 var(--esp-1);
+    color: var(--cor-acento);
+    background: transparent;
+  }
+  .botao--fantasma:hover:not(:disabled, [aria-disabled="true"]) {
+    color: var(--cor-acento-forte);
+    text-decoration: underline;
+  }
+
+  /* Indisponível: em andamento (disabled) ou por regra (aria-disabled, continua focável). */
+  .botao:disabled,
+  .botao[aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+  .botao--primario[aria-disabled="true"],
+  .botao--primario:disabled:not([aria-busy="true"]) {
+    color: var(--cor-texto-secundario);
+    background: var(--cor-superficie-elevada);
+    border-color: var(--cor-linha);
+  }
+  .botao--secundario[aria-disabled="true"],
+  .botao--perigo[aria-disabled="true"],
+  .botao--fantasma[aria-disabled="true"],
+  .botao--secundario:disabled,
+  .botao--perigo:disabled,
+  .botao--fantasma:disabled {
+    color: var(--cor-texto-secundario);
+    border-color: var(--cor-linha);
+  }
+  .botao[aria-busy="true"] {
+    cursor: progress;
+  }
+
+  .botao__icone {
+    display: inline-flex;
+  }
+
+  .botao__giro {
+    width: var(--esp-4);
+    height: var(--esp-4);
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: var(--raio-pilula);
+    animation: botao-giro 0.8s linear infinite;
+  }
+
+
+  /* Motivo de indisponibilidade: irmão do botão, ao lado dele. */
+  .botao__motivo {
+    align-self: center;
+    font: var(--tipo-apoio);
+    color: var(--cor-texto-secundario);
+  }
+}
+
+@keyframes botao-giro {
+  to {
+    transform: rotate(360deg);
+  }
+}

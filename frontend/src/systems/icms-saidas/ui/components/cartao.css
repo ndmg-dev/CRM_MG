@@ -1,0 +1,81 @@
+/* [escopado] tudo sob .icms-root (não vaza para o resto do CRM) */
+.icms-root {
+  .cartao-total {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-1);
+    padding: var(--esp-4);
+    background: var(--cor-superficie);
+    border: 1px solid var(--cor-linha);
+    border-radius: var(--raio-cartao);
+  }
+
+  .cartao-total__rotulo {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-2);
+    font: var(--tipo-rotulo);
+    color: var(--cor-texto-secundario);
+  }
+  .cartao-total__marcador {
+    width: var(--esp-2);
+    height: var(--esp-2);
+    background: var(--cor-borda-controle);
+  }
+  .cartao-total[data-tipo="od"] .cartao-total__marcador {
+    background: var(--cor-od);
+  }
+  .cartao-total[data-tipo="ed"] .cartao-total__marcador {
+    background: var(--cor-ed);
+  }
+  .cartao-total[data-tipo="saldo"] .cartao-total__marcador {
+    background: var(--cor-texto);
+  }
+
+  .cartao-total__valor {
+    font: var(--tipo-valor-kpi);
+    color: var(--cor-texto);
+    overflow-wrap: anywhere;
+  }
+  .cartao-total[data-tamanho="destaque"] .cartao-total__valor {
+    font: var(--tipo-valor-destaque);
+  }
+  /* Saldo é secundário no resultado da apuração (24 px). */
+  .cartao-total[data-tamanho="destaque"][data-tipo="saldo"] .cartao-total__valor {
+    font: var(--tipo-titulo-pagina);
+  }
+  .cartao-total[data-tipo="od"] .cartao-total__valor {
+    color: var(--cor-od);
+  }
+  .cartao-total[data-tipo="ed"] .cartao-total__valor {
+    color: var(--cor-ed);
+  }
+  .cartao-total__valor[data-vazio] {
+    color: var(--cor-texto-secundario);
+  }
+
+  /* Aviso fixo do saldo: aparece sempre, então não usa o amarelo (reservado para pendência). */
+  .cartao-total__aviso {
+    font: var(--tipo-apoio);
+    font-weight: 600;
+    color: var(--cor-texto-secundario);
+  }
+  .cartao-total__legenda {
+    font: var(--tipo-apoio);
+    color: var(--cor-texto-secundario);
+  }
+  .cartao-total__esqueleto {
+    height: var(--esp-6);
+    margin: var(--esp-1) 0;
+    width: 60%;
+  }
+
+  /* Sem caixa: o bloco em volta dá a superfície (resumo do painel). */
+  .cartao-total[data-aparencia="plano"] {
+    padding: 0;
+    background: none;
+    border: none;
+    border-radius: 0;
+  }
+}
+

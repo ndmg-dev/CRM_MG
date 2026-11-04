@@ -1,0 +1,168 @@
+/* [escopado] tudo sob .icms-root (não vaza para o resto do CRM) */
+.icms-root {
+  .tabela {
+    overflow-x: auto;
+    background: var(--cor-superficie);
+    border: 1px solid var(--cor-linha);
+    border-radius: var(--raio-cartao);
+    scrollbar-color: var(--cor-borda-controle) var(--cor-superficie);
+  }
+  .tabela:focus-visible {
+    outline-offset: 0;
+  }
+
+  .tabela table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .tabela[data-largura-minima="640"] table {
+    min-width: 640px;
+  }
+  .tabela[data-largura-minima="800"] table {
+    min-width: 800px;
+  }
+  .tabela[data-largura-minima="980"] table {
+    min-width: 980px;
+  }
+  .tabela[data-largura-minima="1100"] table {
+    min-width: 1100px;
+  }
+
+  .tabela th,
+  .tabela td {
+    padding: 0 var(--esp-3);
+    text-align: left;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--cor-linha);
+  }
+  .tabela [data-alinhar="fim"] {
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .tabela thead th {
+    height: var(--alt-padrao);
+    font: var(--tipo-rotulo);
+    color: var(--cor-texto-secundario);
+    white-space: nowrap;
+    background: var(--cor-superficie-elevada);
+  }
+
+  .tabela[data-densidade="painel"] tbody td {
+    height: var(--alt-linha-painel);
+  }
+  .tabela[data-densidade="lote"] tbody td {
+    height: var(--alt-linha-lote);
+    padding-top: var(--esp-2);
+    padding-bottom: var(--esp-2);
+  }
+  .tabela tbody tr:hover td {
+    background: var(--cor-superficie-elevada);
+  }
+  /* O contêiner já tem borda: a última linha sem rodapé não repete a linha. */
+  .tabela tbody:last-child tr:last-child > * {
+    border-bottom: none;
+  }
+
+  .tabela tfoot td {
+    height: var(--alt-linha-painel);
+    font-weight: 600;
+    background: var(--cor-superficie-elevada);
+    border-top: 2px solid var(--cor-linha);
+    border-bottom: none;
+  }
+
+  /* OD e ED: nas linhas, texto normal (a coluna já diz o que é, e cor em toda célula esconde as pendências);
+     a cor da planilha fica no marcador do cabeçalho e no total, em 600. Ausente = "—" secundário. */
+  .tabela tfoot .tabela__valor--od,
+  .tabela tfoot .tabela__valor--ed {
+    font-weight: 600;
+  }
+  .tabela tfoot .tabela__valor--od {
+    color: var(--cor-od);
+  }
+  .tabela tfoot .tabela__valor--ed {
+    color: var(--cor-ed);
+  }
+  .tabela__marcador {
+    display: inline-block;
+    flex: none;
+    width: var(--esp-2);
+    height: var(--esp-2);
+    background: var(--cor-borda-controle);
+  }
+  .tabela__marcador[data-tipo="od"] {
+    background: var(--cor-od);
+  }
+  .tabela__marcador[data-tipo="ed"] {
+    background: var(--cor-ed);
+  }
+  .tabela__ausente {
+    color: var(--cor-texto-secundario);
+    font-weight: 400;
+  }
+
+  .tabela__linha-estado td,
+  .tabela__linha-estado:hover td {
+    height: auto;
+    padding: 0;
+    background: var(--cor-superficie);
+  }
+
+  /* ---------------------------------------------------------------- estados */
+
+  .estado-tabela {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--esp-2);
+    padding: var(--esp-8) var(--esp-4);
+    text-align: center;
+  }
+  .estado-tabela__titulo {
+    font: var(--tipo-titulo-cartao);
+  }
+  .estado-tabela__texto {
+    max-width: 60ch;
+    color: var(--cor-texto-secundario);
+  }
+  .estado-tabela__acao {
+    margin-top: var(--esp-2);
+  }
+  .estado-tabela[data-tipo="carregando"] {
+    align-items: flex-start;
+    padding: var(--esp-3);
+  }
+  .estado-tabela[data-tipo="carregando"] .estado-tabela__titulo {
+    font: var(--tipo-apoio);
+    color: var(--cor-texto-secundario);
+  }
+  .estado-tabela[data-tipo="erro"] .estado-tabela__titulo {
+    color: var(--cor-erro-texto);
+  }
+  /* Fora de tabela (ex.: "Nenhuma empresa cadastrada"): bloco com borda tracejada. */
+  :not(td) > .estado-tabela[data-tipo="vazio"] {
+    background: var(--cor-superficie);
+    border: 1px dashed var(--cor-borda-controle);
+    border-radius: var(--raio-cartao);
+  }
+
+  [data-alinhar="fim"] .esqueleto {
+    margin-left: auto;
+    width: 50%;
+  }
+
+  /* Paginação abaixo da tabela. */
+  .paginacao {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--esp-3);
+    margin-top: var(--esp-3);
+  }
+  .paginacao__faixa {
+    font: var(--tipo-apoio);
+    color: var(--cor-texto-secundario);
+  }
+}
+

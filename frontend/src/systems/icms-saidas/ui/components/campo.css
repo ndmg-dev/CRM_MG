@@ -1,0 +1,109 @@
+/* [escopado] tudo sob .icms-root (não vaza para o resto do CRM) */
+.icms-root {
+  /* Formulários: coluna de campos, controles de texto e de escolha (rádio, caixa de marcação). */
+
+  .formulario {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-4);
+  }
+  .formulario--estreito {
+    max-width: 440px;
+    padding: var(--esp-6);
+    background: var(--cor-superficie);
+    border: 1px solid var(--cor-linha);
+    border-radius: var(--raio-cartao);
+  }
+  .formulario__texto {
+    font: var(--tipo-apoio);
+    color: var(--cor-texto-secundario);
+  }
+  .formulario__acoes {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--esp-3);
+  }
+
+  .campo {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-1);
+  }
+  .campo__rotulo {
+    font: var(--tipo-rotulo);
+  }
+  .campo__opcional {
+    font-weight: 400;
+    color: var(--cor-texto-secundario);
+  }
+  .campo__dica {
+    font: var(--tipo-apoio);
+    color: var(--cor-texto-secundario);
+  }
+  .campo__erro {
+    font: var(--tipo-apoio);
+    color: var(--cor-erro-texto);
+  }
+
+  .campo__controle {
+    width: 100%;
+    min-height: var(--alt-padrao);
+    padding: 0 var(--esp-3);
+    font: var(--tipo-corpo);
+    color: var(--cor-texto);
+    background: var(--cor-fundo);
+    border: 1px solid var(--cor-borda-controle);
+    border-radius: var(--raio-controle);
+  }
+  textarea.campo__controle {
+    padding: var(--esp-2) var(--esp-3);
+    resize: vertical;
+  }
+  .campo__controle::placeholder {
+    color: var(--cor-texto-secundario);
+  }
+  .campo__controle[aria-invalid="true"] {
+    border-color: var(--cor-erro-borda);
+  }
+  .campo__controle:disabled {
+    color: var(--cor-texto-secundario);
+    border-color: var(--cor-linha);
+    cursor: not-allowed;
+  }
+
+  /* Grupo de rádios com ajuda ao lado de cada opção. */
+  fieldset.opcoes {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-2);
+    margin: 0;
+    padding: var(--esp-2) var(--esp-3) var(--esp-3);
+    border: 1px solid var(--cor-linha);
+    border-radius: var(--raio-controle);
+  }
+  fieldset.opcoes legend {
+    padding: 0 var(--esp-1);
+    font: var(--tipo-rotulo);
+  }
+  .opcao {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--esp-2);
+  }
+  .opcao > label,
+  .caixa-marcacao {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--esp-2);
+    min-height: var(--alt-compacta);
+    cursor: pointer;
+  }
+
+  /* Razão social: mostrada em maiúsculas enquanto se digita (o valor é convertido ao salvar, sem o cursor pular). */
+  .campo__controle--maiusculas {
+    text-transform: uppercase;
+  }
+}
+

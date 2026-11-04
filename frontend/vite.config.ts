@@ -1,4 +1,5 @@
-import { defineConfig, loadEnv } from 'vite'
+import { loadEnv } from 'vite'
+import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin'
@@ -49,7 +50,13 @@ export default defineConfig(({ mode }) => {
         '@pomodoro': path.resolve(__dirname, './src/systems/pomodoro-ti'),
         '@sistemasexternos': path.resolve(__dirname, './src/systems/sistemas-externos'),
         '@extratos': path.resolve(__dirname, './src/systems/extratos-socios'),
+        '@icms': path.resolve(__dirname, './src/systems/icms-saidas'),
       },
+    },
+    // Testes (vitest): por padrão ambiente node; os de componente declaram `// @vitest-environment jsdom`.
+    test: {
+      environment: 'node',
+      include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
     },
     server: {
       port: 3000,

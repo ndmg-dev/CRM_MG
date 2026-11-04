@@ -39,7 +39,8 @@
       "@vpsmonitor/*": ["./src/systems/vps-monitor/*"],
       "@pomodoro/*": ["./src/systems/pomodoro-ti/*"],
       "@sistemasexternos/*": ["./src/systems/sistemas-externos/*"],
-      "@extratos/*": ["./src/systems/extratos-socios/*"]
+      "@extratos/*": ["./src/systems/extratos-socios/*"],
+      "@icms/*": ["./src/systems/icms-saidas/*"]
     },
 
     /* Bundler mode */

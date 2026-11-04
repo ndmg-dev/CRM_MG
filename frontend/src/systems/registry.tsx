@@ -110,6 +110,9 @@ export const systemRegistry: Record<string, LazyExoticComponent<ComponentType>> 
   // sistemas_seed.sql, igual ao vps-monitor/pomodoro-ti. Lê do backend em
   // app/api/v1/endpoints/extratos.py.
   'extratos-socios': lazy(() => import('@extratos/ExtratosSociosApp')),
+  // Sistema novo (setor FISCAL): apuração de ICMS saídas (OD/ED). UI aqui; cálculo no motor, chamado só pelo backend do CRM
+  // (app/api/v1/endpoints/icms_saidas.py). Slug 'icms-saidas' — INSERT em public.sistemas (ver docs/aplicacoes/icms-saidas/README.md).
+  'icms-saidas': lazy(() => import('@icms/IcmsSaidasApp')),
 }
 
 /**

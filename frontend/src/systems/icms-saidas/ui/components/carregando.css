@@ -1,0 +1,59 @@
+/* [escopado] tudo sob .icms-root (não vaza para o resto do CRM) */
+.icms-root {
+  /* Tela de carregamento: só variáveis de ui/tokens.css (nenhuma cor em hex; sem estilo inline por causa da CSP). */
+  .carregando {
+    border: 0;
+    padding: 0;
+    margin: 0;
+    max-width: none;
+    max-height: none;
+    width: 100vw;
+    height: 100vh;
+    background: transparent;
+    color: var(--cor-texto);
+  }
+  .carregando[open] {
+    display: grid;
+    place-items: center;
+  }
+  .carregando::backdrop {
+    background: var(--cor-sobreposicao);
+  }
+  .carregando__caixa {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--esp-3);
+    max-width: min(420px, calc(100vw - 2 * var(--esp-4)));
+    padding: var(--esp-6) var(--esp-8);
+    text-align: center;
+    background: var(--cor-superficie-elevada);
+    border: 1px solid var(--cor-linha);
+    border-radius: var(--raio-dialogo);
+    box-shadow: var(--sombra);
+  }
+  .carregando__giro {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 4px solid var(--cor-linha);
+    border-top-color: var(--cor-acento);
+    animation: carregando-giro 0.9s linear infinite;
+  }
+  .carregando__texto {
+    margin: 0;
+    font: var(--tipo-corpo);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .carregando__giro {
+      animation-duration: 3s;
+    }
+  }
+}
+
+@keyframes carregando-giro {
+  to {
+    transform: rotate(360deg);
+  }
+}

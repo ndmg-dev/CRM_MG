@@ -1,0 +1,67 @@
+/* [escopado] tudo sob .icms-root (não vaza para o resto do CRM) */
+.icms-root {
+  /* Correção da importação da memória. Só variáveis de ui/tokens.css (nenhuma cor em hex aqui; sem estilo inline por causa da CSP). */
+  .correcao {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-4);
+    padding: var(--esp-4);
+    border: 1px solid var(--cor-linha);
+    border-radius: var(--raio-cartao);
+    background: var(--cor-superficie);
+  }
+  .correcao__cabecalho {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-1);
+  }
+  .correcao__titulo {
+    font: var(--tipo-titulo-cartao);
+    margin: 0;
+  }
+  .correcao__subtitulo {
+    font: var(--tipo-titulo-cartao);
+    margin: 0 0 var(--esp-2);
+    flex-wrap: wrap;
+  }
+  .correcao__resumo {
+    font: var(--tipo-apoio);
+    color: var(--cor-texto-secundario);
+    margin: 0;
+  }
+  .correcao__secao {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-2);
+  }
+  .correcao__linha-acao {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--esp-2) var(--esp-3);
+  }
+  .correcao__linha-acao .campo__controle {
+    min-width: 180px;
+  }
+  .correcao__ignorar {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--esp-2);
+    font: var(--tipo-apoio);
+    white-space: nowrap;
+  }
+  .correcao__rodape {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--esp-3);
+    padding-top: var(--esp-3);
+    border-top: 1px solid var(--cor-linha);
+  }
+  .correcao__contagem {
+    margin-left: auto;
+    font: var(--tipo-apoio);
+    color: var(--cor-texto-secundario);
+  }
+}
+
