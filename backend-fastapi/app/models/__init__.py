@@ -5,6 +5,7 @@ from app.models.client import Cliente
 from app.models.task import Tarefa
 from app.models.system import Sistema
 from app.models.user_system_access import UsuarioSistemaAcesso
+from app.models.usuario_permissao import UsuarioPermissao
 from app.models.notification import Notificacao
 from app.models.audit_log import LogAuditoria
 from app.models.document import Documento
@@ -33,6 +34,7 @@ __all__ = [
     "Tarefa",
     "Sistema",
     "UsuarioSistemaAcesso",
+    "UsuarioPermissao",
     "LogAuditoria",
     "Documento",
     "ClientToken",

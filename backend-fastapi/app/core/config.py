@@ -75,6 +75,14 @@ class Settings(BaseSettings):
     # navegador, só o backend do CRM fala com ela.
     FRONTEIRA_V8_API_URL: str = ""
 
+    # Motor de apuração de ICMS das saídas (repo tnunes8/motor-calculos). Só o
+    # backend do CRM fala com ele: a chave vai no cabeçalho X-API-Key e NUNCA
+    # chega ao navegador. Vazios = o sistema "ICMS Saídas" responde 503 (ver
+    # app/api/v1/endpoints/icms_saidas.py). A chave precisa estar em API_KEYS do
+    # motor (nome "crm") e o nome "crm" em REGRAS_ADMIN_SISTEMAS para publicar regras.
+    MOTOR_ICMS_URL: str = ""
+    MOTOR_ICMS_API_KEY: str = ""
+
     # Monitoramento da VPS Hostinger (aba Tecnologia/TI). O token é gerado no
     # hPanel (Dev Tools → API), herda as permissões do usuário e NUNCA chega
     # no navegador — só o backend do CRM fala com a API da Hostinger, sempre
