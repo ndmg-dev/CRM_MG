@@ -1,0 +1,92 @@
+/* [escopado] tudo sob .icms-root (não vaza para o resto do CRM) */
+.icms-root {
+  .barra-filtros {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--esp-3) var(--esp-6);
+    margin: var(--esp-6) 0 var(--esp-4);
+  }
+
+  .grupo-filtro {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-2);
+  }
+
+  /* Controle segmentado: botões colados, cantos de controle (a pílula fica só para selos, que não são clicáveis). */
+  .grupo-filtro__opcoes {
+    display: inline-flex;
+    flex-wrap: wrap;
+  }
+  .grupo-filtro__opcao {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--esp-2);
+    min-height: var(--alt-padrao);
+    padding: 0 var(--esp-3);
+    font: var(--tipo-corpo);
+    font-weight: 600;
+    color: var(--cor-texto);
+    background: transparent;
+    border: 1px solid var(--cor-borda-controle);
+    border-radius: 0;
+    cursor: pointer;
+  }
+  .grupo-filtro__opcao + .grupo-filtro__opcao {
+    margin-left: -1px;
+  }
+  .grupo-filtro__opcao:first-child {
+    border-radius: var(--raio-controle) 0 0 var(--raio-controle);
+  }
+  .grupo-filtro__opcao:last-child {
+    border-radius: 0 var(--raio-controle) var(--raio-controle) 0;
+  }
+  .grupo-filtro__opcao:hover {
+    position: relative;
+    border-color: var(--cor-acento);
+  }
+  .grupo-filtro__opcao:focus-visible {
+    position: relative;
+    z-index: 1;
+  }
+  .grupo-filtro__opcao[aria-pressed="true"] {
+    position: relative;
+    color: var(--cor-texto-sobre-acento);
+    background: var(--cor-acento);
+    border-color: var(--cor-acento);
+  }
+  .grupo-filtro__opcao[aria-pressed="true"]:focus-visible {
+    outline-color: var(--cor-texto);
+  }
+  .grupo-filtro__contagem {
+    font: var(--tipo-rotulo);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .campo-busca {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-1);
+    min-width: 240px;
+    flex: 1 1 240px;
+    max-width: 360px;
+  }
+  .campo-busca label {
+    font: var(--tipo-rotulo);
+    color: var(--cor-texto-secundario);
+  }
+  .campo-busca input {
+    min-height: var(--alt-padrao);
+    padding: 0 var(--esp-3);
+    font: var(--tipo-corpo);
+    color: var(--cor-texto);
+    background: var(--cor-fundo);
+    border: 1px solid var(--cor-borda-controle);
+    border-radius: var(--raio-controle);
+  }
+  .campo-busca input::placeholder {
+    color: var(--cor-texto-secundario);
+  }
+}
+

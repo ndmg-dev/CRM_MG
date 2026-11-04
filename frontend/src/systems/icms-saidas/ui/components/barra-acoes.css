@@ -1,0 +1,40 @@
+/* [escopado] tudo sob .icms-root (não vaza para o resto do CRM) */
+.icms-root {
+  .barra-acoes {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--esp-3) var(--esp-6);
+    padding: var(--esp-3) var(--esp-4);
+    background: var(--cor-superficie-elevada);
+    border-top: 1px solid var(--cor-borda-controle);
+    box-shadow: var(--sombra);
+  }
+  .barra-acoes__resumo {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .barra-acoes__acoes {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--esp-3);
+  }
+
+  @media (max-width: 599px) {
+    .barra-acoes__acoes {
+      flex-direction: column;
+      align-items: stretch;
+      width: 100%;
+    }
+    .barra-acoes__acoes .botao {
+      width: 100%;
+    }
+  }
+}
+

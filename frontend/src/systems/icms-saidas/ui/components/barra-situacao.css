@@ -1,0 +1,53 @@
+/* [escopado] tudo sob .icms-root (não vaza para o resto do CRM) */
+.icms-root {
+  /* Cor de cada situação na barra do painel e nas amostras dos filtros.
+     Concluída é neutra (estado normal); pendência e erro usam as cores de aviso; Sem apuração é o trilho vazio. */
+  [data-situacao="CONCLUIDA"] {
+    --cor-situacao: var(--cor-texto-secundario);
+  }
+  [data-situacao="CONCLUIDA_COM_PENDENCIAS"] {
+    --cor-situacao: var(--cor-pendencia-texto);
+  }
+  [data-situacao="ERRO"] {
+    --cor-situacao: var(--cor-erro-borda);
+  }
+  [data-situacao="PROCESSANDO"] {
+    --cor-situacao: var(--cor-acento);
+  }
+  [data-situacao="SEM_APURACAO"] {
+    --cor-situacao: var(--cor-linha);
+  }
+
+  .barra-situacao {
+    display: block;
+    width: 100%;
+    height: var(--esp-3);
+    overflow: hidden;
+    background: var(--cor-linha);
+    border-radius: var(--raio-chip);
+  }
+  .barra-situacao rect {
+    fill: var(--cor-situacao);
+    /* Separação de 1 px entre segmentos, independente da escala do viewBox. */
+    stroke: var(--cor-superficie);
+    stroke-width: 1px;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .amostra-situacao {
+    flex: none;
+    width: 10px;
+    height: 10px;
+    background: var(--cor-situacao, var(--cor-borda-controle));
+    border-radius: 2px;
+  }
+  .amostra-situacao[data-situacao="SEM_APURACAO"] {
+    background: transparent;
+    border: 1px dashed var(--cor-borda-controle);
+  }
+  /* Sobre o fundo de acento (filtro ativo), a amostra ganha contorno para não sumir. */
+  [aria-pressed="true"] > .amostra-situacao {
+    box-shadow: 0 0 0 1px var(--cor-texto-sobre-acento);
+  }
+}
+

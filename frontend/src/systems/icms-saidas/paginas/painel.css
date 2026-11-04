@@ -1,0 +1,108 @@
+/* [escopado] tudo sob .icms-root (não vaza para o resto do CRM) */
+.icms-root {
+  /* Título com a competência: "Painel de ‹ 09/2026 ›". */
+  .painel__titulo {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--esp-2) var(--esp-4);
+  }
+
+  /* Resumo do mês: barra de situação à esquerda, totais à direita; empilha em telas estreitas. */
+  .resumo-mes {
+    display: grid;
+    gap: var(--esp-6);
+    padding: var(--esp-5) var(--esp-6);
+    background: var(--cor-superficie);
+    border: 1px solid var(--cor-linha);
+    border-radius: var(--raio-cartao);
+  }
+  @media (min-width: 1100px) {
+    .resumo-mes {
+      grid-template-columns: minmax(320px, 1fr) minmax(0, 1.6fr);
+      align-items: center;
+    }
+  }
+  .resumo-mes__fechamento {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-3);
+  }
+  .resumo-mes__titulo {
+    font: var(--tipo-titulo-secao);
+  }
+  .resumo-mes__esqueleto {
+    height: var(--esp-5);
+    width: 70%;
+  }
+  .resumo-mes__totais {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  /* Divisória entre os totais (decorativa). */
+  .resumo-mes__totais > * + * {
+    padding-left: var(--esp-6);
+    border-left: 1px solid var(--cor-linha);
+  }
+  .resumo-mes__totais > :not(:last-child) {
+    padding-right: var(--esp-6);
+  }
+  @media (max-width: 759px) {
+    .resumo-mes {
+      padding: var(--esp-4);
+    }
+    .resumo-mes__totais {
+      grid-template-columns: 1fr;
+      gap: var(--esp-4);
+    }
+    .resumo-mes__totais > * + * {
+      padding: var(--esp-4) 0 0;
+      border-left: none;
+      border-top: 1px solid var(--cor-linha);
+    }
+  }
+
+  /* Empresa: razão social (link) e código embaixo. */
+  .painel__empresa {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: var(--esp-2) 0;
+  }
+  .painel__razao {
+    font-weight: 600;
+    color: var(--cor-texto);
+    text-decoration: none;
+  }
+  .painel__razao:hover {
+    color: var(--cor-acento-forte);
+    text-decoration: underline;
+  }
+  .painel__codigo {
+    font: var(--tipo-apoio);
+    color: var(--cor-texto-secundario);
+  }
+
+  .painel__atualizado {
+    display: flex;
+    align-items: center;
+    min-height: var(--alt-padrao);
+    margin-left: auto;
+    font: var(--tipo-apoio);
+    color: var(--cor-texto-secundario);
+  }
+
+  /* Erro e estado vazio ocupam o lugar do resumo e da tabela. */
+  .pagina__cabecalho + .alerta,
+  .pagina__cabecalho + .estado-tabela {
+    margin-top: var(--esp-2);
+  }
+
+  /* Ação "Criar pastas no Drive" com a ajuda ao lado. */
+  .criar-pastas {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--esp-2);
+  }
+}
+

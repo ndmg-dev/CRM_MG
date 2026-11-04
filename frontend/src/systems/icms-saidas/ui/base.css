@@ -1,0 +1,150 @@
+/* [escopado] tudo sob .icms-root (não vaza para o resto do CRM) */
+.icms-root {
+  /* Base: reset, corpo, títulos, links, foco e utilitários. Só variáveis de tokens.css (nenhuma cor fixa). */
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+
+
+  h1,
+  h2,
+  h3,
+  p,
+  ul,
+  ol,
+  dl,
+  dd,
+  figure {
+    margin: 0;
+  }
+
+  h1 {
+    font: var(--tipo-titulo-pagina);
+  }
+  h2 {
+    font: var(--tipo-titulo-secao);
+  }
+  h3 {
+    font: var(--tipo-titulo-cartao);
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+  }
+
+  /* Caixa de marcação e rádio nativos, no acento (tamanho de toque mínimo vem do rótulo em volta). */
+  input[type="checkbox"],
+  input[type="radio"] {
+    flex: none;
+    width: var(--esp-4);
+    height: var(--esp-4);
+    margin: 0;
+    accent-color: var(--cor-acento);
+    cursor: pointer;
+  }
+
+  img,
+  svg {
+    display: block;
+    max-width: 100%;
+  }
+
+  a {
+    color: var(--cor-acento);
+  }
+  a:hover {
+    color: var(--cor-acento-forte);
+  }
+
+  /* Foco de teclado sempre visível. Sobre fundo de acento (botão primário, chip ativo) o contorno usa o texto. */
+  :focus-visible {
+    outline: 2px solid var(--cor-acento);
+    outline-offset: 2px;
+  }
+  .sobre-acento:focus-visible,
+  [data-sobre-acento]:focus-visible {
+    outline-color: var(--cor-texto);
+  }
+
+  /* Some da tela, mas continua para leitores de tela. */
+  .visualmente-oculto {
+    position: absolute !important;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  [hidden] {
+    display: none !important;
+  }
+
+  /* Esqueleto de carregamento (brilho desligado com prefers-reduced-motion). */
+
+  .esqueleto {
+    display: block;
+    height: var(--esp-3);
+    width: 70%;
+    background: linear-gradient(
+      90deg,
+      var(--cor-superficie-elevada) 0%,
+      var(--cor-linha) 50%,
+      var(--cor-superficie-elevada) 100%
+    );
+    background-size: 200% 100%;
+    border-radius: var(--raio-chip);
+    animation: esqueleto-brilho 1.4s ease-in-out infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .esqueleto {
+      animation: none;
+    }
+  }
+
+  /* Rolagem com contraste suficiente (Firefox usa scrollbar-color; Chromium/Safari, os pseudo-elementos). */
+  ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--cor-superficie);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--cor-borda-controle);
+    border: 3px solid var(--cor-superficie);
+    border-radius: var(--raio-controle);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@keyframes esqueleto-brilho {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}

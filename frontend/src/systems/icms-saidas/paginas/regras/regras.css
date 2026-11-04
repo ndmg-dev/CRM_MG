@@ -1,0 +1,115 @@
+/* [escopado] tudo sob .icms-root (não vaza para o resto do CRM) */
+.icms-root {
+  /* Tela "Regras": abas com tabelas editáveis, resumo de diferenças e diálogo de publicação. Só variáveis de tokens.css. */
+  .regras__aba {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-4);
+    padding-top: var(--esp-4);
+    padding-bottom: var(--esp-12); /* espaço para a faixa fixa do rascunho */
+  }
+  .regras__aba h2 {
+    font: var(--tipo-titulo-secao);
+  }
+  .regras__barra-tabela {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--esp-2) var(--esp-4);
+    margin-top: var(--esp-2);
+  }
+  .regras__acoes-linha {
+    display: inline-flex;
+    gap: var(--esp-1);
+  }
+  .regras__nota,
+  .regras__nada {
+    font: var(--tipo-apoio);
+    color: var(--cor-texto-secundario);
+  }
+  .regras__cargas {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: var(--esp-3) var(--esp-4);
+  }
+  .regras__cargas .regras__nota {
+    grid-column: 1 / -1;
+  }
+  .regras__parametros {
+    display: grid;
+    grid-template-columns: minmax(200px, max-content) 1fr;
+    gap: var(--esp-3) var(--esp-6);
+    margin: 0;
+  }
+  .regras__parametros dt {
+    font: var(--tipo-rotulo);
+    color: var(--cor-texto-secundario);
+  }
+  .regras__parametros dd {
+    margin: 0;
+  }
+
+  /* Resumo de diferenças (publicação e histórico). */
+  .regras__resumo {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-4);
+  }
+  .regras__resumo-tabela h3 {
+    font: var(--tipo-rotulo);
+    margin-bottom: var(--esp-2);
+  }
+  .regras__resumo-lista {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-2);
+    padding: 0;
+    list-style: none;
+  }
+  .regras__resumo-lista .lote__mudancas {
+    margin: var(--esp-1) 0 0 var(--esp-6);
+  }
+
+  /* Diálogo de publicação. */
+  .regras__publicar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-4);
+  }
+  .regras__publicar h3 {
+    font: var(--tipo-titulo-cartao);
+  }
+  .regras__vigencia {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-2);
+    border: 1px solid var(--cor-linha);
+    border-radius: var(--raio-cartao);
+    padding: var(--esp-3) var(--esp-4);
+  }
+  .regras__vigencia legend {
+    font: var(--tipo-rotulo);
+    padding: 0 var(--esp-1);
+  }
+  .regras__opcao {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--esp-2);
+  }
+  .regras__confirmacao {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-2);
+    padding: var(--esp-3) var(--esp-4);
+    background: var(--cor-pendencia-fundo);
+    border: 1px solid var(--cor-pendencia-borda);
+    border-radius: var(--raio-cartao);
+    color: var(--cor-pendencia-texto);
+  }
+  .regras__confirmacao ul {
+    margin: 0;
+    padding-left: var(--esp-5);
+  }
+}
+

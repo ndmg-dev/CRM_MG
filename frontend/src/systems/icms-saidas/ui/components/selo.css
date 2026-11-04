@@ -1,0 +1,95 @@
+/* [escopado] tudo sob .icms-root (não vaza para o resto do CRM) */
+.icms-root {
+  /* Selos (situação da apuração, estado do lote) e chips (origem da pendência, tipo de diferença). */
+
+  .selo {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--esp-1);
+    padding: 2px var(--esp-2);
+    font: var(--tipo-rotulo);
+    white-space: nowrap;
+    border: 1px solid;
+    border-radius: var(--raio-pilula);
+  }
+  .selo__icone {
+    flex: none;
+  }
+  /* Estado normal (ex.: Concluída): sem pílula, só ícone e texto. */
+  .selo[data-variante="quieto"] {
+    padding-left: 0;
+    color: var(--cor-texto-secundario);
+    background: transparent;
+    border-color: transparent;
+  }
+  .selo[data-variante="neutro"] {
+    color: var(--cor-texto-secundario);
+    background: transparent;
+    border-color: var(--cor-borda-controle);
+  }
+  .selo[data-variante="processando"] {
+    color: var(--cor-texto);
+    background: var(--cor-superficie-elevada);
+    border-color: var(--cor-acento);
+  }
+  .selo[data-variante="sucesso"] {
+    color: var(--cor-sucesso-texto);
+    background: var(--cor-sucesso-fundo);
+    border-color: var(--cor-sucesso-borda);
+  }
+  .selo[data-variante="pendencia"] {
+    color: var(--cor-pendencia-texto);
+    background: var(--cor-pendencia-fundo);
+    border-color: var(--cor-pendencia-borda);
+  }
+  .selo[data-variante="erro"] {
+    color: var(--cor-erro-texto);
+    background: var(--cor-erro-fundo);
+    border-color: var(--cor-erro-borda);
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--esp-1);
+    padding: 2px var(--esp-2);
+    font: var(--tipo-rotulo);
+    white-space: nowrap;
+    border: 1px solid;
+    border-radius: var(--raio-chip);
+  }
+
+  .chip--origem {
+    color: var(--cor-pendencia-texto);
+    background: var(--cor-pendencia-fundo);
+    border-color: var(--cor-pendencia-borda);
+  }
+
+  .chip__simbolo {
+    font-weight: 600;
+  }
+  .chip--diferenca[data-tipo="novo"] {
+    color: var(--cor-sucesso-texto);
+    background: var(--cor-sucesso-fundo);
+    border-color: var(--cor-sucesso-borda);
+  }
+  .chip--diferenca[data-tipo="alterado"] {
+    color: var(--cor-texto);
+    background: var(--cor-superficie-elevada);
+    border-color: var(--cor-borda-controle);
+  }
+  .chip--diferenca[data-tipo="removido"] {
+    color: var(--cor-erro-texto);
+    background: transparent;
+    border-color: var(--cor-erro-borda);
+    border-style: dashed;
+  }
+
+  /* Vários chips lado a lado (ex.: pendências por origem). */
+  .chips {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: var(--esp-1);
+  }
+}
+

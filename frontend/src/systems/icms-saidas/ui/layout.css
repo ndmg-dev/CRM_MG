@@ -1,0 +1,206 @@
+/* [escopado] tudo sob .icms-root (não vaza para o resto do CRM) */
+.icms-root {
+  /* Moldura comum às telas: cabeçalho global (56 px), página em coluna única até 1360 px, trilha e abas. */
+
+  /* ---------------------------------------------------------------- cabeçalho global */
+
+  .cabecalho {
+    background: var(--cor-superficie);
+    border-bottom: 1px solid var(--cor-linha);
+  }
+  .cabecalho__conteudo {
+    max-width: var(--largura-max);
+    min-height: var(--alt-cabecalho);
+    margin: 0 auto;
+    padding: var(--esp-2) var(--margem-lateral);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--esp-2) var(--esp-6);
+  }
+  .cabecalho__esquerda,
+  .cabecalho__usuario {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--esp-2) var(--esp-6);
+  }
+  .cabecalho__marca {
+    font: var(--tipo-titulo-cartao);
+    color: var(--cor-texto);
+    text-decoration: none;
+  }
+  .cabecalho__marca:hover {
+    color: var(--cor-texto);
+  }
+  /* Navegação principal (ex.: "Regras fiscais"). */
+  .cabecalho__link {
+    font-weight: 600;
+    color: var(--cor-texto-secundario);
+    text-decoration: none;
+  }
+  .cabecalho__link:hover,
+  .cabecalho__link[aria-current="page"] {
+    color: var(--cor-acento-forte);
+  }
+  .cabecalho__nome {
+    font-weight: 600;
+  }
+  .cabecalho__papel {
+    font: var(--tipo-rotulo);
+    color: var(--cor-texto-secundario);
+    border: 1px solid var(--cor-borda-controle);
+    border-radius: var(--raio-pilula);
+    padding: 2px var(--esp-2);
+  }
+  .cabecalho__sair {
+    min-height: var(--alt-compacta);
+    padding: 0 var(--esp-3);
+    font-weight: 600;
+    color: var(--cor-texto);
+    background: transparent;
+    border: 1px solid var(--cor-borda-controle);
+    border-radius: var(--raio-controle);
+    cursor: pointer;
+  }
+  .cabecalho__sair:hover {
+    border-color: var(--cor-acento);
+    color: var(--cor-acento-forte);
+  }
+
+  /* ---------------------------------------------------------------- página */
+
+  .pagina {
+    max-width: var(--largura-max);
+    margin: 0 auto;
+    padding: var(--esp-6) var(--margem-lateral) var(--esp-12);
+  }
+
+  /* Cabeçalho da página: título e subtítulo à esquerda, ações à direita. */
+  .pagina__cabecalho {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--esp-3) var(--esp-6);
+    margin-bottom: var(--esp-6);
+  }
+  .pagina__subtitulo {
+    margin-top: var(--esp-1);
+    color: var(--cor-texto-secundario);
+  }
+  .pagina__acoes {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--esp-3);
+  }
+
+  /* ---------------------------------------------------------------- trilha */
+
+  .trilha {
+    margin-bottom: var(--esp-2);
+    font: var(--tipo-apoio);
+    color: var(--cor-texto-secundario);
+  }
+  .trilha ol {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--esp-1);
+    padding: 0;
+    list-style: none;
+  }
+  .trilha li + li::before {
+    content: "›";
+    margin-right: var(--esp-1);
+    color: var(--cor-texto-secundario);
+  }
+  .trilha [aria-current="page"] {
+    color: var(--cor-texto);
+  }
+
+  /* ---------------------------------------------------------------- abas */
+
+  .abas {
+    display: flex;
+    gap: var(--esp-1);
+    margin: var(--esp-4) 0 var(--esp-6);
+    border-bottom: 1px solid var(--cor-linha);
+    overflow-x: auto;
+    scrollbar-color: var(--cor-borda-controle) var(--cor-superficie);
+  }
+  .aba {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--esp-2);
+    min-height: var(--alt-padrao);
+    padding: 0 var(--esp-4);
+    font-weight: 600;
+    color: var(--cor-texto-secundario);
+    white-space: nowrap;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    border-radius: 0;
+    cursor: pointer;
+  }
+  .aba:hover {
+    color: var(--cor-texto);
+    border-bottom-color: var(--cor-linha);
+  }
+  .aba[aria-selected="true"],
+  .aba[aria-selected="true"]:hover {
+    color: var(--cor-texto);
+    border-bottom-color: var(--cor-acento);
+  }
+  /* Contador amarelo da aba (ex.: Pendências). */
+  .aba__contador {
+    font: var(--tipo-rotulo);
+    min-width: 20px;
+    padding: 2px var(--esp-1);
+    text-align: center;
+    color: var(--cor-pendencia-texto);
+    background: var(--cor-pendencia-fundo);
+    border: 1px solid var(--cor-pendencia-borda);
+    border-radius: var(--raio-pilula);
+  }
+
+  /* Tela de espera enquanto a sessão é conferida. */
+  .carregando-tela {
+    padding: var(--esp-12) var(--margem-lateral);
+    color: var(--cor-texto-secundario);
+    text-align: center;
+  }
+
+  /* ---------------------------------------------------------------- tela de acesso (login) */
+
+  .acesso {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: var(--esp-4);
+  }
+  .acesso__cartao {
+    width: 100%;
+    max-width: 380px;
+  }
+  .acesso__marca {
+    font: var(--tipo-titulo-pagina);
+  }
+
+  /* Telas de conta (trocar senha): avisos e formulário na mesma coluna estreita. */
+  .conta {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-4);
+    max-width: 440px;
+  }
+
+  /* Avisos e formulários soltos entre o cabeçalho da página e o conteúdo. */
+  .pagina > .alerta,
+  .pagina > .formulario {
+    margin-bottom: var(--esp-4);
+  }
+}
+

@@ -1,0 +1,52 @@
+/* [escopado] tudo sob .icms-root (não vaza para o resto do CRM) */
+.icms-root {
+  .permissoes__lista {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    gap: var(--esp-3);
+  }
+  .permissoes__pessoa {
+    display: grid;
+    gap: var(--esp-3);
+    padding: var(--esp-4);
+    background: var(--cor-superficie);
+    border: 1px solid var(--cor-linha);
+    border-radius: var(--raio-cartao);
+  }
+  .permissoes__quem {
+    display: grid;
+    gap: var(--esp-1);
+  }
+  .permissoes__grupo {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--esp-2) var(--esp-6);
+    border: 0;
+    margin: 0;
+    padding: 0;
+  }
+  .permissoes__opcao {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--esp-2);
+    min-height: var(--alt-compacta);
+    cursor: pointer;
+  }
+  .permissoes__admin {
+    color: var(--cor-texto-secundario);
+  }
+  .permissoes__acao {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-3);
+  }
+  .sr-somente {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
