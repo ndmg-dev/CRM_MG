@@ -152,6 +152,20 @@ export async function baixar(caminho: string, nomePadrao: string): Promise<void>
   salvarArquivo(blob, nome);
 }
 
+/** Envia um formulário (upload) e baixa a planilha devolvida. Devolve os cabeçalhos `X-Parcial-*` da resposta (resumo), em minúsculas. */
+export async function enviarEBaixar(caminho: string, formulario: FormData, nomePadrao: string): Promise<Record<string, string>> {
+  const { blob, nome, resumo } = await comCarregamento(textoDaRequisicao("POST", caminho), async () => {
+    const resposta = await buscar("POST", caminho, formulario);
+    const resumo: Record<string, string> = {};
+    resposta.headers.forEach((valor, chave) => {
+      if (chave.startsWith("x-parcial-")) resumo[chave] = valor;
+    });
+    return { blob: await resposta.blob(), nome: nomeDoArquivo(resposta.headers.get("content-disposition"), nomePadrao), resumo };
+  });
+  salvarArquivo(blob, nome);
+  return resumo;
+}
+
 /** Entrega ao navegador, como download, um arquivo gerado na própria página. */
 export function salvarArquivo(blob: Blob, nome: string): void {
   const url = URL.createObjectURL(blob);

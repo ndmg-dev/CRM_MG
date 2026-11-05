@@ -1,10 +1,10 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 
-import { api, baixar, consulta } from "../../api";
+import { api, baixar, consulta, enviarEBaixar } from "../../api";
 import { usePermissoes } from "../../auth/permissoes";
 import { useCarregar } from "../../componentes/comuns";
 import { ChipsOrigem, EXPLICACAO_ORIGEM, origensDe } from "../../componentes/pendencias";
-import { formatarCompetencia, formatarData, formatarHora, formatarInteiro } from "../../formato";
+import { formatarCompetencia, formatarData, formatarHora, formatarInteiro, formatarValor } from "../../formato";
 import type { Apuracao } from "../../tipos";
 import { AjudaPopover } from "../../ui/components/AjudaPopover";
 import { Alerta, lerErro } from "../../ui/components/Alerta";
@@ -20,6 +20,37 @@ import "./empresa.css";
 /** Tempo típico do motor; passando do dobro, o texto avisa que está demorando. */
 const TEMPO_TIPICO_S = 20;
 const TEMPO_DEMORADO_S = 40;
+
+/** O que a apuração parcial devolveu: o arquivo já foi baixado; aqui fica o resumo e o aviso de que NÃO é a apuração do mês. */
+function ResultadoParcial({ resumo, aoOutro }: { resumo: Record<string, string>; aoOutro: () => void }) {
+  const itens = Number(resumo["x-parcial-itens"] ?? 0);
+  const sem = Number(resumo["x-parcial-itens-sem-memoria"] ?? 0);
+  const produtos = Number(resumo["x-parcial-produtos-sem-memoria"] ?? 0);
+  const comp = resumo["x-parcial-competencia"];
+  return (
+    <>
+      <Alerta tipo="sucesso" titulo={`Planilha parcial baixada${comp ? ` (${formatarCompetencia(comp)})` : ""}`}>
+        {formatarInteiro(itens - sem)} de {formatarInteiro(itens)} itens foram calculados.{" "}
+        {sem > 0
+          ? `${formatarInteiro(sem)} ${sem === 1 ? "item" : "itens"} (${formatarInteiro(produtos)} ${produtos === 1 ? "produto" : "produtos"}) não ${sem === 1 ? "tem" : "têm"} memória e ${sem === 1 ? "está" : "estão"} na aba SEM MEMÓRIA.`
+          : "Todos os itens têm tributação na memória."}
+      </Alerta>
+      <div className="cartao apurar__parcial">
+        <p>
+          OD parcial <strong>R$ {formatarValor(Number(resumo["x-parcial-od"] ?? 0))}</strong> · ED parcial{" "}
+          <strong>R$ {formatarValor(Number(resumo["x-parcial-ed"] ?? 0))}</strong> · Saldo parcial{" "}
+          <strong>R$ {formatarValor(Number(resumo["x-parcial-saldo"] ?? 0))}</strong>
+        </p>
+        <p className="apurar__dica">
+          Esta apuração não foi registrada: ela não substitui a do mês, não cria pendências e não aparece no Histórico. Os totais não incluem os itens sem memória.
+        </p>
+      </div>
+      <div className="apurar__depois">
+        <Botao onClick={aoOutro}>Processar outro arquivo</Botao>
+      </div>
+    </>
+  );
+}
 
 /**
  * Resultado de uma apuração: cabeçalho (competência, situação, quando e quem), OD / ED / Saldo,
@@ -137,6 +168,8 @@ export function AbaApurar({
   const [erro, setErro] = useState<unknown>(null);
   const [resultado, setResultado] = useState<Apuracao | null>(null);
   const [anuncio, setAnuncio] = useState("");
+  const [parcial, setParcial] = useState<Record<string, string> | null>(null); // resumo da apuração parcial baixada
+  const [modo, setModo] = useState<"completa" | "parcial">("completa");
   const [copiado, setCopiado] = useState(false);
   // Marcado ANTES da chamada: segundo clique, Enter ou arquivo solto durante o envio são ignorados.
   const enviando = useRef(false);
@@ -181,6 +214,8 @@ export function AbaApurar({
     setErro(null);
     setResultado(null);
     setCopiado(false);
+    setParcial(null);
+    setModo("completa");
     setAnuncio("Processando a apuração…");
     const form = new FormData();
     form.set("arquivo", arquivo);
@@ -200,7 +235,36 @@ export function AbaApurar({
     }
   }
 
+  /** Só o que tem na memória: baixa a planilha GERAL + SEM MEMÓRIA. Não registra apuração (o motor devolve o arquivo e pronto). */
+  async function apurarParcial() {
+    if (enviando.current || !arquivo || !competenciaValida) return;
+    enviando.current = true;
+    setModo("parcial");
+    setFase("processando");
+    setErro(null);
+    setResultado(null);
+    setParcial(null);
+    setCopiado(false);
+    setAnuncio("Apurando só o que tem na memória…");
+    const form = new FormData();
+    form.set("arquivo", arquivo);
+    if (competencia) form.set("competencia", competencia);
+    try {
+      const resumo = await enviarEBaixar(`/api/empresas/${encodeURIComponent(codigo)}/apuracoes/parcial`, form, `apuracao_parcial_${codigo}.xlsx`);
+      setParcial(resumo);
+      setFase("sucesso");
+      setAnuncio("Planilha parcial baixada.");
+    } catch (e) {
+      setErro(e);
+      setFase("erro");
+      setAnuncio("Apuração parcial não gerada.");
+    } finally {
+      enviando.current = false;
+    }
+  }
+
   function processarOutro() {
+    setParcial(null);
     setArquivo(null);
     setResultado(null);
     setErro(null);
@@ -256,9 +320,21 @@ export function AbaApurar({
             Deixe vazio para usar a competência do relatório.
           </p>
         </div>
-        <Botao type="submit" variante="primario" tamanho="principal" carregando={processando} desabilitadoMotivo={processando ? null : motivoBotao}>
-          {textoBotao}
+        <Botao type="submit" variante="primario" tamanho="principal" carregando={processando && modo === "completa"} desabilitado={processando && modo === "parcial"} desabilitadoMotivo={processando ? null : motivoBotao}>
+          {modo === "completa" ? textoBotao : "Processar apuração"}
         </Botao>
+        <span className="rotulo-com-ajuda">
+          <Botao
+            variante="secundario"
+            carregando={processando && modo === "parcial"}
+            desabilitado={processando && modo === "completa"}
+            desabilitadoMotivo={processando ? null : motivoBotao}
+            onClick={() => void apurarParcial()}
+          >
+            {processando && modo === "parcial" ? `Apurando… ${segundos} s` : "Apurar só o que tem na memória"}
+          </Botao>
+          <AjudaPopover rotulo="Apuração parcial" texto={AJUDA.apuracaoParcial} />
+        </span>
         <p className="apurar__nota">
           Leva cerca de {TEMPO_TIPICO_S} s. Ao terminar, a planilha de conferência fica disponível em “Baixar planilha” e no
           Histórico.
@@ -321,6 +397,10 @@ export function AbaApurar({
           >
             {infoErro.mensagem} Nenhuma planilha foi gerada.
           </Alerta>
+        )}
+
+        {fase === "sucesso" && parcial && (
+          <ResultadoParcial resumo={parcial} aoOutro={processarOutro} />
         )}
 
         {fase === "sucesso" && resultado && (
