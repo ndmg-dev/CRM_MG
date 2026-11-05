@@ -30,6 +30,8 @@ export const AJUDA = {
     "Pode aceitar: a memória já tem este produto com a mesma descrição. Conferir: há produtos parecidos, mas a diferença pode mudar a tributação; veja o destaque. Sem sugestão: nada parecido na memória desta NCM.",
   tributacaoEmLote:
     "Escolha uma tributação, marque os produtos que são dela e aplique de uma vez. Item novo vale para todos os meses. O motor confere a categoria; se algo estiver errado, nada é gravado.",
+  aceitarSugestoes:
+    "Grava na memória, em todas as páginas, a tributação que o sistema sugeriu: a do item idêntico ou, quando só há parecido, a do item MAIS parecido (se a semelhança passar do mínimo que você escolher). Fica de fora o que não tem sugestão, o que está abaixo do mínimo e o que tem duas sugestões igualmente parecidas com tributações diferentes. Parecido não é igual: confira o mínimo antes de confirmar.",
   resumoPendencias:
     "Conta TODAS as pendências abertas, não só as desta página. Idênticas: já têm um item igual na memória (ignorando maiúsculas, acentos e espaços) e podem ser aceitas agora. Ambíguas: há item idêntico, mas com tributações diferentes. Parecidas: confira uma a uma.",
   aceitarTodasIdenticas:

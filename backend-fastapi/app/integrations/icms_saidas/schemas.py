@@ -175,6 +175,15 @@ class ResolucaoIn(BaseModel):
     tributacao: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=60)]
 
 
+class AceitarSugestoesIn(BaseModel):
+    """Aceita, de todas as páginas, a sugestão do sistema nas pendências abertas. O operador só escolhe a semelhança mínima; QUAIS
+    pendências e qual tributação ficam a cargo do motor (nunca vêm do cliente)."""
+
+    model_config = ConfigDict(extra="forbid")
+    similaridade_minima: float = Field(0.0, ge=0.0, le=1.0)
+    sobrescrever: bool = False
+
+
 class AceitarIdenticasIn(BaseModel):
     """Aceita, de todas as páginas, as pendências com sugestão idêntica e consistente (o motor decide quais)."""
 

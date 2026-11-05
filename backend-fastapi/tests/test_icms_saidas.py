@@ -3,6 +3,7 @@
 Sem banco: o usuário e as permissões entram por dependency_overrides e o motor é um httpx.MockTransport. O que depende de Postgres
 (conceder/revogar e o fluxo ponta a ponta) está em test_icms_saidas_permissoes_db.py.
 """
+import json
 import uuid
 
 import httpx
@@ -46,6 +47,8 @@ ROTAS = [
     ("GET", "/empresas/MM/pendencias", perm.CONSULTAR),
     ("GET", "/empresas/MM/pendencias/resumo-sugestoes", perm.CONSULTAR),
     ("POST", "/empresas/MM/pendencias/aceitar-identicas", perm.OPERAR),
+    ("GET", "/empresas/MM/pendencias/previa-sugestoes", perm.CONSULTAR),
+    ("POST", "/empresas/MM/pendencias/aceitar-sugestoes", perm.OPERAR),
     ("GET", "/empresas/MM/pendencias/exportar", perm.CONSULTAR),
     ("POST", "/empresas/MM/pendencias/resolver-lote", perm.OPERAR),
     ("POST", "/empresas/MM/pendencias/7/resolver", perm.OPERAR),
@@ -461,3 +464,32 @@ def test_apuracao_parcial_erro_do_motor_passa_como_veio_e_valida_o_upload(como, 
     assert r.status_code == 409 and r.json()["erro"]["codigo"] == "MEMORIA_VAZIA"
     assert c.post(f"{P}/empresas/MM/apuracoes/parcial", files=_arquivo("planilha.csv")).json()["erro"]["codigo"] == "EXTENSAO_INVALIDA"
     assert c.post(f"{P}/empresas/MM/apuracoes/parcial", files=_arquivo(), data={"competencia": "agosto"}).status_code == 422
+
+
+# ----------------------------------------------------------------------------------------------------- aceitar a sugestão em todas
+
+
+def test_previa_e_aceite_de_sugestoes_repassam_so_o_minimo_e_o_sobrescrever(como, motor):
+    c = como(perm.OPERAR)
+    c.get(f"{P}/empresas/MM/pendencias/previa-sugestoes", params={"similaridade_minima": 0.9})
+    assert motor.chamadas[-1].url.path == "/v1/empresas/MM/pendencias/previa-sugestoes" and dict(motor.chamadas[-1].url.params) == {"similaridade_minima": "0.9"}
+    c.post(f"{P}/empresas/MM/pendencias/aceitar-sugestoes", json={"similaridade_minima": 0.85, "sobrescrever": True})
+    assert motor.chamadas[-1].url.path == "/v1/empresas/MM/pendencias/aceitar-sugestoes"
+    assert json.loads(motor.corpos[-1]) == {"similaridade_minima": 0.85, "sobrescrever": True}
+
+
+def test_aceite_de_sugestoes_nao_aceita_lista_de_pendencias_nem_minimo_fora_da_faixa(como, motor):
+    c = como(perm.OPERAR)
+    antes = len(motor.chamadas)
+    for corpo in ({"pendencias": [1, 2]}, {"similaridade_minima": 1.5}, {"similaridade_minima": -1}, {"similaridade_minima": "alto"}):
+        r = c.post(f"{P}/empresas/MM/pendencias/aceitar-sugestoes", json=corpo)
+        assert r.status_code == 422 and r.json()["erro"]["codigo"] == "REQUISICAO_INVALIDA", corpo  # quem escolhe quais é o motor
+    assert c.get(f"{P}/empresas/MM/pendencias/previa-sugestoes", params={"similaridade_minima": 2}).status_code == 422
+    assert len(motor.chamadas) == antes  # nada chegou ao motor
+
+
+def test_consultar_ve_a_previa_mas_nao_grava(como, motor):
+    c = como(perm.CONSULTAR)
+    assert c.get(f"{P}/empresas/MM/pendencias/previa-sugestoes").status_code == 200
+    r = c.post(f"{P}/empresas/MM/pendencias/aceitar-sugestoes", json={})
+    assert r.status_code == 403 and r.json()["erro"]["codigo"] == "SEM_PERMISSAO"

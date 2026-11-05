@@ -85,7 +85,7 @@ const REGRAS = {
 
 type Post = { url: string; corpo: Record<string, unknown> };
 
-type Config = { falharNoPost?: number; total?: number; resumo?: Partial<ResumoSugestoes>; respostaPost?: (corpo: Record<string, unknown>, url: string) => Record<string, unknown> };
+type Config = { previa?: (minimo: number) => Record<string, unknown>; falharNoPost?: number; total?: number; resumo?: Partial<ResumoSugestoes>; respostaPost?: (corpo: Record<string, unknown>, url: string) => Record<string, unknown> };
 
 const comTotal = (corpo: unknown, total: number) =>
   new Response(JSON.stringify(corpo), { status: 200, headers: { "Content-Type": "application/json", "X-Total-Count": String(total) } });
@@ -100,6 +100,7 @@ function resumoDe(lista: Pendencia[], extra: Partial<ResumoSugestoes> = {}): Res
 function simularLote(lista: Pendencia[], config: Config | number = {}) {
   const cfg: Config = typeof config === "number" ? { falharNoPost: config } : config;
   const gets: string[] = [];
+  const previas: number[] = [];
   const posts: Post[] = [];
   vi.stubGlobal(
     "fetch",
@@ -114,6 +115,12 @@ function simularLote(lista: Pendencia[], config: Config | number = {}) {
         return respostaJson({ resolvidas: n, adicionadas: n, sobrescritas: 0, mantidas: 0, ja_tratadas: 0, lote_id: "x" });
       }
       if (url.startsWith("/api/v1/icms-saidas/regras")) return respostaJson(REGRAS);
+      if (url.includes("/pendencias/previa-sugestoes")) {
+        const minimo = Number(new URL(url, "http://x").searchParams.get("similaridade_minima"));
+        previas.push(minimo);
+        if (cfg.previa) return respostaJson(cfg.previa(minimo));
+        return respostaJson({ abertas: lista.length, aceitaveis: 0, identicas: 0, parecidas: 0, ficam_para_conferir: lista.length });
+      }
       if (url.includes("/pendencias/resumo-sugestoes")) return respostaJson(resumoDe(lista, cfg.resumo));
       if (url.includes("/pendencias/exportar")) return new Response(new Blob(["xlsx"]), { status: 200, headers: { "Content-Type": "application/octet-stream" } });
       if (url.includes("/pendencias?")) {
@@ -123,7 +130,7 @@ function simularLote(lista: Pendencia[], config: Config | number = {}) {
       return respostaJson({});
     }),
   );
-  return { gets, posts };
+  return { gets, posts, previas };
 }
 
 async function abrirLote() {
@@ -525,5 +532,122 @@ describe("Pendências – paginação com total", () => {
     const nav = duas.querySelector("nav.paginacao")!;
     await agir(() => botaoEm(nav, "Próxima").click());
     expect(botaoEm(duas.querySelector("nav.paginacao")!, "Próxima").disabled).toBe(true);
+  });
+});
+
+
+// ------------------------------------------------------------------------------- aceitar a sugestão do sistema em todas as pendências
+
+const PREVIA = (m: number) =>
+  m >= 0.9
+    ? { abertas: 402, aceitaveis: 60, identicas: 2, parecidas: 58, ficam_para_conferir: 342 }
+    : { abertas: 402, aceitaveis: 377, identicas: 2, parecidas: 375, ficam_para_conferir: 25 };
+const RESUMO_COM_SUGESTOES = { abertas: 402, identicas_aceitaveis: 2, parecidas: 375, sem_sugestao: 25 };
+const abrirDialogoTodas = async (raiz: HTMLElement) => agir(() => botaoEm(raiz.querySelector(".pendencias__resumo")!, "Aceitar a sugestão em todas").click());
+const dialogoTodas = (raiz: HTMLElement) => raiz.querySelector("dialog[open]")!;
+const mudarMinimo = async (raiz: HTMLElement, valor: string) =>
+  agir(() => {
+    const select = raiz.querySelector<HTMLSelectElement>("dialog[open] select")!;
+    select.value = valor;
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+
+describe("Pendências – aceitar a sugestão do sistema em todas", () => {
+  it("abre pedindo a prévia com o padrão 'qualquer sugestão' e mostra o que vai ser cadastrado e o que fica para conferir", async () => {
+    const { previas, posts } = simularLote(MISTA, { resumo: RESUMO_COM_SUGESTOES, previa: PREVIA });
+    const raiz = await abrirLote();
+    expect(previas).toEqual([]); // fechado, não consulta o motor
+    await abrirDialogoTodas(raiz);
+    const d = dialogoTodas(raiz);
+    expect(previas).toEqual([0]);
+    expect(d.querySelector<HTMLSelectElement>("select")!.value).toBe("0");
+    expect(d.textContent).toContain("Vai cadastrar 377 pendências (2 idênticas e 375 parecidas)");
+    expect(d.textContent).toContain("25 ficam para conferir");
+    expect(d.textContent).toContain("parecido não é igual");
+    expect(botaoEm(d, "Cadastrar 377 na memória")).toBeTruthy();
+    expect(posts).toEqual([]); // abrir não grava nada
+  });
+
+  it("trocar o mínimo atualiza a contagem na hora e o envio leva esse mínimo", async () => {
+    const { previas, posts } = simularLote(MISTA, {
+      resumo: RESUMO_COM_SUGESTOES, previa: PREVIA,
+      respostaPost: () => ({ resolvidas: 60, adicionadas: 60, sobrescritas: 0, mantidas: 0, ja_tratadas: 0, lote_id: "x", encontradas: 60, restantes: 0, identicas: 2, parecidas: 58 }),
+    });
+    const raiz = await abrirLote();
+    await abrirDialogoTodas(raiz);
+    await mudarMinimo(raiz, "0.9");
+    expect(previas).toEqual([0, 0.9]);
+    expect(dialogoTodas(raiz).textContent).toContain("Vai cadastrar 60 pendências (2 idênticas e 58 parecidas)");
+    await agir(() => botaoEm(dialogoTodas(raiz), "Cadastrar 60 na memória").click());
+    expect(posts).toEqual([{ url: "/api/v1/icms-saidas/empresas/0001/pendencias/aceitar-sugestoes", corpo: { similaridade_minima: 0.9, sobrescrever: false } }]);
+    expect(raiz.textContent).toContain("60 pendências resolvidas: 60 cadastradas na memória (2 idênticas e 58 parecidas).");
+    expect(raiz.querySelector("dialog[open]")).toBeNull();
+  });
+
+  it("não manda lista de pendências: só o mínimo e o sobrescrever (quem escolhe quais é o motor)", async () => {
+    const { posts } = simularLote(MISTA, {
+      resumo: RESUMO_COM_SUGESTOES, previa: PREVIA,
+      respostaPost: () => ({ resolvidas: 377, adicionadas: 377, sobrescritas: 0, mantidas: 0, ja_tratadas: 0, lote_id: "x", encontradas: 377, restantes: 0, identicas: 2, parecidas: 375 }),
+    });
+    const raiz = await abrirLote();
+    await abrirDialogoTodas(raiz);
+    await agir(() => raiz.querySelector<HTMLInputElement>("dialog[open] input[type=checkbox]")!.click());
+    await agir(() => botaoEm(dialogoTodas(raiz), /^Cadastrar/).click());
+    expect(Object.keys(posts[0].corpo).sort()).toEqual(["similaridade_minima", "sobrescrever"]);
+    expect(posts[0].corpo).toEqual({ similaridade_minima: 0, sobrescrever: true });
+  });
+
+  it("avisa quando sobraram para uma próxima rodada (limite por lote)", async () => {
+    simularLote(MISTA, {
+      resumo: RESUMO_COM_SUGESTOES, previa: () => ({ abertas: 6000, aceitaveis: 6000, identicas: 100, parecidas: 5900, ficam_para_conferir: 0 }),
+      respostaPost: () => ({ resolvidas: 5000, adicionadas: 5000, sobrescritas: 0, mantidas: 0, ja_tratadas: 0, lote_id: "x", encontradas: 6000, restantes: 1000, identicas: 100, parecidas: 4900 }),
+    });
+    const raiz = await abrirLote();
+    await abrirDialogoTodas(raiz);
+    await agir(() => botaoEm(dialogoTodas(raiz), /^Cadastrar/).click());
+    expect(raiz.textContent).toContain("5.000 pendências resolvidas");
+    expect(raiz.textContent).toContain("Ainda há 1.000 pendências para aceitar: repita a ação.");
+  });
+
+  it("sem nada aceitável com esse mínimo, o botão de gravar fica indisponível e Cancelar não envia", async () => {
+    const { posts } = simularLote(MISTA, { resumo: RESUMO_COM_SUGESTOES, previa: () => ({ abertas: 402, aceitaveis: 0, identicas: 0, parecidas: 0, ficam_para_conferir: 402 }) });
+    const raiz = await abrirLote();
+    await abrirDialogoTodas(raiz);
+    const gravar = botaoEm(dialogoTodas(raiz), /^Cadastrar/);
+    expect(gravar.disabled).toBe(true);
+    await agir(() => gravar.click());
+    await agir(() => botaoEm(dialogoTodas(raiz), "Cancelar").click());
+    expect(posts).toEqual([]);
+    expect(raiz.querySelector("dialog[open]")).toBeNull();
+  });
+
+  it("o botão fica indisponível quando não há idêntica nem parecida em nenhuma página", async () => {
+    simularLote(MISTA, { resumo: { abertas: 5, identicas_aceitaveis: 0, parecidas: 0, sem_sugestao: 5 } });
+    const raiz = await abrirLote();
+    expect(botaoEm(raiz.querySelector(".pendencias__resumo")!, "Aceitar a sugestão em todas").disabled).toBe(true);
+  });
+
+  it("erro do motor ao gravar aparece no resumo com o código", async () => {
+    simularLote(MISTA, { resumo: RESUMO_COM_SUGESTOES, previa: PREVIA, falharNoPost: 1 });
+    const raiz = await abrirLote();
+    await abrirDialogoTodas(raiz);
+    await agir(() => botaoEm(dialogoTodas(raiz), /^Cadastrar/).click());
+    expect(raiz.textContent).toContain("LOTE_BLOQUEADO");
+  });
+
+  it("erro ao calcular a prévia aparece no diálogo e não deixa gravar", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/previa-sugestoes")) return respostaJson({ erro: { codigo: "ERRO_INTERNO", mensagem: "Falha ao calcular." } }, 500);
+        if (url.includes("/resumo-sugestoes")) return respostaJson(RESUMO_COM_SUGESTOES);
+        if (url.startsWith("/api/v1/icms-saidas/regras")) return respostaJson(REGRAS);
+        return url.includes("/pendencias?") ? comTotal(MISTA, 4) : respostaJson({});
+      }),
+    );
+    const raiz = await abrirLote();
+    await abrirDialogoTodas(raiz);
+    expect(dialogoTodas(raiz).textContent).toContain("Falha ao calcular.");
+    expect(botaoEm(dialogoTodas(raiz), /^Cadastrar/).disabled).toBe(true);
   });
 });
