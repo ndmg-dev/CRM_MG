@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { Pendencia, SugestaoPendencia } from "../../tipos";
 import type { ResultadoResolucao } from "../../tipos";
-import { aceitaveis, partir, RESULTADO_VAZIO, resolucoesComTributacao, resolucoesPorSugestao, resumirResolucao, somarResultados, TAMANHO_LOTE } from "./pendenciasLote";
+import { partir, RESULTADO_VAZIO, resolucoesComTributacao, resumirResolucao, somarResultados, TAMANHO_LOTE } from "./pendenciasLote";
 
 const sug = (nivel: "IDENTICO" | "PARECIDO", icms = "ST"): SugestaoPendencia => ({ item_id: 1, descricao: "X", icms, nivel, similaridade: nivel === "IDENTICO" ? 1 : 0.8 });
 const pend = (id: number, extra: Partial<Pendencia> = {}): Pendencia => ({
@@ -18,19 +18,6 @@ const LISTA = [
 ];
 
 describe("pendências em lote", () => {
-  it("só pendência aberta com sugestão idêntica e consistente é aceitável (parecido e sem sugestão ficam de fora)", () => {
-    expect(aceitaveis(LISTA).map((p) => p.id)).toEqual([1, 4]);
-  });
-
-  it("aceitar sugestão: só as selecionadas aceitáveis, cada uma com a tributação do item sugerido", () => {
-    expect(resolucoesPorSugestao(LISTA, new Set([1, 2, 3, 4, 5]))).toEqual([
-      { pendencia_id: 1, tributacao: "ST" },
-      { pendencia_id: 4, tributacao: "NORMAL" },
-    ]);
-    expect(resolucoesPorSugestao(LISTA, new Set([2, 3]))).toEqual([]); // parecido nunca entra no aceite em lote
-    expect(resolucoesPorSugestao(LISTA, new Set())).toEqual([]);
-  });
-
   it("tributação escolhida vale para todas as selecionadas abertas, mesmo parecidas ou sem sugestão", () => {
     expect(resolucoesComTributacao(LISTA, new Set([2, 3, 5]), "RBC 42,93% / 73,33%")).toEqual([
       { pendencia_id: 2, tributacao: "RBC 42,93% / 73,33%" },

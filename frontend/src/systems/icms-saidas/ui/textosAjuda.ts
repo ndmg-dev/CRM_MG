@@ -26,10 +26,10 @@ export const AJUDA = {
   // Pendências com sugestão (ADR-010 do motor).
   sugestaoMemoria:
     "Item da memória, na mesma NCM, com descrição igual ou parecida. Idêntico: igual ignorando maiúsculas, acentos e espaços. Parecido: confira antes de aceitar. Aceitar cadastra a descrição da venda na memória com a mesma tributação.",
-  aceitarIdenticas:
-    "Grava na memória, de uma vez, as selecionadas que têm sugestão idêntica, cada uma com a tributação do item sugerido. Sugestões parecidas nunca entram aqui: aceite uma a uma.",
+  grupoFila:
+    "Pode aceitar: a memória já tem este produto com a mesma descrição. Conferir: há produtos parecidos, mas a diferença pode mudar a tributação; veja o destaque. Sem sugestão: nada parecido na memória desta NCM.",
   tributacaoEmLote:
-    "Define a mesma tributação para todas as selecionadas e grava na memória. Item novo vale para todos os meses.",
+    "Escolha uma tributação, marque os produtos que são dela e aplique de uma vez. Item novo vale para todos os meses. O motor confere a categoria; se algo estiver errado, nada é gravado.",
   resumoPendencias:
     "Conta TODAS as pendências abertas, não só as desta página. Idênticas: já têm um item igual na memória (ignorando maiúsculas, acentos e espaços) e podem ser aceitas agora. Ambíguas: há item idêntico, mas com tributações diferentes. Parecidas: confira uma a uma.",
   aceitarTodasIdenticas:

@@ -10,17 +10,7 @@ export interface Resolucao {
   tributacao: string;
 }
 
-/** Pendências abertas com sugestão IDENTICA e consistente: as únicas que podem ser aceitas em lote. */
-export const aceitaveis = (pendencias: Pendencia[]): Pendencia[] => pendencias.filter((p) => p.status === "ABERTA" && !!p.sugestao_aceitavel);
-
-/** "Aceitar sugestão das selecionadas": só as selecionadas com sugestão aceitável, cada uma com a tributação do item sugerido. */
-export function resolucoesPorSugestao(pendencias: Pendencia[], selecionadas: ReadonlySet<number>): Resolucao[] {
-  return aceitaveis(pendencias)
-    .filter((p) => selecionadas.has(p.id))
-    .map((p) => ({ pendencia_id: p.id, tributacao: p.sugestao_aceitavel!.icms }));
-}
-
-/** "Gravar tributação nas selecionadas": todas as selecionadas abertas, com a tributação que o operador escolheu. */
+/** Em lote: todas as marcadas abertas, com a tributação que o operador escolheu. */
 export function resolucoesComTributacao(pendencias: Pendencia[], selecionadas: ReadonlySet<number>, tributacao: string): Resolucao[] {
   if (!tributacao) return [];
   return pendencias.filter((p) => p.status === "ABERTA" && selecionadas.has(p.id)).map((p) => ({ pendencia_id: p.id, tributacao }));

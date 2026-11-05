@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { agir, desmontarTudo, enviarFormulario, montar, respostaJson } from "../../testes/dom";
+import { agir, desmontarTudo, montar, respostaJson } from "../../testes/dom";
 import { AbaPendencias } from "./AbaPendencias";
 
 const PENDENCIA = {
@@ -44,27 +44,25 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("Resolver pendência", () => {
+describe("Resolver pendência (sem sugestão)", () => {
   it("não tem campo de mês e envia só a tributação (item novo vale para todos os meses)", async () => {
     const raiz = await montar(<AbaPendencias codigo="0001" />);
     await agir(() => {});
-    const resolver = [...raiz.querySelectorAll("button")].find((b) => b.textContent === "Resolver")!;
-    await agir(() => resolver.click());
+    // sem sugestão na memória: cai no grupo "Sem sugestão", com a pendência aberta ao lado
+    expect(raiz.querySelector(".fila__detalhe")?.textContent).toContain("Nada parecido na memória desta NCM");
+    expect(raiz.querySelector('input[type="month"]')).toBeNull();
 
-    const formulario = raiz.querySelector<HTMLFormElement>("tr.pendencias__formulario form")!;
-    expect(formulario.querySelector('input[type="month"]')).toBeNull();
-    expect(formulario.textContent).toContain("Item novo: vale para todos os meses.");
-    expect(formulario.querySelector(".ajuda__botao")?.getAttribute("aria-label")).toBe("Ajuda: Itens novos");
-
-    const select = formulario.querySelector("select")!;
+    const select = raiz.querySelector<HTMLSelectElement>(".fila__outra select")!;
     // categorias das regras globais (não há mais config por empresa), com o grupo quando difere do nome
     expect(chamadas.some((c) => c.url === "/api/v1/icms-saidas/regras")).toBe(true);
     expect([...select.options].map((o) => o.textContent)).toEqual(["Escolha…", "RBC 42,93% / 73,33% (ANEXO I)", "ST"]);
+    const gravar = [...raiz.querySelectorAll("button")].find((b) => b.textContent === "Gravar na memória")!;
+    expect(gravar.disabled).toBe(true); // sem escolher a tributação não grava
     await agir(() => {
       select.value = "ST";
       select.dispatchEvent(new Event("change", { bubbles: true }));
     });
-    await agir(() => enviarFormulario(formulario));
+    await agir(() => gravar.click());
 
     const post = chamadas.find((c) => c.init.method === "POST")!;
     expect(post.url).toBe("/api/v1/icms-saidas/empresas/0001/pendencias/7/resolver");
@@ -137,7 +135,6 @@ async function abrirLote() {
 const botao = (raiz: HTMLElement, texto: string | RegExp) =>
   [...raiz.querySelectorAll<HTMLButtonElement>("button")].find((b) => (typeof texto === "string" ? b.textContent?.trim() === texto : texto.test(b.textContent ?? "")))!;
 const caixa = (raiz: HTMLElement, rotulo: string) => raiz.querySelector<HTMLInputElement>(`input[aria-label="${rotulo}"]`)!;
-const marcadas = (raiz: HTMLElement) => [...raiz.querySelectorAll<HTMLInputElement>('tbody input[type="checkbox"]')].map((c) => c.checked);
 
 const MISTA = [
   P(1, { sugestoes: [sugestao("IDENTICO", "ST")], sugestao_aceitavel: sugestao("IDENTICO", "ST") }),
@@ -146,113 +143,214 @@ const MISTA = [
   P(4, { sugestoes: [sugestao("IDENTICO", "NORMAL", "TUBO PVC")], sugestao_aceitavel: sugestao("IDENTICO", "NORMAL", "TUBO PVC") }),
 ];
 
-describe("Pendências – sugestão da memória", () => {
-  it("pede as sugestões ao motor nas abertas e mostra idêntico, parecido e sem sugestão", async () => {
+const marcadasLote = (raiz: HTMLElement) => [...raiz.querySelectorAll<HTMLInputElement>(".lote__lista input[type=checkbox]")].map((c) => c.checked);
+const grupo = (raiz: HTMLElement, nome: RegExp) => botao(raiz, nome);
+const abrirLoteModo = async (raiz: HTMLElement) => agir(() => botao(raiz, "Em lote").click());
+const escolher = async (raiz: HTMLElement, tributacao: string) =>
+  agir(() => [...raiz.querySelectorAll<HTMLButtonElement>(".lote__opcoes button")].find((b) => b.textContent === tributacao)!.click());
+const detalhe = (raiz: HTMLElement) => raiz.querySelector(".fila__detalhe")!;
+const tecla = (alvo: Element, key: string) => agir(() => void alvo.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true })));
+
+describe("Pendências – fila de trabalho", () => {
+  it("pede as sugestões ao motor, agrupa pelo que fazer e abre o primeiro item do primeiro grupo com trabalho", async () => {
     const { gets } = simularLote(MISTA);
     const raiz = await abrirLote();
     expect(gets[0]).toContain("sugestoes=true");
-    const linhas = [...raiz.querySelectorAll("tbody tr")].map((l) => l.textContent ?? "");
-    expect(linhas[0]).toContain("Idêntico");
-    expect(linhas[0]).toContain("PARAFUSO 1/4 X 2");
-    expect(linhas[1]).toContain("Parecido 80%");
-    expect(linhas[2]).toContain("sem sugestão");
+    expect(grupo(raiz, /^Pode aceitar/).textContent).toBe("Pode aceitar2");
+    expect(grupo(raiz, /^Conferir/).textContent).toBe("Conferir1");
+    expect(grupo(raiz, /^Sem sugestão/).textContent).toBe("Sem sugestão1");
+    expect(grupo(raiz, /^Pode aceitar/).getAttribute("aria-pressed")).toBe("true");
+    const itens = [...raiz.querySelectorAll(".fila__item")].map((l) => l.textContent ?? "");
+    expect(itens).toHaveLength(2);
+    expect(itens[0]).toContain("PRODUTO 1");
+    expect(itens[1]).toContain("PRODUTO 4");
+    expect(detalhe(raiz).textContent).toContain("PRODUTO 1");
+    expect(detalhe(raiz).textContent).toContain("Idêntico");
+    expect(detalhe(raiz).textContent).toContain("Este produto já está na memória.");
     expect(raiz.querySelector('.ajuda__botao[aria-label="Ajuda: Sugestão da memória"]')).toBeTruthy();
   });
 
-  it("em 'Todas' não há sugestão, seleção nem barra de lote (e o motor não é chamado com sugestoes)", async () => {
+  it("começa pelo grupo 'Conferir' quando não há nada seguro para aceitar", async () => {
+    simularLote([MISTA[1], MISTA[2]]);
+    const raiz = await abrirLote();
+    expect(grupo(raiz, /^Conferir/).getAttribute("aria-pressed")).toBe("true");
+    expect(detalhe(raiz).textContent).toContain("PRODUTO 2");
+  });
+
+  it("no grupo 'Conferir' destaca SÓ as palavras que mudam entre o produto e a sugestão", async () => {
+    const parecida = P(9, { sugestoes: [sugestao("PARECIDO", "NORMAL", "PARAFUSO 1/4 X 2 ZINCADO")], sugestao_aceitavel: null }, );
+    simularLote([{ ...parecida, descricao: "PARAFUSO 1/4 X 2" }]);
+    const raiz = await abrirLote();
+    const marcas = [...detalhe(raiz).querySelectorAll("mark")].map((m) => m.textContent?.trim());
+    expect(marcas).toEqual(["ZINCADO"]);
+    expect(detalhe(raiz).textContent).toContain("Parecido 80%");
+    expect(detalhe(raiz).textContent).toContain("Produtos parecidos na memória. O destaque mostra o que muda.");
+  });
+
+  it("'Usar ST' cadastra com a tributação do item sugerido e diz o que fez", async () => {
+    const { posts } = simularLote(MISTA);
+    const raiz = await abrirLote();
+    await agir(() => botao(detalhe(raiz) as HTMLElement, "Usar ST").click());
+    expect(posts).toEqual([{ url: "/api/v1/icms-saidas/empresas/0001/pendencias/1/resolver", corpo: { tributacao: "ST" } }]);
+    expect(raiz.textContent).toContain("PRODUTO 1 (NCM 73181500) cadastrado na memória como ST, a mesma tributação de PARAFUSO 1/4 X 2.");
+  });
+
+  it("as setas trocam o item aberto; Enter usa a sugestão SÓ no grupo 'Pode aceitar'", async () => {
+    const { posts } = simularLote(MISTA);
+    const raiz = await abrirLote();
+    const lista = raiz.querySelector(".fila__lista")!;
+    await tecla(lista, "ArrowDown");
+    expect(detalhe(raiz).textContent).toContain("PRODUTO 4");
+    await tecla(lista, "ArrowUp");
+    expect(detalhe(raiz).textContent).toContain("PRODUTO 1");
+    await tecla(lista, "Enter");
+    expect(posts).toEqual([{ url: "/api/v1/icms-saidas/empresas/0001/pendencias/1/resolver", corpo: { tributacao: "ST" } }]);
+  });
+
+  it("Enter não aceita nada no grupo 'Conferir' (parecido exige o clique)", async () => {
+    const { posts } = simularLote(MISTA);
+    const raiz = await abrirLote();
+    await agir(() => grupo(raiz, /^Conferir/).click());
+    await tecla(raiz.querySelector(".fila__lista")!, "Enter");
+    expect(posts).toEqual([]);
+  });
+
+  it("a busca filtra só a página carregada, por descrição ou NCM", async () => {
+    simularLote(MISTA);
+    const raiz = await abrirLote();
+    const campo = raiz.querySelector<HTMLInputElement>("#busca-fila")!;
+    const digitar = (valor: string) =>
+      agir(() => {
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(campo, valor);
+        campo.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+    await digitar("produto 4");
+    expect([...raiz.querySelectorAll(".fila__item")].map((l) => l.textContent)).toEqual([expect.stringContaining("PRODUTO 4")]);
+    await digitar("nada disso");
+    expect(raiz.textContent).toContain("Nenhuma pendência desta página combina com a busca.");
+  });
+
+  it("descartar pede o motivo e envia só com ele", async () => {
+    const { posts } = simularLote(MISTA);
+    const raiz = await abrirLote();
+    await agir(() => botao(detalhe(raiz) as HTMLElement, "Descartar").click());
+    const enviar = botao(raiz, "Descartar pendência");
+    expect(enviar.disabled).toBe(true);
+    const motivo = raiz.querySelector<HTMLInputElement>(".fila__descarte input")!;
+    await agir(() => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(motivo, "  produto fora de linha ");
+      motivo.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await agir(() => botao(raiz, "Descartar pendência").click());
+    expect(posts).toEqual([{ url: "/api/v1/icms-saidas/empresas/0001/pendencias/1/descartar", corpo: { motivo: "produto fora de linha" } }]);
+    expect(raiz.textContent).toContain("Pendência de PRODUTO 1 (NCM 73181500) descartada.");
+  });
+
+  it("erro do motor numa ação fica na tela e nada some da fila", async () => {
+    simularLote(MISTA, 1);
+    const raiz = await abrirLote();
+    await agir(() => botao(detalhe(raiz) as HTMLElement, "Usar ST").click());
+    expect(raiz.textContent).toContain("LOTE_BLOQUEADO");
+    expect(raiz.querySelectorAll(".fila__item")).toHaveLength(2);
+  });
+
+  it("em 'Todas' vira histórico: sem fila, sem modos e sem barra de lote; o motor não recebe 'sugestoes'", async () => {
     const { gets } = simularLote(MISTA);
     const raiz = await abrirLote();
     const todas = [...raiz.querySelectorAll<HTMLButtonElement>("button, [role=radio]")].find((b) => b.textContent === "Todas")!;
     await agir(() => todas.click());
     expect(gets[gets.length - 1]).not.toContain("sugestoes");
+    expect(raiz.querySelector(".fila")).toBeNull();
+    expect(raiz.querySelector(".lote")).toBeNull();
     expect(raiz.querySelector('input[type="checkbox"]')).toBeNull();
-    expect(raiz.querySelector(".pendencias__lote")).toBeNull();
-  });
-
-  it("'Aceitar sugestão' na linha cadastra com a tributação do item sugerido", async () => {
-    const { posts } = simularLote(MISTA);
-    const raiz = await abrirLote();
-    await agir(() => botao(raiz, "Aceitar sugestão")!.click());
-    expect(posts).toEqual([{ url: "/api/v1/icms-saidas/empresas/0001/pendencias/1/resolver", corpo: { tributacao: "ST" } }]);
-    expect(raiz.textContent).toContain("PRODUTO 1 (NCM 73181500) cadastrado na memória como ST, a mesma tributação de PARAFUSO 1/4 X 2.");
+    expect(raiz.querySelector("table")?.textContent).toContain("PRODUTO 1");
   });
 });
 
-describe("Pendências – resolver em lote", () => {
-  it("'Selecionar idênticas' marca só as que têm sugestão idêntica", async () => {
-    simularLote(MISTA);
-    const raiz = await abrirLote();
-    expect(raiz.querySelector(".pendencias__lote-resumo")?.textContent).toBe("0 selecionadas");
-    await agir(() => botao(raiz, /^Selecionar idênticas/).click());
-    expect(marcadas(raiz)).toEqual([true, false, false, true]); // a parecida e a sem sugestão ficam de fora
-    expect(raiz.querySelector(".pendencias__lote-resumo")?.textContent).toBe("2 selecionadas");
-  });
-
-  it("aceitar sugestão das selecionadas envia SÓ as aceitáveis, cada uma com a tributação do item sugerido", async () => {
+describe("Pendências – aplicar em lote", () => {
+  it("passo a passo: escolher a tributação, marcar os que a sugestão indica e aplicar; envia só os marcados", async () => {
     const { posts, gets } = simularLote(MISTA);
     const raiz = await abrirLote();
-    expect(botao(raiz, /^Aceitar sugestão das selecionadas/).disabled).toBe(true); // nada selecionado
-    await agir(() => caixa(raiz, "Selecionar todas desta página").click()); // inclui a parecida e a sem sugestão
-    expect(botao(raiz, /^Aceitar sugestão das selecionadas \(2\)/)).toBeTruthy(); // só 2 das 4 são aceitáveis
+    await abrirLoteModo(raiz);
+    expect(botao(raiz, "Aplicar").disabled).toBe(true); // sem tributação e sem marcas
+    await escolher(raiz, "NORMAL");
+    expect(botao(raiz, /^Marcar os que a sugestão indica/).textContent).toBe("Marcar os que a sugestão indica (2)"); // P2 e P4 sugerem NORMAL
+    await agir(() => botao(raiz, /^Marcar os que a sugestão indica/).click());
+    expect(marcadasLote(raiz)).toEqual([false, true, false, true]);
+    expect(raiz.querySelector(".lote__resumo")?.textContent).toBe("2 marcados · R$ 241,00");
     const antes = gets.length;
-    await agir(() => botao(raiz, /^Aceitar sugestão das selecionadas/).click());
+    await agir(() => botao(raiz, "Aplicar NORMAL a 2").click());
     expect(posts).toEqual([
       {
         url: "/api/v1/icms-saidas/empresas/0001/pendencias/resolver-lote",
-        corpo: { resolucoes: [{ pendencia_id: 1, tributacao: "ST" }, { pendencia_id: 4, tributacao: "NORMAL" }], sobrescrever: false },
+        corpo: { resolucoes: [{ pendencia_id: 2, tributacao: "NORMAL" }, { pendencia_id: 4, tributacao: "NORMAL" }], sobrescrever: false },
       },
     ]);
     expect(raiz.textContent).toContain("2 pendências resolvidas: 2 cadastradas na memória.");
     expect(gets.length).toBeGreaterThan(antes); // a lista é recarregada
   });
 
-  it("gravar a tributação escolhida vale para todas as selecionadas, inclusive parecida e sem sugestão", async () => {
+  it("a tributação escolhida vale para o que a pessoa marcar, mesmo sem sugestão ou com sugestão diferente (e avisa)", async () => {
     const { posts } = simularLote(MISTA);
     const raiz = await abrirLote();
-    expect(botao(raiz, "Gravar tributação nas selecionadas").disabled).toBe(true);
-    await agir(() => caixa(raiz, "Selecionar PRODUTO 2").click());
-    await agir(() => caixa(raiz, "Selecionar PRODUTO 3").click());
-    const select = raiz.querySelector<HTMLSelectElement>('select[aria-label="Tributação para as selecionadas"]')!;
-    await agir(() => {
-      select.value = "ST";
-      select.dispatchEvent(new Event("change", { bubbles: true }));
-    });
-    await agir(() => botao(raiz, "Gravar tributação nas selecionadas").click());
-    expect(posts[0].corpo).toEqual({ resolucoes: [{ pendencia_id: 2, tributacao: "ST" }, { pendencia_id: 3, tributacao: "ST" }], sobrescrever: false });
-    expect(raiz.textContent).toContain("2 pendências resolvidas: 2 cadastradas na memória.");
+    await abrirLoteModo(raiz);
+    await escolher(raiz, "NORMAL");
+    await agir(() => caixa(raiz, "Selecionar PRODUTO 3").click()); // sem sugestão
+    expect(raiz.querySelector(".lote__aviso")).toBeNull();
+    await agir(() => caixa(raiz, "Selecionar PRODUTO 1").click()); // a sugestão dele é ST
+    expect(raiz.querySelector(".lote__aviso")?.textContent).toBe("1 tem sugestão diferente de NORMAL. Confira antes de aplicar.");
+    await agir(() => botao(raiz, "Aplicar NORMAL a 2").click());
+    expect(posts[0].corpo).toEqual({ resolucoes: [{ pendencia_id: 1, tributacao: "NORMAL" }, { pendencia_id: 3, tributacao: "NORMAL" }], sobrescrever: false });
   });
 
-  it("450 selecionadas vão em dois blocos (400 + 50), cada um um lote do motor", async () => {
-    const muitas = Array.from({ length: 450 }, (_, i) => P(i + 1, { sugestoes: [sugestao("IDENTICO")], sugestao_aceitavel: sugestao("IDENTICO") }));
+  it("sem tributação escolhida ou sem marcas, nada é enviado; 'Limpar marcas' desmarca tudo", async () => {
+    const { posts } = simularLote(MISTA);
+    const raiz = await abrirLote();
+    await abrirLoteModo(raiz);
+    await agir(() => caixa(raiz, "Selecionar PRODUTO 2").click());
+    expect(botao(raiz, "Aplicar").disabled).toBe(true); // marcou, mas não escolheu a tributação
+    await agir(() => botao(raiz, "Aplicar").click());
+    await escolher(raiz, "ST");
+    await agir(() => botao(raiz, "Limpar marcas").click());
+    expect(marcadasLote(raiz)).toEqual([false, false, false, false]);
+    expect(botao(raiz, "Aplicar").disabled).toBe(true);
+    expect(posts).toEqual([]);
+  });
+
+  it("só as tributações cadastradas nas regras aparecem como opção", async () => {
+    simularLote(MISTA);
+    const raiz = await abrirLote();
+    await abrirLoteModo(raiz);
+    expect([...raiz.querySelectorAll(".lote__opcoes button")].map((b) => b.textContent)).toEqual(["NORMAL", "ST"]);
+  });
+
+  it("450 marcadas vão em dois blocos (400 + 50), cada um um lote do motor", async () => {
+    const muitas = Array.from({ length: 450 }, (_, i) => P(i + 1, { sugestoes: [sugestao("IDENTICO", "NORMAL")], sugestao_aceitavel: sugestao("IDENTICO", "NORMAL") }));
     const { posts } = simularLote(muitas);
     const raiz = await abrirLote();
-    await agir(() => botao(raiz, /^Selecionar idênticas/).click());
-    await agir(() => botao(raiz, /^Aceitar sugestão das selecionadas/).click());
+    await abrirLoteModo(raiz);
+    await escolher(raiz, "NORMAL");
+    await agir(() => botao(raiz, /^Marcar os que a sugestão indica/).click());
+    await agir(() => botao(raiz, /^Aplicar NORMAL a 450/).click());
     expect(posts.map((p) => (p.corpo.resolucoes as unknown[]).length)).toEqual([400, 50]);
     expect(raiz.textContent).toContain("450 pendências resolvidas: 450 cadastradas na memória.");
   });
 
   it("se o segundo bloco falha, mostra o erro do motor e quantas já foram resolvidas", async () => {
-    const muitas = Array.from({ length: 450 }, (_, i) => P(i + 1, { sugestoes: [sugestao("IDENTICO")], sugestao_aceitavel: sugestao("IDENTICO") }));
+    const muitas = Array.from({ length: 450 }, (_, i) => P(i + 1, { sugestoes: [sugestao("IDENTICO", "NORMAL")], sugestao_aceitavel: sugestao("IDENTICO", "NORMAL") }));
     const { posts } = simularLote(muitas, 2);
     const raiz = await abrirLote();
-    await agir(() => botao(raiz, /^Selecionar idênticas/).click());
-    await agir(() => botao(raiz, /^Aceitar sugestão das selecionadas/).click());
+    await abrirLoteModo(raiz);
+    await escolher(raiz, "NORMAL");
+    await agir(() => botao(raiz, /^Marcar os que a sugestão indica/).click());
+    await agir(() => botao(raiz, /^Aplicar NORMAL a 450/).click());
     expect(posts).toHaveLength(2);
     expect(raiz.textContent).toContain("LOTE_BLOQUEADO");
     expect(raiz.textContent).toContain("O lote das pendências foi bloqueado pelas travas da memória.");
     expect(raiz.textContent).toContain("400 pendências resolvidas: 400 cadastradas na memória — antes do erro.");
   });
-
-  it("sem nenhuma aceitável selecionada, o aceite em lote fica indisponível e não envia", async () => {
-    const { posts } = simularLote(MISTA);
-    const raiz = await abrirLote();
-    await agir(() => caixa(raiz, "Selecionar PRODUTO 2").click()); // só a parecida
-    expect(botao(raiz, /^Aceitar sugestão das selecionadas \(0\)/).disabled).toBe(true);
-    await agir(() => botao(raiz, /^Aceitar sugestão das selecionadas/).click());
-    expect(posts).toEqual([]);
-  });
 });
+
 
 // ------------------------------------------------------- resumo de todas as páginas, aceitar idênticas, planilha e paginação
 
@@ -372,27 +470,33 @@ describe("Pendências – resumo e aceite das idênticas (todas as páginas)", (
 });
 
 describe("Pendências – item que já está na memória e sobrescrever", () => {
+  async function marcarEAplicar(raiz: HTMLElement) {
+    await abrirLoteModo(raiz);
+    await escolher(raiz, "NORMAL");
+    await agir(() => botao(raiz, /^Marcar os que a sugestão indica/).click());
+  }
+
   it("padrão: não sobrescreve, e a mensagem diz que o item foi MANTIDO", async () => {
     const { posts } = simularLote(MISTA, {
       respostaPost: () => ({ resolvidas: 2, adicionadas: 1, sobrescritas: 0, mantidas: 1, ja_tratadas: 0, lote_id: "x" }),
     });
     const raiz = await abrirLote();
-    await agir(() => botaoEm(raiz, /^Selecionar idênticas/).click());
-    const marca = raiz.querySelector<HTMLInputElement>(".pendencias__lote .pendencias__sobrescrever input")!;
+    await marcarEAplicar(raiz);
+    const marca = raiz.querySelector<HTMLInputElement>(".lote__sobrescrever input")!;
     expect(marca.checked).toBe(false); // o padrão é a memória atual permanecer
-    await agir(() => botaoEm(raiz, /^Aceitar sugestão das selecionadas/).click());
+    await agir(() => botao(raiz, /^Aplicar NORMAL/).click());
     expect(posts[0].corpo.sobrescrever).toBe(false);
     expect(raiz.textContent).toContain("2 pendências resolvidas: 1 cadastrada na memória; 1 já estava na memória e foi mantida como está.");
   });
 
-  it("marcando 'Sobrescrever', envia true e a mensagem diz quantas foram sobrescritas", async () => {
+  it("marcando 'Trocar a tributação…', envia true e a mensagem diz quantas foram sobrescritas", async () => {
     const { posts } = simularLote(MISTA, {
       respostaPost: () => ({ resolvidas: 2, adicionadas: 1, sobrescritas: 1, mantidas: 0, ja_tratadas: 0, lote_id: "x" }),
     });
     const raiz = await abrirLote();
-    await agir(() => botaoEm(raiz, /^Selecionar idênticas/).click());
-    await agir(() => raiz.querySelector<HTMLInputElement>(".pendencias__lote .pendencias__sobrescrever input")!.click());
-    await agir(() => botaoEm(raiz, /^Aceitar sugestão das selecionadas/).click());
+    await marcarEAplicar(raiz);
+    await agir(() => raiz.querySelector<HTMLInputElement>(".lote__sobrescrever input")!.click());
+    await agir(() => botao(raiz, /^Aplicar NORMAL/).click());
     expect(posts[0].corpo.sobrescrever).toBe(true);
     expect(raiz.textContent).toContain("2 pendências resolvidas: 1 cadastrada na memória; 1 sobrescrita.");
   });
