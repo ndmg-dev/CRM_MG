@@ -95,8 +95,8 @@ async def chamar_motor(
     download: bool = False,
     cabecalhos_resposta: dict[str, str] | None = None,
 ) -> Response:
-    """`cabecalhos_resposta`: {nome: regex} dos cabeçalhos do motor repassados ao cliente (só em 2xx JSON e só
-    se o valor casar com a regex)."""
+    """`cabecalhos_resposta`: {nome: regex} dos cabeçalhos do motor repassados ao cliente (só em 2xx, JSON ou download,
+    e só se o valor casar com a regex)."""
     cliente = cliente_motor(request)
     # Cabeçalhos montados do zero: nada do cliente (Cookie, Authorization...) é repassado.
     cabecalhos = {
@@ -115,10 +115,15 @@ async def chamar_motor(
         resposta = resposta_erro(502, "MOTOR_INDISPONIVEL", "O motor está indisponível. Tente novamente.")
     else:
         if download and resp.status_code == 200:
+            cabecalhos_dl = _cabecalhos_download(resp)
+            for nome, padrao in (cabecalhos_resposta or {}).items():  # ex.: resumo da apuração parcial (X-Parcial-*)
+                valor = resp.headers.get(nome)
+                if valor is not None and re.fullmatch(padrao, valor):
+                    cabecalhos_dl[nome] = valor
             resposta = StreamingResponse(
                 resp.aiter_bytes(),
                 status_code=200,
-                headers=_cabecalhos_download(resp),
+                headers=cabecalhos_dl,
                 background=BackgroundTask(resp.aclose),
             )
         else:

@@ -38,6 +38,7 @@ ROTAS = [
     ("POST", "/regras/rascunho/descartar", perm.EDITAR_REGRAS),
     ("POST", "/regras/rascunho/publicar", perm.EDITAR_REGRAS),
     ("POST", "/empresas/MM/apuracoes", perm.OPERAR),
+    ("POST", "/empresas/MM/apuracoes/parcial", perm.OPERAR),
     ("GET", "/empresas/MM/apuracoes", perm.CONSULTAR),
     ("GET", f"/empresas/MM/apuracoes/{UUID}", perm.CONSULTAR),
     ("GET", f"/empresas/MM/apuracoes/{UUID}/planilha", perm.CONSULTAR),
@@ -418,3 +419,45 @@ def test_so_chamadas_que_alteram_sao_auditadas_com_empresa_e_status(como, motor,
 def test_recusa_por_permissao_nao_chama_o_motor_nem_audita(como, motor, auditorias):
     como(perm.CONSULTAR).post(f"{P}/empresas/MM/pendencias/7/resolver", json={"tributacao": "ST"})
     assert motor.chamadas == [] and auditorias == []
+
+
+# ----------------------------------------------------------------------------------------------------- apuração parcial
+
+
+def _resposta_parcial(**cab):
+    base = {
+        "Content-Type": XLSX,
+        "Content-Disposition": 'attachment; filename="APURACAO_PARCIAL_08_2026_MM.xlsx"',
+        "X-Parcial-Competencia": "2026-08", "X-Parcial-Itens": "120", "X-Parcial-Itens-Sem-Memoria": "7", "X-Parcial-Produtos-Sem-Memoria": "3",
+        "X-Parcial-OD": "1234.50", "X-Parcial-ED": "10.00", "X-Parcial-Saldo": "1224.50",
+    }
+    base.update(cab)
+    return httpx.Response(200, content=b"PK\x03\x04parcial", headers=base)
+
+
+def test_apuracao_parcial_repassa_o_arquivo_devolve_a_planilha_e_o_resumo_e_nao_forca_origem(como, motor):
+    motor.resposta = _resposta_parcial()
+    r = como(perm.OPERAR).post(f"{P}/empresas/MM/apuracoes/parcial", files=_arquivo(), data={"competencia": "2026-08", "origem": "API"})
+    assert r.status_code == 200 and r.content == b"PK\x03\x04parcial"
+    assert r.headers["content-type"] == XLSX and "APURACAO_PARCIAL_08_2026_MM.xlsx" in r.headers["content-disposition"]
+    assert (r.headers["x-parcial-itens"], r.headers["x-parcial-itens-sem-memoria"], r.headers["x-parcial-od"]) == ("120", "7", "1234.50")
+    req = motor.chamadas[0]
+    assert req.url.path == "/v1/empresas/MM/apuracoes/parcial" and req.headers["x-api-key"] == settings.MOTOR_ICMS_API_KEY
+    assert b"2026-08" in motor.corpos[0] and b"origem" not in motor.corpos[0]  # só arquivo e competência seguem
+
+
+def test_apuracao_parcial_so_repassa_cabecalhos_no_formato_esperado(como, motor):
+    motor.resposta = _resposta_parcial(**{"X-Parcial-OD": "<script>", "X-Parcial-Itens": "12a", "X-Segredo": "x"})
+    r = como(perm.OPERAR).post(f"{P}/empresas/MM/apuracoes/parcial", files=_arquivo())
+    assert r.status_code == 200
+    assert "x-parcial-od" not in r.headers and "x-parcial-itens" not in r.headers and "x-segredo" not in r.headers
+    assert r.headers["x-parcial-saldo"] == "1224.50"
+
+
+def test_apuracao_parcial_erro_do_motor_passa_como_veio_e_valida_o_upload(como, motor):
+    motor.resposta = httpx.Response(409, json={"erro": {"codigo": "MEMORIA_VAZIA", "mensagem": "Sem memória.", "detalhes": []}})
+    c = como(perm.OPERAR)
+    r = c.post(f"{P}/empresas/MM/apuracoes/parcial", files=_arquivo())
+    assert r.status_code == 409 and r.json()["erro"]["codigo"] == "MEMORIA_VAZIA"
+    assert c.post(f"{P}/empresas/MM/apuracoes/parcial", files=_arquivo("planilha.csv")).json()["erro"]["codigo"] == "EXTENSAO_INVALIDA"
+    assert c.post(f"{P}/empresas/MM/apuracoes/parcial", files=_arquivo(), data={"competencia": "agosto"}).status_code == 422

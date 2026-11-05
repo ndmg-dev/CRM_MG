@@ -144,3 +144,107 @@ describe("Aba Apurar", () => {
     expect(raiz.textContent).not.toMatch(/\d+\s?%/);
   });
 });
+
+// ------------------------------------------------------------------------------------------- apuração parcial (só o que tem na memória)
+
+const CABECALHOS_PARCIAL = {
+  "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "Content-Disposition": 'attachment; filename="APURACAO_PARCIAL_07_2026_0001.xlsx"',
+  "X-Parcial-Competencia": "2026-07",
+  "X-Parcial-Itens": "4",
+  "X-Parcial-Itens-Sem-Memoria": "1",
+  "X-Parcial-Produtos-Sem-Memoria": "1",
+  "X-Parcial-OD": "205.00",
+  "X-Parcial-ED": "10.50",
+  "X-Parcial-Saldo": "194.50",
+};
+
+function simularParcial(resposta: () => Response | Promise<Response> = () => new Response(new Blob(["xlsx"]), { status: 200, headers: CABECALHOS_PARCIAL })) {
+  const posts: { url: string; corpo: FormData }[] = [];
+  const baixados: string[] = [];
+  (URL as unknown as { createObjectURL: () => string }).createObjectURL = vi.fn(() => "blob:x");
+  (URL as unknown as { revokeObjectURL: () => void }).revokeObjectURL = vi.fn();
+  vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) {
+    baixados.push(this.download);
+  });
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (url: string, init?: RequestInit) => {
+      if (init?.method === "POST") {
+        posts.push({ url, corpo: init.body as FormData });
+        return resposta();
+      }
+      return respostaJson(url.includes("apenas_vigentes") ? [] : {});
+    }),
+  );
+  return { posts, baixados };
+}
+
+const botaoParcial = (raiz: HTMLElement) => [...raiz.querySelectorAll<HTMLButtonElement>("button")].find((b) => /só o que tem na memória|^Apurando/.test(b.textContent ?? ""))!;
+
+describe("Aba Apurar – só o que tem na memória", () => {
+  it("sem arquivo fica indisponível com o mesmo motivo do botão principal", async () => {
+    simularParcial();
+    const { raiz } = await preparar();
+    const b = botaoParcial(raiz);
+    expect(b.getAttribute("aria-disabled")).toBe("true");
+    expect(document.getElementById(b.getAttribute("aria-describedby")!)?.textContent).toBe("Escolha o relatório de vendas (.xlsx).");
+    expect(raiz.querySelector('.ajuda__botao[aria-label="Ajuda: Apuração parcial"]')).toBeTruthy();
+  });
+
+  it("envia o arquivo à rota parcial, baixa a planilha e mostra o resumo sem registrar apuração", async () => {
+    const { posts, baixados } = simularParcial();
+    const { raiz } = await preparar();
+    await agir(() => escolherArquivo(raiz.querySelector<HTMLInputElement>('input[type="file"]')!, new File(["x"], "SAIDAS.xlsx")));
+    await agir(() => botaoParcial(raiz).click());
+
+    expect(posts).toHaveLength(1);
+    expect(posts[0].url).toBe("/api/v1/icms-saidas/empresas/0001/apuracoes/parcial"); // NÃO a rota da apuração completa
+    expect((posts[0].corpo.get("arquivo") as File).name).toBe("SAIDAS.xlsx");
+    expect(baixados).toEqual(["APURACAO_PARCIAL_07_2026_0001.xlsx"]);
+    expect(raiz.textContent).toContain("Planilha parcial baixada (07/2026)");
+    expect(raiz.textContent).toContain("3 de 4 itens foram calculados.");
+    expect(raiz.textContent).toContain("1 item (1 produto) não tem memória e está na aba SEM MEMÓRIA.");
+    expect(raiz.textContent).toContain("OD parcial R$ 205,00");
+    expect(raiz.textContent).toContain("ED parcial R$ 10,50");
+    expect(raiz.textContent).toContain("Esta apuração não foi registrada");
+    expect(raiz.textContent).not.toContain("Ver no Histórico"); // nada foi registrado
+    expect(raiz.querySelector('[aria-live="polite"]')?.textContent).toBe("Planilha parcial baixada.");
+  });
+
+  it("duplo clique gera UMA requisição e, enquanto espera, trava também o botão principal", async () => {
+    let liberar!: (r: Response) => void;
+    const { posts } = simularParcial(() => new Promise<Response>((r) => (liberar = r)));
+    const { raiz, botao } = await preparar();
+    await agir(() => escolherArquivo(raiz.querySelector<HTMLInputElement>('input[type="file"]')!, new File(["x"], "SAIDAS.xlsx")));
+    await agir(() => {
+      botaoParcial(raiz).click();
+      botaoParcial(raiz).click();
+    });
+    expect(posts).toHaveLength(1);
+    expect(botao().disabled).toBe(true); // o principal não pode disparar uma segunda apuração durante a parcial
+    expect(botaoParcial(raiz).textContent).toContain("Apurando… 0 s");
+    expect(botaoParcial(raiz).getAttribute("aria-busy")).toBe("true");
+    await agir(() => liberar(new Response(new Blob(["x"]), { status: 200, headers: CABECALHOS_PARCIAL })));
+    expect(raiz.textContent).toContain("Planilha parcial baixada");
+  });
+
+  it("todos os itens com memória: diz isso em vez de falar de aba SEM MEMÓRIA", async () => {
+    simularParcial(() => new Response(new Blob(["x"]), { status: 200, headers: { ...CABECALHOS_PARCIAL, "X-Parcial-Itens-Sem-Memoria": "0", "X-Parcial-Produtos-Sem-Memoria": "0" } }));
+    const { raiz } = await preparar();
+    await agir(() => escolherArquivo(raiz.querySelector<HTMLInputElement>('input[type="file"]')!, new File(["x"], "SAIDAS.xlsx")));
+    await agir(() => botaoParcial(raiz).click());
+    expect(raiz.textContent).toContain("4 de 4 itens foram calculados. Todos os itens têm tributação na memória.");
+  });
+
+  it("erro do motor (ex.: sem memória) aparece com o código e nada é baixado", async () => {
+    const { baixados } = simularParcial(() => respostaJson({ erro: { codigo: "MEMORIA_VAZIA", mensagem: "A empresa não possui memória tributária vigente.", detalhes: [] } }, 409));
+    const { raiz } = await preparar();
+    await agir(() => escolherArquivo(raiz.querySelector<HTMLInputElement>('input[type="file"]')!, new File(["x"], "SAIDAS.xlsx")));
+    await agir(() => botaoParcial(raiz).click());
+    expect(raiz.textContent).toContain("MEMORIA_VAZIA");
+    expect(raiz.textContent).toContain("A empresa não possui memória tributária vigente.");
+    expect(baixados).toEqual([]);
+    expect(raiz.textContent).not.toContain("Planilha parcial baixada");
+  });
+});

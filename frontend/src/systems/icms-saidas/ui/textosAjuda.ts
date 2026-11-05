@@ -38,6 +38,8 @@ export const AJUDA = {
     "Desligado (padrão): item que já está na memória permanece como está e só ele é recusado; os demais entram. Ligado: a tributação escolhida substitui a que está na memória.",
   planilhaPendencias:
     "Baixa TODAS as pendências abertas, em planilha da memória. O ICMS já vem preenchido nas idênticas; preencha as demais e envie em Memória como lote parcial.",
+  apuracaoParcial:
+    "Apura só o que tem tributação na memória e baixa uma planilha com duas abas: GERAL (todos os itens; o que não tem memória fica com o cálculo em branco) e SEM MEMÓRIA (só os itens que faltam cadastrar). Não registra a apuração: não substitui a do mês, não cria pendências e não aparece no Histórico. OD e ED dessa planilha são parciais.",
   completarMemoria:
     "Para a memória montada por código de produto: usa o código como ponte para cadastrar a descrição que o ERP usa nas vendas, com a tributação que o produto já tinha. O código não vira chave. O resultado vira um lote para você revisar e aprovar.",
   completarAcrescimos:

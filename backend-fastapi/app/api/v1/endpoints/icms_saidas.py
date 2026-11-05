@@ -274,6 +274,40 @@ async def criar_apuracao(request: Request, usuario: Operar, codigo: Codigo) -> R
         await form.close()
 
 
+# Resumo da apuração parcial que o motor manda nos cabeçalhos: só passa o que casar com o formato esperado.
+CABECALHOS_PARCIAL = {
+    "X-Parcial-Competencia": r"\d{4}-(0[1-9]|1[0-2])",
+    "X-Parcial-Itens": r"[0-9]{1,9}",
+    "X-Parcial-Itens-Sem-Memoria": r"[0-9]{1,9}",
+    "X-Parcial-Produtos-Sem-Memoria": r"[0-9]{1,9}",
+    "X-Parcial-OD": r"-?[0-9]{1,15}\.[0-9]{2}",
+    "X-Parcial-ED": r"-?[0-9]{1,15}\.[0-9]{2}",
+    "X-Parcial-Saldo": r"-?[0-9]{1,15}\.[0-9]{2}",
+}
+
+
+@router.post("/empresas/{codigo}/apuracoes/parcial")
+async def criar_apuracao_parcial(request: Request, usuario: Operar, codigo: Codigo) -> Response:
+    """Apura só o que tem tributação na memória e devolve a planilha (GERAL + SEM MEMÓRIA). O motor não registra a apuração."""
+    form, arquivo, nome, tipo = await ler_upload(request, {".xlsx"}, {"arquivo", "competencia"})
+    try:
+        competencia = _campo(form, "competencia", RE_COMPETENCIA)
+        return await chamar_motor(
+            request,
+            usuario,
+            "POST",
+            f"/v1/empresas/{codigo}/apuracoes/parcial",
+            empresa=codigo,
+            files={"arquivo": (nome, arquivo.file, tipo)},
+            data=_parametros(competencia=competencia),
+            timeout=TIMEOUT_LONGO,
+            download=True,
+            cabecalhos_resposta=CABECALHOS_PARCIAL,
+        )
+    finally:
+        await form.close()
+
+
 @router.get("/empresas/{codigo}/apuracoes")
 async def listar_apuracoes(
     request: Request,
