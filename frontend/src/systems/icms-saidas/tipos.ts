@@ -112,6 +112,21 @@ export interface ResultadoAceite extends ResultadoResolucao {
   restantes: number;
 }
 
+/** GET .../pendencias/previa-sugestoes: o que aceitar a sugestão resolveria com um mínimo de semelhança (sem gravar). */
+export interface PreviaSugestoes {
+  abertas: number;
+  aceitaveis: number;
+  identicas: number;
+  parecidas: number;
+  ficam_para_conferir: number;
+}
+
+export interface ResultadoAceiteSugestoes extends ResultadoAceite {
+  /** Das enviadas nesta chamada, quantas tinham sugestão idêntica / parecida. */
+  identicas: number;
+  parecidas: number;
+}
+
 /** Descrição que já existe na memória com tributação diferente da do mesmo código (completar a memória). */
 export interface Divergencia {
   codigo: string | null;
