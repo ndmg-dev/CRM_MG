@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api, uploadAttachment, openAttachment } from '../lib/api'
-import { useEmployees } from '../hooks/useEmployees'
+import { useEmployees, type Employee } from '../hooks/useEmployees'
 import Badge from '../components/Badge'
 import Avatar from '../components/Avatar'
 import { formatDate, toInputDate } from '../utils/date'
 import { Modal } from '../components/Modal'
+import EmployeeTransferPicker from '../components/EmployeeTransferPicker'
 import JustificationDetailModal from '../components/JustificationDetailModal'
 
 type OccurrenceType = 'FALTA_INTEGRAL' | 'FALTA_PARCIAL' | 'ATRASO' | 'SAIDA_ANTECIPADA' | 'ABONO' | 'LOCAL_EXTERNO'
@@ -93,18 +94,23 @@ function hoursBetween(start: string, end: string): number | null {
 
 // ─── Modal criar justificativa ────────────────────────────────────────────────
 
-function CreateModal({ employees, onClose }: { employees: { id: string; name: string }[]; onClose: () => void }) {
+function CreateModal({ employees, onClose }: { employees: Employee[]; onClose: () => void }) {
   const qc = useQueryClient()
-  const createMutation = useMutation({
-    mutationFn: (data: object) => api.post('/api/v1/justifications', data),
-  })
-  // Atestado de vários dias: uma chamada só ao /batch — o backend cria todos
-  // os dias numa transação (tudo ou nada, sem mais "criado 3 de 5 dias").
+  // Atestado de vários dias (um só colaborador): uma chamada só ao /batch —
+  // o backend cria todos os dias numa transação (tudo ou nada, sem mais
+  // "criado 3 de 5 dias").
   const createBatchMutation = useMutation({
     mutationFn: (data: object) => api.post('/api/v1/justifications/batch', data),
   })
+  // Um dia só, para um ou vários colaboradores de uma vez — mesmo padrão do
+  // "Adicionar correção" de Corrections.tsx. Quem já tem um conflito nesse
+  // dia (mês homologado, duplicidade, horário sobreposto) é pulado, não
+  // aborta o lote inteiro.
+  const createBatchEmployeesMutation = useMutation({
+    mutationFn: (data: object) => api.post<{ skipped: { employee_name: string; reason: string }[] }>('/api/v1/justifications/batch-employees', data),
+  })
+  const [selected, setSelected] = useState<Set<string>>(new Set())
   const [form, setForm] = useState({
-    employee_id: employees[0]?.id ?? '',
     date: new Date().toLocaleDateString('en-CA'),
     end_date: '',
     reason: '',
@@ -118,6 +124,8 @@ function CreateModal({ employees, onClose }: { employees: { id: string; name: st
   const [err, setErr] = useState('')
   const [uploading, setUploading] = useState(false)
   const [progress, setProgress] = useState('')
+  const [skipped, setSkipped] = useState<{ employee_name: string; reason: string }[] | null>(null)
+  const [createdCount, setCreatedCount] = useState(0)
 
   const hasTimes = !!(form.start_time && form.end_time)
   const computedHours = hasTimes ? hoursBetween(form.start_time, form.end_time) : null
@@ -142,7 +150,10 @@ function CreateModal({ employees, onClose }: { employees: { id: string; name: st
     }))
   }
 
-  const isRange = wholeDayOnly && !!form.end_date && form.end_date > form.date
+  // Atestado de vários dias só existe pra um colaborador por vez (o /batch
+  // de data existente é employee_id singular) — com mais de um selecionado,
+  // o campo "Até" fica desabilitado (ver onChange do EmployeeTransferPicker).
+  const isRange = wholeDayOnly && selected.size === 1 && !!form.end_date && form.end_date > form.date
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -160,7 +171,8 @@ function CreateModal({ employees, onClose }: { employees: { id: string; name: st
   }
 
   async function handleSave(e: React.FormEvent) {
-    e.preventDefault(); setErr(''); setProgress('')
+    e.preventDefault(); setErr(''); setProgress(''); setSkipped(null)
+    if (selected.size === 0) { setErr('Selecione pelo menos um colaborador'); return }
     if (!form.reason.trim()) { setErr('Informe o motivo'); return }
     if (onlyOneTime) { setErr('Preencha os dois horários do intervalo (início e fim), ou deixe ambos em branco'); return }
     if (hasTimes && computedHours === null) { setErr('Horário final deve ser depois do horário inicial'); return }
@@ -171,7 +183,7 @@ function CreateModal({ employees, onClose }: { employees: { id: string; name: st
       if (isRange) {
         setProgress('Criando atestado...')
         await createBatchMutation.mutateAsync({
-          employee_id: form.employee_id,
+          employee_id: [...selected][0],
           date: new Date(`${form.date}T12:00:00`).toISOString(),
           date_end: new Date(`${form.end_date}T12:00:00`).toISOString(),
           reason: form.reason.trim(),
@@ -179,9 +191,10 @@ function CreateModal({ employees, onClose }: { employees: { id: string; name: st
           affects_chart: form.affects_chart,
           attachment_url: form.attachment_url || null,
         })
+        onClose()
       } else {
-        await createMutation.mutateAsync({
-          employee_id: form.employee_id,
+        const result = await createBatchEmployeesMutation.mutateAsync({
+          employee_ids: [...selected],
           date: new Date(`${form.date}T12:00:00`).toISOString(),
           reason: form.reason.trim(),
           occurrence_type: form.occurrence_type,
@@ -193,6 +206,15 @@ function CreateModal({ employees, onClose }: { employees: { id: string; name: st
           affects_chart: form.affects_chart,
           attachment_url: form.attachment_url || null,
         })
+        if (result.skipped.length > 0) {
+          // Fica aberto mostrando quem foi pulado e por quê — mesmo padrão
+          // do "Adicionar correção" em Corrections.tsx.
+          setSkipped(result.skipped)
+          setCreatedCount(selected.size - result.skipped.length)
+          setSelected(new Set())
+        } else {
+          onClose()
+        }
       }
     } catch (e) {
       setProgress('')
@@ -201,19 +223,23 @@ function CreateModal({ employees, onClose }: { employees: { id: string; name: st
     }
     setProgress('')
     qc.invalidateQueries({ queryKey: ['justifications'] })
-    onClose()
+  }
+
+  const rangeDisabled = !wholeDayOnly || selected.size !== 1
+  const rangeDisabledReason = !wholeDayOnly
+    ? 'Só disponível para falta integral/abono'
+    : selected.size !== 1 ? 'Só disponível com um único colaborador selecionado' : undefined
+
+  function handleSelectedChange(next: Set<string>) {
+    setSelected(next)
+    // Atestado de vários dias não se aplica a mais de um colaborador — ver
+    // comentário de `isRange` acima.
+    if (next.size !== 1 && form.end_date) setForm(f => ({ ...f, end_date: '' }))
   }
 
   return (
-    <Modal open={true} onClose={onClose} title="Nova justificativa" maxWidth={440}>
+    <Modal open={true} onClose={onClose} title="Nova justificativa" maxWidth={760}>
       <form onSubmit={handleSave}>
-        <div className="form-group">
-          <label className="form-label">Funcionário</label>
-          <select className="form-input" value={form.employee_id}
-            onChange={e => setForm(f => ({ ...f, employee_id: e.target.value }))}>
-            {employees.map(emp => <option key={emp.id} value={emp.id}>{emp.name}</option>)}
-          </select>
-        </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div className="form-group">
             <label className="form-label">Data</label>
@@ -223,8 +249,8 @@ function CreateModal({ employees, onClose }: { employees: { id: string; name: st
           <div className="form-group">
             <label className="form-label">Até (atestado de vários dias)</label>
             <input className="form-input" type="date" value={form.end_date} min={form.date}
-              disabled={!wholeDayOnly}
-              title={!wholeDayOnly ? 'Só disponível para falta integral/abono' : undefined}
+              disabled={rangeDisabled}
+              title={rangeDisabledReason}
               onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))} />
           </div>
         </div>
@@ -288,12 +314,35 @@ function CreateModal({ employees, onClose }: { employees: { id: string; name: st
             <div style={{ fontSize: 11, color: 'var(--mg-green)', marginTop: 4 }}>Anexo enviado ✓</div>
           )}
         </div>
+        <div className="form-group">
+          <label className="form-label">Colaboradores</label>
+          <EmployeeTransferPicker employees={employees} selected={selected} onChange={handleSelectedChange} />
+        </div>
         {err && <div style={{ fontSize: 12, color: 'var(--mg-red)', marginBottom: 12 }}>{err}</div>}
+        {skipped && skipped.length > 0 && (
+          <div style={{
+            fontSize: 12, color: 'var(--mg-gold)', margin: '0 0 16px',
+            background: 'rgba(212,168,67,0.08)', border: '0.5px solid rgba(212,168,67,0.3)',
+            borderRadius: 8, padding: '10px 12px', lineHeight: 1.5,
+          }}>
+            {createdCount > 0
+              ? `As outras ${createdCount} justificativa(s) foram criadas. `
+              : 'Nenhuma justificativa foi criada. '}
+            Estes foram pulados — resolva individualmente:
+            <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
+              {skipped.map(s => <li key={s.employee_name}>{s.employee_name} — {s.reason}</li>)}
+            </ul>
+          </div>
+        )}
         <div className="modal-actions">
-          <button type="button" className="btn-ghost" onClick={onClose}>Cancelar</button>
+          <button type="button" className="btn-ghost" onClick={onClose}>
+            {skipped ? 'Fechar' : 'Cancelar'}
+          </button>
           <button type="submit" className="btn-primary"
-            disabled={createMutation.isPending || createBatchMutation.isPending || uploading}>
-            {progress || (createMutation.isPending || createBatchMutation.isPending ? 'Salvando...' : 'Criar justificativa')}
+            disabled={createBatchMutation.isPending || createBatchEmployeesMutation.isPending || uploading || selected.size === 0}>
+            {progress || (createBatchMutation.isPending || createBatchEmployeesMutation.isPending
+              ? 'Salvando...'
+              : `Criar justificativa${selected.size > 1 ? ` (${selected.size})` : ''}`)}
           </button>
         </div>
       </form>
@@ -538,10 +587,7 @@ export default function Justifications() {
 
       {showCreate && (
         <CreateModal
-          employees={employees
-            .filter(e => e.is_active)
-            .map(e => ({ id: e.id, name: e.name }))
-            .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))}
+          employees={employees}
           onClose={() => setShowCreate(false)}
         />
       )}
