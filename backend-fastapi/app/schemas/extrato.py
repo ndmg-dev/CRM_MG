@@ -115,8 +115,15 @@ class SocioConsolidado(BaseModel):
     totalRetiradas: Decimal
     totalAportes: Decimal
     totalMovimentado: Decimal  # retiradas - aportes (líquido no ano)
-    excedente: Decimal  # quanto o total movimentado passou do limite anual (0 se não passou)
     meses: List[int]  # meses do ano em que o sócio tem movimentação
+    mesesAcimaLimite: List[int]  # meses em que o movimentado do sócio passou do limite mensal
+
+
+class AlertaMensal(BaseModel):
+    socio: str
+    mes: int
+    movimentado: Decimal  # líquido do sócio no mês (retiradas - aportes)
+    excedente: Decimal  # quanto passou do limite mensal
 
 
 class MesExtrato(BaseModel):
@@ -147,8 +154,9 @@ class EmpresaDetalheResponse(BaseModel):
     razaoSocial: Optional[str] = None
     cnpj: Optional[str] = None
     ano: int
-    limiteAnual: Decimal  # limite operacional por sócio no ano
+    limiteMensal: Decimal  # limite operacional por sócio, por mês
     socios: List[SocioConsolidado]
+    alertasLimite: List[AlertaMensal]  # (sócio, mês) que passaram do limite mensal
     meses: List[MesExtrato]  # linha dos 12 meses: só os presentes vêm preenchidos
     movimentacoes: List[MovimentacaoItem]  # transações identificadas (grid de análise)
 

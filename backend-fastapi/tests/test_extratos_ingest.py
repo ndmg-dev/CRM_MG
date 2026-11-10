@@ -207,6 +207,28 @@ async def test_dashboard_sinaliza_acima_do_limite(client):
     assert emp["sociosAcimaLimite"] == 1  # 60.000 > 50.000
 
 
+async def test_alerta_limite_e_mensal(client):
+    # 30k em jun e 60k em set: só setembro passa do limite mensal (50k).
+    movs_jun = [{"socio": "CHEFE", "data": "2026-06-10", "tipo": "retirada", "valor": 30000.00}]
+    movs_set = [{"socio": "CHEFE", "data": "2026-09-10", "tipo": "retirada", "valor": 60000.00}]
+    p_jun = _payload(CNPJ_COM_CLIENTE, "c1" * 32, movimentacoes=movs_jun)
+    p_jun["periodo"]["mes"] = 6
+    p_set = _payload(CNPJ_COM_CLIENTE, "c2" * 32, movimentacoes=movs_set)
+    p_set["periodo"]["mes"] = 9
+    await _post_assinado(client, p_jun)
+    await _post_assinado(client, p_set)
+
+    async with AsyncSessionLocal() as s:
+        cid = await s.scalar(select(Cliente.id).where(Cliente.cnpj == CNPJ_COM_CLIENTE))
+    det = (await client.get(f"/api/v1/extratos/empresa/{cid}?ano=2026")).json()
+
+    chefe = next(x for x in det["socios"] if x["socio"] == "CHEFE")
+    assert chefe["mesesAcimaLimite"] == [9]  # só setembro
+    assert len(det["alertasLimite"]) == 1
+    assert det["alertasLimite"][0]["mes"] == 9
+    assert float(det["alertasLimite"][0]["excedente"]) == 10000.0  # 60k - 50k
+
+
 async def test_dashboard_e_detalhe_empresa(client):
     await _post_assinado(client, _payload(CNPJ_COM_CLIENTE, "e" * 64))
 
@@ -225,11 +247,12 @@ async def test_dashboard_e_detalhe_empresa(client):
     assert det["socios"][0]["socio"] == "FULANO"
     assert float(det["socios"][0]["totalRetiradas"]) == 5000.00
     assert float(det["socios"][0]["totalMovimentado"]) == 4000.00  # 5000 - 1000
-    assert float(det["socios"][0]["excedente"]) == 0.0  # abaixo do limite
+    assert det["socios"][0]["mesesAcimaLimite"] == []  # abaixo do limite mensal
+    assert det["alertasLimite"] == []
     assert det["socios"][0]["meses"] == [9]
     assert det["meses"][0]["mes"] == 9
     assert det["meses"][0]["driveUrl"].startswith("https://drive.google.com")
-    assert float(det["limiteAnual"]) == 50000.0
+    assert float(det["limiteMensal"]) == 50000.0
     assert len(det["movimentacoes"]) == 2
     assert det["movimentacoes"][0]["tipo"] in ("retirada", "aporte")
     # Campos opcionais de análise persistidos e devolvidos.
