@@ -27,10 +27,10 @@ class Settings(BaseSettings):
     # navegador: só o n8n (que assina) e o backend (que confere) o conhecem.
     N8N_INGEST_SECRET: str
 
-    # Limite operacional anual por sócio (módulo Extratos de Sócios). Espelha a
-    # regra que o n8n aplica no relatório; o dashboard destaca o excedente. Em
-    # reais, por sócio, por ano.
-    EXTRATOS_LIMITE_ANUAL_SOCIO: float = 50000.0
+    # Limite operacional MENSAL por sócio (módulo Extratos de Sócios). Alerta
+    # quando o movimentado líquido (retiradas - aportes) de um sócio num mês
+    # passa deste valor. Em reais, por sócio, por mês.
+    EXTRATOS_LIMITE_MENSAL_SOCIO: float = 50000.0
 
     # JWT & Auth
     JWT_SECRET: str
@@ -49,6 +49,9 @@ class Settings(BaseSettings):
     GOOGLE_ALLOWED_DOMAIN: str = "mendoncagalvao.com.br"
     GOOGLE_ALLOWED_EMAILS: List[str] = Field(default_factory=list)
     OPENAI_API_KEY: str = ""
+    # IA de validação de documentos dos Clientes (migrada da OpenAI para o Claude).
+    ANTHROPIC_API_KEY: str = ""
+    ANTHROPIC_MODEL: str = "claude-opus-5-5"
     # Senha do Dashboard DRE (ndmg-dev/DASH_RAZAO), repassada só server-side
     # pelo proxy em app/api/v1/endpoints/dre_proxy.py — nunca chega no browser.
     DASHBOARD_DRE_SENHA: str = ""

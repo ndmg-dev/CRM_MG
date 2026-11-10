@@ -28,8 +28,15 @@ export interface SocioConsolidado {
   totalRetiradas: Money
   totalAportes: Money
   totalMovimentado: Money
-  excedente: Money
   meses: number[]
+  mesesAcimaLimite: number[]
+}
+
+export interface AlertaMensal {
+  socio: string
+  mes: number
+  movimentado: Money
+  excedente: Money
 }
 
 export interface MesExtrato {
@@ -60,8 +67,9 @@ export interface EmpresaDetalhe {
   razaoSocial: string | null
   cnpj: string | null
   ano: number
-  limiteAnual: Money
+  limiteMensal: Money
   socios: SocioConsolidado[]
+  alertasLimite: AlertaMensal[]
   meses: MesExtrato[]
   movimentacoes: MovimentacaoItem[]
 }

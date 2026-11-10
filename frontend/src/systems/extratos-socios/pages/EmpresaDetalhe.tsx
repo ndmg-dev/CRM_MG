@@ -3,9 +3,10 @@ import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, ArrowUpRight, ArrowDownLeft, Calendar, FileX2, AlertTriangle, ExternalLink } from 'lucide-react'
 import { useNativeSystemPath } from '@/hooks/useNativeSystemBase'
 import { extratosApi, extratosQueryOptions } from '../lib/api'
-import { fmtBRL0, fmtCNPJ, fmtData, iniciais, mesesEsperados, MESES_CURTOS } from '../lib/format'
+import { fmtBRL0, fmtCNPJ, fmtData, iniciais, mesesEsperados, MESES_CURTOS, MESES_LONGOS } from '../lib/format'
 import { Card, Loading, ErrorMsg, EmptyState } from '../components/ui'
 import { HeatmapGrid } from '../components/HeatmapGrid'
+import type { MovimentacaoItem } from '../lib/types'
 
 const ANO_ATUAL = new Date().getFullYear()
 
@@ -27,8 +28,24 @@ export default function EmpresaDetalhe() {
   for (const m of data?.meses ?? []) monthLinks[m.mes] = m.driveUrl
   const rel = mesesEsperados(ano) || 12
   const mesesProcessados = data?.meses.length ?? 0
-  const limite = Number(data?.limiteAnual ?? 0)
-  const acima = (data?.socios ?? []).filter((s) => Number(s.excedente) > 0)
+
+  // Agrupa as transações por mês (tudo de 09 junto, etc.).
+  const porMes = new Map<number, MovimentacaoItem[]>()
+  for (const m of data?.movimentacoes ?? []) {
+    const arr = porMes.get(m.mes) ?? []
+    arr.push(m)
+    porMes.set(m.mes, arr)
+  }
+  const mesesOrdenados = [...porMes.keys()].sort((a, b) => a - b)
+  const mesesComAlerta = new Set((data?.alertasLimite ?? []).map((a) => a.mes))
+  const mv = data?.movimentacoes ?? []
+  const temContraparte = mv.some((m) => m.contraparte)
+  const temPapel = mv.some((m) => m.papel)
+  const temDocumento = mv.some((m) => m.documento)
+
+  function liquidoDoMes(itens: MovimentacaoItem[]): number {
+    return itens.reduce((acc, m) => acc + (m.tipo === 'retirada' ? Number(m.valor) : -Number(m.valor)), 0)
+  }
 
   return (
     <div>
@@ -57,13 +74,14 @@ export default function EmpresaDetalhe() {
             </span>
           </div>
 
-          {/* Alertas de limite operacional */}
-          {acima.map((s) => (
-            <div key={s.socio} className="ex-alert">
+          {/* Alertas de limite MENSAL (um por sócio/mês) */}
+          {data.alertasLimite.map((a) => (
+            <div key={`${a.socio}-${a.mes}`} className="ex-alert">
               <AlertTriangle size={16} />
               <div>
-                <strong>Limite anual ultrapassado.</strong> {s.socio} movimentou {fmtBRL0(s.totalMovimentado)} em {data.ano}.
-                Limite operacional: {fmtBRL0(limite)}. Excedente: <strong>{fmtBRL0(s.excedente)}</strong>.
+                <strong>Limite mensal ultrapassado.</strong> {a.socio} movimentou {fmtBRL0(a.movimentado)} em{' '}
+                {MESES_LONGOS[a.mes - 1]}/{data.ano}. Limite: {fmtBRL0(data.limiteMensal)}/mês. Excedente:{' '}
+                <strong>{fmtBRL0(a.excedente)}</strong>.
               </div>
             </div>
           ))}
@@ -76,7 +94,7 @@ export default function EmpresaDetalhe() {
           ) : (
             <div className="ex-socio-grid">
               {data.socios.map((s) => {
-                const excede = Number(s.excedente) > 0
+                const excede = s.mesesAcimaLimite.length > 0
                 return (
                   <div key={s.socio} className={`ex-socio-card ${excede ? 'alerta' : ''}`}>
                     <div className="ex-socio-head">
@@ -99,12 +117,14 @@ export default function EmpresaDetalhe() {
                       <span className="ex-mono ex-val-apo">{fmtBRL0(s.totalAportes)}</span>
                     </div>
                     <div className="ex-socio-line total">
-                      <span className="ex-socio-tag">
-                        Total movimentado
-                        {excede && <span className="ex-tag-excede">acima do limite</span>}
-                      </span>
-                      <span className={`ex-mono ${excede ? 'ex-val-ret' : ''}`}>{fmtBRL0(s.totalMovimentado)}</span>
+                      <span className="ex-socio-tag">Total movimentado (ano)</span>
+                      <span className="ex-mono">{fmtBRL0(s.totalMovimentado)}</span>
                     </div>
+                    {excede && (
+                      <div className="ex-socio-limite">
+                        <AlertTriangle size={13} /> Acima do limite em {s.mesesAcimaLimite.map((m) => MESES_CURTOS[m - 1]).join(', ')}
+                      </div>
+                    )}
                   </div>
                 )
               })}
@@ -125,64 +145,75 @@ export default function EmpresaDetalhe() {
             )}
           </Card>
 
-          {/* Transações identificadas. Colunas opcionais (contraparte, papel,
-              documento) só aparecem quando o n8n envia esses campos. */}
-          {(() => {
-            const mv = data.movimentacoes
-            const temContraparte = mv.some((m) => m.contraparte)
-            const temPapel = mv.some((m) => m.papel)
-            const temDocumento = mv.some((m) => m.documento)
-            return (
-              <Card title="Transações identificadas" sub={`${mv.length} movimentações no ano`} className="ex-mt">
-                {mv.length === 0 ? (
-                  <div className="ex-state">Sem movimentações registradas.</div>
-                ) : (
-                  <div className="ex-table-wrap">
-                    <table className="ex-tx-table">
-                      <thead>
-                        <tr>
-                          <th>Data</th>
-                          <th>Sócio</th>
-                          {temContraparte && <th>Contraparte</th>}
-                          {temPapel && <th>Papel</th>}
-                          <th>Histórico</th>
-                          {temDocumento && <th>Documento</th>}
-                          <th>Tipo</th>
-                          <th className="right">Valor</th>
-                          <th />
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {mv.map((m, i) => (
-                          <tr key={i}>
-                            <td className="ex-mono">{m.data ? fmtData(m.data) : MESES_CURTOS[m.mes - 1]}</td>
-                            <td className="ex-tx-socio" title={m.socio}>{m.nomeExtrato || m.socio}</td>
-                            {temContraparte && (
-                              <td className="ex-tx-socio" title={m.contraparte || ''}>{m.contraparte || '—'}</td>
-                            )}
-                            {temPapel && <td>{m.papel || '—'}</td>}
-                            <td className="ex-tx-hist" title={m.historico || m.descricao || ''}>{m.historico || m.descricao || '—'}</td>
-                            {temDocumento && <td className="ex-mono">{m.documento || '—'}</td>}
-                            <td>
-                              <span className={`ex-tx-tipo ${m.tipo}`}>{m.tipo === 'retirada' ? 'Débito' : 'Crédito'}</span>
-                            </td>
-                            <td className={`right ex-mono ${m.tipo === 'retirada' ? 'ex-val-ret' : 'ex-val-apo'}`}>{fmtBRL0(m.valor)}</td>
-                            <td>
-                              {m.driveUrl && (
-                                <a className="ex-link" href={m.driveUrl} target="_blank" rel="noopener noreferrer" title="Abrir PDF do mês">
-                                  <ExternalLink size={13} />
-                                </a>
-                              )}
-                            </td>
+          {/* Transações identificadas, agrupadas por mês */}
+          <Card title="Transações identificadas" sub={`${mv.length} movimentações no ano`} className="ex-mt">
+            {mv.length === 0 ? (
+              <div className="ex-state">Sem movimentações registradas.</div>
+            ) : (
+              <div className="ex-table-wrap">
+                {mesesOrdenados.map((mes) => {
+                  const itens = porMes.get(mes)!
+                  const net = liquidoDoMes(itens)
+                  const alerta = mesesComAlerta.has(mes)
+                  return (
+                    <div key={mes} className="ex-mes-grupo">
+                      <div className="ex-mes-head">
+                        <span className="ex-mes-nome">
+                          {MESES_LONGOS[mes - 1]} <span className="ex-mes-count">· {itens.length}</span>
+                        </span>
+                        <span className="ex-mes-tot">
+                          movimentado <span className="ex-mono">{fmtBRL0(net)}</span>
+                          {alerta && (
+                            <span className="ex-mes-flag">
+                              <AlertTriangle size={12} /> acima do limite
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                      <table className="ex-tx-table">
+                        <thead>
+                          <tr>
+                            <th>Data</th>
+                            <th>Sócio</th>
+                            {temContraparte && <th>Contraparte</th>}
+                            {temPapel && <th>Papel</th>}
+                            <th>Histórico</th>
+                            {temDocumento && <th>Documento</th>}
+                            <th>Tipo</th>
+                            <th className="right">Valor</th>
+                            <th />
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </Card>
-            )
-          })()}
+                        </thead>
+                        <tbody>
+                          {itens.map((m, i) => (
+                            <tr key={i}>
+                              <td className="ex-mono">{m.data ? fmtData(m.data) : MESES_CURTOS[m.mes - 1]}</td>
+                              <td className="ex-tx-socio" title={m.socio}>{m.nomeExtrato || m.socio}</td>
+                              {temContraparte && <td className="ex-tx-socio" title={m.contraparte || ''}>{m.contraparte || '—'}</td>}
+                              {temPapel && <td>{m.papel || '—'}</td>}
+                              <td className="ex-tx-hist" title={m.historico || m.descricao || ''}>{m.historico || m.descricao || '—'}</td>
+                              {temDocumento && <td className="ex-mono">{m.documento || '—'}</td>}
+                              <td>
+                                <span className={`ex-tx-tipo ${m.tipo}`}>{m.tipo === 'retirada' ? 'Débito' : 'Crédito'}</span>
+                              </td>
+                              <td className={`right ex-mono ${m.tipo === 'retirada' ? 'ex-val-ret' : 'ex-val-apo'}`}>{fmtBRL0(m.valor)}</td>
+                              <td>
+                                {m.driveUrl && (
+                                  <a className="ex-link" href={m.driveUrl} target="_blank" rel="noopener noreferrer" title="Abrir PDF do mês">
+                                    <ExternalLink size={13} />
+                                  </a>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </Card>
         </>
       )}
     </div>

@@ -21,12 +21,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.security import get_current_user, verify_n8n_signature
 from app.db.session import get_db
+from app.enums.tipo_movimentacao import TipoMovimentacao
 from app.models.client import Cliente
 from app.models.consolidado_socio_ano import ConsolidadoSocioAno
 from app.models.extrato_processado import ExtratoProcessado
 from app.models.movimentacao_socio import MovimentacaoSocio
 from app.models.user import Usuario
 from app.schemas.extrato import (
+    AlertaMensal,
     DashboardExtratosResponse,
     EmpresaDetalheResponse,
     EmpresaResumo,
@@ -114,22 +116,34 @@ async def dashboard_extratos(
             .scalars()
             .all()
         )
-        # Sócios acima do limite operacional, por empresa (líquido = retiradas - aportes).
-        limite = Decimal(str(settings.EXTRATOS_LIMITE_ANUAL_SOCIO))
-        acima_por_empresa: dict[UUID, int] = {}
-        cons_rows = await db.execute(
+        # Sócios acima do limite MENSAL, por empresa (líquido do sócio no mês).
+        limite = Decimal(str(settings.EXTRATOS_LIMITE_MENSAL_SOCIO))
+        mov_rows = await db.execute(
             select(
-                ConsolidadoSocioAno.client_id,
-                ConsolidadoSocioAno.total_retiradas,
-                ConsolidadoSocioAno.total_aportes,
-            ).where(
-                ConsolidadoSocioAno.client_id.in_(list(por_empresa.keys())),
-                ConsolidadoSocioAno.ano == ano,
+                ExtratoProcessado.client_id,
+                MovimentacaoSocio.socio,
+                ExtratoProcessado.mes,
+                MovimentacaoSocio.tipo,
+                func.sum(MovimentacaoSocio.valor),
             )
+            .join(ExtratoProcessado, ExtratoProcessado.id == MovimentacaoSocio.extrato_id)
+            .where(
+                ExtratoProcessado.client_id.in_(list(por_empresa.keys())),
+                ExtratoProcessado.ano == ano,
+            )
+            .group_by(ExtratoProcessado.client_id, MovimentacaoSocio.socio, ExtratoProcessado.mes, MovimentacaoSocio.tipo)
         )
-        for cid, ret, apo in cons_rows.all():
-            if (ret or Decimal(0)) - (apo or Decimal(0)) > limite:
-                acima_por_empresa[cid] = acima_por_empresa.get(cid, 0) + 1
+        liquido: dict[tuple, Decimal] = {}
+        for cid, socio, mes, tipo, total in mov_rows.all():
+            total = Decimal(total or 0)
+            delta = total if tipo == TipoMovimentacao.RETIRADA.value else -total
+            chave = (cid, socio, mes)
+            liquido[chave] = liquido.get(chave, Decimal(0)) + delta
+        socios_acima: dict[UUID, set] = {}
+        for (cid, socio, _mes), v in liquido.items():
+            if v > limite:
+                socios_acima.setdefault(cid, set()).add(socio)
+        acima_por_empresa = {cid: len(s) for cid, s in socios_acima.items()}
 
         for c in sorted(clientes, key=lambda x: (x.razao_social or "").lower()):
             empresas.append(
@@ -207,31 +221,19 @@ async def extratos_empresa(
         .scalars()
         .all()
     )
-    limite = Decimal(str(settings.EXTRATOS_LIMITE_ANUAL_SOCIO))
-    socios = []
-    for c in sorted(consolidados, key=lambda x: x.socio.lower()):
-        total_mov = (c.total_retiradas or Decimal(0)) - (c.total_aportes or Decimal(0))
-        excedente = total_mov - limite if total_mov > limite else Decimal(0)
-        socios.append(
-            SocioConsolidado(
-                socio=c.socio,
-                totalRetiradas=c.total_retiradas,
-                totalAportes=c.total_aportes,
-                totalMovimentado=total_mov,
-                excedente=excedente,
-                meses=sorted(meses_por_socio.get(c.socio, set())),
-            )
-        )
+    limite = Decimal(str(settings.EXTRATOS_LIMITE_MENSAL_SOCIO))
 
-    # Transações identificadas (grid de análise), ordenadas por data.
+    # Transações identificadas (grid), ordenadas por mês e depois por data.
     drive_por_mes = {e.mes: e.drive_url for e in extratos}
     movimentacoes = []
+    # Agregação por (sócio, mês) para o limite MENSAL.
+    liquido_mes: dict[tuple[str, int], Decimal] = {}
     if extratos:
         rows = await db.execute(
             select(MovimentacaoSocio, ExtratoProcessado.mes)
             .join(ExtratoProcessado, ExtratoProcessado.id == MovimentacaoSocio.extrato_id)
             .where(ExtratoProcessado.client_id == client_id, ExtratoProcessado.ano == ano)
-            .order_by(MovimentacaoSocio.data.asc().nullslast(), MovimentacaoSocio.valor.desc())
+            .order_by(ExtratoProcessado.mes.asc(), MovimentacaoSocio.data.asc().nullslast(), MovimentacaoSocio.valor.desc())
         )
         for m, mes in rows.all():
             movimentacoes.append(
@@ -251,14 +253,41 @@ async def extratos_empresa(
                     driveUrl=drive_por_mes.get(mes),
                 )
             )
+            delta = m.valor if m.tipo == TipoMovimentacao.RETIRADA.value else -m.valor
+            chave = (m.socio, mes)
+            liquido_mes[chave] = liquido_mes.get(chave, Decimal(0)) + delta
+
+    # Meses acima do limite, por sócio, e alertas (sócio, mês).
+    meses_acima: dict[str, list[int]] = {}
+    alertas: list[AlertaMensal] = []
+    for (socio, mes), liquido in liquido_mes.items():
+        if liquido > limite:
+            meses_acima.setdefault(socio, []).append(mes)
+            alertas.append(AlertaMensal(socio=socio, mes=mes, movimentado=liquido, excedente=liquido - limite))
+    alertas.sort(key=lambda a: (a.socio.lower(), a.mes))
+
+    socios = []
+    for c in sorted(consolidados, key=lambda x: x.socio.lower()):
+        total_mov = (c.total_retiradas or Decimal(0)) - (c.total_aportes or Decimal(0))
+        socios.append(
+            SocioConsolidado(
+                socio=c.socio,
+                totalRetiradas=c.total_retiradas,
+                totalAportes=c.total_aportes,
+                totalMovimentado=total_mov,
+                meses=sorted(meses_por_socio.get(c.socio, set())),
+                mesesAcimaLimite=sorted(meses_acima.get(c.socio, [])),
+            )
+        )
 
     return EmpresaDetalheResponse(
         clientId=cliente.id,
         razaoSocial=cliente.razao_social,
         cnpj=cliente.cnpj,
         ano=ano,
-        limiteAnual=limite,
+        limiteMensal=limite,
         socios=socios,
+        alertasLimite=alertas,
         meses=meses,
         movimentacoes=movimentacoes,
     )

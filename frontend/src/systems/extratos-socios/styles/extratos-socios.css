@@ -452,8 +452,54 @@
   letter-spacing: 0.03em;
 }
 
+.ex-socio-limite {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--ex-border-soft);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ex-red);
+}
+
 /* --- Grid de transações --- */
 .ex-table-wrap { overflow-x: auto; }
+
+.ex-mes-grupo { margin-bottom: 18px; }
+.ex-mes-grupo:last-child { margin-bottom: 0; }
+.ex-mes-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 8px 10px;
+  margin-bottom: 2px;
+  background: var(--ex-head);
+  border-radius: 9px;
+}
+.ex-mes-nome { font-size: 13px; font-weight: 600; color: var(--ex-text); }
+.ex-mes-count { color: var(--ex-dim); font-weight: 400; }
+.ex-mes-tot {
+  display: inline-flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 12px;
+  color: var(--ex-dim);
+}
+.ex-mes-flag {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ex-red);
+  background: oklch(0.66 0.19 25 / 0.14);
+  padding: 3px 8px;
+  border-radius: 7px;
+}
 .ex-tx-table {
   width: 100%;
   border-collapse: collapse;
