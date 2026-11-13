@@ -30,8 +30,10 @@ dependencies = [
     "brotli>=1.1.0",
     "aiofiles>=23.0.0",
     "python-multipart>=0.0.9",
-    "openai>=1.30.0",
+    "anthropic>=2.0.0",
     "cachetools>=5.3.0",
+    # Leitura da planilha de importação de clientes (scripts/import_clientes_xlsx.py).
+    "openpyxl>=3.1.0",
     # Cifragem da chave de integração Onvio e do CPF do colaborador em
     # repouso (app/core/crypto.py) — integração Processar Ponto -> Domínio.
     "cryptography>=42.0.0"
