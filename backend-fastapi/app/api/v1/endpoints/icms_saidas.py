@@ -31,6 +31,7 @@ from app.integrations.icms_saidas.erros import ErroApi
 from app.integrations.icms_saidas.rota import RotaIcms
 from app.integrations.icms_saidas.schemas import (
     AceitarIdenticasIn,
+    AceitarSugestoesIn,
     AprovarIn,
     CorrecoesIn,
     DescartarRegrasIn,
@@ -385,6 +386,37 @@ async def aceitar_identicas_pendencias(
         usuario,
         "POST",
         f"/v1/empresas/{codigo}/pendencias/aceitar-identicas",
+        empresa=codigo,
+        corpo_json=dados.model_dump(),
+        timeout=TIMEOUT_LONGO,
+    )
+
+
+@router.get("/empresas/{codigo}/pendencias/previa-sugestoes")
+async def previa_sugestoes_pendencias(
+    request: Request, usuario: Consultar, codigo: Codigo, similaridade_minima: Annotated[float, Query(ge=0, le=1)] = 0.0
+) -> Response:
+    """Quantas pendências o aceite da sugestão resolveria com esta semelhança mínima (não grava nada)."""
+    return await chamar_motor(
+        request,
+        usuario,
+        "GET",
+        f"/v1/empresas/{codigo}/pendencias/previa-sugestoes",
+        params=_parametros(similaridade_minima=similaridade_minima),
+        timeout=TIMEOUT_LONGO,
+    )
+
+
+@router.post("/empresas/{codigo}/pendencias/aceitar-sugestoes")
+async def aceitar_sugestoes_pendencias(
+    request: Request, usuario: Operar, codigo: Codigo, dados: AceitarSugestoesIn
+) -> Response:
+    """Grava, em todas as páginas, a tributação da sugestão do sistema (idêntica ou a mais parecida acima do mínimo). O motor escolhe quais."""
+    return await chamar_motor(
+        request,
+        usuario,
+        "POST",
+        f"/v1/empresas/{codigo}/pendencias/aceitar-sugestoes",
         empresa=codigo,
         corpo_json=dados.model_dump(),
         timeout=TIMEOUT_LONGO,
