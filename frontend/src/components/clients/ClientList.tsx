@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Plus, Search, Building2, Link2, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Plus, Search, Building2, Link2, Loader2 } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
-import { useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import LoadingSpinner from '@/components/common/LoadingSpinner'
@@ -17,28 +17,44 @@ export default function ClientList() {
 
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
-  const [page, setPage] = useState(0)
   const user = useAuthStore(s => s.user)
   const canManageDocuments = user?.perfil === 'ADMIN' || user?.setor === 'CONTABIL'
 
   const PAGE_SIZE = 50
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['clientes', search, page],
-    queryFn: () => api.clientes.getAll(search || undefined, page, PAGE_SIZE),
-    // mantém a lista anterior enquanto carrega a próxima página (sem "piscar")
-    placeholderData: (previous) => previous,
+  const {
+    data,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: ['clientes', search],
+    queryFn: ({ pageParam }) => api.clientes.getAll(search || undefined, pageParam, PAGE_SIZE),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) =>
+      lastPage.page + 1 < lastPage.totalPages ? lastPage.page + 1 : undefined,
   })
 
-  const clientes = data?.content || []
-  const totalElements = data?.totalElements ?? 0
-  const totalPages = data?.totalPages ?? 0
+  const clientes = data?.pages.flatMap((p) => p.content) ?? []
+  const totalElements = data?.pages[0]?.totalElements ?? 0
 
-  // Ao mudar a busca, volta para a primeira página.
-  const handleSearchChange = (value: string) => {
-    setSearch(value)
-    setPage(0)
-  }
+  // Rolagem infinita: ao aproximar o fim da lista, carrega a próxima página.
+  const sentinelRef = useRef<HTMLDivElement | null>(null)
+  useEffect(() => {
+    const el = sentinelRef.current
+    if (!el) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage()
+        }
+      },
+      { rootMargin: '200px' },
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
   const handleCopyLink = async (e: React.MouseEvent, clienteId: string) => {
     e.stopPropagation()
@@ -71,7 +87,7 @@ export default function ClientList() {
           type="text"
           placeholder="Buscar por razão social, nome fantasia ou CNPJ..."
           value={search}
-          onChange={(e) => handleSearchChange(e.target.value)}
+          onChange={(e) => setSearch(e.target.value)}
           className="flex-1 bg-transparent text-sm text-text-primary placeholder-text-muted outline-none"
         />
       </div>
@@ -148,34 +164,19 @@ export default function ClientList() {
         </motion.div>
       )}
 
-      {/* Paginação */}
+      {/* Rolagem infinita */}
       {!isLoading && totalElements > 0 && (
-        <div className="mt-4 flex items-center justify-between text-sm text-text-muted">
+        <div className="mt-4 flex flex-col items-center gap-3 text-sm text-text-muted">
           <span>
-            {totalElements} {totalElements === 1 ? 'cliente' : 'clientes'}
-            {totalPages > 1 && ` · página ${page + 1} de ${totalPages}`}
+            {clientes.length} de {totalElements} {totalElements === 1 ? 'cliente' : 'clientes'}
           </span>
-          {totalPages > 1 && (
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setPage((p) => Math.max(0, p - 1))}
-                disabled={page === 0}
-              >
-                <ChevronLeft className="h-4 w-4" />
-                Anterior
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-                disabled={page >= totalPages - 1}
-              >
-                Próxima
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
+          {/* sentinela observada para disparar o carregamento da próxima página */}
+          <div ref={sentinelRef} className="h-px w-full" />
+          {isFetchingNextPage && (
+            <span className="flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Carregando mais...
+            </span>
           )}
         </div>
       )}
