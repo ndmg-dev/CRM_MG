@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Plus, Search, Building2, Link2 } from 'lucide-react'
+import { Plus, Search, Building2, Link2, Loader2 } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
-import { useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import LoadingSpinner from '@/components/common/LoadingSpinner'
@@ -20,12 +20,41 @@ export default function ClientList() {
   const user = useAuthStore(s => s.user)
   const canManageDocuments = user?.perfil === 'ADMIN' || user?.setor === 'CONTABIL'
 
-  const { data, isLoading } = useQuery({
+  const PAGE_SIZE = 50
+
+  const {
+    data,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
     queryKey: ['clientes', search],
-    queryFn: () => api.clientes.getAll(search || undefined),
+    queryFn: ({ pageParam }) => api.clientes.getAll(search || undefined, pageParam, PAGE_SIZE),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) =>
+      lastPage.page + 1 < lastPage.totalPages ? lastPage.page + 1 : undefined,
   })
 
-  const clientes = data?.content || []
+  const clientes = data?.pages.flatMap((p) => p.content) ?? []
+  const totalElements = data?.pages[0]?.totalElements ?? 0
+
+  // Rolagem infinita: ao aproximar o fim da lista, carrega a próxima página.
+  const sentinelRef = useRef<HTMLDivElement | null>(null)
+  useEffect(() => {
+    const el = sentinelRef.current
+    if (!el) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage()
+        }
+      },
+      { rootMargin: '200px' },
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
   const handleCopyLink = async (e: React.MouseEvent, clienteId: string) => {
     e.stopPropagation()
@@ -133,6 +162,23 @@ export default function ClientList() {
             </tbody>
           </table>
         </motion.div>
+      )}
+
+      {/* Rolagem infinita */}
+      {!isLoading && totalElements > 0 && (
+        <div className="mt-4 flex flex-col items-center gap-3 text-sm text-text-muted">
+          <span>
+            {clientes.length} de {totalElements} {totalElements === 1 ? 'cliente' : 'clientes'}
+          </span>
+          {/* sentinela observada para disparar o carregamento da próxima página */}
+          <div ref={sentinelRef} className="h-px w-full" />
+          {isFetchingNextPage && (
+            <span className="flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Carregando mais...
+            </span>
+          )}
+        </div>
       )}
     </div>
   )
