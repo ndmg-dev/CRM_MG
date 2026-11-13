@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Plus, Search, Building2, Link2 } from 'lucide-react'
+import { Plus, Search, Building2, Link2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
@@ -17,15 +17,28 @@ export default function ClientList() {
 
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
+  const [page, setPage] = useState(0)
   const user = useAuthStore(s => s.user)
   const canManageDocuments = user?.perfil === 'ADMIN' || user?.setor === 'CONTABIL'
 
+  const PAGE_SIZE = 50
+
   const { data, isLoading } = useQuery({
-    queryKey: ['clientes', search],
-    queryFn: () => api.clientes.getAll(search || undefined),
+    queryKey: ['clientes', search, page],
+    queryFn: () => api.clientes.getAll(search || undefined, page, PAGE_SIZE),
+    // mantém a lista anterior enquanto carrega a próxima página (sem "piscar")
+    placeholderData: (previous) => previous,
   })
 
   const clientes = data?.content || []
+  const totalElements = data?.totalElements ?? 0
+  const totalPages = data?.totalPages ?? 0
+
+  // Ao mudar a busca, volta para a primeira página.
+  const handleSearchChange = (value: string) => {
+    setSearch(value)
+    setPage(0)
+  }
 
   const handleCopyLink = async (e: React.MouseEvent, clienteId: string) => {
     e.stopPropagation()
@@ -58,7 +71,7 @@ export default function ClientList() {
           type="text"
           placeholder="Buscar por razão social, nome fantasia ou CNPJ..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => handleSearchChange(e.target.value)}
           className="flex-1 bg-transparent text-sm text-text-primary placeholder-text-muted outline-none"
         />
       </div>
@@ -133,6 +146,38 @@ export default function ClientList() {
             </tbody>
           </table>
         </motion.div>
+      )}
+
+      {/* Paginação */}
+      {!isLoading && totalElements > 0 && (
+        <div className="mt-4 flex items-center justify-between text-sm text-text-muted">
+          <span>
+            {totalElements} {totalElements === 1 ? 'cliente' : 'clientes'}
+            {totalPages > 1 && ` · página ${page + 1} de ${totalPages}`}
+          </span>
+          {totalPages > 1 && (
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                disabled={page === 0}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Anterior
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                disabled={page >= totalPages - 1}
+              >
+                Próxima
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+        </div>
       )}
     </div>
   )
